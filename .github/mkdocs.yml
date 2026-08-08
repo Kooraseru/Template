@@ -1,0 +1,41 @@
+site_name: Project Documentation
+site_description: Source policy, contributor guidance, and project documentation.
+docs_dir: ../.generated/docs-source
+site_dir: ../.generated/site
+use_directory_urls: true
+strict: true
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+  palette:
+    scheme: slate
+    primary: black
+    accent: cyan
+nav:
+  - Overview: index.md
+  - Source Policy: SOURCE.md
+  - Contributing: CONTRIBUTING.md
+  - Architecture:
+      - Repository: architecture/repository.md
+  - Development:
+      - Validation: development/validation.md
+  - Standards:
+      - Documentation: standards/documentation.md
+      - Configuration: standards/configuration.md
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+plugins:
+  - search
+extra:
+  generator: false

@@ -1,0 +1,16 @@
+# Publication is intentionally disabled until an adopting project declares its
+# public payload. Enabling with an empty include/required set is invalid.
+enabled: false
+
+# Paths are relative to the source root. Directories are copied recursively.
+include: []
+required: []
+
+# These local/source-only paths can never enter a generated branch.
+exclude:
+  - .git
+  - .generated
+  - .agents
+  - .venv
+  - AGENTS.md
+  - site

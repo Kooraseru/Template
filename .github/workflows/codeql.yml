@@ -1,0 +1,42 @@
+name: CodeQL
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: Language to analyze after the project adopts this template.
+        required: true
+        type: choice
+        options:
+          - javascript-typescript
+          - python
+          - ruby
+          - go
+          - java-kotlin
+          - c-cpp
+          - csharp
+          - swift
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze ${{ inputs.language }}
+    runs-on: ${{ inputs.language == 'swift' && 'macos-latest' || 'ubuntu-latest' }}
+    permissions:
+      security-events: write
+      packages: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c4dd10e44af883a891fe31ced449bcb4a6728b9b # v3
+        with:
+          languages: ${{ inputs.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@c4dd10e44af883a891fe31ced449bcb4a6728b9b # v3
+      - name: Analyze
+        uses: github/codeql-action/analyze@c4dd10e44af883a891fe31ced449bcb4a6728b9b # v3

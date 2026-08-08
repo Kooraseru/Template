@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+from datetime import datetime, timezone
+from pathlib import Path, PurePosixPath
+from typing import Any
+
+import yaml
+
+
+SHA = re.compile(r"^[0-9a-f]{40}$")
+CHANNELS = {"pre-release", "release"}
+HARD_DENY = {".git", ".generated", ".agents", ".venv", "AGENTS.md", "site"}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build a generated publication payload.")
+    parser.add_argument("--source", required=True)
+    parser.add_argument("--destination", required=True)
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--channel", required=True, choices=sorted(CHANNELS))
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--source-commit", required=True)
+    parser.add_argument("--generated-at")
+    return parser.parse_args()
+
+
+def relative_path(value: Any, field: str, *, block_private: bool = True) -> PurePosixPath:
+    if not isinstance(value, str) or not value.strip():
+        raise SystemExit(f"{field} entries must be non-empty strings")
+    path = PurePosixPath(value)
+    if path.is_absolute() or ".." in path.parts or "." in path.parts:
+        raise SystemExit(f"Unsafe {field} path: {value}")
+    if block_private and path.parts[0] in HARD_DENY:
+        raise SystemExit(f"Private or generated path cannot be published: {value}")
+    return path
+
+
+def load_config(path: Path) -> tuple[list[PurePosixPath], list[PurePosixPath], list[PurePosixPath]]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or set(data) != {"enabled", "include", "required", "exclude"}:
+        raise SystemExit("Publication config must contain only enabled, include, required, and exclude")
+    if data["enabled"] is not True:
+        raise SystemExit("Publication is disabled in configuration")
+    for key in ("include", "required", "exclude"):
+        if not isinstance(data[key], list):
+            raise SystemExit(f"Publication config {key} must be a list")
+    include = [relative_path(item, "include") for item in data["include"]]
+    required = [relative_path(item, "required") for item in data["required"]]
+    exclude = [relative_path(item, "exclude", block_private=False) for item in data["exclude"]]
+    if not include or not required:
+        raise SystemExit("Enabled publication requires non-empty include and required lists")
+    if len(set(include)) != len(include) or len(set(required)) != len(required):
+        raise SystemExit("Publication include and required paths must be unique")
+    return include, required, exclude
+
+
+def is_excluded(path: PurePosixPath, exclusions: list[PurePosixPath]) -> bool:
+    return any(path == item or item in path.parents for item in exclusions)
+
+
+def safe_source(root: Path, relative: PurePosixPath) -> Path:
+    source = root.joinpath(*relative.parts)
+    resolved = source.resolve(strict=True)
+    try:
+        resolved.relative_to(root.resolve(strict=True))
+    except ValueError as error:
+        raise SystemExit(f"Publication path escapes source through a symlink: {relative}") from error
+    return source
+
+
+def copy_entry(source_root: Path, destination: Path, relative: PurePosixPath, exclusions: list[PurePosixPath]) -> None:
+    if is_excluded(relative, exclusions):
+        return
+    source = safe_source(source_root, relative)
+    target = destination.joinpath(*relative.parts)
+    if source.is_symlink():
+        raise SystemExit(f"Publication entries cannot be symlinks: {relative}")
+    if source.is_file():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        return
+    for child in sorted(source.rglob("*")):
+        child_relative = PurePosixPath(*child.relative_to(source_root).parts)
+        if is_excluded(child_relative, exclusions):
+            continue
+        if child.is_symlink():
+            raise SystemExit(f"Publication trees cannot contain symlinks: {child_relative}")
+        if child.is_file():
+            child_target = destination.joinpath(*child_relative.parts)
+            child_target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(child, child_target)
+
+
+def main() -> None:
+    args = parse_args()
+    source_root = Path(args.source).resolve(strict=True)
+    destination = Path(args.destination).resolve()
+    config_path = Path(args.config).resolve(strict=True)
+    if not SHA.fullmatch(args.source_commit):
+        raise SystemExit("source-commit must be a full lowercase 40-character SHA")
+    if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]*", args.version):
+        raise SystemExit("version contains unsupported characters")
+    try:
+        destination.relative_to(source_root)
+    except ValueError:
+        pass
+    else:
+        if destination == source_root:
+            raise SystemExit("destination cannot be the source root")
+
+    include, required, configured_exclude = load_config(config_path)
+    exclusions = [PurePosixPath(item) for item in sorted(HARD_DENY)] + configured_exclude
+    shutil.rmtree(destination, ignore_errors=True)
+    destination.mkdir(parents=True)
+    for relative in include:
+        copy_entry(source_root, destination, relative, exclusions)
+
+    for relative in required:
+        if not destination.joinpath(*relative.parts).exists():
+            raise SystemExit(f"Generated payload is missing required path: {relative}")
+
+    generated_at = args.generated_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    manifest_path = destination / ".github" / "publication.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "channel": args.channel,
+                "version": args.version,
+                "sourceCommit": args.source_commit,
+                "generatedAt": generated_at,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(f"Publication payload built: {destination}")
+
+
+if __name__ == "__main__":
+    main()

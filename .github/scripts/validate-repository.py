@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import ast
+import re
+import sys
+from pathlib import Path
+
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[2]
+GITHUB = ROOT / ".github"
+FORBIDDEN = re.compile(r"\b(?:Arbor|Glyph|Roblox|Luau)\b", re.IGNORECASE)
+FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
+
+
+def validate_python() -> list[str]:
+    errors: list[str] = []
+    for path in sorted((GITHUB / "scripts").glob("*.py")):
+        try:
+            ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (SyntaxError, UnicodeError) as error:
+            errors.append(f"{path.relative_to(ROOT)}: {error}")
+    return errors
+
+
+def validate_yaml() -> list[str]:
+    errors: list[str] = []
+    for path in sorted(GITHUB.rglob("*.yml")):
+        try:
+            yaml.safe_load(path.read_text(encoding="utf-8"))
+        except yaml.YAMLError as error:
+            errors.append(f"{path.relative_to(ROOT)}: {error}")
+    return errors
+
+
+def yaml_data(path: Path) -> object:
+    # YAML 1.1 treats the key `on` as a boolean. GitHub uses YAML 1.2 semantics,
+    # but the distinction does not affect the structural checks below.
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def validate_issue_forms() -> list[str]:
+    errors: list[str] = []
+    for path in sorted((GITHUB / "ISSUE_TEMPLATE").glob("*.yml")):
+        data = yaml_data(path)
+        if path.name == "config.yml":
+            if not isinstance(data, dict) or "blank_issues_enabled" not in data:
+                errors.append(f"{path.relative_to(ROOT)}: missing blank_issues_enabled")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{path.relative_to(ROOT)}: form must be an object")
+            continue
+        for key in ("name", "description", "body"):
+            if not data.get(key):
+                errors.append(f"{path.relative_to(ROOT)}: missing {key}")
+        body = data.get("body", [])
+        if not isinstance(body, list):
+            errors.append(f"{path.relative_to(ROOT)}: body must be a list")
+            continue
+        ids = [item.get("id") for item in body if isinstance(item, dict) and item.get("id")]
+        if len(ids) != len(set(ids)):
+            errors.append(f"{path.relative_to(ROOT)}: form ids must be unique")
+    return errors
+
+
+def validate_workflow_security() -> list[str]:
+    errors: list[str] = []
+    for path in sorted((GITHUB / "workflows").glob("*.yml")):
+        data = yaml_data(path)
+        if not isinstance(data, dict):
+            errors.append(f"{path.relative_to(ROOT)}: workflow must be an object")
+            continue
+        if "permissions" not in data:
+            errors.append(f"{path.relative_to(ROOT)}: missing top-level permissions")
+        text = path.read_text(encoding="utf-8")
+        for action, ref in re.findall(r"^\s*uses:\s*([^\s@]+)@([^\s#]+)", text, re.MULTILINE):
+            if action.startswith("./"):
+                continue
+            if not FULL_SHA.fullmatch(ref):
+                errors.append(f"{path.relative_to(ROOT)}: action is not pinned to a full SHA: {action}@{ref}")
+        if "pull_request_target:" in text:
+            if "actions/checkout@" in text or re.search(r"^\s*(?:run|shell):", text, re.MULTILINE):
+                errors.append(f"{path.relative_to(ROOT)}: pull_request_target workflow executes repository code")
+        if re.search(r"persist-credentials:\s*true", text):
+            errors.append(f"{path.relative_to(ROOT)}: checkout credentials must not persist")
+    return errors
+
+
+def validate_repository_boundaries() -> list[str]:
+    errors: list[str] = []
+    required = [
+        ROOT / "README.md",
+        ROOT / "SOURCE.md",
+        ROOT / "docs" / "index.md",
+        GITHUB / "CONTRIBUTING.md",
+        GITHUB / "SECURITY.md",
+        GITHUB / "mkdocs.yml",
+    ]
+    for path in required:
+        if not path.is_file():
+            errors.append(f"missing public repository boundary: {path.relative_to(ROOT)}")
+    if (ROOT / "CONTRIBUTING.md").exists():
+        errors.append("CONTRIBUTING.md belongs under .github/, not the repository root")
+
+    ignore_lines = {
+        line.strip()
+        for line in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    for pattern in (".generated/", "AGENTS.md", ".agents/", ".vscode/"):
+        if pattern not in ignore_lines:
+            errors.append(f".gitignore must ignore private/generated surface: {pattern}")
+    if "docs/" in ignore_lines:
+        errors.append("public docs/ must not be ignored")
+
+    mkdocs = yaml_data(GITHUB / "mkdocs.yml")
+    if not isinstance(mkdocs, dict):
+        errors.append(".github/mkdocs.yml must be an object")
+    else:
+        if mkdocs.get("docs_dir") != "../.generated/docs-source":
+            errors.append("MkDocs must read the generated public staging tree")
+        if mkdocs.get("site_dir") != "../.generated/site":
+            errors.append("MkDocs site output must be .generated/site")
+        if mkdocs.get("strict") is not True:
+            errors.append("MkDocs strict mode must remain enabled")
+    return errors
+
+
+def validate_local_links() -> list[str]:
+    errors: list[str] = []
+    link_pattern = re.compile(r"\[[^]]*\]\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]+)?\)")
+    paths = [ROOT / "README.md", ROOT / "SOURCE.md", GITHUB / "CONTRIBUTING.md"]
+    paths.extend(sorted((ROOT / "docs").rglob("*.md")))
+    paths.extend(sorted(GITHUB.rglob("*.md")))
+    for path in paths:
+        if not path.is_file():
+            errors.append(f"missing public Markdown owner: {path.relative_to(ROOT)}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for target in link_pattern.findall(text):
+            if not (path.parent / target).resolve().exists():
+                errors.append(f"{path.relative_to(ROOT)}: missing link target {target}")
+    return errors
+
+
+def validate_residue() -> list[str]:
+    errors: list[str] = []
+    paths = [ROOT / "README.md", ROOT / "SOURCE.md", GITHUB / "CONTRIBUTING.md"]
+    paths.extend(sorted((ROOT / "docs").rglob("*")))
+    paths.extend(sorted(GITHUB.rglob("*")))
+    for path in paths:
+        if not path.is_file() or path.name == "validate-repository.py":
+            continue
+        if FORBIDDEN.search(path.read_text(encoding="utf-8", errors="replace")):
+            errors.append(f"{path.relative_to(ROOT)}: contains prior-project residue")
+    return errors
+
+
+def main() -> None:
+    errors = (
+        validate_python()
+        + validate_yaml()
+        + validate_issue_forms()
+        + validate_workflow_security()
+        + validate_repository_boundaries()
+        + validate_local_links()
+        + validate_residue()
+    )
+    if errors:
+        print("Repository validation failed:", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        raise SystemExit(1)
+    print("GitHub repository contracts OK")
+
+
+if __name__ == "__main__":
+    main()
