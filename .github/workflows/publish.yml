@@ -102,6 +102,7 @@ jobs:
         run: |
           bash -n .github/scripts/publish-generated-branch.sh
           python .github/scripts/validate-repository.py
+          python .github/scripts/test-localization.py
           python .github/scripts/test-publication.py
           python .github/scripts/test-publication-manifests.py
 

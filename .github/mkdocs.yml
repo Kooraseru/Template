@@ -1,5 +1,6 @@
-site_name: Project Documentation
+site_name: Template
 site_description: Source policy, contributor guidance, and project documentation.
+site_url: https://kooraseru.github.io/Template/
 docs_dir: ../.generated/docs-source
 site_dir: ../.generated/site
 use_directory_urls: true
@@ -15,17 +16,7 @@ theme:
     scheme: slate
     primary: black
     accent: cyan
-nav:
-  - Overview: index.md
-  - Source Policy: SOURCE.md
-  - Contributing: CONTRIBUTING.md
-  - Architecture:
-      - Repository: architecture/repository.md
-  - Development:
-      - Validation: development/validation.md
-  - Standards:
-      - Documentation: standards/documentation.md
-      - Configuration: standards/configuration.md
+  language: en
 markdown_extensions:
   - admonition
   - attr_list
@@ -37,5 +28,8 @@ markdown_extensions:
   - pymdownx.superfences
 plugins:
   - search
+extra_javascript:
+  - assets/javascripts/localization.js
 extra:
   generator: false
+  alternate: []

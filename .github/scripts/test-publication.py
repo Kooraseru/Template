@@ -26,6 +26,9 @@ class PublicationBuilderTests(unittest.TestCase):
         (self.source / "docs" / "public.md").write_text("public\n", encoding="utf-8")
         (self.source / ".agents" / "docs").mkdir(parents=True)
         (self.source / ".agents" / "docs" / "private.md").write_text("private\n", encoding="utf-8")
+        (self.source / ".vscode").mkdir()
+        (self.source / ".vscode" / "launch.json").write_text("{}\n", encoding="utf-8")
+        (self.source / ".vscode" / "settings.json").write_text("{}\n", encoding="utf-8")
         self.config = self.root / "config.yml"
 
     def tearDown(self) -> None:
@@ -76,7 +79,7 @@ class PublicationBuilderTests(unittest.TestCase):
         self.assertIn("disabled", result.stderr)
 
     def test_private_and_wrong_generated_roots_cannot_be_included(self) -> None:
-        for path in (".agents", "site"):
+        for path in (".agents", ".workspace", "site"):
             with self.subTest(path=path):
                 self.write_config(f"enabled: true\ninclude: [{path}]\nrequired: [{path}]\nexclude: []\n")
                 result = self.run_builder()
@@ -88,6 +91,48 @@ class PublicationBuilderTests(unittest.TestCase):
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((self.output / "docs" / "public.md").read_text(), "public\n")
+
+    def test_publication_materializes_english_and_japanese_readmes(self) -> None:
+        (self.source / "README.md").write_text("source build readme\n", encoding="utf-8")
+        (self.source / "content").mkdir()
+        (self.source / "content" / "locales.toml").write_text(
+            '[locales."en-US"]\nname = "English"\n\n'
+            '[locales."ja-JP"]\nname = "日本語"\nfallback = ["en-US"]\n',
+            encoding="utf-8",
+        )
+        (self.source / "content" / "repo" / "shared").mkdir(parents=True)
+        (self.source / "content" / "repo" / "release").mkdir(parents=True)
+        (self.source / "content" / "repo" / "shared" / "repository.toml").write_text(
+            '[title.values]\nen-US = "Published README"\nja-JP = "公開 README"\n',
+            encoding="utf-8",
+        )
+        (self.source / "content" / "repo" / "shared" / "README.md").write_text(
+            "# {{ l10n:repository.title }}\n",
+            encoding="utf-8",
+        )
+        self.write_config("enabled: true\ninclude: [README.md]\nrequired: [README.md]\nexclude: []\n")
+        result = self.run_builder()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.output / "README.md").read_text(), "# Published README\n")
+        self.assertEqual((self.output / "docs" / "README.ja-JP.md").read_text(), "# 公開 README\n")
+
+    def test_shared_vscode_files_publish_without_private_settings(self) -> None:
+        self.write_config("enabled: true\ninclude: [.vscode]\nrequired: [.vscode/launch.json]\nexclude: []\n")
+        result = self.run_builder()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.output / ".vscode" / "launch.json").is_file())
+        self.assertFalse((self.output / ".vscode" / "settings.json").exists())
+
+    def test_private_vscode_settings_cannot_be_required(self) -> None:
+        self.write_config(
+            "enabled: true\n"
+            "include: [.vscode]\n"
+            "required: [.vscode/settings.json]\n"
+            "exclude: []\n"
+        )
+        result = self.run_builder()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot be published", result.stderr)
 
     def test_parent_traversal_is_rejected(self) -> None:
         self.write_config("enabled: true\ninclude: [../outside]\nrequired: [public/artifact.txt]\nexclude: []\n")

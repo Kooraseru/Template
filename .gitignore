@@ -4,6 +4,7 @@
 dist/
 build/
 coverage/
+.cache/
 
 # Personal agent configuration
 AGENTS.md
@@ -12,8 +13,8 @@ AGENTS.md
 # Notes and plans
 .workspace/
 
-# Local configurations
-.vscode/
+# Private editor settings
+.vscode/settings.json
 
 # Python
 __pycache__/

@@ -92,26 +92,57 @@ def validate_repository_boundaries() -> list[str]:
     errors: list[str] = []
     required = [
         ROOT / "README.md",
-        ROOT / "SOURCE.md",
-        ROOT / "docs" / "index.md",
-        GITHUB / "CONTRIBUTING.md",
+        ROOT / "TRANSLATORS.md",
+        GITHUB / "LICENSE",
+        ROOT / "content" / "locales.toml",
+        ROOT / "content" / "pages" / "README.md",
+        ROOT / "content" / "pages" / "documentation.toml",
+        ROOT / "content" / "assets" / "branding" / "Billboard.svg",
+        ROOT / "content" / "assets" / "icons" / ".gitkeep",
+        ROOT / "content" / "assets" / "images" / ".gitkeep",
+        ROOT / "content" / "assets" / "diagrams" / ".gitkeep",
+        ROOT / "content" / "assets" / "screenshots" / ".gitkeep",
+        ROOT / "content" / "assets" / "media" / ".gitkeep",
+        ROOT / "content" / "repo" / "shared" / "README.md",
+        ROOT / "content" / "repo" / "shared" / "repository.toml",
+        ROOT / "content" / "repo" / "release" / ".gitkeep",
+        ROOT / "content" / "repo" / "pre-release" / ".gitkeep",
+        ROOT / "docs" / "README.md",
+        ROOT / ".vscode" / "launch.json",
+        ROOT / ".vscode" / "tasks.json",
+        ROOT / ".vscode" / "extensions.json",
+        ROOT / ".vscode" / "project.code-snippets",
+        ROOT / ".vscode" / "mcp.json",
         GITHUB / "SECURITY.md",
+        GITHUB / "CONTRIBUTING.md",
         GITHUB / "mkdocs.yml",
+        GITHUB / "scripts" / "render-localization.py",
+        GITHUB / "scripts" / "test-localization.py",
+        GITHUB / "scripts" / "build-local-publications.py",
     ]
     for path in required:
         if not path.is_file():
             errors.append(f"missing public repository boundary: {path.relative_to(ROOT)}")
-    if (ROOT / "CONTRIBUTING.md").exists():
-        errors.append("CONTRIBUTING.md belongs under .github/, not the repository root")
-
     ignore_lines = {
         line.strip()
         for line in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     }
-    for pattern in (".generated/", "AGENTS.md", ".agents/", ".vscode/"):
+    for pattern in (".generated/", "AGENTS.md", ".agents/", ".vscode/settings.json"):
         if pattern not in ignore_lines:
             errors.append(f".gitignore must ignore private/generated surface: {pattern}")
+    if ".vscode/" in ignore_lines:
+        errors.append("shared .vscode/ launch and task templates must not be ignored")
+
+    extensions = yaml_data(ROOT / ".vscode" / "extensions.json")
+    if not isinstance(extensions, dict) or not isinstance(extensions.get("recommendations"), list):
+        errors.append(".vscode/extensions.json must define extension recommendations")
+    mcp = yaml_data(ROOT / ".vscode" / "mcp.json")
+    if not isinstance(mcp, dict) or not isinstance(mcp.get("servers"), dict):
+        errors.append(".vscode/mcp.json must define a servers object")
+    snippets = yaml_data(ROOT / ".vscode" / "project.code-snippets")
+    if not isinstance(snippets, dict):
+        errors.append(".vscode/project.code-snippets must be an object")
     if "docs/" in ignore_lines:
         errors.append("public docs/ must not be ignored")
 
@@ -131,12 +162,12 @@ def validate_repository_boundaries() -> list[str]:
 def validate_local_links() -> list[str]:
     errors: list[str] = []
     link_pattern = re.compile(r"\[[^]]*\]\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]+)?\)")
-    paths = [ROOT / "README.md", ROOT / "SOURCE.md", GITHUB / "CONTRIBUTING.md"]
+    paths = [ROOT / "README.md", ROOT / "TRANSLATORS.md", GITHUB / "CONTRIBUTING.md"]
     paths.extend(sorted((ROOT / "docs").rglob("*.md")))
     paths.extend(sorted(GITHUB.rglob("*.md")))
     for path in paths:
         if not path.is_file():
-            errors.append(f"missing public Markdown owner: {path.relative_to(ROOT)}")
+            errors.append(f"missing public Markdown source: {path.relative_to(ROOT)}")
             continue
         text = path.read_text(encoding="utf-8")
         for target in link_pattern.findall(text):
@@ -147,7 +178,7 @@ def validate_local_links() -> list[str]:
 
 def validate_residue() -> list[str]:
     errors: list[str] = []
-    paths = [ROOT / "README.md", ROOT / "SOURCE.md", GITHUB / "CONTRIBUTING.md"]
+    paths = [ROOT / "README.md", GITHUB / "CONTRIBUTING.md"]
     paths.extend(sorted((ROOT / "docs").rglob("*")))
     paths.extend(sorted(GITHUB.rglob("*")))
     for path in paths:

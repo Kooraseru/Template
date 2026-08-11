@@ -5,6 +5,10 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
+import sys
+import tempfile
+import tomllib
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -14,7 +18,9 @@ import yaml
 
 SHA = re.compile(r"^[0-9a-f]{40}$")
 CHANNELS = {"pre-release", "release"}
-HARD_DENY = {".git", ".generated", ".agents", ".venv", "AGENTS.md", "site"}
+DEFAULT_LOCALE = "en-US"
+HARD_DENY = {".git", ".generated", ".agents", ".workspace", ".venv", "AGENTS.md", "site"}
+HARD_DENY_PATHS = {PurePosixPath(".vscode/settings.json")}
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,7 +41,10 @@ def relative_path(value: Any, field: str, *, block_private: bool = True) -> Pure
     path = PurePosixPath(value)
     if path.is_absolute() or ".." in path.parts or "." in path.parts:
         raise SystemExit(f"Unsafe {field} path: {value}")
-    if block_private and path.parts[0] in HARD_DENY:
+    if block_private and (
+        path.parts[0] in HARD_DENY
+        or any(path == denied or denied in path.parents for denied in HARD_DENY_PATHS)
+    ):
         raise SystemExit(f"Private or generated path cannot be published: {value}")
     return path
 
@@ -96,6 +105,64 @@ def copy_entry(source_root: Path, destination: Path, relative: PurePosixPath, ex
             shutil.copy2(child, child_target)
 
 
+def materialize_localization(source_root: Path, destination: Path, channel: str) -> None:
+    manifest = source_root / "content" / "locales.toml"
+    repository_content = source_root / "content" / "repo"
+    shared = repository_content / "shared"
+    channel_content = repository_content / channel
+    renderer = Path(__file__).with_name("render-localization.py")
+    if not destination.joinpath("README.md").is_file():
+        return
+    if not manifest.is_file() or not shared.is_dir() or not channel_content.is_dir() or not renderer.is_file():
+        raise SystemExit("Published README.md requires localization, shared/channel repository content, and renderer")
+
+    with manifest.open("rb") as handle:
+        locale_data = tomllib.load(handle)
+    locales = locale_data.get("locales")
+    if not isinstance(locales, dict) or DEFAULT_LOCALE not in locales:
+        raise SystemExit(f"{manifest}: invalid locale manifest")
+
+    with tempfile.TemporaryDirectory() as temporary:
+        temporary_root = Path(temporary)
+        templates = temporary_root / "templates"
+        output = temporary_root / "output"
+        shutil.copytree(shared, templates)
+        shutil.copytree(channel_content, templates, dirs_exist_ok=True)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(renderer),
+                "--localization-root",
+                str(manifest.parent),
+                "--templates",
+                str(templates),
+                "--output",
+                str(output),
+            ],
+            cwd=source_root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode:
+            raise SystemExit(result.stderr.strip() or "Localization rendering failed")
+
+        default_root = output / DEFAULT_LOCALE
+        rendered_readme = default_root / "README.md"
+        if not rendered_readme.is_file():
+            raise SystemExit(f"Localization output is missing {DEFAULT_LOCALE}/README.md")
+        shutil.copy2(rendered_readme, destination / "README.md")
+
+        for code, metadata in locales.items():
+            if code == DEFAULT_LOCALE or not isinstance(metadata, dict) or metadata.get("published", True) is not True:
+                continue
+            rendered_locale_readme = output / code / "README.md"
+            if rendered_locale_readme.is_file():
+                localized_docs = destination / "docs"
+                localized_docs.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(rendered_locale_readme, localized_docs / f"README.{code}.md")
+
+
 def main() -> None:
     args = parse_args()
     source_root = Path(args.source).resolve(strict=True)
@@ -114,11 +181,17 @@ def main() -> None:
             raise SystemExit("destination cannot be the source root")
 
     include, required, configured_exclude = load_config(config_path)
-    exclusions = [PurePosixPath(item) for item in sorted(HARD_DENY)] + configured_exclude
+    exclusions = (
+        [PurePosixPath(item) for item in sorted(HARD_DENY)]
+        + sorted(HARD_DENY_PATHS, key=str)
+        + configured_exclude
+    )
     shutil.rmtree(destination, ignore_errors=True)
     destination.mkdir(parents=True)
     for relative in include:
         copy_entry(source_root, destination, relative, exclusions)
+
+    materialize_localization(source_root, destination, args.channel)
 
     for relative in required:
         if not destination.joinpath(*relative.parts).exists():

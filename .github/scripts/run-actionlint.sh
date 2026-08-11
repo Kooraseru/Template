@@ -24,7 +24,7 @@ if [ -n "${ACTIONLINT_BIN:-}" ]; then
 fi
 
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-tool_root="$repository_root/.generated/tools/actionlint"
+tool_root="$repository_root/.cache/actionlint"
 binary="$tool_root/actionlint"
 archive="$tool_root/$archive_name"
 

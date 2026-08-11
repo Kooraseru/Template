@@ -1,16 +1,31 @@
-# Publication is intentionally disabled until an adopting project declares its
-# public payload. Enabling with an empty include/required set is invalid.
-enabled: false
+# This template publishes a sanitized, reusable repository payload. Projects
+# should narrow or extend the whitelist as their public surfaces change.
+enabled: true
 
 # Paths are relative to the source root. Directories are copied recursively.
-include: []
-required: []
+include:
+  - .gitattributes
+  - .gitignore
+  - .github
+  - .vscode
+  - README.md
+  - content/assets
+required:
+  - .github/publication/config.yml
+  - .github/workflows/validate.yml
+  - .vscode/launch.json
+  - .vscode/tasks.json
+  - .github/CONTRIBUTING.md
+  - .github/LICENSE
+  - README.md
+  - content/assets/branding/Billboard.svg
 
 # These local/source-only paths can never enter a generated branch.
 exclude:
   - .git
   - .generated
   - .agents
+  - .workspace
   - .venv
   - AGENTS.md
   - site

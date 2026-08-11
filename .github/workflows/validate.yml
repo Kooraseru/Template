@@ -18,7 +18,20 @@ jobs:
     name: Repository Contracts
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Require source context
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            actual_ref="$GITHUB_BASE_REF"
+          else
+            actual_ref="$GITHUB_REF_NAME"
+          fi
+          if [ "$actual_ref" != "source" ]; then
+            echo "Validate requires source or a pull request into source, got $actual_ref" >&2
+            exit 1
+          fi
+
+      - name: Checkout validated ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -40,6 +53,7 @@ jobs:
         run: bash .github/scripts/run-actionlint.sh
       - name: Test publication boundaries
         run: |
+          python .github/scripts/test-localization.py
           python .github/scripts/test-publication.py
           python .github/scripts/test-publication-manifests.py
       - name: Build public documentation
@@ -49,12 +63,25 @@ jobs:
     name: Documentation Links
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Require source context
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            actual_ref="$GITHUB_BASE_REF"
+          else
+            actual_ref="$GITHUB_REF_NAME"
+          fi
+          if [ "$actual_ref" != "source" ]; then
+            echo "Validate requires source or a pull request into source, got $actual_ref" >&2
+            exit 1
+          fi
+
+      - name: Checkout validated ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Check links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          args: --no-progress --accept 200,429 "README.md" "SOURCE.md" "docs/**/*.md" ".github/**/*.md"
+          args: --no-progress --accept 200,429 "README.md" "TRANSLATORS.md" "docs/**/*.md" ".github/**/*.md"
           fail: true

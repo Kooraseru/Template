@@ -1,32 +1,52 @@
-# Repository Template
+# Template Source
 
-This repository is a reusable source, documentation, GitHub automation, and
-publication shell. Projects adopt the boundaries here, then add only the source
-domains, tests, dependencies, and public content they actually use.
+This is the canonical `source` branch for the reusable repository template.
+Contributors change source, documentation, localization, automation, and
+publication tooling here. Automation generates `pre-release` and `release` from
+an exact source commit or local snapshot.
 
 ## Start Here
 
-- [`SOURCE.md`](SOURCE.md) defines authored and generated source boundaries.
-- [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) defines the contributor
-  workflow.
-- [`docs/`](docs/) contains human-readable architecture, development, and
-  standards documentation.
-- [`.github/SECURITY.md`](.github/SECURITY.md) defines private vulnerability
-  reporting.
+- [Repository architecture](docs/architecture/repository.md) defines source,
+  generated output, content ownership, and branch roles.
+- [Contribution guidelines](.github/CONTRIBUTING.md) define the contributor
+  workflow and validation expectations.
+- [Development and validation](docs/development/validation.md) lists local and
+  GitHub Actions entry points.
+- [Translation guide](TRANSLATORS.md) explains keyed templates, adjacent
+  catalogs, and fallback behavior.
+- [Security policy](.github/SECURITY.md) explains private vulnerability reporting.
+- [Publication configuration](.github/publication/config.yml) defines the public
+  generated-repository whitelist.
 
-## Branches And Publication
+## Repository Locations
 
-Humans author on `source`. Automation builds the disposable `pre-release` and
-`release` branches from an immutable source commit. Publication is disabled by
-default until a project declares an explicit public-file whitelist in
-`.github/publication/config.yml`.
+<table>
+  <tr>
+    <td><code>.github/</code></td>
+    <td>GitHub policy, automation, and publication tooling</td>
+  </tr>
+  <tr>
+    <td><code>.vscode/</code></td>
+    <td>shared editor and local task entry points</td>
+  </tr>
+  <tr>
+    <td><code>content/</code></td>
+    <td>localized Pages and repository inputs plus public assets</td>
+  </tr>
+  <tr>
+    <td><code>docs/</code></td>
+    <td>English source architecture and project contracts</td>
+  </tr>
+  <tr>
+    <td><code>.generated/</code></td>
+    <td>ignored MkDocs and repository outputs</td>
+  </tr>
+</table>
 
-MkDocs builds the public documentation into `.generated/site/`; generated
-output is never committed as source.
+The root source `README.md`, `.github/CONTRIBUTING.md`, `.github/LICENSE`, and
+other canonical control files are maintained in English. Localized repository
+and Pages content is generated from adjacent templates and TOML catalogs under
+`content/`.
 
-## Adopting The Template
-
-Before the first release, replace this overview with the project identity,
-select and add the intended license, configure publication files, enable the
-appropriate CodeQL language, and configure GitHub branch protections,
-environments, Pages, Discussions, and private vulnerability reporting.
+Do not edit `pre-release`, `release`, or files beneath `.generated/` as source.

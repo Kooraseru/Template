@@ -2,7 +2,7 @@
 
 Use the format required by an external consumer: YAML for GitHub Actions and
 MkDocs, JSON when a consumer requires JSON, and TOML for project-owned
-human-edited metadata when no external format is imposed.
+contributor-edited metadata when no external format is imposed.
 
 Configuration must have a real consumer. Validate required keys, reject unknown
 or unsafe values where practical, and fail with actionable messages. Do not add

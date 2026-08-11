@@ -15,6 +15,15 @@ jobs:
       issues: write
       pull-requests: write
     steps:
+      - name: Require source for manual runs
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_NAME" != "source" ]; then
+            echo "Manual stale processing must be dispatched from source, got $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
       - name: Mark inactive work
         uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
         with:

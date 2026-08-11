@@ -5,12 +5,13 @@ on:
   push:
     branches: [source]
     paths:
-      - "SOURCE.md"
-      - ".github/CONTRIBUTING.md"
-      - "docs/**"
+      - "TRANSLATORS.md"
+      - "content/locales.toml"
+      - "content/pages/**"
       - ".github/mkdocs.yml"
       - ".github/automation-requirements.txt"
       - ".github/scripts/build-docs.py"
+      - ".github/scripts/render-localization.py"
       - ".github/scripts/collect-publication-manifests.py"
       - ".github/workflows/pages.yml"
 
@@ -26,6 +27,14 @@ jobs:
     name: Build Pages
     runs-on: ubuntu-latest
     steps:
+      - name: Require source workflow ref
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_NAME" != "source" ]; then
+            echo "Pages must run from source, got $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
       - name: Checkout source tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
