@@ -2,8 +2,8 @@
 
 This is the canonical `source` branch for the reusable repository template.
 Contributors change source, documentation, localization, automation, and
-publication tooling here. Automation generates `pre-release` and `release` from
-an exact source commit or local snapshot.
+publication tooling here. Automation generates `canary`, `beta`, and `stable`
+channel branches from an exact source commit or local snapshot.
 
 ## Start Here
 
@@ -49,4 +49,4 @@ other canonical control files are maintained in English. Localized repository
 and Pages content is generated from adjacent templates and TOML catalogs under
 `content/`.
 
-Do not edit `pre-release`, `release`, or files beneath `.generated/` as source.
+Do not edit `canary`, `beta`, `stable`, or files beneath `.generated/` as source.

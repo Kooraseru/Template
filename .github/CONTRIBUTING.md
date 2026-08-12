@@ -22,7 +22,7 @@ All contributor development happens on `source`.
 Open issues, proposals, fixes, documentation changes, source changes, workflow
 changes, and pull requests against `source`.
 
-Do not author changes on `pre-release` or `release`. Those branches are
+Do not author changes on `canary`, `beta`, or `stable`. Those branches are
 generated publication outputs built from `source`:
 
 <table>
@@ -31,12 +31,16 @@ generated publication outputs built from `source`:
     <td>Canonical authoring branch</td>
   </tr>
   <tr>
-    <td><code>pre-release</code></td>
-    <td>Generated preview publication branch</td>
+    <td><code>canary</code></td>
+    <td>Frequently moving generated channel for the earliest consumption</td>
   </tr>
   <tr>
-    <td><code>release</code></td>
-    <td>Generated stable publication branch</td>
+    <td><code>beta</code></td>
+    <td>Deliberately published generated testing channel</td>
+  </tr>
+  <tr>
+    <td><code>stable</code></td>
+    <td>Trusted generated production channel</td>
   </tr>
 </table>
 

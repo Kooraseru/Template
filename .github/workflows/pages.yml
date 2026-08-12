@@ -50,7 +50,7 @@ jobs:
           TOKEN: ${{ github.token }}
         run: |
           remote_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          for branch in release pre-release; do
+          for branch in stable beta canary; do
             path="publication-$branch"
             mkdir -p "$path"
             if ! git ls-remote --exit-code --heads "$remote_url" "$branch" >/dev/null 2>&1; then
@@ -78,45 +78,68 @@ jobs:
         shell: bash
         run: |
           python source/.github/scripts/collect-publication-manifests.py \
-            --release-manifest publication-release/.github/publication.json \
-            --pre-release-manifest publication-pre-release/.github/publication.json \
+            --stable-manifest publication-stable/.github/publication.json \
+            --beta-manifest publication-beta/.github/publication.json \
+            --canary-manifest publication-canary/.github/publication.json \
             --output source/.generated/publications.json \
             --github-output "$GITHUB_OUTPUT"
 
       - name: Checkout stable documentation source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ steps.manifests.outputs.release_source_commit || 'source' }}
-          path: docs-release
+          ref: ${{ steps.manifests.outputs.stable_source_commit || 'source' }}
+          path: docs-stable
           fetch-depth: 0
           fetch-tags: false
           persist-credentials: false
 
-      - name: Checkout pre-release documentation source
-        if: steps.manifests.outputs.pre_release_source_commit != ''
+      - name: Checkout beta documentation source
+        if: steps.manifests.outputs.beta_source_commit != ''
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ steps.manifests.outputs.pre_release_source_commit }}
-          path: docs-pre-release
+          ref: ${{ steps.manifests.outputs.beta_source_commit }}
+          path: docs-beta
           fetch-depth: 0
           fetch-tags: false
           persist-credentials: false
 
       - name: Build stable documentation
-        working-directory: docs-release
+        working-directory: docs-stable
         run: python .github/scripts/build-docs.py
 
-      - name: Build pre-release documentation
-        if: steps.manifests.outputs.pre_release_source_commit != ''
-        working-directory: docs-pre-release
+      - name: Build beta documentation
+        if: steps.manifests.outputs.beta_source_commit != ''
+        working-directory: docs-beta
         run: python .github/scripts/build-docs.py
 
-      - name: Assemble pre-release site
-        if: steps.manifests.outputs.pre_release_source_commit != ''
+      - name: Assemble beta site
+        if: steps.manifests.outputs.beta_source_commit != ''
         shell: bash
         run: |
-          mkdir -p docs-release/.generated/site/pre-release
-          cp -R docs-pre-release/.generated/site/. docs-release/.generated/site/pre-release/
+          mkdir -p docs-stable/.generated/site/beta
+          cp -R docs-beta/.generated/site/. docs-stable/.generated/site/beta/
+
+      - name: Checkout canary documentation source
+        if: steps.manifests.outputs.canary_source_commit != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.manifests.outputs.canary_source_commit }}
+          path: docs-canary
+          fetch-depth: 0
+          fetch-tags: false
+          persist-credentials: false
+
+      - name: Build canary documentation
+        if: steps.manifests.outputs.canary_source_commit != ''
+        working-directory: docs-canary
+        run: python .github/scripts/build-docs.py
+
+      - name: Assemble canary site
+        if: steps.manifests.outputs.canary_source_commit != ''
+        shell: bash
+        run: |
+          mkdir -p docs-stable/.generated/site/canary
+          cp -R docs-canary/.generated/site/. docs-stable/.generated/site/canary/
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
@@ -124,7 +147,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: docs-release/.generated/site
+          path: docs-stable/.generated/site
 
   deploy:
     name: Deploy Pages

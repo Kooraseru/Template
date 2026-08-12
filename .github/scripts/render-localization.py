@@ -206,7 +206,11 @@ def render_locale(templates: Path, output: Path, catalog: Catalog, locale: str) 
         if source.suffix.lower() == ".toml":
             continue
         relative = source.relative_to(templates)
+        if relative.name.endswith(".template.md"):
+            relative = relative.with_name(relative.name.removesuffix(".template.md") + ".md")
         destination = destination_root / relative
+        if destination.exists():
+            raise SystemExit(f"{source}: template output collides with {destination}")
         destination.parent.mkdir(parents=True, exist_ok=True)
         if source.suffix.lower() in TEXT_SUFFIXES:
             rendered = render_text(source.read_text(encoding="utf-8"), source, catalog, locale, used)

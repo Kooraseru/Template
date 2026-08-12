@@ -17,7 +17,8 @@ import yaml
 
 
 SHA = re.compile(r"^[0-9a-f]{40}$")
-CHANNELS = {"pre-release", "release"}
+CHANNELS = {"beta", "canary", "stable"}
+RELEASE_ID = re.compile(r"^\d{4}\.(?:0[1-9]|1[0-2])\.[1-9]\d*-(?:regular|hotfix|security)$")
 DEFAULT_LOCALE = "en-US"
 HARD_DENY = {".git", ".generated", ".agents", ".workspace", ".venv", "AGENTS.md", "site"}
 HARD_DENY_PATHS = {PurePosixPath(".vscode/settings.json")}
@@ -170,8 +171,8 @@ def main() -> None:
     config_path = Path(args.config).resolve(strict=True)
     if not SHA.fullmatch(args.source_commit):
         raise SystemExit("source-commit must be a full lowercase 40-character SHA")
-    if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]*", args.version):
-        raise SystemExit("version contains unsupported characters")
+    if not RELEASE_ID.fullmatch(args.version):
+        raise SystemExit("version must match YYYY.MM.N-KIND using regular, hotfix, or security")
     try:
         destination.relative_to(source_root)
     except ValueError:

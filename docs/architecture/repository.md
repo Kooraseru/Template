@@ -16,8 +16,8 @@ source
     └── repo/<channel>/   publication payloads
 ```
 
-The `source` branch is canonical. Automation derives `pre-release` and
-`release` from one immutable source commit and records that commit in the
+The `source` branch is canonical. Automation derives `canary`, `beta`, and
+`stable` from immutable source commits and records the source commit in each
 generated publication manifest.
 
 ### Content Layout
@@ -37,18 +37,24 @@ content/
 │   └── documentation.toml
 └── repo/
     ├── shared/
-    │   ├── README.md
+    │   ├── README.template.md
     │   └── repository.toml
-    ├── release/
-    └── pre-release/
+    ├── canary/
+    ├── beta/
+    └── stable/
 ```
+
+`README.template.md` is authored Markdown whose `.template` segment is removed
+during rendering, producing the publication root `README.md`. This convention
+keeps the source template from presenting itself as the description of the
+`shared/` directory.
 
 `content/locales.toml` is the single locale registry and owns locale IDs,
 publication state, and fallback order. `TRANSLATORS.md` explains the contributor
 workflow without duplicating that registry. Translation catalogs live beside
 the templates they describe. `content/pages/` owns
 localizable Pages layouts. `content/repo/shared/` owns repository content common
-to both publication channels. Channel directories layer overrides and additions
+to all publication channels. Channel directories layer overrides and additions
 over `shared/`; do not duplicate shared content between them. Assets are grouped
 by their durable purpose.
 
@@ -63,7 +69,7 @@ Canonical source, tests, project documentation, GitHub configuration, and
 generation tooling live on `source`. Change behavior by editing its canonical
 input, never by patching generated output.
 
-`pre-release` and `release` are automation-owned publication branches. Their
+`canary`, `beta`, and `stable` are automation-owned publication branches. Their
 history is disposable. Direct edits and pull requests targeting these branches
 are invalid.
 
@@ -77,8 +83,30 @@ are invalid.
   <tr><td><code>.github/</code></td><td>GitHub policy, intake, validation, and publication automation</td><td>Yes, with maintainer review</td></tr>
   <tr><td><code>.vscode/</code></td><td>Shared editor and portable tool templates</td><td>Yes, except <code>settings.json</code></td></tr>
   <tr><td><code>.generated/</code></td><td>Local build and publication output</td><td>No</td></tr>
-  <tr><td><code>pre-release</code></td><td>Generated preview repository</td><td>No</td></tr>
-  <tr><td><code>release</code></td><td>Generated stable repository</td><td>No</td></tr>
+  <tr><td><code>canary</code></td><td>Generated earliest-consumption repository</td><td>No</td></tr>
+  <tr><td><code>beta</code></td><td>Generated testing repository</td><td>No</td></tr>
+  <tr><td><code>stable</code></td><td>Generated production repository</td><td>No</td></tr>
+</table>
+
+## Release Identity And Channels
+
+A release ID identifies one chronological publication event. It has the form
+`YYYY.MM.N-KIND`, where `N` is a single counter shared by every release kind
+within the month. The allowed kinds are `regular`, `hotfix`, and `security`.
+For example, `2026.08.3-hotfix` is the third release created in August 2026 and
+exists to deliver an urgent correction. `regular` covers planned publication,
+`hotfix` delivers an urgent non-security correction, and `security` delivers a
+security correction through the project security process.
+
+Release IDs always move forward. They are not renamed, promoted, replaced, or
+partitioned by kind. The publication branch records destination state and is
+not part of release identity:
+
+<table>
+  <tr><td><code>source</code></td><td>Canonical authored state</td></tr>
+  <tr><td><code>canary</code></td><td>Frequently moving earliest-consumption channel</td></tr>
+  <tr><td><code>beta</code></td><td>Deliberate checkpoint for wider testing</td></tr>
+  <tr><td><code>stable</code></td><td>Trusted channel for normal production consumption</td></tr>
 </table>
 
 User-specific tooling configuration, private planning, editor settings and

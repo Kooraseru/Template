@@ -10,13 +10,14 @@ from typing import Any
 
 
 SHA = re.compile(r"^[0-9a-f]{40}$")
-VERSION = re.compile(r"^[0-9A-Za-z][0-9A-Za-z._-]*$")
+VERSION = re.compile(r"^\d{4}\.(?:0[1-9]|1[0-2])\.[1-9]\d*-(?:regular|hotfix|security)$")
+CHANNELS = ("canary", "beta", "stable")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Collect generated branch provenance for Pages.")
-    parser.add_argument("--release-manifest")
-    parser.add_argument("--pre-release-manifest")
+    for channel in CHANNELS:
+        parser.add_argument(f"--{channel}-manifest")
     parser.add_argument("--output", required=True)
     parser.add_argument("--github-output")
     return parser.parse_args()
@@ -47,15 +48,13 @@ def read_manifest(path_value: str | None, expected_channel: str) -> dict[str, st
     return {key: data[key] for key in sorted(expected)}
 
 
-def append_outputs(path_value: str | None, release: dict[str, str] | None, pre_release: dict[str, str] | None) -> None:
+def append_outputs(path_value: str | None, manifests: dict[str, dict[str, str] | None]) -> None:
     if not path_value:
         return
-    values = {
-        "release_source_commit": (release or {}).get("sourceCommit", ""),
-        "release_version": (release or {}).get("version", ""),
-        "pre_release_source_commit": (pre_release or {}).get("sourceCommit", ""),
-        "pre_release_version": (pre_release or {}).get("version", ""),
-    }
+    values = {}
+    for channel, manifest in manifests.items():
+        values[f"{channel}_source_commit"] = (manifest or {}).get("sourceCommit", "")
+        values[f"{channel}_version"] = (manifest or {}).get("version", "")
     with Path(path_value).open("a", encoding="utf-8", newline="\n") as output:
         for key, value in values.items():
             output.write(f"{key}={value}\n")
@@ -63,16 +62,18 @@ def append_outputs(path_value: str | None, release: dict[str, str] | None, pre_r
 
 def main() -> None:
     args = parse_args()
-    release = read_manifest(args.release_manifest, "release")
-    pre_release = read_manifest(args.pre_release_manifest, "pre-release")
+    manifests = {
+        channel: read_manifest(getattr(args, f"{channel}_manifest"), channel)
+        for channel in CHANNELS
+    }
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps({"release": release, "preRelease": pre_release}, indent=2) + "\n",
+        json.dumps(manifests, indent=2) + "\n",
         encoding="utf-8",
         newline="\n",
     )
-    append_outputs(args.github_output, release, pre_release)
+    append_outputs(args.github_output, manifests)
     print(f"Publication manifests collected: {output_path}")
 
 

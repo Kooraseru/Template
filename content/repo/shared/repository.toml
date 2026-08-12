@@ -46,13 +46,13 @@ en-US = '''
 - Reusable GitHub issue intake, dependency management, validation, and publication automation.
 - Project documentation built with MkDocs and confined to `.generated/site/`.
 - Shared VS Code launch, task, extension, snippet, and portable MCP templates.
-- Automation-owned `pre-release` and `release` branches derived from immutable `source` commits.'''
+- Automation-owned `canary`, `beta`, and `stable` branches derived from immutable `source` commits.'''
 ja-JP = '''
 - 作成されたソース、非公開のワークスペース状態、生成された出力の境界を明確に分離します。
 - GitHub Issue の受付、依存関係管理、検証、公開のための再利用可能なオートメーションを提供します。
 - MkDocs で構築したプロジェクトドキュメントを `.generated/site/` 内に限定します。
 - 共有可能な VS Code の起動設定、タスク、拡張機能、スニペット、ポータブル MCP テンプレートを提供します。
-- 不変の `source` コミットから、オートメーション管理の `pre-release` および `release` ブランチを生成します。'''
+- 不変の `source` コミットから、オートメーション管理の `canary`、`beta`、`stable` ブランチを生成します。'''
 
 [sections.quick_start.title.values]
 en-US = "Quick Start"
@@ -112,14 +112,16 @@ ja-JP = "ブランチ"
 en-US = '''
 <table>
   <tr><td><code>source</code></td><td>Canonical authoring branch</td></tr>
-  <tr><td><code>pre-release</code></td><td>Generated preview publication branch</td></tr>
-  <tr><td><code>release</code></td><td>Generated stable publication branch</td></tr>
+  <tr><td><code>canary</code></td><td>Generated earliest-consumption channel</td></tr>
+  <tr><td><code>beta</code></td><td>Generated testing channel</td></tr>
+  <tr><td><code>stable</code></td><td>Generated production channel</td></tr>
 </table>'''
 ja-JP = '''
 <table>
   <tr><td><code>source</code></td><td>正規の作成ブランチ</td></tr>
-  <tr><td><code>pre-release</code></td><td>生成されたプレビュー公開ブランチ</td></tr>
-  <tr><td><code>release</code></td><td>生成された安定版公開ブランチ</td></tr>
+  <tr><td><code>canary</code></td><td>生成された早期利用チャンネル</td></tr>
+  <tr><td><code>beta</code></td><td>生成されたテストチャンネル</td></tr>
+  <tr><td><code>stable</code></td><td>生成された本番チャンネル</td></tr>
 </table>'''
 
 [sections.branches.afterword.values]

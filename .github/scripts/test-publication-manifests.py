@@ -23,7 +23,7 @@ class PublicationManifestTests(unittest.TestCase):
     def manifest(self, channel: str, **changes: object) -> Path:
         data: dict[str, object] = {
             "channel": channel,
-            "version": "1.0.0",
+            "version": "2026.01.1-regular",
             "sourceCommit": "a" * 40,
             "generatedAt": "2026-01-01T00:00:00Z",
         }
@@ -32,33 +32,38 @@ class PublicationManifestTests(unittest.TestCase):
         path.write_text(json.dumps(data), encoding="utf-8")
         return path
 
-    def run_collector(self, release: Path | None = None, pre_release: Path | None = None) -> subprocess.CompletedProcess[str]:
+    def run_collector(self, **manifests: Path) -> subprocess.CompletedProcess[str]:
         command = [sys.executable, str(SCRIPT), "--output", str(self.root / "output.json")]
-        if release:
-            command.extend(["--release-manifest", str(release)])
-        if pre_release:
-            command.extend(["--pre-release-manifest", str(pre_release)])
+        for channel, manifest in manifests.items():
+            command.extend([f"--{channel}-manifest", str(manifest)])
         return subprocess.run(command, text=True, capture_output=True, check=False)
 
-    def test_collects_both_channels(self) -> None:
-        result = self.run_collector(self.manifest("release"), self.manifest("pre-release"))
+    def test_collects_all_channels(self) -> None:
+        result = self.run_collector(
+            canary=self.manifest("canary"),
+            beta=self.manifest("beta"),
+            stable=self.manifest("stable"),
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
         output = json.loads((self.root / "output.json").read_text())
-        self.assertEqual(output["release"]["sourceCommit"], "a" * 40)
-        self.assertEqual(output["preRelease"]["channel"], "pre-release")
+        self.assertEqual(output["stable"]["sourceCommit"], "a" * 40)
+        self.assertEqual(output["canary"]["channel"], "canary")
 
     def test_missing_channels_are_optional(self) -> None:
         result = self.run_collector()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads((self.root / "output.json").read_text()), {"release": None, "preRelease": None})
+        self.assertEqual(
+            json.loads((self.root / "output.json").read_text()),
+            {"canary": None, "beta": None, "stable": None},
+        )
 
     def test_channel_mismatch_fails(self) -> None:
-        result = self.run_collector(self.manifest("pre-release"))
+        result = self.run_collector(stable=self.manifest("beta"))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("channel mismatch", result.stderr)
 
     def test_invalid_source_commit_fails(self) -> None:
-        result = self.run_collector(self.manifest("release", sourceCommit="short"))
+        result = self.run_collector(stable=self.manifest("stable", sourceCommit="short"))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("full lowercase SHA", result.stderr)
 

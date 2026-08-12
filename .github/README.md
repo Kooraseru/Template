@@ -20,7 +20,7 @@ active consumer and a responsible maintainer.
   </tr>
   <tr>
     <td>First interaction, pull-request labeling, and scheduled stale processing</td>
-    <td>Use the generated workflow definition on default branch <code>release</code> because GitHub dispatches these event types from the default branch. These jobs process metadata and do not check out or execute repository code.</td>
+    <td>Use the generated workflow definition on default branch <code>stable</code> because GitHub dispatches these event types from the default branch. These jobs process metadata and do not check out or execute repository code.</td>
   </tr>
   <tr>
     <td>Manual stale processing</td>
@@ -28,7 +28,7 @@ active consumer and a responsible maintainer.
   </tr>
 </table>
 
-The generated <code>release</code> branch is the repository default and public
+The generated <code>stable</code> branch is the repository default and public
 landing branch. It is not an editing branch. Contributors target
 <code>source</code>; only the owner or the protected publication workflow may
-replace <code>pre-release</code> or <code>release</code>.
+replace <code>canary</code>, <code>beta</code>, or <code>stable</code>.

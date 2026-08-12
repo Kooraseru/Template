@@ -68,6 +68,20 @@ class LocalizationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("unknown localization key", result.stderr)
 
+    def test_template_markdown_drops_template_segment(self) -> None:
+        (self.templates / "README.template.md").write_text("# Template\n", encoding="utf-8")
+        result = self.run_renderer()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.output / "en-US" / "README.md").read_text(), "# Template\n")
+        self.assertFalse((self.output / "en-US" / "README.template.md").exists())
+
+    def test_template_output_collision_fails(self) -> None:
+        (self.templates / "README.md").write_text("# Directory\n", encoding="utf-8")
+        (self.templates / "README.template.md").write_text("# Template\n", encoding="utf-8")
+        result = self.run_renderer()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("template output collides", result.stderr)
+
     def test_catalog_requires_default_english_value(self) -> None:
         (self.templates / "ui.toml").write_text(
             '[buttons.save.values]\nja-JP = "保存"\n', encoding="utf-8"

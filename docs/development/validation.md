@@ -16,13 +16,14 @@ bash .github/scripts/run-actionlint.sh
 Build both local publication payloads with:
 
 ```bash
-python .github/scripts/build-local-publications.py --version 0.0.0-local
+python .github/scripts/build-local-publications.py --version 2026.01.1-regular
 ```
 
 The command requires the `source` branch. A clean worktree records exact HEAD.
 A worktree with pending changes is captured in a temporary Git snapshot commit
 without modifying the index, current branch, or source history. It writes
-`.generated/repo/pre-release/` and `.generated/repo/release/` without modifying
+`.generated/repo/canary/`, `.generated/repo/beta/`, and
+`.generated/repo/stable/` without modifying
 branch refs. Remote publication continues to require committed canonical source.
 
 The validation workflow checks GitHub configuration, issue form structure,

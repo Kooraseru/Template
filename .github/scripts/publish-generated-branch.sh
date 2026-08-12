@@ -9,7 +9,7 @@ source_commit="${5:?source commit SHA is required}"
 github_output="${6:-}"
 
 case "$channel" in
-	pre-release|release) ;;
+	canary|beta|stable) ;;
 	*)
 		echo "Unsupported publication channel: $channel" >&2
 		exit 1

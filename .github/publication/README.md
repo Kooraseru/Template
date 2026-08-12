@@ -10,5 +10,6 @@ or include private local knowledge. Required entries must also be included by
 the payload.
 
 The builder creates `.github/publication.json` with the selected channel,
-version, immutable source commit, and generation time. It writes only beneath
+release ID, immutable source commit, and generation time. Release IDs use
+`YYYY.MM.N-KIND`; the channel remains a separate publication destination. It writes only beneath
 `.generated/repo/<channel>/`.

@@ -87,7 +87,7 @@ def snapshot_commit() -> tuple[str, bool]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Build local pre-release and release payloads from the current source state."
+        description="Build local canary, beta, and stable payloads from the current source state."
     )
     parser.add_argument("--version", required=True)
     parser.add_argument("--generated-at")
@@ -102,7 +102,7 @@ def main() -> None:
     source_commit, is_snapshot = snapshot_commit()
     generated_at = args.generated_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    for channel in ("pre-release", "release"):
+    for channel in ("canary", "beta", "stable"):
         destination = ROOT / ".generated" / "repo" / channel
         result = run(
             [

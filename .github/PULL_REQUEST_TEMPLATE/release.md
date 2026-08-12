@@ -1,4 +1,4 @@
-## Channel and version
+## Channel and release ID
 
 ## Source commit
 

@@ -7,22 +7,17 @@ on:
         description: Generated branch to replace.
         required: true
         type: choice
-        options: [pre-release, release]
+        options: [canary, beta, stable]
       version:
-        description: Version without a leading v.
+        description: Release ID in YYYY.MM.N-KIND form, without a leading v.
         required: true
         type: string
-      replace_existing_release:
-        description: Explicitly replace an existing tag and GitHub Release.
-        required: true
-        default: false
-        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: publish-${{ inputs.channel }}
+  group: publish-release-stream
   cancel-in-progress: false
 
 jobs:
@@ -84,8 +79,34 @@ jobs:
             echo "Version must not include the leading v: $VERSION" >&2
             exit 1
           fi
-          if [[ ! "$VERSION" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]]; then
-            echo "Version contains unsupported characters: $VERSION" >&2
+          if [[ ! "$VERSION" =~ ^[0-9]{4}\.(0[1-9]|1[0-2])\.[1-9][0-9]*-(regular|hotfix|security)$ ]]; then
+            echo "Release ID must match YYYY.MM.N-KIND using regular, hotfix, or security: $VERSION" >&2
+            exit 1
+          fi
+          year_month="${VERSION%.*}"
+          sequence_and_kind="${VERSION##*.}"
+          sequence="${sequence_and_kind%%-*}"
+          requested_period="${year_month/.}"
+          latest_period=0
+          latest_sequence=0
+          while IFS= read -r tag; do
+            existing="${tag#v}"
+            [[ "$existing" =~ ^([0-9]{4})\.(0[1-9]|1[0-2])\.([1-9][0-9]*)-(regular|hotfix|security)$ ]] || continue
+            period="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+            existing_sequence="${BASH_REMATCH[3]}"
+            if (( period > latest_period || (period == latest_period && existing_sequence > latest_sequence) )); then
+              latest_period="$period"
+              latest_sequence="$existing_sequence"
+            fi
+          done < <(git tag --list 'v*')
+          if (( requested_period < latest_period )); then
+            echo "Release ID period $year_month precedes the current release period ${latest_period:0:4}.${latest_period:4:2}" >&2
+            exit 1
+          fi
+          expected=1
+          (( requested_period == latest_period )) && expected=$((latest_sequence + 1))
+          if [ "$sequence" -ne "$expected" ]; then
+            echo "Release ID sequence must be $expected for $year_month; got $sequence" >&2
             exit 1
           fi
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
@@ -169,7 +190,6 @@ jobs:
           TAG: ${{ steps.release.outputs.tag }}
           CHANNEL: ${{ inputs.channel }}
           GENERATED_COMMIT: ${{ steps.generated.outputs.generated_commit }}
-          REPLACE: ${{ inputs.replace_existing_release }}
           RELEASE_SIGNING_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_PASSPHRASE }}
         run: |
           remote_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
@@ -177,12 +197,10 @@ jobs:
           tag_exists=false
           gh release view "$TAG" >/dev/null 2>&1 && release_exists=true
           git ls-remote --exit-code --tags "$remote_url" "refs/tags/$TAG" >/dev/null 2>&1 && tag_exists=true
-          if { [ "$release_exists" = true ] || [ "$tag_exists" = true ]; } && [ "$REPLACE" != true ]; then
-            echo "$TAG already exists; rerun with explicit replacement enabled" >&2
+          if [ "$release_exists" = true ] || [ "$tag_exists" = true ]; then
+            echo "$TAG already exists; release IDs are immutable" >&2
             exit 1
           fi
-          [ "$release_exists" = false ] || gh release delete "$TAG" --yes
-          [ "$tag_exists" = false ] || git push --quiet "$remote_url" ":refs/tags/$TAG"
           git fetch "$remote_url" "refs/heads/$CHANNEL" --depth=1
           git cat-file -e "$GENERATED_COMMIT^{commit}"
           git verify-commit "$GENERATED_COMMIT"
@@ -191,7 +209,7 @@ jobs:
           git push --quiet "$remote_url" "refs/tags/$TAG:refs/tags/$TAG"
           tar -czf "$RUNNER_TEMP/$TAG.tar.gz" -C ".generated/repo/$CHANNEL" .
           release_args=(--verify-tag --generate-notes)
-          if [ "$CHANNEL" = pre-release ]; then
+          if [ "$CHANNEL" = canary ] || [ "$CHANNEL" = beta ]; then
             release_args+=(--prerelease --latest=false)
           else
             release_args+=(--prerelease=false --latest)

@@ -49,9 +49,9 @@ class PublicationBuilderTests(unittest.TestCase):
                 "--config",
                 str(self.config),
                 "--channel",
-                "release",
+                "stable",
                 "--version",
-                "1.0.0",
+                "2026.01.1-regular",
                 "--source-commit",
                 SHA,
                 "--generated-at",
@@ -70,7 +70,7 @@ class PublicationBuilderTests(unittest.TestCase):
         self.assertFalse((self.output / "docs").exists())
         manifest = json.loads((self.output / ".github" / "publication.json").read_text())
         self.assertEqual(manifest["sourceCommit"], SHA)
-        self.assertEqual(manifest["channel"], "release")
+        self.assertEqual(manifest["channel"], "stable")
 
     def test_disabled_publication_fails_closed(self) -> None:
         self.write_config("enabled: false\ninclude: []\nrequired: []\nexclude: []\n")
@@ -101,12 +101,12 @@ class PublicationBuilderTests(unittest.TestCase):
             encoding="utf-8",
         )
         (self.source / "content" / "repo" / "shared").mkdir(parents=True)
-        (self.source / "content" / "repo" / "release").mkdir(parents=True)
+        (self.source / "content" / "repo" / "stable").mkdir(parents=True)
         (self.source / "content" / "repo" / "shared" / "repository.toml").write_text(
             '[title.values]\nen-US = "Published README"\nja-JP = "公開 README"\n',
             encoding="utf-8",
         )
-        (self.source / "content" / "repo" / "shared" / "README.md").write_text(
+        (self.source / "content" / "repo" / "shared" / "README.template.md").write_text(
             "# {{ l10n:repository.title }}\n",
             encoding="utf-8",
         )
