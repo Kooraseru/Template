@@ -9,9 +9,11 @@ on:
         type: choice
         options: [canary, beta, stable]
       version:
-        description: Release ID in YYYY.MM.N-KIND form, without a leading v.
+        description: Authored release to publish.
         required: true
-        type: string
+        type: choice
+        options:
+          - 2026.08.1-regular
 
 permissions:
   contents: read
@@ -37,8 +39,8 @@ jobs:
       - name: Require protected release configuration
         shell: bash
         env:
-          TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+          TOKEN: ${{ secrets.PERSONAL_RELEASE_TOKEN }}
+          SIGNING_KEY: ${{ secrets.PERSONAL_SIGNING_KEY }}
           SIGNING_NAME: ${{ vars.RELEASE_SIGNING_NAME }}
           SIGNING_EMAIL: ${{ vars.RELEASE_SIGNING_EMAIL }}
         run: |
@@ -130,12 +132,12 @@ jobs:
       - name: Configure release signing
         shell: bash
         env:
-          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
-          RELEASE_SIGNING_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_PASSPHRASE }}
+          PERSONAL_SIGNING_KEY: ${{ secrets.PERSONAL_SIGNING_KEY }}
+          PERSONAL_SIGNING_PASSPHRASE: ${{ secrets.PERSONAL_SIGNING_PASSPHRASE }}
           RELEASE_SIGNING_NAME: ${{ vars.RELEASE_SIGNING_NAME }}
           RELEASE_SIGNING_EMAIL: ${{ vars.RELEASE_SIGNING_EMAIL }}
         run: |
-          printf '%s' "$RELEASE_SIGNING_KEY" | gpg --batch --import
+          printf '%s' "$PERSONAL_SIGNING_KEY" | gpg --batch --import
           fingerprint="$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" { print $10; exit }')"
           if [ -z "$fingerprint" ]; then
             echo "Imported release key has no secret-key fingerprint" >&2
@@ -143,7 +145,11 @@ jobs:
           fi
           wrapper="$RUNNER_TEMP/gpg-wrapper"
           # shellcheck disable=SC2016 # Preserve variables for the generated wrapper.
-          printf '%s\n' '#!/usr/bin/env bash' 'exec gpg --batch --yes --pinentry-mode loopback --passphrase "$RELEASE_SIGNING_PASSPHRASE" "$@"' > "$wrapper"
+          printf '%s\n' \
+            '#!/usr/bin/env bash' \
+            'args=(--batch --yes --pinentry-mode loopback)' \
+            'if [ -n "${PERSONAL_SIGNING_PASSPHRASE:-}" ]; then args+=(--passphrase "$PERSONAL_SIGNING_PASSPHRASE"); fi' \
+            'exec gpg "${args[@]}" "$@"' > "$wrapper"
           chmod 700 "$wrapper"
           git config --global user.name "$RELEASE_SIGNING_NAME"
           git config --global user.email "$RELEASE_SIGNING_EMAIL"
@@ -167,6 +173,17 @@ jobs:
             --version "$VERSION" \
             --source-commit "$SOURCE_COMMIT"
 
+      - name: Require authored release record
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          release_record="content/releases/${VERSION}.release.md"
+          if [ ! -f "$release_record" ]; then
+            echo "Missing authored release record: $release_record" >&2
+            exit 1
+          fi
+
       - name: Publish generated branch
         id: generated
         shell: bash
@@ -174,8 +191,8 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
           VERSION: ${{ inputs.version }}
           SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
-          TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          RELEASE_SIGNING_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_PASSPHRASE }}
+          TOKEN: ${{ secrets.PERSONAL_RELEASE_TOKEN }}
+          PERSONAL_SIGNING_PASSPHRASE: ${{ secrets.PERSONAL_SIGNING_PASSPHRASE }}
         run: |
           remote_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           bash .github/scripts/publish-generated-branch.sh \
@@ -185,12 +202,13 @@ jobs:
       - name: Create signed tag and GitHub Release
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.PERSONAL_RELEASE_TOKEN }}
+          TOKEN: ${{ secrets.PERSONAL_RELEASE_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
           CHANNEL: ${{ inputs.channel }}
           GENERATED_COMMIT: ${{ steps.generated.outputs.generated_commit }}
-          RELEASE_SIGNING_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_PASSPHRASE }}
+          VERSION: ${{ inputs.version }}
+          PERSONAL_SIGNING_PASSPHRASE: ${{ secrets.PERSONAL_SIGNING_PASSPHRASE }}
         run: |
           remote_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           release_exists=false
@@ -208,7 +226,9 @@ jobs:
           git verify-tag "$TAG"
           git push --quiet "$remote_url" "refs/tags/$TAG:refs/tags/$TAG"
           tar -czf "$RUNNER_TEMP/$TAG.tar.gz" -C ".generated/repo/$CHANNEL" .
-          release_args=(--verify-tag --generate-notes)
+          release_record="content/releases/${VERSION}.release.md"
+          release_notes="$(<"$release_record")"
+          release_args=(--verify-tag --generate-notes --notes "$release_notes" --title "$VERSION")
           if [ "$CHANNEL" = canary ] || [ "$CHANNEL" = beta ]; then
             release_args+=(--prerelease --latest=false)
           else

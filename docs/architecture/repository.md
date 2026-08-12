@@ -8,6 +8,7 @@ source
 ├── docs/                 project rules and documentation
 ├── TRANSLATORS.md        English translation workflow
 ├── content/              assets plus colocated templates and translation catalogs
+│   └── releases/         source-only authored GitHub Release records
 ├── src/ and tests/       project-owned implementation surfaces
 ├── .github/              contributor policy and GitHub automation
 ├── .vscode/              shared editor and portable tool templates
@@ -57,6 +58,16 @@ localizable Pages layouts. `content/repo/shared/` owns repository content common
 to all publication channels. Channel directories layer overrides and additions
 over `shared/`; do not duplicate shared content between them. Assets are grouped
 by their durable purpose.
+
+`content/releases/` owns source-only GitHub Release records. Its `README.md`
+defines their required structure. Each record uses
+`YYYY.MM.N-KIND.release.md`;
+the suffix distinguishes structured release input from ordinary Markdown. The
+first heading matches the filename's release ID, and the record provides
+non-empty Summary, Notable Changes, Issues Addressed, Compatibility, and
+Verification sections. Publication prepends the authored record to GitHub's
+generated release notes. Release records do not enter generated publication
+branches.
 
 The root source `README.md`, `.github/CONTRIBUTING.md`, `.github/LICENSE`, and
 other canonical control files are English-only. The root README explains the
@@ -123,6 +134,8 @@ or generator and regenerate it.
 Generated publication branches contain `.github/publication.json`, recording
 the channel, version, immutable source commit, and generation time. They exclude
 the authored `docs/` tree and retain only `content/assets/` beneath `content/`.
+They include `src/` so the generated branch and attached release archive expose
+the project source intended for users.
 The publication builder renders English repository content to root `README.md`
 and uses generated `docs/` only for translated repository READMEs. The canonical
 license remains available at `.github/LICENSE`.

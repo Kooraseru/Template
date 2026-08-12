@@ -13,6 +13,16 @@ ROOT = Path(__file__).resolve().parents[2]
 GITHUB = ROOT / ".github"
 FORBIDDEN = re.compile(r"\b(?:Arbor|Glyph|Roblox|Luau)\b", re.IGNORECASE)
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
+RELEASE_RECORD = re.compile(
+    r"^(\d{4}\.(?:0[1-9]|1[0-2])\.[1-9]\d*-(?:regular|hotfix|security))\.release\.md$"
+)
+RELEASE_SECTIONS = (
+    "Summary",
+    "Notable Changes",
+    "Issues Addressed",
+    "Compatibility",
+    "Verification",
+)
 
 
 def validate_python() -> list[str]:
@@ -92,9 +102,12 @@ def validate_repository_boundaries() -> list[str]:
     errors: list[str] = []
     required = [
         ROOT / "README.md",
+        ROOT / "src" / ".gitkeep",
         ROOT / "TRANSLATORS.md",
         GITHUB / "LICENSE",
         ROOT / "content" / "locales.toml",
+        ROOT / "content" / "releases" / "README.md",
+        ROOT / "content" / "releases" / "2026.08.1-regular.release.md",
         ROOT / "content" / "pages" / "README.md",
         ROOT / "content" / "pages" / "documentation.toml",
         ROOT / "content" / "assets" / "branding" / "Billboard.svg",
@@ -160,6 +173,59 @@ def validate_repository_boundaries() -> list[str]:
     return errors
 
 
+def validate_release_records() -> list[str]:
+    errors: list[str] = []
+    releases = ROOT / "content" / "releases"
+    if not releases.is_dir():
+        return errors
+    for path in sorted(releases.iterdir()):
+        if path.name == "README.md":
+            continue
+        if not path.is_file():
+            errors.append(f"{path.relative_to(ROOT)}: release entries must be files")
+            continue
+        match = RELEASE_RECORD.fullmatch(path.name)
+        if not match:
+            errors.append(
+                f"{path.relative_to(ROOT)}: release records must use YYYY.MM.N-KIND.release.md"
+            )
+            continue
+        release_id = match.group(1)
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        if not lines or lines[0] != f"# {release_id}":
+            errors.append(f"{path.relative_to(ROOT)}: first heading must be # {release_id}")
+        headings = list(re.finditer(r"^## ([^\n]+)\n", text, re.MULTILINE))
+        names = [heading.group(1) for heading in headings]
+        if names != list(RELEASE_SECTIONS):
+            errors.append(
+                f"{path.relative_to(ROOT)}: required sections are {', '.join(RELEASE_SECTIONS)} in order"
+            )
+            continue
+        for index, heading in enumerate(headings):
+            end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+            if not text[heading.end():end].strip():
+                errors.append(f"{path.relative_to(ROOT)}: {heading.group(1)} must not be empty")
+
+    publish = yaml_data(GITHUB / "workflows" / "publish.yml")
+    if isinstance(publish, dict):
+        dispatch = publish.get(True, {}).get("workflow_dispatch", {})
+        version = dispatch.get("inputs", {}).get("version", {}) if isinstance(dispatch, dict) else {}
+        options = version.get("options") if isinstance(version, dict) else None
+        if not isinstance(options, list) or not options or not all(isinstance(item, str) for item in options):
+            errors.append(".github/workflows/publish.yml: version must define non-empty choice options")
+        else:
+            expected = {
+                path.name.removesuffix(".release.md")
+                for path in releases.glob("*.release.md")
+            }
+            if set(options) != expected or len(options) != len(expected):
+                errors.append(
+                    ".github/workflows/publish.yml: version choices must exactly match content/releases/*.release.md"
+                )
+    return errors
+
+
 def validate_local_links() -> list[str]:
     errors: list[str] = []
     link_pattern = re.compile(r"\[[^]]*\]\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]+)?\)")
@@ -197,6 +263,7 @@ def main() -> None:
         + validate_issue_forms()
         + validate_workflow_security()
         + validate_repository_boundaries()
+        + validate_release_records()
         + validate_local_links()
         + validate_residue()
     )
