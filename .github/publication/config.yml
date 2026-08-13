@@ -8,6 +8,7 @@ include:
   - .gitignore
   - .vscode
   - CODE_OF_CONDUCT.md
+  - CITATION.cff
   - CONTRIBUTING.md
   - LICENSE
   - SECURITY.md
@@ -39,6 +40,7 @@ required:
   - .vscode/launch.json
   - .vscode/tasks.json
   - CODE_OF_CONDUCT.md
+  - CITATION.cff
   - CONTRIBUTING.md
   - LICENSE
   - SECURITY.md

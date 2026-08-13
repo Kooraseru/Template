@@ -157,6 +157,10 @@ workflows requiring default-branch discovery or manual dispatch. `canary` and
 `beta` receive no authored `.github` files. `CODEOWNERS` remains on `source`
 because contributor pull requests use `source` as their base branch.
 
+Root `CITATION.cff` publishes in every channel and reaches default `stable`,
+allowing GitHub to expose repository citation metadata from its required root
+location.
+
 ## Automation And Validation
 
 Add a dependency only for an implemented capability with a responsible

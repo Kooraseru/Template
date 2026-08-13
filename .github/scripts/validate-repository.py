@@ -28,6 +28,7 @@ PUBLICATION_COMMON = {
     ".gitignore",
     ".vscode",
     "CODE_OF_CONDUCT.md",
+    "CITATION.cff",
     "CONTRIBUTING.md",
     "LICENSE",
     "SECURITY.md",
@@ -133,6 +134,7 @@ def validate_repository_boundaries() -> list[str]:
         ROOT / "src" / ".gitkeep",
         GITHUB / "TRANSLATORS.md",
         ROOT / "CODE_OF_CONDUCT.md",
+        ROOT / "CITATION.cff",
         ROOT / "CONTRIBUTING.md",
         ROOT / "LICENSE",
         ROOT / "SECURITY.md",
@@ -229,6 +231,28 @@ def validate_publication_layout() -> list[str]:
     return errors
 
 
+def validate_citation() -> list[str]:
+    path = ROOT / "CITATION.cff"
+    data = yaml_data(path)
+    if not isinstance(data, dict):
+        return ["CITATION.cff: citation metadata must be an object"]
+    required = {"cff-version", "message", "title", "type", "authors", "repository-code", "url"}
+    if set(data) != required:
+        return ["CITATION.cff: citation metadata fields do not match the repository contract"]
+    errors: list[str] = []
+    if data.get("cff-version") != "1.2.0":
+        errors.append("CITATION.cff: cff-version must be 1.2.0")
+    if data.get("type") != "software":
+        errors.append("CITATION.cff: type must be software")
+    authors = data.get("authors")
+    if not isinstance(authors, list) or not authors or not all(isinstance(author, dict) for author in authors):
+        errors.append("CITATION.cff: authors must be a non-empty list of objects")
+    for field in ("message", "title", "repository-code", "url"):
+        if not isinstance(data.get(field), str) or not data[field].strip():
+            errors.append(f"CITATION.cff: {field} must be a non-empty string")
+    return errors
+
+
 def validate_release_records() -> list[str]:
     errors: list[str] = []
     releases = ROOT / "content" / "releases"
@@ -320,6 +344,7 @@ def main() -> None:
         + validate_workflow_security()
         + validate_repository_boundaries()
         + validate_publication_layout()
+        + validate_citation()
         + validate_release_records()
         + validate_local_links()
         + validate_residue()
