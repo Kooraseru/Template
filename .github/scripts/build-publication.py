@@ -112,10 +112,11 @@ def materialize_localization(source_root: Path, destination: Path, channel: str)
     shared = repository_content / "shared"
     channel_content = repository_content / channel
     renderer = Path(__file__).with_name("render-localization.py")
-    if not destination.joinpath("README.md").is_file():
+    localization_inputs = (manifest, shared, channel_content)
+    if not any(path.exists() for path in localization_inputs):
         return
     if not manifest.is_file() or not shared.is_dir() or not channel_content.is_dir() or not renderer.is_file():
-        raise SystemExit("Published README.md requires localization, shared/channel repository content, and renderer")
+        raise SystemExit("Published repository content requires localization, shared/channel templates, and renderer")
 
     with manifest.open("rb") as handle:
         locale_data = tomllib.load(handle)
@@ -152,15 +153,15 @@ def materialize_localization(source_root: Path, destination: Path, channel: str)
         rendered_readme = default_root / "README.md"
         if not rendered_readme.is_file():
             raise SystemExit(f"Localization output is missing {DEFAULT_LOCALE}/README.md")
-        shutil.copy2(rendered_readme, destination / "README.md")
+        localized_docs = destination / "docs"
+        localized_docs.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(rendered_readme, localized_docs / "README.md")
 
         for code, metadata in locales.items():
             if code == DEFAULT_LOCALE or not isinstance(metadata, dict) or metadata.get("published", True) is not True:
                 continue
             rendered_locale_readme = output / code / "README.md"
             if rendered_locale_readme.is_file():
-                localized_docs = destination / "docs"
-                localized_docs.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(rendered_locale_readme, localized_docs / f"README.{code}.md")
 
 

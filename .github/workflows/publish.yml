@@ -13,6 +13,7 @@ on:
         required: true
         type: choice
         options:
+          - 2026.08.2-hotfix
           - 2026.08.1-regular
 
 permissions:
@@ -31,6 +32,10 @@ jobs:
       - name: Require source workflow ref
         shell: bash
         run: |
+          if [ "${ACT:-}" = true ]; then
+            echo "Local workflow run: using the current workspace."
+            exit 0
+          fi
           if [ "$GITHUB_REF_NAME" != "source" ]; then
             echo "Publish must be dispatched from source, got $GITHUB_REF_NAME" >&2
             exit 1
@@ -44,6 +49,10 @@ jobs:
           SIGNING_NAME: ${{ vars.RELEASE_SIGNING_NAME }}
           SIGNING_EMAIL: ${{ vars.RELEASE_SIGNING_EMAIL }}
         run: |
+          if [ "${ACT:-}" = true ]; then
+            echo "Local workflow run: protected release configuration is not required."
+            exit 0
+          fi
           for name in TOKEN SIGNING_KEY SIGNING_NAME SIGNING_EMAIL; do
             if [ -z "${!name:-}" ]; then
               echo "Missing protected release value: $name" >&2
@@ -52,6 +61,7 @@ jobs:
           done
 
       - name: Checkout source
+        if: ${{ env.ACT != 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: source
@@ -63,6 +73,14 @@ jobs:
         id: source
         shell: bash
         run: |
+          if [ "${ACT:-}" = true ]; then
+            source_commit="$(git rev-parse HEAD)"
+            if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+              echo "Local workflow run: building the current dirty workspace with HEAD provenance $source_commit."
+            fi
+            echo "commit=$source_commit" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git fetch origin source:refs/remotes/origin/source --no-tags
           source_commit="$(git rev-parse HEAD)"
           if ! git merge-base --is-ancestor "$source_commit" origin/source; then
@@ -137,6 +155,10 @@ jobs:
           RELEASE_SIGNING_NAME: ${{ vars.RELEASE_SIGNING_NAME }}
           RELEASE_SIGNING_EMAIL: ${{ vars.RELEASE_SIGNING_EMAIL }}
         run: |
+          if [ "${ACT:-}" = true ]; then
+            echo "Local workflow run: GPG signing setup is unavailable and was skipped."
+            exit 0
+          fi
           printf '%s' "$PERSONAL_SIGNING_KEY" | gpg --batch --import
           fingerprint="$(gpg --batch --with-colons --list-secret-keys | awk -F: '$1 == "fpr" { print $10; exit }')"
           if [ -z "$fingerprint" ]; then
@@ -194,6 +216,11 @@ jobs:
           TOKEN: ${{ secrets.PERSONAL_RELEASE_TOKEN }}
           PERSONAL_SIGNING_PASSPHRASE: ${{ secrets.PERSONAL_SIGNING_PASSPHRASE }}
         run: |
+          if [ "${ACT:-}" = true ]; then
+            echo "Local workflow run: publishing the generated branch is unavailable and was skipped."
+            echo "generated_commit=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           remote_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           bash .github/scripts/publish-generated-branch.sh \
             ".generated/repo/$CHANNEL" "$remote_url" "$CHANNEL" "$VERSION" \
@@ -210,6 +237,10 @@ jobs:
           VERSION: ${{ inputs.version }}
           PERSONAL_SIGNING_PASSPHRASE: ${{ secrets.PERSONAL_SIGNING_PASSPHRASE }}
         run: |
+          if [ "${ACT:-}" = true ]; then
+            echo "Local workflow run: signed tag and GitHub Release creation are unavailable and were skipped."
+            exit 0
+          fi
           remote_url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           release_exists=false
           tag_exists=false
@@ -248,4 +279,9 @@ jobs:
       - name: Dispatch source-owned Pages workflow
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run pages.yml --ref source
+        run: |
+          if [ "${ACT:-}" = true ]; then
+            echo "Local workflow run: Pages workflow dispatch is unavailable and was skipped."
+            exit 0
+          fi
+          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref source

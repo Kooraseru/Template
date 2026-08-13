@@ -110,10 +110,11 @@ class PublicationBuilderTests(unittest.TestCase):
             "# {{ l10n:repository.title }}\n",
             encoding="utf-8",
         )
-        self.write_config("enabled: true\ninclude: [README.md]\nrequired: [README.md]\nexclude: []\n")
+        self.write_config("enabled: true\ninclude: [public]\nrequired: [docs/README.md]\nexclude: []\n")
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.output / "README.md").read_text(), "# Published README\n")
+        self.assertFalse((self.output / "README.md").exists())
+        self.assertEqual((self.output / "docs" / "README.md").read_text(), "# Published README\n")
         self.assertEqual((self.output / "docs" / "README.ja-JP.md").read_text(), "# 公開 README\n")
 
     def test_shared_vscode_files_publish_without_private_settings(self) -> None:

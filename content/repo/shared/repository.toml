@@ -3,7 +3,7 @@ en-US = "A reusable foundation for source, automation, documentation, and public
 ja-JP = "ソース、オートメーション、ドキュメント、公開のための再利用可能な基盤。"
 
 [hero.branding_path.values]
-en-US = "content/assets/branding/Billboard.svg"
+en-US = "../content/assets/branding/Billboard.svg"
 ja-JP = "../content/assets/branding/Billboard.svg"
 
 [navigation.features.values]
@@ -26,12 +26,12 @@ ja-JP = "プロジェクト"
 en-US = '''<table>
   <tr>
     <td align="center"><a href="README.md">English</a></td>
-    <td align="center"><a href="docs/README.ja-JP.md">日本語</a></td>
+    <td align="center"><a href="README.ja-JP.md">日本語</a></td>
   </tr>
 </table>'''
 ja-JP = '''<table>
   <tr>
-    <td align="center"><a href="../README.md">English</a></td>
+    <td align="center"><a href="README.md">English</a></td>
     <td align="center"><a href="README.ja-JP.md">日本語</a></td>
   </tr>
 </table>'''
@@ -62,7 +62,7 @@ ja-JP = "クイックスタート"
 en-US = '''
 1. Create a repository from this template using the maintainer-approved template-copy workflow.
 2. Replace the Template name, description, wordmark, links, and project-specific guidance.
-3. Read the [published documentation](https://kooraseru.github.io/Template/) and [contribution guide](.github/CONTRIBUTING.md).
+3. Read the [published documentation](https://kooraseru.github.io/Template/) and [contribution guide](../.github/CONTRIBUTING.md).
 4. Add only the source domains, tests, dependencies, and public content the project uses.
 5. Configure publication, GitHub Pages, environments, signing, and CodeQL only when the project needs them.
 6. Run the repository validation tasks before opening a pull request against `source`.
@@ -85,8 +85,8 @@ ja-JP = "ドキュメント"
 [sections.documentation.body.values]
 en-US = '''
 <table>
-  <tr><td><a href=".github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a></td><td>Defines the contributor workflow.</td></tr>
-  <tr><td><a href=".github/SECURITY.md"><code>.github/SECURITY.md</code></a></td><td>Defines private vulnerability reporting.</td></tr>
+  <tr><td><a href="../.github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a></td><td>Defines the contributor workflow.</td></tr>
+  <tr><td><a href="../.github/SECURITY.md"><code>.github/SECURITY.md</code></a></td><td>Defines private vulnerability reporting.</td></tr>
   <tr><td><a href="https://kooraseru.github.io/Template/">Published documentation</a></td><td>Provides the generated documentation site.</td></tr>
 </table>'''
 ja-JP = '''

@@ -3,15 +3,12 @@
   "tasks": [
     {
       "label": "Validate: Full Repository",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Validate: Repository Contracts",
-        "Test: Localization",
-        "Test: Publication Payload",
-        "Test: Publication Manifests",
-        "Validate: Shell Tooling",
-        "Validate: GitHub Actions",
-        "Build: MkDocs Site"
+      "type": "process",
+      "command": "act",
+      "args": [
+        "push",
+        "--workflows",
+        ".github/workflows/validate.yml"
       ],
       "problemMatcher": [],
       "group": {
@@ -108,13 +105,19 @@
       "group": "build"
     },
     {
-      "label": "Build: Local Publications",
+      "label": "Publish: Local Workflow",
       "type": "process",
-      "command": "${command:python.interpreterPath}",
+      "command": "act",
       "args": [
-        ".github/scripts/build-local-publications.py",
-        "--version",
-        "2026.01.1-regular"
+        "workflow_dispatch",
+        "--workflows",
+        ".github/workflows/publish.yml",
+        "--job",
+        "publish",
+        "--input",
+        "channel=stable",
+        "--input",
+        "version=2026.08.2-hotfix"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

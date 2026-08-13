@@ -132,7 +132,6 @@ def validate_repository_boundaries() -> list[str]:
         GITHUB / "mkdocs.yml",
         GITHUB / "scripts" / "render-localization.py",
         GITHUB / "scripts" / "test-localization.py",
-        GITHUB / "scripts" / "build-local-publications.py",
     ]
     for path in required:
         if not path.is_file():

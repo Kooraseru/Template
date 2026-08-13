@@ -3,7 +3,8 @@
 This is the canonical `source` branch for the reusable repository template.
 Contributors change source, documentation, localization, automation, and
 publication tooling here. Automation generates `canary`, `beta`, and `stable`
-channel branches from an exact source commit or local snapshot.
+channel branches from an exact source commit. Local workflow runs build the
+current workspace without publishing remote state.
 
 ## Start Here
 

@@ -1,7 +1,14 @@
 # Development And Validation
 
-Repository validation is owned by `.github/workflows/validate.yml`. Local
-checks run the same scripts used by GitHub Actions:
+Repository validation is owned by `.github/workflows/validate.yml`. Run that
+exact workflow locally with [`act`](https://nektosact.com/):
+
+```bash
+act push --workflows .github/workflows/validate.yml
+```
+
+The workflow invokes these component commands, which remain useful for focused
+diagnosis:
 
 ```bash
 python .github/scripts/validate-repository.py
@@ -13,18 +20,23 @@ bash -n .github/scripts/publish-generated-branch.sh
 bash .github/scripts/run-actionlint.sh
 ```
 
-Build both local publication payloads with:
+Run the publication workflow locally with [`act`](https://nektosact.com/):
 
 ```bash
-python .github/scripts/build-local-publications.py --version 2026.01.1-regular
+act workflow_dispatch \
+  --workflows .github/workflows/publish.yml \
+  --job publish \
+  --input channel=stable \
+  --input version=2026.08.2-hotfix
 ```
 
-The command requires the `source` branch. A clean worktree records exact HEAD.
-A worktree with pending changes is captured in a temporary Git snapshot commit
-without modifying the index, current branch, or source history. It writes
-`.generated/repo/canary/`, `.generated/repo/beta/`, and
-`.generated/repo/stable/` without modifying
-branch refs. Remote publication continues to require committed canonical source.
+This executes `.github/workflows/publish.yml`, not a separate local publication
+procedure. Select the desired channel and an authored release ID. The workflow
+runs the same validation and payload-build steps locally. Steps requiring a
+protected GitHub environment, signing credentials, remote branch mutation,
+GitHub Release creation, or workflow dispatch report that they are unavailable
+and skip cleanly. Local runs build the current workspace and record HEAD as
+provenance; GitHub publication continues to require committed canonical source.
 
 The validation workflow checks GitHub configuration, issue form structure,
 workflow security invariants, local Markdown links, project residue, and

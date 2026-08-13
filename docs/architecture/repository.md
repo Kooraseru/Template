@@ -46,9 +46,9 @@ content/
 ```
 
 `README.template.md` is authored Markdown whose `.template` segment is removed
-during rendering, producing the publication root `README.md`. This convention
-keeps the source template from presenting itself as the description of the
-`shared/` directory.
+during rendering, producing `docs/README.md` in publication payloads. This
+convention keeps the source template from presenting itself as the description
+of the `shared/` directory.
 
 `content/locales.toml` is the single locale registry and owns locale IDs,
 publication state, and fallback order. `TRANSLATORS.md` explains the contributor
@@ -136,9 +136,11 @@ the channel, version, immutable source commit, and generation time. They exclude
 the authored `docs/` tree and retain only `content/assets/` beneath `content/`.
 They include `src/` so the generated branch and attached release archive expose
 the project source intended for users.
-The publication builder renders English repository content to root `README.md`
-and uses generated `docs/` only for translated repository READMEs. The canonical
-license remains available at `.github/LICENSE`.
+The publication builder does not copy the authored source-root `README.md`.
+It renders English repository content to `docs/README.md` and additional
+languages to `docs/README.<locale>.md`; GitHub uses the English file as the
+repository landing README when the root has none. The canonical license remains
+available at `.github/LICENSE`.
 
 ## Automation And Validation
 
