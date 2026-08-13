@@ -1,0 +1,32 @@
+# This template publishes a sanitized, reusable repository payload. Projects
+# should narrow or extend the whitelist as their public surfaces change.
+enabled: true
+
+# Paths are relative to the source root. Directories are copied recursively.
+include:
+  - .gitattributes
+  - .gitignore
+  - .github
+  - .vscode
+  - content/assets
+  - src
+required:
+  - .github/publication/config.yml
+  - .github/workflows/validate.yml
+  - .vscode/launch.json
+  - .vscode/tasks.json
+  - .github/CONTRIBUTING.md
+  - .github/LICENSE
+  - docs/README.md
+  - content/assets/branding/Billboard.svg
+  - src
+
+# These local/source-only paths can never enter a generated branch.
+exclude:
+  - .git
+  - .generated
+  - .agents
+  - .workspace
+  - .venv
+  - AGENTS.md
+  - site
