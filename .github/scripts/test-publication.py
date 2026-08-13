@@ -29,6 +29,7 @@ class PublicationBuilderTests(unittest.TestCase):
         (self.source / ".vscode").mkdir()
         (self.source / ".vscode" / "launch.json").write_text("{}\n", encoding="utf-8")
         (self.source / ".vscode" / "settings.json").write_text("{}\n", encoding="utf-8")
+        (self.source / "LICENSE").write_text("Test license\n", encoding="utf-8")
         self.config = self.root / "config.yml"
 
     def tearDown(self) -> None:
@@ -37,7 +38,7 @@ class PublicationBuilderTests(unittest.TestCase):
     def write_config(self, text: str) -> None:
         self.config.write_text(text, encoding="utf-8")
 
-    def run_builder(self) -> subprocess.CompletedProcess[str]:
+    def run_builder(self, channel: str = "stable") -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [
                 sys.executable,
@@ -49,7 +50,7 @@ class PublicationBuilderTests(unittest.TestCase):
                 "--config",
                 str(self.config),
                 "--channel",
-                "stable",
+                channel,
                 "--version",
                 "2026.01.1-regular",
                 "--source-commit",
@@ -63,7 +64,10 @@ class PublicationBuilderTests(unittest.TestCase):
         )
 
     def test_builds_whitelisted_payload_and_manifest(self) -> None:
-        self.write_config("enabled: true\ninclude: [public]\nrequired: [public/artifact.txt]\nexclude: []\n")
+        self.write_config(
+            "enabled: true\ninclude: [public]\nchannel_include: {canary: [], beta: [], stable: []}\n"
+            "required: [public/artifact.txt]\nexclude: []\n"
+        )
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((self.output / "public" / "artifact.txt").read_text(), "artifact\n")
@@ -73,7 +77,7 @@ class PublicationBuilderTests(unittest.TestCase):
         self.assertEqual(manifest["channel"], "stable")
 
     def test_disabled_publication_fails_closed(self) -> None:
-        self.write_config("enabled: false\ninclude: []\nrequired: []\nexclude: []\n")
+        self.write_config("enabled: false\ninclude: []\nchannel_include: {canary: [], beta: [], stable: []}\nrequired: []\nexclude: []\n")
         result = self.run_builder()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("disabled", result.stderr)
@@ -81,13 +85,13 @@ class PublicationBuilderTests(unittest.TestCase):
     def test_private_and_wrong_generated_roots_cannot_be_included(self) -> None:
         for path in (".agents", ".workspace", "site"):
             with self.subTest(path=path):
-                self.write_config(f"enabled: true\ninclude: [{path}]\nrequired: [{path}]\nexclude: []\n")
+                self.write_config(f"enabled: true\ninclude: [{path}]\nchannel_include: {{canary: [], beta: [], stable: []}}\nrequired: [{path}]\nexclude: []\n")
                 result = self.run_builder()
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("cannot be published", result.stderr)
 
     def test_public_docs_can_be_included(self) -> None:
-        self.write_config("enabled: true\ninclude: [docs]\nrequired: [docs/public.md]\nexclude: []\n")
+        self.write_config("enabled: true\ninclude: [docs]\nchannel_include: {canary: [], beta: [], stable: []}\nrequired: [docs/public.md]\nexclude: []\n")
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((self.output / "docs" / "public.md").read_text(), "public\n")
@@ -110,7 +114,7 @@ class PublicationBuilderTests(unittest.TestCase):
             "# {{ l10n:repository.title }}\n",
             encoding="utf-8",
         )
-        self.write_config("enabled: true\ninclude: [public]\nrequired: [docs/README.md]\nexclude: []\n")
+        self.write_config("enabled: true\ninclude: [public]\nchannel_include: {canary: [], beta: [], stable: []}\nrequired: [docs/README.md]\nexclude: []\n")
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((self.output / "README.md").exists())
@@ -118,16 +122,32 @@ class PublicationBuilderTests(unittest.TestCase):
         self.assertEqual((self.output / "docs" / "README.ja-JP.md").read_text(), "# 公開 README\n")
 
     def test_shared_vscode_files_publish_without_private_settings(self) -> None:
-        self.write_config("enabled: true\ninclude: [.vscode]\nrequired: [.vscode/launch.json]\nexclude: []\n")
+        self.write_config("enabled: true\ninclude: [.vscode]\nchannel_include: {canary: [], beta: [], stable: []}\nrequired: [.vscode/launch.json]\nexclude: []\n")
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.output / ".vscode" / "launch.json").is_file())
         self.assertFalse((self.output / ".vscode" / "settings.json").exists())
 
+    def test_channel_include_adds_default_branch_control_plane_only_when_selected(self) -> None:
+        (self.source / ".github").mkdir()
+        (self.source / ".github" / "FUNDING.yml").write_text("github: [example]\n", encoding="utf-8")
+        self.write_config(
+            "enabled: true\ninclude: [public]\n"
+            "channel_include: {canary: [], beta: [], stable: [.github/FUNDING.yml]}\n"
+            "required: [public/artifact.txt]\nexclude: []\n"
+        )
+        result = self.run_builder()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.output / ".github" / "FUNDING.yml").is_file())
+        result = self.run_builder("canary")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.output / ".github" / "FUNDING.yml").exists())
+
     def test_private_vscode_settings_cannot_be_required(self) -> None:
         self.write_config(
             "enabled: true\n"
             "include: [.vscode]\n"
+            "channel_include: {canary: [], beta: [], stable: []}\n"
             "required: [.vscode/settings.json]\n"
             "exclude: []\n"
         )
@@ -136,13 +156,13 @@ class PublicationBuilderTests(unittest.TestCase):
         self.assertIn("cannot be published", result.stderr)
 
     def test_parent_traversal_is_rejected(self) -> None:
-        self.write_config("enabled: true\ninclude: [../outside]\nrequired: [public/artifact.txt]\nexclude: []\n")
+        self.write_config("enabled: true\ninclude: [../outside]\nchannel_include: {canary: [], beta: [], stable: []}\nrequired: [public/artifact.txt]\nexclude: []\n")
         result = self.run_builder()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Unsafe include path", result.stderr)
 
     def test_missing_required_path_fails(self) -> None:
-        self.write_config("enabled: true\ninclude: [public]\nrequired: [missing.txt]\nexclude: []\n")
+        self.write_config("enabled: true\ninclude: [public]\nchannel_include: {canary: [], beta: [], stable: []}\nrequired: [missing.txt]\nexclude: []\n")
         result = self.run_builder()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("missing required path", result.stderr)

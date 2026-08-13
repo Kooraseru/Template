@@ -62,7 +62,7 @@ ja-JP = "クイックスタート"
 en-US = '''
 1. Create a repository from this template using the maintainer-approved template-copy workflow.
 2. Replace the Template name, description, wordmark, links, and project-specific guidance.
-3. Read the [published documentation](https://kooraseru.github.io/Template/) and [contribution guide](../.github/CONTRIBUTING.md).
+3. Read the [published documentation](https://kooraseru.github.io/Template/) and [contribution guide](../CONTRIBUTING.md).
 4. Add only the source domains, tests, dependencies, and public content the project uses.
 5. Configure publication, GitHub Pages, environments, signing, and CodeQL only when the project needs them.
 6. Run the repository validation tasks before opening a pull request against `source`.
@@ -71,7 +71,7 @@ Publication uses the explicit public-file whitelist in `.github/publication/conf
 ja-JP = '''
 1. メンテナーが承認したテンプレート複製ワークフローを使用して、このテンプレートからリポジトリを作成します。
 2. Template の名前、説明、ワードマーク、リンク、プロジェクト固有のガイダンスを置き換えます。
-3. [公開ドキュメント](https://kooraseru.github.io/Template/)と[コントリビューションガイド](../.github/CONTRIBUTING.md)を確認します。
+3. [公開ドキュメント](https://kooraseru.github.io/Template/)と[コントリビューションガイド](../CONTRIBUTING.md)を確認します。
 4. プロジェクトが使用するソース領域、テスト、依存関係、公開コンテンツのみを追加します。
 5. プロジェクトで必要な場合にのみ、公開、GitHub Pages、環境、署名、CodeQL を設定します。
 6. `source` 向けのプルリクエストを開く前に、リポジトリ検証タスクを実行します。
@@ -85,14 +85,14 @@ ja-JP = "ドキュメント"
 [sections.documentation.body.values]
 en-US = '''
 <table>
-  <tr><td><a href="../.github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a></td><td>Defines the contributor workflow.</td></tr>
-  <tr><td><a href="../.github/SECURITY.md"><code>.github/SECURITY.md</code></a></td><td>Defines private vulnerability reporting.</td></tr>
+  <tr><td><a href="../CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a></td><td>Defines the contributor workflow.</td></tr>
+  <tr><td><a href="../SECURITY.md"><code>SECURITY.md</code></a></td><td>Defines private vulnerability reporting.</td></tr>
   <tr><td><a href="https://kooraseru.github.io/Template/">Published documentation</a></td><td>Provides the generated documentation site.</td></tr>
 </table>'''
 ja-JP = '''
 <table>
-  <tr><td><a href="../.github/CONTRIBUTING.md"><code>.github/CONTRIBUTING.md</code></a></td><td>コントリビューターのワークフローを定義します。</td></tr>
-  <tr><td><a href="../.github/SECURITY.md"><code>.github/SECURITY.md</code></a></td><td>脆弱性を非公開で報告する方法を定義します。</td></tr>
+  <tr><td><a href="../CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a></td><td>コントリビューターのワークフローを定義します。</td></tr>
+  <tr><td><a href="../SECURITY.md"><code>SECURITY.md</code></a></td><td>脆弱性を非公開で報告する方法を定義します。</td></tr>
   <tr><td><a href="https://kooraseru.github.io/Template/">公開ドキュメント</a></td><td>生成されたドキュメントサイトを提供します。</td></tr>
 </table>'''
 

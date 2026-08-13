@@ -74,7 +74,7 @@ rebuild or republish it. Direct edits may be overwritten.
 
 Repository validation is owned by `.github/workflows/validate.yml`. Local checks
 run the same scripts used by GitHub Actions; do not create local-only checks.
-See [`docs/development/validation.md`](../docs/development/validation.md) for the
+See [`docs/development/validation.md`](docs/development/validation.md) for the
 current commands.
 
 ## Review Expectations

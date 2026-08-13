@@ -6,11 +6,12 @@ automation, and generated output.
 ```text
 source
 ├── docs/                 project rules and documentation
-├── TRANSLATORS.md        English translation workflow
+├── LICENSE               canonical license
+├── CONTRIBUTING.md       contributor workflow
 ├── content/              assets plus colocated templates and translation catalogs
 │   └── releases/         source-only authored GitHub Release records
 ├── src/ and tests/       project-owned implementation surfaces
-├── .github/              contributor policy and GitHub automation
+├── .github/              source README, translation guide, metadata, and automation
 ├── .vscode/              shared editor and portable tool templates
 └── .generated/           ignored local output
     ├── site/             MkDocs output
@@ -51,7 +52,7 @@ convention keeps the source template from presenting itself as the description
 of the `shared/` directory.
 
 `content/locales.toml` is the single locale registry and owns locale IDs,
-publication state, and fallback order. `TRANSLATORS.md` explains the contributor
+publication state, and fallback order. `.github/TRANSLATORS.md` explains the contributor
 workflow without duplicating that registry. Translation catalogs live beside
 the templates they describe. `content/pages/` owns
 localizable Pages layouts. `content/repo/shared/` owns repository content common
@@ -69,8 +70,8 @@ Verification sections. Publication prepends the authored record to GitHub's
 generated release notes. Release records do not enter generated publication
 branches.
 
-The root source `README.md`, `.github/CONTRIBUTING.md`, `.github/LICENSE`, and
-other canonical control files are English-only. The root README explains the
+The source `.github/README.md`, root `CONTRIBUTING.md`, root `LICENSE`, and
+other canonical control files are English-only. The source README explains the
 source branch and routes repository roles. Generated repository READMEs are
 separate publication inputs under `content/repo/`.
 
@@ -89,7 +90,7 @@ are invalid.
   <tr><td><code>src/</code></td><td>Project source when the project defines it</td><td>Yes</td></tr>
   <tr><td><code>tests/</code></td><td>Project tests when the project defines them</td><td>Yes</td></tr>
   <tr><td><code>docs/</code></td><td>Project rules and documentation</td><td>Yes</td></tr>
-  <tr><td><code>TRANSLATORS.md</code></td><td>English translation workflow</td><td>Yes</td></tr>
+  <tr><td><code>.github/TRANSLATORS.md</code></td><td>English translation workflow</td><td>Yes</td></tr>
   <tr><td><code>content/</code></td><td>Assets plus colocated Pages and repository templates and catalogs</td><td>Yes</td></tr>
   <tr><td><code>.github/</code></td><td>GitHub policy, intake, validation, and publication automation</td><td>Yes, with maintainer review</td></tr>
   <tr><td><code>.vscode/</code></td><td>Shared editor and portable tool templates</td><td>Yes, except <code>settings.json</code></td></tr>
@@ -136,11 +137,25 @@ the channel, version, immutable source commit, and generation time. They exclude
 the authored `docs/` tree and retain only `content/assets/` beneath `content/`.
 They include `src/` so the generated branch and attached release archive expose
 the project source intended for users.
-The publication builder does not copy the authored source-root `README.md`.
+The publication builder does not copy the authored source `.github/README.md`.
 It renders English repository content to `docs/README.md` and additional
 languages to `docs/README.<locale>.md`; GitHub uses the English file as the
-repository landing README when the root has none. The canonical license remains
-available at `.github/LICENSE`.
+repository landing README when the root has none. Root `LICENSE` publishes
+directly where GitHub license detection and release consumers expect it.
+
+## GitHub Special-File Placement
+
+A valid special filename is insufficient by itself. The file must also occupy
+a GitHub-supported path and, when GitHub treats it as repository-wide
+configuration, exist on the default `stable` branch.
+
+The builder therefore publishes root community and legal files as common user
+payload, while `stable` alone receives the selected `.github` control plane:
+funding, support, discussion/issue/pull-request templates, Dependabot and
+labeler configuration, generated-release-note configuration, and only the
+workflows requiring default-branch discovery or manual dispatch. `canary` and
+`beta` receive no authored `.github` files. `CODEOWNERS` remains on `source`
+because contributor pull requests use `source` as their base branch.
 
 ## Automation And Validation
 
@@ -162,7 +177,7 @@ branches; or add registries and manifests without an active consumer.
 
 Localization is component-oriented. `content/locales.toml` is the sole registry
 for locale IDs, publication state, and explicit fallback order. `en-US` is the
-fixed default and is not configurable registry metadata. `TRANSLATORS.md`
+fixed default and is not configurable registry metadata. `.github/TRANSLATORS.md`
 explains how contributors work with the system without listing the current
 registry. Component TOML catalogs live beside the templates they translate
 under `content/`. Hierarchical keys provide context, and locale values remain

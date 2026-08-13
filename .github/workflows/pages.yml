@@ -5,7 +5,7 @@ on:
   push:
     branches: [source]
     paths:
-      - "TRANSLATORS.md"
+      - ".github/TRANSLATORS.md"
       - "content/locales.toml"
       - "content/pages/**"
       - ".github/mkdocs.yml"

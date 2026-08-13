@@ -22,7 +22,7 @@ Translations live in component TOML catalogs beside the content they affect.
 The catalog filename supplies the first key segment:
 
 ```text
-content/repo/shared/README.md
+content/repo/shared/README.template.md
 content/repo/shared/repository.toml
 ```
 
@@ -52,12 +52,11 @@ region together preserves its structure and meaning.
 Missing translations follow the locale's configured fallback order and
 ultimately use `en-US`. Unknown keys and missing English values fail rendering.
 
-Core control files—including the source `README.md`,
-`.github/CONTRIBUTING.md`, and `.github/LICENSE`—remain English-only and do not use
-localization markers.
+Core control files—including `.github/README.md`, `CONTRIBUTING.md`, and
+`LICENSE`—remain English-only and do not use localization markers.
 
 Generated publication branches retain only `content/assets/` from the authored
-`content/` tree. The English repository output becomes root `README.md`;
+`content/` tree. The English repository output becomes `docs/README.md`;
 additional published translations use `docs/README.<locale>.md`. This generated
 `docs/` directory contains repository README translations, not the authored
 source documentation tree. Pages is structured exclusively by `content/pages/`.

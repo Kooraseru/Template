@@ -23,6 +23,34 @@ RELEASE_SECTIONS = (
     "Compatibility",
     "Verification",
 )
+PUBLICATION_COMMON = {
+    ".gitattributes",
+    ".gitignore",
+    ".vscode",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "SECURITY.md",
+    "content/assets",
+    "src",
+}
+STABLE_CONTROL_PLANE = {
+    ".github/DISCUSSION_TEMPLATE",
+    ".github/ISSUE_TEMPLATE",
+    ".github/PULL_REQUEST_TEMPLATE",
+    ".github/FUNDING.yml",
+    ".github/SUPPORT.md",
+    ".github/dependabot.yml",
+    ".github/labeler.yml",
+    ".github/release.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/greetings.yml",
+    ".github/workflows/labeler.yml",
+    ".github/workflows/pages.yml",
+    ".github/workflows/publish.yml",
+    ".github/workflows/stale.yml",
+    ".github/workflows/validate.yml",
+}
 
 
 def validate_python() -> list[str]:
@@ -101,10 +129,13 @@ def validate_workflow_security() -> list[str]:
 def validate_repository_boundaries() -> list[str]:
     errors: list[str] = []
     required = [
-        ROOT / "README.md",
+        GITHUB / "README.md",
         ROOT / "src" / ".gitkeep",
-        ROOT / "TRANSLATORS.md",
-        GITHUB / "LICENSE",
+        GITHUB / "TRANSLATORS.md",
+        ROOT / "CODE_OF_CONDUCT.md",
+        ROOT / "CONTRIBUTING.md",
+        ROOT / "LICENSE",
+        ROOT / "SECURITY.md",
         ROOT / "content" / "locales.toml",
         ROOT / "content" / "releases" / "README.md",
         ROOT / "content" / "releases" / "2026.08.1-regular.release.md",
@@ -127,8 +158,6 @@ def validate_repository_boundaries() -> list[str]:
         ROOT / ".vscode" / "extensions.json",
         ROOT / ".vscode" / "project.code-snippets",
         ROOT / ".vscode" / "mcp.json",
-        GITHUB / "SECURITY.md",
-        GITHUB / "CONTRIBUTING.md",
         GITHUB / "mkdocs.yml",
         GITHUB / "scripts" / "render-localization.py",
         GITHUB / "scripts" / "test-localization.py",
@@ -169,6 +198,34 @@ def validate_repository_boundaries() -> list[str]:
             errors.append("MkDocs site output must be .generated/site")
         if mkdocs.get("strict") is not True:
             errors.append("MkDocs strict mode must remain enabled")
+    return errors
+
+
+def validate_publication_layout() -> list[str]:
+    errors: list[str] = []
+    path = GITHUB / "publication" / "config.yml"
+    data = yaml_data(path)
+    if not isinstance(data, dict):
+        return [f"{path.relative_to(ROOT)}: publication config must be an object"]
+    include = data.get("include")
+    channel_include = data.get("channel_include")
+    if not isinstance(include, list) or set(include) != PUBLICATION_COMMON:
+        errors.append(
+            ".github/publication/config.yml: include must match the common publication payload"
+        )
+    if not isinstance(channel_include, dict):
+        errors.append(".github/publication/config.yml: channel_include must be an object")
+        return errors
+    if channel_include.get("canary") != [] or channel_include.get("beta") != []:
+        errors.append(".github/publication/config.yml: preview channels must not publish authored .github files")
+    stable = channel_include.get("stable")
+    if not isinstance(stable, list) or set(stable) != STABLE_CONTROL_PLANE:
+        errors.append(
+            ".github/publication/config.yml: stable must match the default-branch control plane"
+        )
+    for relative in STABLE_CONTROL_PLANE:
+        if not (ROOT / relative).exists():
+            errors.append(f"missing stable control-plane source: {relative}")
     return errors
 
 
@@ -228,7 +285,7 @@ def validate_release_records() -> list[str]:
 def validate_local_links() -> list[str]:
     errors: list[str] = []
     link_pattern = re.compile(r"\[[^]]*\]\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]+)?\)")
-    paths = [ROOT / "README.md", ROOT / "TRANSLATORS.md", GITHUB / "CONTRIBUTING.md"]
+    paths = [GITHUB / "README.md", GITHUB / "TRANSLATORS.md", ROOT / "CONTRIBUTING.md"]
     paths.extend(sorted((ROOT / "docs").rglob("*.md")))
     paths.extend(sorted(GITHUB.rglob("*.md")))
     for path in paths:
@@ -244,7 +301,7 @@ def validate_local_links() -> list[str]:
 
 def validate_residue() -> list[str]:
     errors: list[str] = []
-    paths = [ROOT / "README.md", GITHUB / "CONTRIBUTING.md"]
+    paths = [GITHUB / "README.md", ROOT / "CONTRIBUTING.md"]
     paths.extend(sorted((ROOT / "docs").rglob("*")))
     paths.extend(sorted(GITHUB.rglob("*")))
     for path in paths:
@@ -262,6 +319,7 @@ def main() -> None:
         + validate_issue_forms()
         + validate_workflow_security()
         + validate_repository_boundaries()
+        + validate_publication_layout()
         + validate_release_records()
         + validate_local_links()
         + validate_residue()

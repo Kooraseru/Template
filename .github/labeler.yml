@@ -6,4 +6,4 @@ github-actions:
       - any-glob-to-any-file: [".github/workflows/**", ".github/actions/**", ".github/scripts/**"]
 security:
   - changed-files:
-      - any-glob-to-any-file: [".github/SECURITY.md", ".github/workflows/dependency-review.yml", ".github/workflows/codeql.yml"]
+      - any-glob-to-any-file: ["SECURITY.md", ".github/workflows/dependency-review.yml", ".github/workflows/codeql.yml"]

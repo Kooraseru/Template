@@ -50,23 +50,36 @@ def relative_path(value: Any, field: str, *, block_private: bool = True) -> Pure
     return path
 
 
-def load_config(path: Path) -> tuple[list[PurePosixPath], list[PurePosixPath], list[PurePosixPath]]:
+def load_config(
+    path: Path,
+) -> tuple[list[PurePosixPath], dict[str, list[PurePosixPath]], list[PurePosixPath], list[PurePosixPath]]:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or set(data) != {"enabled", "include", "required", "exclude"}:
-        raise SystemExit("Publication config must contain only enabled, include, required, and exclude")
+    allowed = {"enabled", "include", "channel_include", "required", "exclude"}
+    if not isinstance(data, dict) or set(data) != allowed:
+        raise SystemExit(
+            "Publication config must contain only enabled, include, channel_include, required, and exclude"
+        )
     if data["enabled"] is not True:
         raise SystemExit("Publication is disabled in configuration")
     for key in ("include", "required", "exclude"):
         if not isinstance(data[key], list):
             raise SystemExit(f"Publication config {key} must be a list")
     include = [relative_path(item, "include") for item in data["include"]]
+    channel_data = data["channel_include"]
+    if not isinstance(channel_data, dict) or set(channel_data) != CHANNELS:
+        raise SystemExit("Publication config channel_include must define canary, beta, and stable")
+    channel_include: dict[str, list[PurePosixPath]] = {}
+    for channel, values in channel_data.items():
+        if not isinstance(values, list):
+            raise SystemExit(f"Publication config channel_include.{channel} must be a list")
+        channel_include[channel] = [relative_path(item, f"channel_include.{channel}") for item in values]
     required = [relative_path(item, "required") for item in data["required"]]
     exclude = [relative_path(item, "exclude", block_private=False) for item in data["exclude"]]
     if not include or not required:
         raise SystemExit("Enabled publication requires non-empty include and required lists")
     if len(set(include)) != len(include) or len(set(required)) != len(required):
         raise SystemExit("Publication include and required paths must be unique")
-    return include, required, exclude
+    return include, channel_include, required, exclude
 
 
 def is_excluded(path: PurePosixPath, exclusions: list[PurePosixPath]) -> bool:
@@ -182,7 +195,7 @@ def main() -> None:
         if destination == source_root:
             raise SystemExit("destination cannot be the source root")
 
-    include, required, configured_exclude = load_config(config_path)
+    include, channel_include, required, configured_exclude = load_config(config_path)
     exclusions = (
         [PurePosixPath(item) for item in sorted(HARD_DENY)]
         + sorted(HARD_DENY_PATHS, key=str)
@@ -190,7 +203,7 @@ def main() -> None:
     )
     shutil.rmtree(destination, ignore_errors=True)
     destination.mkdir(parents=True)
-    for relative in include:
+    for relative in [*include, *channel_include[args.channel]]:
         copy_entry(source_root, destination, relative, exclusions)
 
     materialize_localization(source_root, destination, args.channel)

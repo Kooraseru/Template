@@ -8,16 +8,16 @@ current workspace without publishing remote state.
 
 ## Start Here
 
-- [Repository architecture](docs/architecture/repository.md) defines source,
+- [Repository architecture](../docs/architecture/repository.md) defines source,
   generated output, content ownership, and branch roles.
-- [Contribution guidelines](.github/CONTRIBUTING.md) define the contributor
+- [Contribution guidelines](../CONTRIBUTING.md) define the contributor
   workflow and validation expectations.
-- [Development and validation](docs/development/validation.md) lists local and
+- [Development and validation](../docs/development/validation.md) lists local and
   GitHub Actions entry points.
 - [Translation guide](TRANSLATORS.md) explains keyed templates, adjacent
   catalogs, and fallback behavior.
-- [Security policy](.github/SECURITY.md) explains private vulnerability reporting.
-- [Publication configuration](.github/publication/config.yml) defines the public
+- [Security policy](../SECURITY.md) explains private vulnerability reporting.
+- [Publication configuration](publication/config.yml) defines the public
   generated-repository whitelist.
 
 ## Repository Locations
@@ -45,8 +45,8 @@ current workspace without publishing remote state.
   </tr>
 </table>
 
-The root source `README.md`, `.github/CONTRIBUTING.md`, `.github/LICENSE`, and
-other canonical control files are maintained in English. Localized repository
+The source `.github/README.md`, root `CONTRIBUTING.md`, root `LICENSE`, and other
+canonical control files are maintained in English. Localized repository
 and Pages content is generated from adjacent templates and TOML catalogs under
 `content/`.
 
