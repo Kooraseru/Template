@@ -22,6 +22,8 @@ if (operation === 'resolve') {
   write(`${directory}/selections.json`, request.enabled ? validateChannels(request.channels, tip) : []);
 } else if (operation === 'plan') {
   const plan = read(`${directory}/inputs.json`);
+  // Lune serializes an empty table as an object, including an empty image list.
+  if (!Array.isArray(plan.images) && Object.keys(plan.images).length === 0) plan.images = [];
   const controllerFiles = git(['ls-tree','-r','--name-only',plan.controller_sha,'ci','.github/actions','.github/workflows/ci.yml']).split('\n')
     .filter(file => file && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
   const controllerHash = sha256(canonical(controllerFiles.sort().map(file => [file,
