@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { canonical, command, git, sha256, write } from '../releases/core.mjs';
 import { bundle, clean, collect, compare, identity, manifest, policy, sign, validate, verifyBundle } from './core.mjs';
-import { actor, api, assertAdminWriters, currentPR, discover, freshPR, isAdmin, merge, predatesContract, repository, setCheck, upload } from './github.mjs';
+import { actor, api, assertAdminWriters, currentPR, discover, freshPR, isAdmin, merge, predatesContract, repository, setCheck, upload, verifyEnvelope } from './github.mjs';
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const root = 'build/tmp/receipts';
@@ -70,9 +70,12 @@ if (operation === 'authorize') {
 } else if (operation === 'execution') {
   const spec = JSON.parse(process.env.CI_BUILD_SPEC);
   const selected = identity(spec.source_sha);
+  const imageRecord = spec.image ? read('build/selected-image/image.json') : null;
+  if (imageRecord && (!/^sha256:[a-f0-9]{64}$/.test(imageRecord.id)
+    || imageRecord.os + '/' + imageRecord.architecture !== spec.platform)) throw Error('Actual image identity or platform mismatch');
   const execution = spec.image ? { kind:'container', os:'linux', arch: spec.platform.endsWith('arm64') ? 'arm64' : 'x64',
     host_os:process.platform, host_arch:process.arch, image_archive_sha256:sha256(fs.readFileSync('build/selected-image/image.tar')),
-    image_record:read('build/selected-image/image.json') } : { kind:'native', os:process.platform, arch:process.arch };
+    image_record:imageRecord } : { kind:'native', os:process.platform, arch:process.arch };
   execution.probe_logs = manifest('build/logs').filter(file => /^probe-\d+\.log$/.test(file.path));
   execution.node_version = process.version;
   write('build/tmp/releases/execution.json', { ...selected, execution,
@@ -146,7 +149,7 @@ if (operation === 'authorize') {
     const log = `build-logs-${entry.source_sha}-${entry.name}`;
     extract(log,path.join(extracted,'logs',log));
   }
-  command(process.execPath,['ci/receipts/cli.mjs','collect',planFile,path.join(extracted,'distributions'),path.join(extracted,'logs'),process.argv[4] || 'build/receipts']);
+  console.log(command(process.execPath,['ci/receipts/cli.mjs','collect',planFile,path.join(extracted,'distributions'),path.join(extracted,'logs'),process.argv[4] || 'build/receipts']).trim());
 } else if (operation === 'keygen') {
   const destination = path.resolve(process.argv[3] || '');
   const workspace = path.resolve('.');
@@ -173,10 +176,11 @@ if (operation === 'authorize') {
   if (sha256(fs.readFileSync(path.join(path.dirname(file),policy.archive_asset))) !== receipt.bundle_sha256) throw Error('Bundle archive differs');
   write(file, sign(receipt,keyId,fs.readFileSync(keyPath)));
 } else if (operation === 'submit') {
-  if (process.env.ACT === 'true') throw Error('Submit outside act; build environments do not upload validation');
+  if (process.env.ACT === 'true' || process.env.GITHUB_ACTIONS === 'true') throw Error('Submit outside execution environments; build environments do not upload validation');
   const file = process.argv[3];
   const envelope = read(file); validate(envelope.receipt); freshPR(envelope.receipt);
-  if (!['signature','hosted'].includes(envelope.authentication.kind)) throw Error('Claims cannot enter accepted staging');
+  if (envelope.authentication.kind !== 'signature') throw Error('Local staging requires an enrolled admin signature');
+  await verifyEnvelope(envelope);
   const archive = path.join(path.dirname(file),policy.archive_asset);
   if (sha256(fs.readFileSync(archive)) !== envelope.receipt.bundle_sha256) throw Error('Bundle checksum mismatch');
   console.log(upload(envelope,archive).html_url);

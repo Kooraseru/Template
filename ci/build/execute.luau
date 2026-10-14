@@ -58,6 +58,11 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
         local loaded =
             process.exec("docker", { "load", "--input", "build/selected-image/image.tar" })
         assert(loaded.ok, "could not load generated build image: " .. loaded.stderr)
+        local inspected = process.exec("docker", { "image", "inspect", tag, "--format", "{{json .}}" })
+        assert(inspected.ok, "could not inspect loaded build image")
+        local imageIdentity = serde.decode("json", inspected.stdout)
+        assert(imageIdentity.Id == imageRecord.id and imageIdentity.Os .. "/" .. imageIdentity.Architecture == image.platform,
+            "loaded image identity or platform mismatch")
 
         -- Copy a standalone source checkout, including its selected Git HEAD.
         -- Docker cp works with remote/shared daemons without host-path mounts.
@@ -80,7 +85,7 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
             image.platform,
             "--workdir",
             "/workspace",
-            tag,
+            imageRecord.id,
             "sh",
             "-c",
             "while :; do sleep 3600; done",

@@ -87,10 +87,17 @@ for _, probe in image.probes do
         { argv = probe.argv, stdout = result.stdout, stderr = result.stderr }
     )
 end
+local inspect = process.exec("docker", { "image", "inspect", tag, "--format", "{{json .}}" })
+assert(inspect.ok, "cannot inspect exported image identity")
+local inspected = serde.decode("json", inspect.stdout)
+assert(inspected.Os .. "/" .. inspected.Architecture == image.platform, "exported image platform mismatch")
 fs.writeFile(
     output .. "/image.json",
     serde.encode("json", {
         name = image.name,
+        id = inspected.Id,
+        os = inspected.Os,
+        architecture = inspected.Architecture,
         tag = tag,
         platform = image.platform,
         base = image.base,

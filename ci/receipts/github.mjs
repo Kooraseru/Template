@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { canonical, command, git, sha256, write } from '../releases/core.mjs';
+import { canonical, command, sha256, write } from '../releases/core.mjs';
 import { authenticate, applicable, executionValid, policy, unpack, verifyBundle } from './core.mjs';
 
 export const repository = () => process.env.GITHUB_REPOSITORY || process.env.GH_REPO || command('gh', ['repo','view','--json','nameWithOwner','--jq','.nameWithOwner']).trim();

@@ -110,7 +110,8 @@ export function applicable(target, entry) {
       : target.source_sha === entry.source_sha && target.tree === entry.tree && target.source_manifest_sha256 === entry.source_manifest_sha256);
 }
 export function executionValid(target, entry) {
-  const prefix = Object.keys(policy.native_runners).find(name => entry.runner.startsWith(name));
+  const prefix = Object.keys(policy.native_runners).find(name => entry.runner.startsWith(name)
+    || entry.name?.startsWith(name + '-'));
   if (!prefix) return target.execution.os === 'linux' && (!entry.platform
     || target.execution.arch === (entry.platform.endsWith('arm64') ? 'arm64' : 'x64'));
   const arch = /arm64|aarch64/.test(entry.target || entry.name) ? 'arm64' : 'x64';
