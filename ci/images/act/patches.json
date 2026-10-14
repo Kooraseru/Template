@@ -1,0 +1,12 @@
+[
+  {
+    "path": "pkg/artifacts/artifacts_v4.go",
+    "before": "err = protojson.Unmarshal(body, req)",
+    "after": "err = (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(body, req)"
+  },
+  {
+    "path": "pkg/artifacts/artifacts_v4.go",
+    "before": "base64.URLEncoding.DecodeString(sig)",
+    "after": "base64.RawURLEncoding.DecodeString(strings.TrimRight(sig, \"=\"))"
+  }
+]

@@ -73,14 +73,14 @@ jobs:
       - run: lune run ci/validation/tests/gate.luau
       - run: node --test ci/releases/tests/*.test.mjs
       - run: node --test ci/receipts/tests/*.test.mjs
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: release-plan
           path: build/tmp/releases/plan.json
           if-no-files-found: error
       - name: Transfer verified accepted distributions
         if: steps.context.outputs.accepted_available == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: accepted-distributions
           path: build/accepted-distributions
@@ -88,7 +88,7 @@ jobs:
           if-no-files-found: error
       - name: Transfer verified accepted logs
         if: steps.context.outputs.accepted_available == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: accepted-logs
           path: build/accepted-logs
@@ -115,13 +115,13 @@ jobs:
       - uses: ./.github/actions/setup-node
       - name: Download verified accepted distributions
         if: matrix.accepted
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: accepted-distributions
           path: build/accepted-distributions
       - name: Download verified accepted logs
         if: matrix.accepted
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: accepted-logs
           path: build/accepted-logs
@@ -131,7 +131,7 @@ jobs:
         run: node ci/releases/cli.mjs prepare
       - name: Download selected build image
         if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.image_artifact }}
           path: build/selected-image
@@ -157,13 +157,13 @@ jobs:
       - run: lune run ci/distribution/package.luau
         if: steps.prepared.outputs.reused != 'true'
       - run: node ci/releases/cli.mjs verify build/artifacts
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: build/artifacts
           include-hidden-files: true
           if-no-files-found: error
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: build-logs-${{ matrix.source_sha }}-${{ matrix.name }}
@@ -182,7 +182,7 @@ jobs:
       - uses: ./.github/actions/build-repo
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: repository
           path: build/repository.tar
@@ -201,7 +201,7 @@ jobs:
       - uses: ./.github/actions/setup-node
       - run: sudo apt-get update && sudo apt-get install --yes pandoc
       - uses: ./.github/actions/build-pages
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: pages-preview
           path: build/pages
@@ -217,16 +217,16 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
           path: build/distributions
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: release-plan
           path: build/tmp/releases
       - run: lune run ci/releases/build.luau
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: release
           path: build/releases
@@ -250,7 +250,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: release-plan
           path: build/tmp/releases
@@ -258,11 +258,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node ci/receipts/cli.mjs authorize
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
           path: build/distributions
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: build-logs-*
           path: build/validation-logs
@@ -270,7 +270,7 @@ jobs:
       - run: node ci/receipts/cli.mjs report
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: validation-receipt
           path: build/receipts/receipt.json
@@ -290,7 +290,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         if: needs.validate.result == 'success'
         with:
           name: release-plan
@@ -344,7 +344,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: repository
           path: build
@@ -376,7 +376,7 @@ jobs:
           CI_IMAGE_ID: ${{ matrix.artifact }}
           CI_INPUT_REF: ${{ matrix.input_ref }}
         run: lune run ci/images/build.luau "$IMAGE_NAME"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: build/images/${{ matrix.name }}
@@ -407,7 +407,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: lune run ci/access/require-publication.luau
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: pages-preview
           path: build/pages
@@ -437,7 +437,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: release
           path: build/releases
