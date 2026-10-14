@@ -17,7 +17,7 @@
         "parent": "root",
         "name": "Alias",
         "email": "alias@example.test",
-        "message": "Feature <safe> & unicode \u4e16\u754c\n\nCo-authored-by: Partner <partner@example.test>\nCo-authored-by: automation[bot] <bot@example.test>"
+        "message": "Feature <safe> & unicode \u4e16\u754c\n\nCo-authored-by: Partner <partner@example.test>\nCo-authored-by: automation[bot] <bot@example.test>\nCo-authored-by: dependabot <dependabot@example.test>\nCo-authored-by: renovate <renovate@example.test>"
       },
       {
         "id": "main",

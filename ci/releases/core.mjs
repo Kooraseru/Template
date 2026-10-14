@@ -95,7 +95,8 @@ export function history(selection, repository = '.', repoURL = '') {
   for (const identity of normalized.split('\n').filter(Boolean)) {
     const match = identity.match(/^(.*) <([^<>]+)>$/);
     if (!match) continue;
-    if (policy.bot_patterns.some(pattern => new RegExp(pattern, 'i').test(identity))) continue;
+    if (policy.bot_patterns.some(pattern => [identity, match[1], match[2]]
+      .some(value => new RegExp(pattern, 'i').test(value)))) continue;
     people.set(match[2].toLowerCase(), match[1]);
   }
   const refs = run(['for-each-ref', '--format=%(objectname)%09%(*objectname)%09%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags']);
