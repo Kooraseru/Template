@@ -83,6 +83,7 @@ if (operation === 'resolve') {
   write(`${directory}/outputs.json`, output);
 } else if (operation === 'prepare') {
   const entry = JSON.parse(process.env.CI_BUILD_SPEC);
+  if (!new RegExp(policy.sha_pattern).test(entry.source_sha)) throw Error('Build source must be a full SHA');
   let reused = false;
   if (entry.cache_run && fs.existsSync('build/artifacts/provenance.json')) {
     try { verifyDistribution('build/artifacts', entry); reused = true; }
@@ -92,12 +93,15 @@ if (operation === 'resolve') {
   write(`${directory}/build-spec.json`, entry);
   const source = path.resolve('build/tmp/source', entry.source_sha);
   if (!reused) {
-    // Standalone snapshot, no worktree links or dependence on ignored local files.
+    // A standalone Git checkout preserves the selected HEAD for build commands
+    // such as git describe. No worktree links, alternates, or ignored inputs.
     fs.rmSync(source, { recursive: true, force: true });
     fs.mkdirSync(source, { recursive: true });
-    const archive = path.resolve(`${directory}/source.tar`);
-    git(['archive', '--format=tar', `--output=${archive}`, entry.source_sha]);
-    command('tar', ['-xf', archive, '-C', source]);
+    git(['clone', '--no-hardlinks', '--no-checkout', process.cwd(), source]);
+    git(['-C', source, 'checkout', '--detach', entry.source_sha]);
+    let origin = '';
+    try { origin = git(['remote', 'get-url', 'origin']); } catch { /* a fixture may have no remote */ }
+    if (origin) git(['-C', source, 'remote', 'set-url', 'origin', origin]);
     fs.mkdirSync(path.join(source, 'build'), { recursive: true });
   }
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `reused=${reused}\nsource_dir=${source}\n`);

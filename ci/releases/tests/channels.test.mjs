@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { git, write, sha256, validateChannels, history, layout, verifyDistribution, cacheEligible, artifactEligible, protectionsValid } from '../core.mjs';
+import { command, git, write, sha256, validateChannels, history, layout, verifyDistribution, cacheEligible, artifactEligible, protectionsValid } from '../core.mjs';
 import { svg, htmlGraph, finalizeAssets } from '../render.mjs';
 import { updateChannel, publish, client } from '../publish.mjs';
 
@@ -23,10 +24,23 @@ for (const entry of cases.history.commits) {
   if (entry.merge) run(['merge', '--no-ff', '--no-commit', commits[entry.merge]]);
   if (entry.mailmap) write(path.join(repository, '.mailmap'), entry.mailmap);
   write(path.join(repository, entry.id + '.txt'), entry.message);
+  for (const [name, contents] of Object.entries(entry.files || {})) write(path.join(repository, name), contents);
   run(['add', '.']); run(['commit', '-m', entry.message], { env });
   commits[entry.id] = run(['rev-parse', 'HEAD']);
 }
 const expand = value => JSON.parse(JSON.stringify(value).replace(/\$(root|feature|main|merge)/g, (_, key) => commits[key]));
+for (const scenario of cases.snapshots) test(scenario.name, () => {
+  const sourceSHA = expand(scenario.commit);
+  const spec = { name: 'fixture', source_sha: sourceSHA, fingerprint: sha256('fixture'), cache_run: '' };
+  command(process.execPath, [fileURLToPath(new URL('../cli.mjs', import.meta.url)), 'prepare'], {
+    cwd: repository, env: { ...process.env, CI_BUILD_SPEC: JSON.stringify(spec), GITHUB_OUTPUT: '' },
+  });
+  const source = path.join(repository, 'build/tmp/source', sourceSHA);
+  assert.equal(git(['rev-parse', 'HEAD'], { cwd: source }), sourceSHA);
+  assert.ok(!fs.existsSync(path.join(source, '.git/objects/info/alternates')));
+  for (const name of scenario.present) assert.ok(fs.existsSync(path.join(source, name)));
+  for (const name of scenario.absent) assert.ok(!fs.existsSync(path.join(source, name)));
+});
 for (const scenario of cases.channels) test(scenario.name, () => {
   const execute = () => validateChannels(expand(scenario.input), commits.merge, repository);
   if (scenario.valid) assert.ok(execute().length); else assert.throws(execute);

@@ -6,7 +6,10 @@
         "branch": "source",
         "name": "Root Author",
         "email": "root@example.test",
-        "message": "Initial source"
+        "message": "Initial source",
+        "files": {
+          "target/tracked-source.txt": "This is tracked source, not a Cargo output directory."
+        }
       },
       {
         "id": "feature",
@@ -284,6 +287,31 @@
         "expired": false
       },
       "valid": false
+    }
+  ],
+  "snapshots": [
+    {
+      "name": "older build checkout has its own selected Git HEAD",
+      "commit": "$root",
+      "present": [
+        "root.txt",
+        "target/tracked-source.txt"
+      ],
+      "absent": [
+        "feature.txt",
+        "merge.txt"
+      ]
+    },
+    {
+      "name": "current build checkout preserves tracked target directories",
+      "commit": "$merge",
+      "present": [
+        "root.txt",
+        "feature.txt",
+        "merge.txt",
+        "target/tracked-source.txt"
+      ],
+      "absent": []
     }
   ]
 }

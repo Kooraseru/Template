@@ -52,15 +52,15 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
             process.exec("docker", { "load", "--input", "build/selected-image/image.tar" })
         assert(loaded.ok, "could not load generated build image: " .. loaded.stderr)
 
-        -- Copy only repository inputs. Docker cp works with a remote/shared
-        -- daemon too; it does not assume the job's paths exist on that daemon.
+        -- Copy a standalone source checkout, including its selected Git HEAD.
+        -- Docker cp works with remote/shared daemons without host-path mounts.
         local staging = "build/tmp/container-input/" .. target.name
         files.reset(staging)
         local listing =
             process.exec("git", { "ls-files", "--cached", "--others", "--exclude-standard", "-z" })
         assert(listing.ok, "could not enumerate repository inputs")
         if process.env.CI_SOURCE_DIR then
-            files.copy(process.env.CI_SOURCE_DIR, staging, true)
+            files.copy(process.env.CI_SOURCE_DIR, staging)
         else
             for path in listing.stdout:gmatch("[^%z]+") do
                 configModule.relative(path)
