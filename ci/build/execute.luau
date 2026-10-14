@@ -60,7 +60,7 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
         assert(loaded.ok, "could not load generated build image: " .. loaded.stderr)
         local inspected = process.exec("docker", { "image", "inspect", tag, "--format", "{{json .}}" })
         assert(inspected.ok, "could not inspect loaded build image")
-        local imageIdentity = serde.decode("json", inspected.stdout)
+        local imageIdentity: any = serde.decode("json", inspected.stdout)
         assert(imageIdentity.Id == imageRecord.id and imageIdentity.Os .. "/" .. imageIdentity.Architecture == image.platform,
             "loaded image identity or platform mismatch")
 
