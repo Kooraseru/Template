@@ -19,6 +19,10 @@ Patch keys are dot-separated field paths. Cases may remove top-level fields
 with `remove`. Operation-specific executors handle setup, execution, and result
 comparison.
 
+A cases document may declare a `baseline` patch for its executor to apply before
+individual cases. Catalogue cases use this to keep their fixture independent of
+the consuming repository's selected targets and optional image jobs.
+
 Publication eligibility lives in `ci/access/publication.rules.json`.
 Workflow structure and gate expectations live in `workflows.rules.json` and
 `gate.rules.json`. Filesystem checks live in `repository.checks.json`.

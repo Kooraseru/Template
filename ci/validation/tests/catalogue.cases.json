@@ -98,5 +98,17 @@
         "targets.1.profile": "clang"
       }
     }
-  ]
+  ],
+  "baseline": {
+    "patch": {
+      "config.build.matrix": [],
+      "config.build.targets": [
+        "alpine-gcc-x64"
+      ],
+      "config.images.names": [
+        "alpine-gcc-x64"
+      ],
+      "config.images.enabled": true
+    }
+  }
 }
