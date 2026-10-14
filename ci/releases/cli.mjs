@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { command, git, write, sha256, canonical, sourceTip, validateChannels, cacheEligible, verifyDistribution, policy } from './core.mjs';
+import { command, git, write, sha256, canonical, sourceTip, validateChannels, cacheEligible, artifactEligible, verifyDistribution, policy } from './core.mjs';
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const gh = args => JSON.parse(command('gh', ['api', ...args]));
@@ -12,7 +12,12 @@ if (operation === 'resolve') {
   const tip = sourceTip();
   // Checkout fetch-depth: 0 makes selected history available. Fetch a newly advanced hosted tip if necessary.
   if (process.env.ACT !== 'true' && process.env.GITHUB_ACTIONS === 'true') {
-    git(['fetch', '--no-tags', 'origin', tip]);
+    const env = { ...process.env };
+    if (env.GH_TOKEN) {
+      env.GIT_CONFIG_COUNT = '1'; env.GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader';
+      env.GIT_CONFIG_VALUE_0 = 'AUTHORIZATION: basic ' + Buffer.from(`x-access-token:${env.GH_TOKEN}`).toString('base64');
+    }
+    git(['fetch', '--no-tags', 'origin', tip], { env });
   }
   write(`${directory}/selections.json`, request.enabled ? validateChannels(request.channels, tip) : []);
 } else if (operation === 'plan') {
@@ -23,11 +28,13 @@ if (operation === 'resolve') {
   const extra = git(['ls-files', '--others', '--exclude-standard', 'ci', '.github/actions']).split('\n')
     .filter(file => file && !controllerFiles.includes(file) && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
   const controllerHash = sha256(canonical([...controllerFiles, ...extra].sort().map(file => [file, sha256(fs.readFileSync(file))])));
+  const imageArtifact = (definition, recipes) => 'image-' + definition.name + '-' + sha256(canonical({ definition, recipes })).slice(0, 24);
   for (const entry of plan.builds) {
     entry.fingerprint = sha256(canonical({ controllerHash, build: entry.build, target: {
       name: entry.name, runner: entry.runner, target: entry.target, profile: entry.profile, environment: entry.environment,
       probes: entry.probes, rust_version: entry.rust_version, msvc_arch: entry.msvc_arch,
     }, image: entry.image_definition || null, recipes: entry.recipes }));
+    if (entry.image_definition) entry.image_artifact = imageArtifact(entry.image_definition, entry.recipes);
     delete entry.recipes;
     entry.cache_run = '';
     if (!entry.current && process.env.ACT !== 'true' && process.env.GITHUB_ACTIONS === 'true' && process.env.GH_TOKEN) {
@@ -35,16 +42,24 @@ if (operation === 'resolve') {
       const runs = gh([`repos/${repo}/actions/workflows/ci.yml/runs?event=push&branch=source&head_sha=${entry.source_sha}&status=success&per_page=${policy.cache_run_limit}`]).workflow_runs;
       for (const run of runs.filter(run => cacheEligible(run, entry.source_sha, repo))) {
         const artifacts = gh([`repos/${repo}/actions/runs/${run.id}/artifacts?per_page=100`]).artifacts;
-        if (artifacts.some(artifact => !artifact.expired && artifact.name === entry.artifact)) { entry.cache_run = String(run.id); break; }
+        if (artifacts.some(artifact => artifactEligible(artifact, entry.artifact))) { entry.cache_run = String(run.id); break; }
       }
     }
   }
   plan.controller_hash = controllerHash;
+  const images = new Map();
+  for (const image of plan.images) {
+    image.artifact = imageArtifact(image.definition, image.recipes);
+    delete image.definition; delete image.recipes;
+    if (!images.has(image.artifact)) images.set(image.artifact, image);
+  }
+  plan.images = [...images.values()];
   write(`${directory}/plan.json`, plan);
   const imageMatrix = plan.images.length ? plan.images : [{ name: 'disabled', runner: 'ubuntu-latest', artifact: 'disabled', input_ref: '' }];
   const output = {
     build_matrix: JSON.stringify({ include: plan.builds }), image_matrix: JSON.stringify({ include: imageMatrix }),
     release_matrix: JSON.stringify({ include: plan.selections.length ? plan.selections.map(({ channel }) => ({ channel })) : [{ channel: 'disabled' }] }),
+    images_enabled: String(plan.images.length > 0),
   };
   write(`${directory}/outputs.json`, output);
 } else if (operation === 'prepare') {

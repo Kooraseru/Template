@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { git, write, sha256, canonical, validateChannels, history, layout, verifyDistribution, cacheEligible, protectionsValid } from '../core.mjs';
+import { git, write, sha256, validateChannels, history, layout, verifyDistribution, cacheEligible, artifactEligible, protectionsValid } from '../core.mjs';
 import { svg, htmlGraph } from '../render.mjs';
 import { updateChannel, publish, client } from '../publish.mjs';
 
@@ -48,6 +48,9 @@ for (const scenario of cases.cache) test(scenario.name, () => {
   const run = { event: 'push', head_branch: 'source', head_sha: commits.merge, conclusion: 'success', head_repository: { full_name: 'example/project' } };
   assert.equal(cacheEligible({ ...run, ...scenario.patch }, commits.merge, 'example/project'), scenario.valid);
 });
+for (const scenario of cases.artifacts) test(scenario.name, () => {
+  assert.equal(artifactEligible(scenario.input, 'distribution-selected-linux'), scenario.valid);
+});
 for (const [index, scenario] of cases.provenance.entries()) test(scenario.name, () => {
   const dir = path.join(root, 'provenance', String(index));
   const expected = { name: 'linux', source_sha: commits.merge, fingerprint: sha256('inputs') };
@@ -71,8 +74,10 @@ for (const [index, scenario] of cases.publication.entries()) test(scenario.name,
   const metadata = { channel: 'canary', source_sha: commits.merge, selection_hash: sha256('selection'), prerelease: true, targets: [],
     assets: [{ path: 'packages.tar.gz', name: `canary-${commits.merge}-packages.tar.gz`, sha256: sha256('new packages') }] };
   write(`${dir}/release.json`, metadata);
-  let ref = { object: { sha: commits.root } }, release = { id: 1, body: 'old notes', name: 'canary', draft: false, prerelease: true, upload_url: 'https://uploads.github.com/release/1{?name}' };
-  let assets = [{ id: 2, name: 'canary-old-packages.tar.gz' }], next = 3, fresh = 0, uploaded = 0;
+  const existing = scenario.initial !== false;
+  let ref = existing ? { object: { sha: commits.root } } : null;
+  let release = existing ? { id: 1, body: 'old notes', name: 'canary', draft: false, prerelease: true, upload_url: 'https://uploads.github.com/release/1{?name}' } : null;
+  let assets = existing ? [{ id: 2, name: 'manual-attachment.txt' }] : [], next = 3, fresh = 0, uploaded = 0;
   const api = {
     async pages() { return structuredClone(assets); },
     async request(route, options = {}) {
@@ -82,12 +87,22 @@ for (const [index, scenario] of cases.publication.entries()) test(scenario.name,
         const asset = { id: next++, name: new URL(route).searchParams.get('name'), size: options.body.length, digest: `sha256:${sha256(options.body)}` };
         assets.push(asset); return structuredClone(asset);
       }
-      if (options.method === 'DELETE') { assets = assets.filter(asset => asset.id !== Number(route.split('/').at(-1))); return null; }
+      if (options.method === 'DELETE') {
+        if (route === '/releases/1') { release = null; assets = []; }
+        else if (route.startsWith('/git/refs/')) ref = null;
+        else assets = assets.filter(asset => asset.id !== Number(route.split('/').at(-1)));
+        return null;
+      }
       if (route.startsWith('/git/ref/')) return structuredClone(ref);
       return structuredClone(release);
     },
     async json(method, route, data) {
-      if (route.startsWith('/git/refs/')) { ref.object.sha = data.sha; return structuredClone(ref); }
+      if (route === '/releases' && method === 'POST') {
+        release = { id: 1, ...data, upload_url: 'https://uploads.github.com/release/1{?name}' };
+        if (scenario.draft_tag) ref = { object: { sha: data.target_commitish } };
+        return structuredClone(release);
+      }
+      if (route.startsWith('/git/refs')) { ref = { object: { sha: data.sha } }; return structuredClone(ref); }
       if (scenario.failure === 'body' && data.body !== 'old notes') throw Error('body update failed');
       release = { ...release, ...data }; return structuredClone(release);
     },
@@ -98,8 +113,11 @@ for (const [index, scenario] of cases.publication.entries()) test(scenario.name,
     await operation(); assert.equal(ref.object.sha, commits.merge); assert.ok(release.body.includes('release-generation:'));
     if (scenario.repeat) { const before = uploaded; await operation(); assert.equal(uploaded, before); }
   } else {
-    await assert.rejects(operation); assert.equal(ref.object.sha, commits.root); assert.equal(release.body, 'old notes');
-    assert.deepEqual(assets, [{ id: 2, name: 'canary-old-packages.tar.gz' }]);
+    await assert.rejects(operation);
+    if (existing) {
+      assert.equal(ref.object.sha, commits.root); assert.equal(release.body, 'old notes');
+      assert.deepEqual(assets, [{ id: 2, name: 'manual-attachment.txt' }]);
+    } else { assert.equal(ref, null); assert.equal(release, null); assert.deepEqual(assets, []); }
   }
 });
 test('local publication is denied before network access', async () => {

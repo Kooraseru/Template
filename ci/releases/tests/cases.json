@@ -1,46 +1,289 @@
 {
   "history": {
     "commits": [
-      { "id": "root", "branch": "source", "name": "Root Author", "email": "root@example.test", "message": "Initial source" },
-      { "id": "feature", "branch": "feature", "parent": "root", "name": "Alias", "email": "alias@example.test", "message": "Feature <safe> & unicode 世界\n\nCo-authored-by: Partner <partner@example.test>\nCo-authored-by: automation[bot] <bot@example.test>" },
-      { "id": "main", "branch": "source", "parent": "root", "name": "Root Author", "email": "root@example.test", "message": "Main change" },
-      { "id": "merge", "branch": "source", "merge": "feature", "name": "Root Author", "email": "root@example.test", "message": "Merge feature", "mailmap": "Canonical Author <canonical@example.test> Alias <alias@example.test>\n" }
+      {
+        "id": "root",
+        "branch": "source",
+        "name": "Root Author",
+        "email": "root@example.test",
+        "message": "Initial source"
+      },
+      {
+        "id": "feature",
+        "branch": "feature",
+        "parent": "root",
+        "name": "Alias",
+        "email": "alias@example.test",
+        "message": "Feature <safe> & unicode \u4e16\u754c\n\nCo-authored-by: Partner <partner@example.test>\nCo-authored-by: automation[bot] <bot@example.test>"
+      },
+      {
+        "id": "main",
+        "branch": "source",
+        "parent": "root",
+        "name": "Root Author",
+        "email": "root@example.test",
+        "message": "Main change"
+      },
+      {
+        "id": "merge",
+        "branch": "source",
+        "merge": "feature",
+        "name": "Root Author",
+        "email": "root@example.test",
+        "message": "Merge feature",
+        "mailmap": "Canonical Author <canonical@example.test> Alias <alias@example.test>\n"
+      }
     ],
-    "contributors": ["Canonical Author", "Partner", "Root Author"],
+    "contributors": [
+      "Canonical Author",
+      "Partner",
+      "Root Author"
+    ],
     "range_count": 3,
     "beginning_count": 4
   },
   "channels": [
-    { "name": "latest canary", "input": { "canary": { "from": "beginning", "commit": "latest" } }, "valid": true },
-    { "name": "pinned stable", "input": { "stable": { "from": "$root", "commit": "$merge" } }, "valid": true },
-    { "name": "empty range", "input": { "beta": { "from": "$root", "commit": "$root" } }, "valid": true },
-    { "name": "stable cannot float", "input": { "stable": { "from": "beginning", "commit": "latest" } }, "valid": false },
-    { "name": "short SHA", "input": { "stable": { "from": "beginning", "commit": "abcd123" } }, "valid": false },
-    { "name": "backwards range", "input": { "beta": { "from": "$merge", "commit": "$root" } }, "valid": false },
-    { "name": "sideways range", "input": { "beta": { "from": "$feature", "commit": "$main" } }, "valid": false },
-    { "name": "unknown channel", "input": { "other": { "from": "beginning", "commit": "latest" } }, "valid": false },
-    { "name": "unsafe notes path", "input": { "canary": { "from": "beginning", "commit": "latest", "notes": "../private" } }, "valid": false }
+    {
+      "name": "latest canary",
+      "input": {
+        "canary": {
+          "from": "beginning",
+          "commit": "latest"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "pinned stable",
+      "input": {
+        "stable": {
+          "from": "$root",
+          "commit": "$merge"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "empty range",
+      "input": {
+        "beta": {
+          "from": "$root",
+          "commit": "$root"
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "stable cannot float",
+      "input": {
+        "stable": {
+          "from": "beginning",
+          "commit": "latest"
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "short SHA",
+      "input": {
+        "stable": {
+          "from": "beginning",
+          "commit": "abcd123"
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "backwards range",
+      "input": {
+        "beta": {
+          "from": "$merge",
+          "commit": "$root"
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "sideways range",
+      "input": {
+        "beta": {
+          "from": "$feature",
+          "commit": "$main"
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown channel",
+      "input": {
+        "other": {
+          "from": "beginning",
+          "commit": "latest"
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "unsafe notes path",
+      "input": {
+        "canary": {
+          "from": "beginning",
+          "commit": "latest",
+          "notes": "../private"
+        }
+      },
+      "valid": false
+    }
   ],
   "cache": [
-    { "name": "trusted completed source", "patch": {}, "valid": true },
-    { "name": "pull request is untrusted", "patch": { "event": "pull_request" }, "valid": false },
-    { "name": "wrong commit", "patch": { "head_sha": "wrong" }, "valid": false },
-    { "name": "failed workflow", "patch": { "conclusion": "failure" }, "valid": false },
-    { "name": "foreign repository", "patch": { "head_repository": { "full_name": "someone/fork" } }, "valid": false }
+    {
+      "name": "trusted completed source",
+      "patch": {},
+      "valid": true
+    },
+    {
+      "name": "pull request is untrusted",
+      "patch": {
+        "event": "pull_request"
+      },
+      "valid": false
+    },
+    {
+      "name": "wrong commit",
+      "patch": {
+        "head_sha": "wrong"
+      },
+      "valid": false
+    },
+    {
+      "name": "failed workflow",
+      "patch": {
+        "conclusion": "failure"
+      },
+      "valid": false
+    },
+    {
+      "name": "foreign repository",
+      "patch": {
+        "head_repository": {
+          "full_name": "someone/fork"
+        }
+      },
+      "valid": false
+    }
   ],
   "provenance": [
-    { "name": "matching provenance", "patch": {}, "valid": true },
-    { "name": "wrong source", "patch": { "source_sha": "wrong" }, "valid": false },
-    { "name": "changed build inputs", "patch": { "fingerprint": "wrong" }, "valid": false },
-    { "name": "wrong target", "patch": { "target": "other" }, "valid": false },
-    { "name": "corrupted payload", "patch": {}, "corrupt": true, "valid": false },
-    { "name": "unlisted payload", "patch": {}, "extra": true, "valid": false }
+    {
+      "name": "matching provenance",
+      "patch": {},
+      "valid": true
+    },
+    {
+      "name": "wrong source",
+      "patch": {
+        "source_sha": "wrong"
+      },
+      "valid": false
+    },
+    {
+      "name": "changed build inputs",
+      "patch": {
+        "fingerprint": "wrong"
+      },
+      "valid": false
+    },
+    {
+      "name": "wrong target",
+      "patch": {
+        "target": "other"
+      },
+      "valid": false
+    },
+    {
+      "name": "corrupted payload",
+      "patch": {},
+      "corrupt": true,
+      "valid": false
+    },
+    {
+      "name": "unlisted payload",
+      "patch": {},
+      "extra": true,
+      "valid": false
+    }
   ],
   "publication": [
-    { "name": "moving existing channel", "failure": null, "valid": true },
-    { "name": "upload failure restores old channel", "failure": "upload", "valid": false },
-    { "name": "body failure restores old tag", "failure": "body", "valid": false },
-    { "name": "stale before promotion retains old channel", "failure": "stale", "valid": false },
-    { "name": "same generation is idempotent", "failure": null, "valid": true, "repeat": true }
+    {
+      "name": "moving existing channel",
+      "failure": null,
+      "valid": true
+    },
+    {
+      "name": "upload failure restores old channel",
+      "failure": "upload",
+      "valid": false
+    },
+    {
+      "name": "body failure restores old tag",
+      "failure": "body",
+      "valid": false
+    },
+    {
+      "name": "stale before promotion retains old channel",
+      "failure": "stale",
+      "valid": false
+    },
+    {
+      "name": "same generation is idempotent",
+      "failure": null,
+      "valid": true,
+      "repeat": true
+    },
+    {
+      "name": "first channel creates release",
+      "initial": false,
+      "failure": null,
+      "valid": true
+    },
+    {
+      "name": "draft-created tag is handled",
+      "initial": false,
+      "draft_tag": true,
+      "failure": null,
+      "valid": true
+    },
+    {
+      "name": "failed first publication removes draft",
+      "initial": false,
+      "draft_tag": true,
+      "failure": "body",
+      "valid": false
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "available matching artifact",
+      "input": {
+        "name": "distribution-selected-linux",
+        "expired": false
+      },
+      "valid": true
+    },
+    {
+      "name": "expired artifact rebuilds",
+      "input": {
+        "name": "distribution-selected-linux",
+        "expired": true
+      },
+      "valid": false
+    },
+    {
+      "name": "missing selected artifact rebuilds",
+      "input": {
+        "name": "distribution-other-linux",
+        "expired": false
+      },
+      "valid": false
+    }
   ]
 }

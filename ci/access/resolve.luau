@@ -5,7 +5,6 @@ local configuration = require("../lib/config")
 local outputs = require("../lib/outputs")
 local context = require("./context")
 local policy = require("./policy")
-local catalogue = require("../lib/catalogue")
 
 local config = configuration.read()
 local resolved = process.exec("lune", { "run", "ci/releases/resolve.luau" })
@@ -33,15 +32,7 @@ for name, capability in capabilities do
     values["publish_" .. name] = tostring(canPublish and capability.publish)
 end
 
--- act expands skipped matrices, and Lune encodes empty tables as objects.
-local images = {}
-for _, name in config.images.names do
-    local image = catalogue.image(name)
-    table.insert(images, { name = name, runner = image.runner, platform = image.platform })
-end
-if #images == 0 then
-    table.insert(images, { name = "disabled", runner = config.build.runner, platform = "" })
-end
+values.images = matrices.images_enabled
 values.image_matrix = matrices.image_matrix
 values.build_matrix = matrices.build_matrix
 values.release_matrix = matrices.release_matrix

@@ -50,7 +50,7 @@ export async function updateChannel(api, metadata, root, assertFresh) {
   if (oldRelease?.body?.includes(marker) && oldRef?.object?.sha === metadata.source_sha) {
     console.log(`${channel} already matches verified generation ${generation}`); return;
   }
-  let release = oldRelease, created = false, moved = false, committed = false;
+  let release = oldRelease, created = false, moved = false;
   const uploaded = [];
   const assetNames = new Set();
   try {
@@ -91,7 +91,6 @@ export async function updateChannel(api, metadata, root, assertFresh) {
     const body = fs.readFileSync(`${root}/notes.md`, 'utf8').replaceAll(`${channel}-${metadata.source_sha}-`, `${channel}-${metadata.source_sha}-${generation}-`) + `\n${marker}\n`;
     await api.json('PATCH', `/releases/${release.id}`, { tag_name: channel, name: channel, body,
       draft: false, prerelease: metadata.prerelease, make_latest: channel === 'stable' ? 'true' : 'false' });
-    committed = true;
     const verifiedRef = await api.request(`/git/ref/tags/${channel}`);
     const verifiedRelease = await api.request(`/releases/${release.id}`);
     if (verifiedRef.object.sha !== metadata.source_sha || !verifiedRelease.body?.includes(marker)) throw Error('Published channel verification failed');
@@ -118,7 +117,7 @@ export async function updateChannel(api, metadata, root, assertFresh) {
   }
   // Publication is verified. Cleanup failure must not roll back a valid new channel.
   for (const asset of await api.pages(`/releases/${release.id}/assets`)) {
-    if (!assetNames.has(asset.name) && asset.name.startsWith(`${channel}-`)) {
+    if (!assetNames.has(asset.name) && new RegExp(`^${channel}-[a-f0-9]{40}-[a-f0-9]{16}-`).test(asset.name)) {
       try { await api.request(`/releases/assets/${asset.id}`, { method: 'DELETE' }); }
       catch (error) { console.warn(`Published successfully; old asset cleanup failed: ${error.message}`); }
     }

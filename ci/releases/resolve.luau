@@ -47,8 +47,12 @@ for _, snapshot in snapshots do
     if selected.images.enabled then
         for _, name in selected.images.names do
             local image = catalogue.image(name)
+            local recipes = {}
+            for _, file in { image.recipe, "toolchains/" .. image.profile .. "/Dockerfile", "install.sh" } do
+                recipes[file] = inputs.read("ci/images/" .. file)
+            end
             table.insert(images, { name = name, runner = image.runner, source_sha = snapshot.sha,
-                input_ref = inputs.ref, artifact = "image-" .. snapshot.sha .. "-" .. name })
+                input_ref = inputs.ref, definition = image, recipes = recipes })
         end
     end
 end

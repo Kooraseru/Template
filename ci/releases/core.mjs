@@ -49,7 +49,9 @@ export function sourceTip() {
     if (git(['branch', '--show-current']) === 'source') return git(['rev-parse', 'HEAD']);
     try { return git(['rev-parse', 'refs/remotes/origin/source']); } catch { return git(['rev-parse', 'HEAD']); }
   }
-  const ref = git(['ls-remote', 'origin', 'refs/heads/source']).split(/\s/)[0];
+  const ref = process.env.GH_TOKEN && process.env.GITHUB_REPOSITORY
+    ? JSON.parse(command('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/git/ref/heads/source`])).object.sha
+    : git(['ls-remote', 'origin', 'refs/heads/source']).split(/\s/)[0];
   if (!new RegExp(policy.sha_pattern).test(ref)) throw Error('Cannot resolve current source tip');
   return ref;
 }
@@ -162,6 +164,9 @@ export function verifyDistribution(root, expected) {
 export function cacheEligible(run, sha, repository) {
   return run.event === 'push' && run.head_branch === 'source' && run.head_sha === sha
     && run.conclusion === 'success' && run.head_repository?.full_name?.toLowerCase() === repository.toLowerCase();
+}
+export function artifactEligible(artifact, name) {
+  return artifact.name === name && artifact.expired === false;
 }
 export function protectionsValid(rulesets) {
   const applicable = rulesets.filter(set => set.enforcement === 'active' && set.target === 'branch'
