@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { command, git, write, sha256, validateChannels, history, layout, verifyDistribution, cacheEligible, artifactEligible, protectionsValid } from '../core.mjs';
+import { command, git, write, sha256, validateChannels, history, layout, verifyDistribution, cacheEligible, artifactEligible, protectionsValid, verifiedProtections } from '../core.mjs';
 import { svg, htmlGraph, finalizeAssets } from '../render.mjs';
 import { updateChannel, publish, client } from '../publish.mjs';
 
@@ -102,6 +102,20 @@ test('source rules require no direct-push bypass and only admin PR merging', () 
   assert.equal(protectionsValid([sets[0]]), false);
   const unsafe = structuredClone(sets); unsafe[0].bypass_actors = [{ actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' }];
   assert.equal(protectionsValid(unsafe), false);
+});
+for (const scenario of cases.protection_visibility) test(scenario.name, () => {
+  const rulesets = ['source-checks','source-admins'].map((name,index) => ({
+    ...JSON.parse(fs.readFileSync(`ci/releases/protection/${name}.json`)),
+    id:index+1,updated_at:'2026-10-14T00:00:00Z'
+  }));
+  const live = structuredClone(rulesets);
+  for (const set of live) delete set.bypass_actors;
+  if (scenario.changed_time) live[0].updated_at = '2026-10-14T01:00:00Z';
+  if (scenario.changed_rules) live[0].rules = [];
+  if (scenario.unsafe) rulesets[0].bypass_actors = [{actor_id:5,actor_type:'RepositoryRole',bypass_mode:'always'}];
+  const snapshot = scenario.missing ? null : {schema:1,repository:scenario.wrong_repository?'other/repository':'owner/project',rulesets};
+  const verify = () => assert.equal(protectionsValid(verifiedProtections(live,snapshot,'owner/project')),true);
+  if (scenario.valid) verify(); else assert.throws(verify);
 });
 for (const [index, scenario] of cases.publication.entries()) test(scenario.name, async () => {
   const dir = path.join(root, 'publisher', String(index));

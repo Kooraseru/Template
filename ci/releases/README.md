@@ -63,6 +63,16 @@ restrictions remain authoritative.
 
 Reference: https://docs.github.com/en/rest/repos/rules
 
+GitHub hides bypass actors from ordinary workflow tokens. After setting up the
+rulesets, a repository admin runs `node ci/releases/cli.mjs attest-protection`
+using their existing GitHub CLI login. This enrolls a non-secret
+`CI_SOURCE_PROTECTION` repository variable. Publication compares the complete
+admin-verified snapshot against current ruleset IDs, visible contents, and update
+times. Missing or changed protection fails closed. Refresh the snapshot after
+any ruleset edit, including a temporary admin bypass and its restoration.
+Templates do not transfer this repository variable; enroll it in each repository.
+No PAT, signing key, or publication secret is stored in the template.
+
 ## Local previews
 
 Use the actual workflow through act/GitHub Local Actions. Select Linux targets

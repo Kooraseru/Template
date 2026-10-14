@@ -336,5 +336,13 @@
       "stdout_contains": "v"
     }
   ],
+  "protection_visibility": [
+    {"name":"verified snapshot restores hidden bypass actors","valid":true},
+    {"name":"hidden bypass actors without snapshot fail closed","missing":true,"valid":false},
+    {"name":"ruleset update invalidates snapshot","changed_time":true,"valid":false},
+    {"name":"changed visible rules invalidate snapshot","changed_rules":true,"valid":false},
+    {"name":"snapshot from another repository rejected","wrong_repository":true,"valid":false},
+    {"name":"unsafe bypass snapshot rejected","unsafe":true,"valid":false}
+  ],
   "png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4iMAAAAASUVORK5CYII="
 }

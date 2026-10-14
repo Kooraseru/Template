@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { sha256, canonical, policy, protectionsValid } from './core.mjs';
+import { sha256, canonical, policy, protectionsValid, verifiedProtections } from './core.mjs';
 
 export function client(token, repository, fetcher = fetch) {
   const base = `https://api.github.com/repos/${repository}`;
@@ -36,7 +36,9 @@ export function client(token, repository, fetcher = fetch) {
 export async function protect(repository, api) {
   api ||= client(process.env.GH_TOKEN, repository);
   const summaries = await api.pages('/rulesets');
-  const rulesets = await Promise.all(summaries.map(set => api.request(`/rulesets/${set.id}`)));
+  const live = await Promise.all(summaries.map(set => api.request(`/rulesets/${set.id}`)));
+  const attestation = process.env.CI_SOURCE_PROTECTION ? JSON.parse(process.env.CI_SOURCE_PROTECTION) : null;
+  const rulesets = verifiedProtections(live, attestation, repository);
   if (!protectionsValid(rulesets)) throw Error('Official publication requires source PR/check protections and admin-only PR merging. See ci/releases/README.md.');
   return true;
 }

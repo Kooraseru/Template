@@ -104,6 +104,17 @@ if (operation === 'resolve') {
 } else if (operation === 'publish') {
   const { publish } = await import('./publish.mjs');
   await publish(process.env.RELEASE_CHANNEL);
+} else if (operation === 'attest-protection') {
+  const {api,repository,actor,isAdmin} = await import('../receipts/github.mjs');
+  const {protectionsValid} = await import('./core.mjs');
+  if (process.env.ACT === 'true' || process.env.GITHUB_ACTIONS === 'true' || !isAdmin(actor())) throw Error('Enroll protection outside CI using an administrator login');
+  const summaries = api(`repos/${repository()}/rulesets`);
+  const rulesets = summaries.map(set => api(`repos/${repository()}/rulesets/${set.id}`));
+  if (!protectionsValid(rulesets)) throw Error('Required source protections are absent');
+  const file = 'build/reports/source-protection-attestation.json';
+  write(file,{schema:1,repository:repository(),rulesets});
+  command('gh',['variable','set','CI_SOURCE_PROTECTION','--repo',repository()],{input:fs.readFileSync(file)});
+  console.log('Enrolled non-secret source protection snapshot; refresh after ruleset changes');
 } else if (operation === 'protect') {
   const { protect } = await import('./publish.mjs');
   await protect(process.argv[3]);

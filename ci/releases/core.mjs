@@ -184,7 +184,7 @@ export function protectionsValid(rulesets) {
   const applicable = rulesets.filter(set => set.enforcement === 'active' && set.target === 'branch'
     && set.conditions?.ref_name?.include?.some(ref => ['refs/heads/source', '~DEFAULT_BRANCH', '~ALL'].includes(ref))
     && !(set.conditions?.ref_name?.exclude || []).some(ref => ['refs/heads/source', '~ALL', '~DEFAULT_BRANCH'].includes(ref)));
-  const checks = applicable.some(set => !(set.bypass_actors || []).length
+  const checks = applicable.some(set => Array.isArray(set.bypass_actors) && !set.bypass_actors.length
     && ['pull_request', 'non_fast_forward', 'deletion'].every(type => set.rules.some(rule => rule.type === type))
     && set.rules.some(rule => rule.type === 'required_status_checks' && rule.parameters.strict_required_status_checks_policy
       && rule.parameters.required_status_checks.some(check => check.context === 'gate' && check.integration_id === 15368)));
@@ -192,4 +192,18 @@ export function protectionsValid(rulesets) {
     && set.bypass_actors?.length === 1 && set.bypass_actors[0].actor_type === 'RepositoryRole'
     && set.bypass_actors[0].actor_id === 5 && set.bypass_actors[0].bypass_mode === 'pull_request');
   return checks && restricted;
+}
+export function verifiedProtections(live, attestation, repository) {
+  if (live.every(set => Array.isArray(set.bypass_actors))) return live;
+  if (attestation?.schema !== 1 || attestation.repository !== repository
+    || !Array.isArray(attestation.rulesets) || !protectionsValid(attestation.rulesets)
+    || attestation.rulesets.length !== live.length) throw Error('Admin source-protection attestation required');
+  const visible = set => ({id:set.id, name:set.name, target:set.target, source_type:set.source_type,
+    source:set.source, enforcement:set.enforcement, conditions:set.conditions, rules:set.rules,
+    updated_at:new Date(set.updated_at).toISOString()});
+  return live.map(set => {
+    const enrolled = attestation.rulesets.find(candidate => candidate.id === set.id);
+    if (!enrolled || canonical(visible(set)) !== canonical(visible(enrolled))) throw Error('Source protection changed; refresh admin attestation');
+    return {...set,bypass_actors:enrolled.bypass_actors};
+  });
 }

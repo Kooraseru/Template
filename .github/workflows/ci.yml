@@ -1,4 +1,6 @@
 name: CI
+env:
+  CI_SOURCE_PROTECTION: ${{ vars.CI_SOURCE_PROTECTION }}
 on:
   pull_request_target:
     branches: [source]
