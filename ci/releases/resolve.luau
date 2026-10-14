@@ -9,14 +9,16 @@ local config = configuration.read()
 local headResult = process.exec("git", { "rev-parse", "HEAD" })
 assert(headResult.ok, "cannot resolve controller commit")
 local head = headResult.stdout:gsub("%s+$", "")
+local tested = process.env.CI_TESTED_SHA or head
 fs.writeDir("build/tmp/releases")
-local channels = if config.release.enabled then serde.decode("toml", fs.readFile("ci/releases/channels.toml")) else {}
-fs.writeFile("build/tmp/releases/request.json", serde.encode("json", { channels = channels, enabled = config.release.enabled }))
+local releasing = config.release.enabled and (process.env.CI_RECEIPT_PR or "0") == "0"
+local channels = if releasing then serde.decode("toml", fs.readFile("ci/releases/channels.toml")) else {}
+fs.writeFile("build/tmp/releases/request.json", serde.encode("json", { channels = channels, enabled = releasing }))
 local resolve = process.exec("node", { "ci/releases/cli.mjs", "resolve" })
 assert(resolve.ok, "release channel resolution failed (" .. tostring(resolve.code) .. "): " .. resolve.stdout .. resolve.stderr)
 local selections = serde.decode("json", fs.readFile("build/tmp/releases/selections.json"))
-local snapshots = { { sha = head, current = true } }
-local seen = { [head] = true }
+local snapshots = { { sha = tested, current = true } }
+local seen = { [tested] = true }
 for _, selection in selections do
     if not seen[selection.source_sha] then
         table.insert(snapshots, { sha = selection.source_sha, current = false })
@@ -25,8 +27,9 @@ for _, selection in selections do
 end
 local builds, images = {}, {}
 for _, snapshot in snapshots do
-    inputs.ref = if snapshot.current then "" else snapshot.sha
+    inputs.ref = snapshot.sha
     local selected = configuration.read()
+    catalogue.validate(catalogue.read(selected))
     for _, target in catalogue.targets(selected) do
         local entry: any = table.clone(target)
         entry.source_sha = snapshot.sha

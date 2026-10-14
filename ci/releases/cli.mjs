@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { command, git, write, sha256, canonical, sourceTip, validateChannels, cacheEligible, artifactEligible, verifyDistribution, policy } from './core.mjs';
+import { command, git, write, sha256, canonical, sourceTip, validateChannels, verifyDistribution, policy } from './core.mjs';
+import { identity } from '../receipts/core.mjs';
+import { restore } from '../receipts/github.mjs';
 
 const read = file => JSON.parse(fs.readFileSync(file));
-const gh = args => JSON.parse(command('gh', ['api', ...args]));
 const directory = 'build/tmp/releases';
 const operation = process.argv[2];
 if (operation === 'resolve') {
@@ -21,49 +22,26 @@ if (operation === 'resolve') {
   write(`${directory}/selections.json`, request.enabled ? validateChannels(request.channels, tip) : []);
 } else if (operation === 'plan') {
   const plan = read(`${directory}/inputs.json`);
-  const controllerFiles = git(['ls-files', 'ci', '.github/actions']).split('\n')
-    .filter(file => fs.existsSync(file) && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
-  // Include untracked implementation files during local previews too.
-  const extra = git(['ls-files', '--others', '--exclude-standard', 'ci', '.github/actions']).split('\n')
-    .filter(file => file && !controllerFiles.includes(file) && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
-  const controllerHash = sha256(canonical([...controllerFiles, ...extra].sort().map(file => [file, sha256(fs.readFileSync(file))])));
+  const controllerFiles = git(['ls-tree','-r','--name-only',plan.controller_sha,'ci','.github/actions','.github/workflows/ci.yml']).split('\n')
+    .filter(file => file && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
+  const controllerHash = sha256(canonical(controllerFiles.sort().map(file => [file,
+    sha256(command('git',['show',`${plan.controller_sha}:${file}`],{encoding:null}))])));
   const imageArtifact = (definition, recipes) => 'image-' + definition.name + '-' + sha256(canonical({ definition, recipes })).slice(0, 24);
-  const cacheRuns = new Map();
-  function runsFor(sha) {
-    if (cacheRuns.has(sha)) return cacheRuns.get(sha);
-    try {
-    const repo = process.env.GITHUB_REPOSITORY;
-    const runs = gh([`repos/${repo}/actions/workflows/ci.yml/runs?event=push&branch=source&head_sha=${sha}&status=success&per_page=${policy.cache_run_limit}`]).workflow_runs;
-    const candidates = runs.filter(run => cacheEligible(run, sha, repo)).map(run => {
-      const artifacts = [];
-      for (let page = 1; ; page++) {
-        const entries = gh([`repos/${repo}/actions/runs/${run.id}/artifacts?per_page=100&page=${page}`]).artifacts;
-        artifacts.push(...entries);
-        if (entries.length < 100) break;
-      }
-      return { id: run.id, artifacts };
-    });
-    cacheRuns.set(sha, candidates);
-    return candidates;
-    } catch (error) {
-      console.warn(`Artifact discovery unavailable for ${sha}; rebuilding selected targets: ${error.message}`);
-      cacheRuns.set(sha, []);
-      return [];
-    }
-  }
   for (const entry of plan.builds) {
+    entry.reuse_identity = entry.reuse_identity || 'exact_commit';
+    if (!['exact_commit','source_tree'].includes(entry.reuse_identity)) throw Error('Invalid target reuse identity');
+    if (entry.reproducible !== undefined && typeof entry.reproducible !== 'boolean') throw Error('Reproducible declaration must be boolean');
+    const selected = identity(entry.source_sha);
+    entry.tree = selected.tree;
+    entry.source_manifest_sha256 = selected.source_manifest_sha256;
     entry.fingerprint = sha256(canonical({ controllerHash, build: entry.build, target: {
       name: entry.name, runner: entry.runner, target: entry.target, profile: entry.profile, environment: entry.environment,
       probes: entry.probes, rust_version: entry.rust_version, msvc_arch: entry.msvc_arch,
+      reuse_identity:entry.reuse_identity, reproducible:entry.reproducible || false,
     }, image: entry.image_definition || null, recipes: entry.recipes }));
     if (entry.image_definition) entry.image_artifact = imageArtifact(entry.image_definition, entry.recipes);
     delete entry.recipes;
     entry.cache_run = '';
-    if (!entry.current && process.env.ACT !== 'true' && process.env.GITHUB_ACTIONS === 'true' && process.env.GH_TOKEN) {
-      for (const run of runsFor(entry.source_sha)) {
-        if (run.artifacts.some(artifact => artifactEligible(artifact, entry.artifact))) { entry.cache_run = String(run.id); break; }
-      }
-    }
   }
   plan.controller_hash = controllerHash;
   const images = new Map();
@@ -85,6 +63,11 @@ if (operation === 'resolve') {
   const entry = JSON.parse(process.env.CI_BUILD_SPEC);
   if (!new RegExp(policy.sha_pattern).test(entry.source_sha)) throw Error('Build source must be a full SHA');
   let reused = false;
+  if (entry.accepted) {
+    const target = await restore(entry,'build/artifacts');
+    verifyDistribution('build/artifacts',{...entry, accepted_source_sha:target.source_sha});
+    reused = true;
+  }
   if (entry.cache_run && fs.existsSync('build/artifacts/provenance.json')) {
     try { verifyDistribution('build/artifacts', entry); reused = true; }
     catch (error) { console.warn(`Cached artifact rejected; rebuilding: ${error.message}`); fs.rmSync('build/artifacts', { recursive: true, force: true }); }

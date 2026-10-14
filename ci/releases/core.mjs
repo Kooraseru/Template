@@ -142,8 +142,9 @@ export const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ 
 export const escapeMarkdown = value => String(value).replace(/[\\`*_{}\[\]()<>#!|]/g, '\\$&').replace(/[\r\n]/g, ' ');
 export function verifyDistribution(root, expected) {
   const metadata = JSON.parse(fs.readFileSync(path.join(root, 'provenance.json')));
-  if (metadata.schema !== 1 || metadata.source_sha !== expected.source_sha
+  if (metadata.schema !== 1 || metadata.source_sha !== (expected.accepted?.source_sha || expected.accepted_source_sha || expected.source_sha)
       || metadata.fingerprint !== expected.fingerprint || metadata.target !== expected.name) throw Error('Distribution provenance mismatch');
+  if (expected.accepted?.resolved_fingerprint && metadata.resolved_fingerprint !== expected.accepted.resolved_fingerprint) throw Error('Resolved build environment mismatch');
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json')));
   if (!Array.isArray(manifest) || !manifest.some(entry => entry.path === 'provenance.json')
       || !manifest.some(entry => entry.path === 'distribution.tar.gz')) throw Error('Incomplete distribution manifest');

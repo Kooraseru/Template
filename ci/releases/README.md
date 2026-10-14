@@ -15,9 +15,10 @@ The publisher rechecks source freshness and protection before promotion.
 Normal builds check the current change. Additional distinct selections build
 their exact source snapshots, using their declared build configuration, target
 definitions, and image recipes with the current CI execution scripts. Cache
-reuse requires a successful source-push run from this repository and matching
-source SHA, target, build fingerprint, and manifest checksums. Missing, expired,
-legacy, or incompatible artifacts fall back to rebuilding.
+reuse requires an accepted admin receipt with matching target, source identity,
+build fingerprint, execution evidence, and manifest checksums. Missing, expired,
+legacy, or incompatible artifacts wait for an admin validation request rather
+than automatically scheduling another hosted build. See ../receipts/README.md.
 
 Output lives under `build/releases/<channel>/<SHA>/`. Inspect `notes.md`,
 `release.json`, `packages.tar.gz`, PNGs, and `graph.html`. With no package paths

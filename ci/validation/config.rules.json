@@ -350,6 +350,20 @@
       "path": "build.matrix.*.probes.*.code",
       "kind": "number",
       "optional": true
+    },
+    {
+      "path": "build.matrix.*.reuse_identity",
+      "kind": "string",
+      "enum": [
+        "exact_commit",
+        "source_tree"
+      ],
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.reproducible",
+      "kind": "boolean",
+      "optional": true
     }
   ]
 }

@@ -73,7 +73,12 @@ export async function assemble(plan) {
       const input = `build/distributions/${entry.artifact}`;
       const verified = verifyDistribution(input, entry);
       fs.cpSync(input, `${root}/packages/${entry.name}`, { recursive: true });
-      targets.push({ name: entry.name, fingerprint: entry.fingerprint, manifest: verified.manifest });
+      targets.push({ name: entry.name, fingerprint: entry.fingerprint, manifest: verified.manifest,
+        tested_sha:verified.metadata.source_sha, selected_sha:entry.source_sha, reuse_identity:entry.reuse_identity || 'exact_commit',
+        contract: { name:entry.name, source_sha:entry.source_sha, tree:entry.tree,
+          source_manifest_sha256:entry.source_manifest_sha256, fingerprint:entry.fingerprint,
+          reuse_identity:entry.reuse_identity || 'exact_commit', runner:entry.runner, target:entry.target,
+          ...(entry.accepted ? {accepted:entry.accepted} : {}) } });
     }
     const data = history(selection, '.', repoURL);
     const rows = layout([...data.commits, ...(data.context ? [data.context] : [])]);

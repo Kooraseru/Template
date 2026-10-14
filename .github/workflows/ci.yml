@@ -1,10 +1,23 @@
 name: CI
 on:
-  pull_request:
+  pull_request_target:
     branches: [source]
   push:
     branches: [source]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'PR number to independently validate; 0 validates source and release selections'
+        default: '0'
+        type: string
+      claim:
+        description: 'Optional contributor receipt JSON for comparison'
+        default: ''
+        type: string
+      bootstrap:
+        description: 'First-install only: admin validates the exact activation PR controller'
+        default: false
+        type: boolean
 permissions:
   contents: read
   actions: read
@@ -27,6 +40,9 @@ jobs:
       publish_release: ${{ steps.context.outputs.publish_release }}
       image_matrix: ${{ steps.context.outputs.image_matrix }}
       release_matrix: ${{ steps.context.outputs.release_matrix }}
+      build_requested: ${{ steps.context.outputs.build_requested }}
+      receipt_ready: ${{ steps.context.outputs.receipt_ready }}
+      local_execution: ${{ steps.context.outputs.local_execution }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -34,6 +50,10 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
+      - name: Resolve execution authority and tested commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ci/receipts/cli.mjs authorize
       - id: context
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,6 +68,7 @@ jobs:
       - run: lune run ci/validation/tests/rules.luau
       - run: lune run ci/validation/tests/gate.luau
       - run: node --test ci/releases/tests/*.test.mjs
+      - run: node --test ci/receipts/tests/*.test.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-plan
@@ -56,7 +77,7 @@ jobs:
   build:
     name: build (${{ matrix.name }})
     needs: [validate, images]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.validate.outputs.build_requested == 'true' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -83,6 +104,8 @@ jobs:
           github-token: ${{ github.token }}
           run-id: ${{ matrix.cache_run }}
       - id: prepared
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node ci/releases/cli.mjs prepare
       - name: Download selected build image
         if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
@@ -107,6 +130,8 @@ jobs:
         if: steps.prepared.outputs.reused != 'true'
         env:
           CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
+      - run: node ci/receipts/cli.mjs execution
+        if: steps.prepared.outputs.reused != 'true'
       - run: lune run ci/distribution/package.luau
         if: steps.prepared.outputs.reused != 'true'
       - run: node ci/releases/cli.mjs verify build/artifacts
@@ -185,9 +210,56 @@ jobs:
           path: build/releases
           include-hidden-files: true
           if-no-files-found: error
+  validation-receipt:
+    needs: [validate, build, images]
+    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || inputs.bootstrap) && needs.validate.outputs.local_execution == 'false' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      checks: write
+    concurrency:
+      group: validation-pr-${{ inputs.pr || github.sha }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-plan
+          path: build/tmp/releases
+      - name: Fetch tested objects without executing proposed controller code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ci/receipts/cli.mjs authorize
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: distribution-*
+          path: build/distributions
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: build-logs-*
+          path: build/validation-logs
+      - run: node ci/receipts/cli.mjs collect
+      - run: node ci/receipts/cli.mjs report
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: validation-receipt
+          path: build/receipts/receipt.json
+          retention-days: 30
+          if-no-files-found: error
+      - run: node ci/receipts/cli.mjs accepted-check
+        env:
+          GH_TOKEN: ${{ github.token }}
   gate:
     if: always()
-    needs: [validate, build, repository, pages, release, images]
+    needs: [validate, build, repository, pages, release, images, validation-receipt]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -196,6 +268,19 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: needs.validate.result == 'success'
+        with:
+          name: release-plan
+          path: build/tmp/releases
+      - name: Require accepted validation or independently requested execution
+        if: needs.validate.result == 'success'
+        run: node ci/receipts/cli.mjs check-ready
+      - name: Require hosted receipt reporting
+        if: github.event_name == 'workflow_dispatch' && needs.validate.outputs.local_execution == 'false'
+        env:
+          RECEIPT_RESULT: ${{ needs.validation-receipt.result }}
+        run: test "$RECEIPT_RESULT" = success
       - name: Require successful enabled jobs
         env:
           RESULTS: >-
@@ -211,6 +296,15 @@ jobs:
             "release":"${{ needs.validate.outputs.release }}",
             "images":"${{ needs.validate.outputs.images }}"}
         run: lune run ci/validation/gate.luau
+      - name: Verify accepted PR validation and report the exact PR head
+        if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ci/receipts/cli.mjs verify-pr
+    permissions:
+      contents: read
+      actions: read
+      checks: write
 
   publish-repository:
     concurrency:
@@ -310,6 +404,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
     concurrency:
       group: publication-release-${{ matrix.channel }}
       cancel-in-progress: false

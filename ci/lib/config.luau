@@ -19,6 +19,8 @@ export type BuildEntry = {
     probes: { Probe }?,
     rust_version: string?,
     msvc_arch: string?,
+    reuse_identity: string?,
+    reproducible: boolean?,
 }
 export type Config = {
     repository: Capability & { include: { string } },

@@ -149,7 +149,13 @@ export async function publish(channel) {
   if (metadata.channel !== channel || metadata.source_sha !== commits[0] || metadata.controller_sha !== process.env.GITHUB_SHA) throw Error('Release controller/source mismatch');
   for (const target of metadata.targets) {
     const { verifyDistribution } = await import('./core.mjs');
-    verifyDistribution(`${root}/packages/${target.name}`, { name: target.name, source_sha: metadata.source_sha, fingerprint: target.fingerprint });
+    if (!target.contract?.accepted || target.contract.source_sha !== metadata.source_sha) throw Error('Release requires accepted admin validation');
+    const { restore } = await import('../receipts/github.mjs');
+    const acceptedRoot = `build/tmp/receipts/publication/${target.name}`;
+    await restore(target.contract,acceptedRoot);
+    const expected = verifyDistribution(acceptedRoot,target.contract);
+    const packaged = verifyDistribution(`${root}/packages/${target.name}`,target.contract);
+    if (canonical(expected.manifest) !== canonical(packaged.manifest)) throw Error('Published packages differ from accepted validation');
   }
   const assertFresh = async () => {
     const ref = await api.request('/git/ref/heads/source');

@@ -43,6 +43,17 @@ as workflow artifacts; registry publication is retired.
 
 ## Generated output
 
+Build acceptance and reuse are defined in [build receipts](receipts/README.md).
+Automatic PRs run cheap checks; expensive builds wait for an admin request.
+Each target defaults to exact-commit reuse. The template catalogue explicitly
+uses source-tree reuse for its static compiler probes; audit that declaration
+when adding project build commands. Optional `reproducible = true` requires
+matching contributor/admin output checksums. Both fields belong to target
+catalogue entries or custom matrix entries, not blanket project fallbacks.
+Accepted receipts use dedicated draft staging releases for 30 days. Local keys
+are optional and require protected-source enrollment; no private key or PAT is
+stored in the repository.
+
 All output under `build/` is ignored and disposable. Create directories when
 needed; empty directories do not require `.gitkeep` files.
 
@@ -56,6 +67,7 @@ needed; empty directories do not require `.gitkeep` files.
 | `build/tests/` | Test fixture output. |
 | `build/releases/` | Channel/SHA release output and local previews. |
 | `build/artifacts/` | Distribution packaging output. |
+| `build/receipts/` | Collected receipts and independent validation bundles. |
 
 The `act` server store lives in `cache/` because distribution packaging resets
 `build/artifacts/`. Keeping those outputs separate protects local transfers when

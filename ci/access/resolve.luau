@@ -9,6 +9,8 @@ local policy = require("./policy")
 local config = configuration.read()
 local resolved = process.exec("lune", { "run", "ci/releases/resolve.luau" })
 assert(resolved.ok, "could not resolve build inputs: " .. resolved.stdout .. resolved.stderr)
+local receipts = process.exec("node", { "ci/receipts/cli.mjs", "plan" })
+assert(receipts.ok, "could not resolve accepted validation: " .. receipts.stdout .. receipts.stderr)
 local fs = require("@lune/fs")
 local matrices = serde.decode("json", fs.readFile("build/tmp/releases/outputs.json"))
 local canPublish = policy.canPublish(context.read(process.env))
@@ -36,4 +38,8 @@ values.images = matrices.images_enabled
 values.image_matrix = matrices.image_matrix
 values.build_matrix = matrices.build_matrix
 values.release_matrix = matrices.release_matrix
+values.release = matrices.release_enabled
+values.build_requested = matrices.build_requested
+values.receipt_ready = matrices.receipt_ready
+values.local_execution = matrices.local_execution
 outputs.write(process.env.GITHUB_OUTPUT, values)

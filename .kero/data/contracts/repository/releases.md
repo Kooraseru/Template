@@ -12,7 +12,9 @@ Markdown file in the controller checkout; omitting it generates no introduction.
 
 Channels are movable GitHub releases and tags. Stable is a normal release; beta
 and canary are prereleases. No immutable-release policy is imposed. Publication
-uses verified packages for the selected SHA, never packages from another commit.
+uses verified packages for the selected source identity. Exact-commit targets
+require that SHA; explicit source-tree targets may reuse another tested SHA only
+with matching trees and complete inputs. Both identities remain explicit.
 If the newest canary commit fails or is still building, retain the previously
 published SHA and assets. Recheck source freshness before updating the channel.
 
@@ -34,6 +36,6 @@ packages. Deleting historical registry packages requires a separate reviewed
 cleanup. Generated release state lives under build/releases/<channel>/<SHA>.
 
 Artifact provenance includes source SHA, target, build-input fingerprint, and
-checksums. Reuse requires a successful source-push run from this repository and
-matching validated provenance; missing, expired, or incompatible artifacts are
-rebuilt. Only the automatic repository GITHUB_TOKEN is needed for publication.
+checksums. Reuse requires accepted independent admin validation and matching
+provenance. Missing, expired, or incompatible artifacts wait for an admin request.
+Only the automatic repository GITHUB_TOKEN is needed for official publication.

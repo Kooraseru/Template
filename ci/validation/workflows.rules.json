@@ -5,7 +5,7 @@
       "equals": "read"
     },
     {
-      "path": "on.pull_request",
+      "path": "on.pull_request_target",
       "exists": true
     },
     {
@@ -17,12 +17,31 @@
       "exists": true
     },
     {
-      "path": "on.pull_request_target",
+      "path": "on.pull_request",
       "absent": true
     },
     {
       "path": "on.workflow_run",
       "absent": true
+    },
+    {
+      "path": "jobs.validation-receipt.if",
+      "required_substrings": [
+        "github.event_name == 'workflow_dispatch'",
+        "refs/heads/source",
+        "local_execution == 'false'"
+      ]
+    },
+    {
+      "path": "jobs.build.permissions.checks",
+      "absent": true
+    },
+    {
+      "path": "jobs.build.permissions.contents",
+      "optional": true,
+      "not_values": [
+        "write"
+      ]
     }
   ],
   "collections": [
@@ -37,6 +56,10 @@
             "write"
           ]
         }
+      ],
+      "exclude_keys": [
+        "gate",
+        "validation-receipt"
       ]
     },
     {

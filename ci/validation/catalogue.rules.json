@@ -237,6 +237,20 @@
         "fedora",
         "arch"
       ]
+    },
+    {
+      "path": "targets.*.reuse_identity",
+      "kind": "string",
+      "enum": [
+        "exact_commit",
+        "source_tree"
+      ],
+      "optional": true
+    },
+    {
+      "path": "targets.*.reproducible",
+      "kind": "boolean",
+      "optional": true
     }
   ],
   "relations": [

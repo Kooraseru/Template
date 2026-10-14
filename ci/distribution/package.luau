@@ -22,9 +22,13 @@ local archive =
 assert(archive.ok, "package archive failed: " .. archive.stderr)
 files.copy("build/distribution.tar.gz", "build/artifacts/distribution.tar.gz")
 if spec then
+    local execution = serde.decode("json", fs.readFile("build/tmp/releases/execution.json"))
     fs.writeFile("build/artifacts/provenance.json", serde.encode("json", {
         schema = 1, source_sha = spec.source_sha, fingerprint = spec.fingerprint,
         target = spec.name, controller_sha = process.env.GITHUB_SHA or "local",
+        tree = execution.tree, source_manifest_sha256 = execution.source_manifest_sha256,
+        execution = execution.execution,
+        resolved_fingerprint = execution.resolved_fingerprint,
     }, true))
 end
 local function inspect(path: string, prefix: string)

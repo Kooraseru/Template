@@ -42,7 +42,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "alpine-gcc-arm64",
@@ -86,7 +87,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "alpine-clang-x64",
@@ -130,7 +132,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "alpine-clang-arm64",
@@ -174,7 +177,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "alpine-rust-x64",
@@ -215,7 +219,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "alpine-rust-arm64",
@@ -256,7 +261,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-gcc-x64",
@@ -300,7 +306,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-gcc-arm64",
@@ -344,7 +351,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-clang-x64",
@@ -388,7 +396,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-clang-arm64",
@@ -432,7 +441,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-rust-x64",
@@ -473,7 +483,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-rust-arm64",
@@ -514,7 +525,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-mingw-x64",
@@ -552,7 +564,8 @@
           ],
           "code": 0
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "debian-mingw-arm64",
@@ -590,7 +603,8 @@
           ],
           "code": 0
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "ubuntu-gcc-x64",
@@ -634,7 +648,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "ubuntu-gcc-arm64",
@@ -678,7 +693,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "ubuntu-clang-x64",
@@ -722,7 +738,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "ubuntu-clang-arm64",
@@ -766,7 +783,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "fedora-gcc-x64",
@@ -810,7 +828,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "fedora-gcc-arm64",
@@ -854,7 +873,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "fedora-clang-x64",
@@ -898,7 +918,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "fedora-clang-arm64",
@@ -942,7 +963,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "arch-gcc-x64",
@@ -986,7 +1008,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "arch-clang-x64",
@@ -1030,7 +1053,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "windows-msvc-x64",
@@ -1068,7 +1092,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "windows-rust-x64",
@@ -1111,7 +1136,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "windows-msvc-arm64",
@@ -1149,7 +1175,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "windows-rust-arm64",
@@ -1192,7 +1219,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "macos-clang-x64",
@@ -1237,7 +1265,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "macos-rust-x64",
@@ -1279,7 +1308,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "macos-clang-arm64",
@@ -1324,7 +1354,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     },
     {
       "name": "macos-rust-arm64",
@@ -1366,7 +1397,8 @@
           "code": 0,
           "stdout_contains": "toolchain ready"
         }
-      ]
+      ],
+      "reuse_identity": "source_tree"
     }
   ]
 }

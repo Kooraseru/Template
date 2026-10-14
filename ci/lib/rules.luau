@@ -198,6 +198,7 @@ function rules.validate(root: any, document: any)
             local name = tostring(key)
             if
                 (not collection.key_pattern or name:match(collection.key_pattern))
+                and (not collection.exclude_keys or not table.find(collection.exclude_keys, name))
                 and (
                     not collection.exclude_key_pattern
                     or not name:match(collection.exclude_key_pattern)
