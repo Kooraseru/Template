@@ -43,6 +43,7 @@ jobs:
       - run: lune run ci/validation/tests/rules.luau
       - run: lune run ci/validation/tests/gate.luau
   build:
+    name: build (${{ matrix.name }})
     needs: [validate, images]
     if: ${{ !cancelled() && needs.validate.result == 'success' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
     strategy:
@@ -185,6 +186,7 @@ jobs:
         run: bash ci/repo/publish.sh
 
   images:
+    name: images (${{ matrix.name }})
     needs: validate
     if: needs.validate.outputs.images == 'true'
     strategy:
@@ -258,6 +260,7 @@ jobs:
         run: bash ci/releases/publish.sh
 
   publish-images:
+    name: publish-images (${{ matrix.name }})
     needs: [validate, gate]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_images == 'true' }}
     strategy:

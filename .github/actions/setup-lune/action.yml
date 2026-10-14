@@ -19,9 +19,9 @@ runs:
         mkdir -p "$destination"
         curl --fail --location --retry 3 "https://github.com/lune-org/lune/releases/download/v0.10.5/lune-0.10.5-$platform.zip" --output "$destination/lune.zip"
         if command -v sha256sum >/dev/null; then
-          echo "$checksum  $destination/lune.zip" | sha256sum --check
+          echo "$checksum  $destination/lune.zip" | sha256sum -c
         else
-          echo "$checksum  $destination/lune.zip" | shasum -a 256 --check
+          echo "$checksum  $destination/lune.zip" | shasum -a 256 -c
         fi
         unzip -o "$destination/lune.zip" -d "$destination"
         if [[ "$RUNNER_OS" != Windows ]]; then chmod +x "$destination/lune"; fi
