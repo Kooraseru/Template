@@ -1,0 +1,1076 @@
+{
+  "images": [
+    {
+      "name": "alpine-gcc-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "alpine",
+      "version": "3.24.2",
+      "base": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
+      "recipe": "linux/alpine/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python3"
+      ],
+      "packages": [
+        "build-base"
+      ],
+      "inventory": [
+        "apk",
+        "info",
+        "-v"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "alpine-gcc-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "alpine",
+      "version": "3.24.2",
+      "base": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
+      "recipe": "linux/alpine/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python3"
+      ],
+      "packages": [
+        "build-base"
+      ],
+      "inventory": [
+        "apk",
+        "info",
+        "-v"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "alpine-clang-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "alpine",
+      "version": "3.24.2",
+      "base": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
+      "recipe": "linux/alpine/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "build-base"
+      ],
+      "inventory": [
+        "apk",
+        "info",
+        "-v"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "alpine-clang-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "alpine",
+      "version": "3.24.2",
+      "base": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
+      "recipe": "linux/alpine/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "build-base"
+      ],
+      "inventory": [
+        "apk",
+        "info",
+        "-v"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "alpine-rust-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "alpine",
+      "version": "3.24.2",
+      "base": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
+      "recipe": "linux/alpine/Dockerfile",
+      "profile": "rust",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python3"
+      ],
+      "packages": [
+        "rust",
+        "cargo",
+        "build-base"
+      ],
+      "inventory": [
+        "apk",
+        "info",
+        "-v"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "rustc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "cargo",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "alpine-rust-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "alpine",
+      "version": "3.24.2",
+      "base": "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6",
+      "recipe": "linux/alpine/Dockerfile",
+      "profile": "rust",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python3"
+      ],
+      "packages": [
+        "rust",
+        "cargo",
+        "build-base"
+      ],
+      "inventory": [
+        "apk",
+        "info",
+        "-v"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "rustc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "cargo",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-gcc-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-gcc-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-clang-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-clang-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-rust-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "rust",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "rustc",
+        "cargo",
+        "gcc",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "rustc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "cargo",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-rust-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "rust",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "rustc",
+        "cargo",
+        "gcc",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "rustc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "cargo",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-mingw-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "mingw",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc-mingw-w64-x86-64",
+        "g++-mingw-w64-x86-64",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "x86_64-w64-mingw32-gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "x86_64-w64-mingw32-g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "debian-mingw-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "debian",
+      "version": "13-trixie",
+      "base": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "recipe": "linux/debian/Dockerfile",
+      "profile": "mingw",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc-mingw-w64-x86-64",
+        "g++-mingw-w64-x86-64",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "x86_64-w64-mingw32-gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "x86_64-w64-mingw32-g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "ubuntu-gcc-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "ubuntu",
+      "version": "24.04",
+      "base": "ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55",
+      "recipe": "linux/ubuntu/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "ubuntu-gcc-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "ubuntu",
+      "version": "24.04",
+      "base": "ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55",
+      "recipe": "linux/ubuntu/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "ubuntu-clang-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "ubuntu",
+      "version": "24.04",
+      "base": "ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55",
+      "recipe": "linux/ubuntu/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "ubuntu-clang-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "ubuntu",
+      "version": "24.04",
+      "base": "ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55",
+      "recipe": "linux/ubuntu/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "g++",
+        "make"
+      ],
+      "inventory": [
+        "dpkg-query",
+        "-W"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "fedora-gcc-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "fedora",
+      "version": "44",
+      "base": "fedora:44@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80",
+      "recipe": "linux/fedora/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkgconf-pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc",
+        "gcc-c++",
+        "make"
+      ],
+      "inventory": [
+        "rpm",
+        "-qa"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "fedora-gcc-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "fedora",
+      "version": "44",
+      "base": "fedora:44@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80",
+      "recipe": "linux/fedora/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkgconf-pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "gcc",
+        "gcc-c++",
+        "make"
+      ],
+      "inventory": [
+        "rpm",
+        "-qa"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "fedora-clang-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "fedora",
+      "version": "44",
+      "base": "fedora:44@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80",
+      "recipe": "linux/fedora/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkgconf-pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "gcc-c++",
+        "make"
+      ],
+      "inventory": [
+        "rpm",
+        "-qa"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "fedora-clang-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "platform": "linux/arm64",
+      "distro": "fedora",
+      "version": "44",
+      "base": "fedora:44@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80",
+      "recipe": "linux/fedora/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja-build",
+        "pkgconf-pkg-config",
+        "python3"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "gcc-c++",
+        "make"
+      ],
+      "inventory": [
+        "rpm",
+        "-qa"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "arch-gcc-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "arch",
+      "version": "rolling",
+      "base": "archlinux:base@sha256:3c64b538588416593f69a1aebd2f2ec0f2541b29159f32556fa7def2167147a0",
+      "recipe": "linux/arch/Dockerfile",
+      "profile": "gcc",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python"
+      ],
+      "packages": [
+        "gcc",
+        "make"
+      ],
+      "inventory": [
+        "pacman",
+        "-Q"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "gcc",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "g++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    },
+    {
+      "name": "arch-clang-x64",
+      "runner": "ubuntu-24.04",
+      "platform": "linux/amd64",
+      "distro": "arch",
+      "version": "rolling",
+      "base": "archlinux:base@sha256:3c64b538588416593f69a1aebd2f2ec0f2541b29159f32556fa7def2167147a0",
+      "recipe": "linux/arch/Dockerfile",
+      "profile": "clang",
+      "common_packages": [
+        "bash",
+        "ca-certificates",
+        "git",
+        "cmake",
+        "ninja",
+        "pkgconf",
+        "python"
+      ],
+      "packages": [
+        "clang",
+        "lld",
+        "gcc",
+        "make"
+      ],
+      "inventory": [
+        "pacman",
+        "-Q"
+      ],
+      "probes": [
+        {
+          "argv": [
+            "clang",
+            "--version"
+          ],
+          "code": 0
+        },
+        {
+          "argv": [
+            "clang++",
+            "--version"
+          ],
+          "code": 0
+        }
+      ]
+    }
+  ]
+}

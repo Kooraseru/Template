@@ -38,19 +38,11 @@ outputs its project actually uses. Pull requests generate inspectable outputs
 without publication privileges. Authorized pushes to `source` may publish those
 validated artifacts after all required checks pass.
 
-## Verification
+## Declarative checks
 
-The default artifact-only workflow has passed locally through `act`.
-Rust and CMake compilation, image generation, Pages, and release generation
-have also passed through the same workflow using test configuration.
-Named matrix entries and combined release assembly have passed locally.
-Validation rules, policies, test cases, and fixtures are defined in JSON;
-Luau executes them. See [declarative checks](ci/validation/README.md).
-The final review included Luau analysis, actionlint, shell syntax, configuration
-parsing, publication-denial cases, and enabled-output workflow execution.
-Repository publication uses GitHub's automatic token. Check the consuming
-repository's Actions runs for its hosted publication results.
-Native Windows and macOS execution still requires their appropriate hosted runners.
+Validation rules, publication policies, test cases, image definitions, and build
+target probes live in JSON or TOML. Luau executes those definitions. See
+[declarative checks](ci/validation/README.md).
 
 ## Configuring a consuming repository
 
@@ -60,15 +52,27 @@ commands. Commands are argument arrays; use an explicit shell invocation when
 a command needs shell syntax. Place all build output under `build/`.
 Rust and CMake require explicit versions when enabled.
 
-Set `build.matrix` to named runner entries for multiple build configurations.
-Each entry runs the configured commands and receives `CI_BUILD_TARGET` containing
-its name. Distribution artifacts and logs are separated by that name; release
-assembly verifies and collects every configured distribution. An empty matrix
-uses `build.runner` as a single entry named `default`.
+The populated baseline selects 24 Linux images and 32 build targets. Edit
+`build.targets` to select named entries from `ci/build/targets.json`, and select
+their required images through `images.names`. The validation job checks those
+references before building. See [the image catalogue](ci/images/README.md) for
+distributions and profiles. Windows and macOS each have x86_64 and ARM64 targets.
+
+Each target compiles a small toolchain fixture before running project commands.
+Native targets execute it; MinGW targets compile a Windows executable from Linux.
+Container targets build within their selected image. Native targets use their
+specified Windows or macOS runner. Commands receive `CI_BUILD_TARGET` and
+`CI_TARGET_TRIPLE`; container profiles also provide compiler settings. MinGW's
+CMake toolchain file is available through `CMAKE_TOOLCHAIN_FILE`.
+
+Use `build.matrix` for explicit custom entries; a nonempty matrix overrides
+`build.targets`. If both lists are empty, `build.runner` supplies a single entry
+named `default`. Distribution artifacts and logs are separated by target name;
+release assembly verifies every selected distribution.
 
 Edit publication templates under `ci/repo/templates/`; author release notes
 under `ci/releases/records/<version>.md` before selecting that version.
-Place custom image Dockerfiles and their build contexts under `ci/images/<name>/`.
+Image Dockerfiles belong under `ci/images/`, with image choices in its catalogue.
 Pages uses Markdown templates under `ci/pages/templates/`.
 
 Publication uses the current repository's automatically supplied `GITHUB_TOKEN`;
@@ -91,4 +95,10 @@ request and merge it through GitHub rather than providing broader credentials.
 Local artifact storage is enabled by `.actrc` under `build/act-artifacts/`.
 Select a Docker runner image suitable for your host architecture in GitHub
 Local Actions. CLI users may pass `-P ubuntu-latest=<runner-image>` to `act`.
-No repository access token is required for the default local validation run.
+Filter a Linux target while testing locally, for example
+`act workflow_dispatch --matrix name:alpine-gcc-arm64`, and map its runner label
+(`ubuntu-24.04-arm` here) to your local runner image. Include a mapping for
+`ubuntu-latest`, which runs validation and generation. The selected target's image
+is built by the same workflow. Native Windows/macOS jobs require their native
+hosted runners; Linux Docker execution through `act` cannot reproduce them.
+No repository access token is required for local validation and generation.

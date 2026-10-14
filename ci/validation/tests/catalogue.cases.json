@@ -1,0 +1,102 @@
+{
+  "cases": [
+    {
+      "name": "baseline",
+      "valid": true
+    },
+    {
+      "name": "unknown image",
+      "valid": false,
+      "patch": {
+        "config.images.names": [
+          "missing"
+        ]
+      }
+    },
+    {
+      "name": "unknown target",
+      "valid": false,
+      "patch": {
+        "config.build.targets": [
+          "missing"
+        ]
+      }
+    },
+    {
+      "name": "missing selected image",
+      "valid": false,
+      "patch": {
+        "config.images.names": []
+      }
+    },
+    {
+      "name": "image jobs disabled",
+      "valid": false,
+      "patch": {
+        "config.images.enabled": false
+      }
+    },
+    {
+      "name": "duplicate image",
+      "valid": false,
+      "patch": {
+        "images": []
+      }
+    },
+    {
+      "name": "native only without images",
+      "valid": true,
+      "patch": {
+        "config.build.targets": [
+          "windows-msvc-x64"
+        ],
+        "config.images.names": [],
+        "config.images.enabled": false
+      }
+    },
+    {
+      "name": "invalid platform",
+      "valid": false,
+      "patch": {
+        "images.1.platform": "linux/mips"
+      }
+    },
+    {
+      "name": "invalid package expression",
+      "valid": false,
+      "patch": {
+        "images.1.packages": [
+          "gcc; exit 0"
+        ]
+      }
+    },
+    {
+      "name": "unmatched runner architecture",
+      "valid": false,
+      "patch": {
+        "images.1.runner": "ubuntu-24.04-arm"
+      }
+    },
+    {
+      "name": "missing base digest",
+      "valid": false,
+      "patch": {
+        "images.1.base": "alpine:latest"
+      }
+    },
+    {
+      "name": "escaping recipe",
+      "valid": false,
+      "patch": {
+        "images.1.recipe": "linux/../../Dockerfile"
+      }
+    },
+    {
+      "name": "target image mismatch",
+      "valid": false,
+      "patch": {
+        "targets.1.profile": "clang"
+      }
+    }
+  ]
+}

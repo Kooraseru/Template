@@ -169,7 +169,13 @@
       "enum": [
         "ubuntu-latest",
         "windows-latest",
-        "macos-latest"
+        "macos-latest",
+        "ubuntu-24.04",
+        "ubuntu-24.04-arm",
+        "windows-2025",
+        "windows-11-arm",
+        "macos-15",
+        "macos-15-intel"
       ]
     },
     {
@@ -263,8 +269,85 @@
       "enum": [
         "ubuntu-latest",
         "windows-latest",
-        "macos-latest"
+        "macos-latest",
+        "ubuntu-24.04",
+        "ubuntu-24.04-arm",
+        "windows-2025",
+        "windows-11-arm",
+        "macos-15",
+        "macos-15-intel"
       ]
+    },
+    {
+      "path": "build.targets",
+      "kind": "array",
+      "unique": true
+    },
+    {
+      "path": "build.targets.*",
+      "kind": "string",
+      "pattern": "^[a-z][a-z0-9%-]*$"
+    },
+    {
+      "path": "build.matrix.*.image",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.platform",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.profile",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.target",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.rust_version",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.msvc_arch",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.environment",
+      "kind": "object",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.probes",
+      "kind": "array",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.environment.*",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.probes.*.argv",
+      "kind": "array",
+      "min_items": 1,
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.probes.*.argv.*",
+      "kind": "string",
+      "optional": true
+    },
+    {
+      "path": "build.matrix.*.probes.*.code",
+      "kind": "number",
+      "optional": true
     }
   ]
 }

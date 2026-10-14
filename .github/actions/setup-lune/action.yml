@@ -25,4 +25,8 @@ runs:
         fi
         unzip -o "$destination/lune.zip" -d "$destination"
         if [[ "$RUNNER_OS" != Windows ]]; then chmod +x "$destination/lune"; fi
-        echo "$RUNNER_TEMP/lune" >> "$GITHUB_PATH"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          cygpath -w "$destination" >> "$GITHUB_PATH"
+        else
+          echo "$destination" >> "$GITHUB_PATH"
+        fi

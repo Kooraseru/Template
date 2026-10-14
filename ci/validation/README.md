@@ -29,3 +29,11 @@ differences and `{root}` to refer to a fixture's output directory.
 `rule-format.json` lists supported rule options and their value types. Unknown
 options are rejected so a spelling mistake cannot silently remove a constraint.
 Manifest structure and output constraints also have dedicated rule files.
+
+`catalogue.rules.json` checks image and target shapes, named references, matched
+runner/platform/profile fields, required image generation, and recipe paths.
+Its `relations` declare source collections, reference fields, destination
+collections, destination keys, and optional equal fields. Its `paths` declare
+required files using entry fields in `{field}` templates. Catalogue test inputs
+live in `tests/catalogue.cases.json`. Toolchain compile/run checks are target
+`probes` in `ci/build/targets.json`, with expected exit codes and optional output.

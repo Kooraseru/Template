@@ -5,6 +5,7 @@ local configuration = require("../lib/config")
 local outputs = require("../lib/outputs")
 local context = require("./context")
 local policy = require("./policy")
+local catalogue = require("../lib/catalogue")
 
 local config = configuration.read()
 local canPublish = policy.canPublish(context.read(process.env))
@@ -29,10 +30,14 @@ for name, capability in capabilities do
 end
 
 -- act expands skipped matrices, and Lune encodes empty tables as objects.
-local imageNames = if #config.images.names > 0 then config.images.names else { "disabled" }
-values.image_matrix = serde.encode("json", { name = imageNames })
-local buildEntries = if #config.build.matrix > 0
-    then config.build.matrix
-    else { { name = "default", runner = config.build.runner } }
-values.build_matrix = serde.encode("json", { include = buildEntries })
+local images = {}
+for _, name in config.images.names do
+    local image = catalogue.image(name)
+    table.insert(images, { name = name, runner = image.runner, platform = image.platform })
+end
+if #images == 0 then
+    table.insert(images, { name = "disabled", runner = config.build.runner, platform = "" })
+end
+values.image_matrix = serde.encode("json", { include = images })
+values.build_matrix = serde.encode("json", { include = catalogue.targets(config) })
 outputs.write(process.env.GITHUB_OUTPUT, values)

@@ -2,6 +2,8 @@
 local fs = require("@lune/fs")
 local rules = require("../lib/rules")
 local config = require("../lib/config").read()
+local catalogue = require("../lib/catalogue")
+catalogue.validate(catalogue.read(config))
 local definitions = rules.read("ci/validation/repository.checks.json")
 
 local operations: { [string]: (any) -> () } = {

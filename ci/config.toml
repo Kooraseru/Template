@@ -16,17 +16,76 @@ publish = false
 version = ""
 
 [images]
-enabled = false
-publish = false
-names = []
+enabled = true
+publish = true
+names = [
+    "alpine-gcc-x64",
+    "alpine-gcc-arm64",
+    "alpine-clang-x64",
+    "alpine-clang-arm64",
+    "alpine-rust-x64",
+    "alpine-rust-arm64",
+    "debian-gcc-x64",
+    "debian-gcc-arm64",
+    "debian-clang-x64",
+    "debian-clang-arm64",
+    "debian-rust-x64",
+    "debian-rust-arm64",
+    "debian-mingw-x64",
+    "debian-mingw-arm64",
+    "ubuntu-gcc-x64",
+    "ubuntu-gcc-arm64",
+    "ubuntu-clang-x64",
+    "ubuntu-clang-arm64",
+    "fedora-gcc-x64",
+    "fedora-gcc-arm64",
+    "fedora-clang-x64",
+    "fedora-clang-arm64",
+    "arch-gcc-x64",
+    "arch-clang-x64",
+]
 
 # Add only the toolchains and commands your project actually uses.
 # Commands are argv arrays, executed without implicit shell expansion.
 [build]
 runner = "ubuntu-latest"
-# Empty uses the runner above. Add named entries for additional configurations:
+# A nonempty custom matrix overrides targets. With both lists empty, use runner.
 # matrix = [{ name = "linux", runner = "ubuntu-latest" }, { name = "windows", runner = "windows-latest" }]
 matrix = []
+targets = [
+    "alpine-gcc-x64",
+    "alpine-gcc-arm64",
+    "alpine-clang-x64",
+    "alpine-clang-arm64",
+    "alpine-rust-x64",
+    "alpine-rust-arm64",
+    "debian-gcc-x64",
+    "debian-gcc-arm64",
+    "debian-clang-x64",
+    "debian-clang-arm64",
+    "debian-rust-x64",
+    "debian-rust-arm64",
+    "debian-mingw-x64",
+    "debian-mingw-arm64",
+    "ubuntu-gcc-x64",
+    "ubuntu-gcc-arm64",
+    "ubuntu-clang-x64",
+    "ubuntu-clang-arm64",
+    "fedora-gcc-x64",
+    "fedora-gcc-arm64",
+    "fedora-clang-x64",
+    "fedora-clang-arm64",
+    "arch-gcc-x64",
+    "arch-clang-x64",
+    "windows-msvc-x64",
+    "windows-rust-x64",
+    "windows-msvc-arm64",
+    "windows-rust-arm64",
+    "macos-clang-x64",
+    "macos-rust-x64",
+    "macos-clang-arm64",
+    "macos-rust-arm64",
+]
 toolchains = []
 rust_version = ""
 cmake_version = ""

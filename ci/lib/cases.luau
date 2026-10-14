@@ -24,9 +24,9 @@ function cases.apply(baseline: any, case: any): any
         local parts = string.split(path, ".")
         local parent = result
         for index = 1, #parts - 1 do
-            parent = parent[parts[index]]
+            parent = parent[tonumber(parts[index]) or parts[index]]
         end
-        parent[parts[#parts]] = copy(value)
+        parent[tonumber(parts[#parts]) or parts[#parts]] = copy(value)
     end
     for _, key in case.remove or {} do
         result[key] = nil

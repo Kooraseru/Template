@@ -38,13 +38,16 @@ jobs:
       - run: lune run ci/access/tests/policy.luau
       - run: lune run ci/access/tests/publication.luau
       - run: lune run ci/validation/tests/config.luau
+      - run: lune run ci/validation/tests/catalogue.luau
       - run: lune run ci/validation/tests/artifacts.luau
       - run: lune run ci/validation/tests/rules.luau
       - run: lune run ci/validation/tests/gate.luau
   build:
-    needs: validate
+    needs: [validate, images]
+    if: ${{ !cancelled() && needs.validate.result == 'success' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix: ${{ fromJSON(needs.validate.outputs.build_matrix) }}
     runs-on: ${{ matrix.runner }}
     env:
@@ -54,12 +57,23 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-rust
-        if: needs.validate.outputs.rust == 'true'
+      - name: Download selected build image
+        if: matrix.image != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          toolchain: ${{ needs.validate.outputs.rust_version }}
+          name: image-${{ matrix.image }}
+          path: build/selected-image
+      - name: Set up native MSVC
+        if: matrix.msvc_arch != ''
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: ${{ matrix.msvc_arch }}
+      - uses: ./.github/actions/setup-rust
+        if: matrix.image == '' && (needs.validate.outputs.rust == 'true' || matrix.profile == 'rust')
+        with:
+          toolchain: ${{ matrix.rust_version || needs.validate.outputs.rust_version }}
       - uses: ./.github/actions/setup-cmake
-        if: needs.validate.outputs.cmake == 'true'
+        if: matrix.image == '' && needs.validate.outputs.cmake == 'true'
         with:
           version: ${{ needs.validate.outputs.cmake_version }}
       - run: lune run ci/build/run.luau
@@ -175,8 +189,9 @@ jobs:
     if: needs.validate.outputs.images == 'true'
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -190,6 +205,7 @@ jobs:
         with:
           name: image-${{ matrix.name }}
           path: build/images/${{ matrix.name }}
+          retention-days: 1
           if-no-files-found: error
 
   publish-pages:

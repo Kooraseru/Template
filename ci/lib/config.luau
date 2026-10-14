@@ -7,7 +7,19 @@ local rules = require("./rules")
 local schema = rules.read("ci/validation/config.rules.json")
 
 export type Capability = { enabled: boolean, publish: boolean }
-export type BuildEntry = { name: string, runner: string }
+export type Probe = { argv: { string }, code: number, stdout_contains: string? }
+export type BuildEntry = {
+    name: string,
+    runner: string,
+    image: string?,
+    platform: string?,
+    profile: string?,
+    target: string?,
+    environment: { [string]: string }?,
+    probes: { Probe }?,
+    rust_version: string?,
+    msvc_arch: string?,
+}
 export type Config = {
     repository: Capability & { include: { string } },
     pages: Capability & { title: string },
@@ -16,6 +28,7 @@ export type Config = {
     build: {
         runner: string,
         matrix: { BuildEntry },
+        targets: { string },
         toolchains: { string },
         rust_version: string,
         cmake_version: string,
