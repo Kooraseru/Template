@@ -261,6 +261,13 @@
       "draft_tag": true,
       "failure": "body",
       "valid": false
+    },
+    {
+      "name": "graph uploads have an image content type",
+      "failure": null,
+      "valid": true,
+      "png": true,
+      "png_type": "image/png"
     }
   ],
   "artifacts": [
@@ -328,5 +335,6 @@
       "code": 0,
       "stdout_contains": "v"
     }
-  ]
+  ],
+  "png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4iMAAAAASUVORK5CYII="
 }

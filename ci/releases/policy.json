@@ -20,5 +20,12 @@
   ],
   "body_commit_limit": 80,
   "cache_run_limit": 30,
-  "retry_attempts": 3
+  "retry_attempts": 3,
+  "asset_content_types": {
+    ".png": "image/png",
+    ".html": "text/html",
+    ".json": "application/json",
+    ".md": "text/markdown",
+    ".gz": "application/gzip"
+  }
 }

@@ -51,10 +51,12 @@ export async function updateChannel(api, metadata, root, assertFresh) {
   const payloads = [...metadata.assets, { path: 'release.json', name: `${channel}-${metadata.source_sha}-release.json`, sha256: sha256(fs.readFileSync(`${root}/release.json`)) }];
   const uploadedName = asset => asset.path !== 'release.json' && metadata.generation ? asset.name
     : asset.name.replace(`${channel}-${metadata.source_sha}-`, `${channel}-${metadata.source_sha}-${generation}-`);
+  const contentType = asset => policy.asset_content_types[path.extname(asset.path)] || 'application/octet-stream';
   const existing = oldRelease ? await api.pages(`/releases/${oldRelease.id}/assets`) : [];
   if (oldRelease?.body?.includes(marker) && oldRef?.object?.sha === metadata.source_sha
       && payloads.every(asset => existing.some(entry => entry.name === uploadedName(asset)
-        && entry.digest === `sha256:${asset.sha256}` && entry.size === fs.statSync(`${root}/${asset.path}`).size))) {
+        && entry.digest === `sha256:${asset.sha256}` && entry.content_type === contentType(asset)
+        && entry.size === fs.statSync(`${root}/${asset.path}`).size))) {
     await assertFresh();
     console.log(`${channel} already matches verified generation ${generation}`); return;
   }
@@ -75,17 +77,18 @@ export async function updateChannel(api, metadata, root, assertFresh) {
       const data = fs.readFileSync(path.join(root, asset.path));
       if (sha256(data) !== asset.sha256) throw Error(`Release asset changed after assembly: ${asset.path}`);
       let candidate = existing.find(entry => entry.name === name);
-      if (candidate && candidate.digest !== `sha256:${asset.sha256}`) {
+      if (candidate && (candidate.digest !== `sha256:${asset.sha256}` || candidate.content_type !== contentType(asset))) {
         // Unverified leftovers from a failed staging attempt cannot be reused.
         await api.request(`/releases/assets/${candidate.id}`, { method: 'DELETE' }); candidate = null;
       }
       if (!candidate) {
         candidate = await api.request(`${release.upload_url.replace(/\{.*$/, '')}?name=${encodeURIComponent(name)}`, {
-          method: 'POST', body: data, headers: { 'Content-Type': 'application/octet-stream' },
+          method: 'POST', body: data, headers: { 'Content-Type': contentType(asset) },
         });
         uploaded.push(candidate.id);
       }
-      if (candidate.digest !== `sha256:${asset.sha256}` || candidate.size !== data.length) throw Error(`Uploaded asset verification failed: ${name}`);
+      if (candidate.digest !== `sha256:${asset.sha256}` || candidate.size !== data.length
+          || candidate.content_type !== contentType(asset)) throw Error(`Uploaded asset verification failed: ${name}`);
     }
     await assertFresh();
     const currentRef = await api.request(`/git/ref/tags/${channel}`, { missing: true });

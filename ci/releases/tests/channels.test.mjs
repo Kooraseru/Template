@@ -108,6 +108,11 @@ for (const [index, scenario] of cases.publication.entries()) test(scenario.name,
   write(`${dir}/notes.md`, 'Selected new source'); write(`${dir}/packages.tar.gz`, 'new packages');
   const metadata = { channel: 'canary', source_sha: commits.merge, selection_hash: sha256('selection'), prerelease: true, targets: [],
     assets: [{ path: 'packages.tar.gz', name: `canary-${commits.merge}-packages.tar.gz`, sha256: sha256('new packages') }] };
+  if (scenario.png) {
+    const data = Buffer.from(cases.png_base64, 'base64');
+    fs.writeFileSync(`${dir}/graph.png`, data);
+    metadata.assets.push({ path: 'graph.png', name: `canary-${commits.merge}-graph.png`, sha256: sha256(data) });
+  }
   write(`${dir}/release.json`, metadata);
   const existing = scenario.initial !== false;
   let ref = existing ? { object: { sha: commits.root } } : null;
@@ -119,7 +124,9 @@ for (const [index, scenario] of cases.publication.entries()) test(scenario.name,
       if (route.startsWith('https://uploads')) {
         if (scenario.failure === 'upload') throw Error('upload failed');
         uploaded++;
-        const asset = { id: next++, name: new URL(route).searchParams.get('name'), size: options.body.length, digest: `sha256:${sha256(options.body)}` };
+        const asset = { id: next++, name: new URL(route).searchParams.get('name'), size: options.body.length,
+          digest: `sha256:${sha256(options.body)}`, content_type: options.headers['Content-Type'] };
+        if (asset.name.endsWith('.png')) assert.equal(asset.content_type, scenario.png_type);
         assets.push(asset); return structuredClone(asset);
       }
       if (options.method === 'DELETE') {
