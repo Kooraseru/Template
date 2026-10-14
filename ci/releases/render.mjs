@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { command, git, write, sha256, history, layout, escapeHTML, escapeMarkdown, verifyDistribution, policy } from './core.mjs';
+import { command, git, write, sha256, canonical, history, layout, escapeHTML, escapeMarkdown, verifyDistribution, policy } from './core.mjs';
 
 export function svg(rows) {
   const columns = Math.max(1, ...rows.map(row => Math.max(row.before.length, row.after.length)));
