@@ -198,8 +198,18 @@ jobs:
       - uses: ./.github/actions/setup-node
       - name: Require successful enabled jobs
         env:
-          RESULTS: ${{ toJSON(needs) }}
-          ENABLED: ${{ toJSON(needs.validate.outputs) }}
+          RESULTS: >-
+            {"validate":{"result":"${{ needs.validate.result }}"},
+            "build":{"result":"${{ needs.build.result }}"},
+            "repository":{"result":"${{ needs.repository.result }}"},
+            "pages":{"result":"${{ needs.pages.result }}"},
+            "release":{"result":"${{ needs.release.result }}"},
+            "images":{"result":"${{ needs.images.result }}"}}
+          ENABLED: >-
+            {"repository":"${{ needs.validate.outputs.repository }}",
+            "pages":"${{ needs.validate.outputs.pages }}",
+            "release":"${{ needs.validate.outputs.release }}",
+            "images":"${{ needs.validate.outputs.images }}"}
         run: lune run ci/validation/gate.luau
 
   publish-repository:
