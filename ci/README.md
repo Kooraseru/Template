@@ -14,8 +14,8 @@ publish, even when a publication flag is true.
 | `repository.enabled` | Baseline `true`; required | Generate the publication tree for `main`. |
 | `repository.publish` | Baseline `true`; required | Allow the gated job to update `main`. |
 | `repository.include` | Baseline `["src"]`; required | Existing repository paths copied into that tree. |
-| `pages.enabled` | Baseline `false`; required | Render Markdown website templates. |
-| `pages.publish` | Baseline `false`; required | Allow gated GitHub Pages deployment. |
+| `pages.enabled` | Baseline `true`; required | Render Markdown website templates. |
+| `pages.publish` | Baseline `true`; required | Allow gated GitHub Pages deployment. |
 | `pages.title` | Optional; `"Project documentation"` | Generated site's title. |
 | `release.enabled` | Baseline `true`; required | Assemble commit-based channels and distributions. |
 | `release.publish` | Baseline `true`; required | Allow gated updates of movable release channels. |

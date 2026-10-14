@@ -17,8 +17,8 @@ include = ["src"]
 # Documentation
 # Generate and deploy the documentation site.
 [pages]
-enabled = false
-publish = false
+enabled = true
+publish = true
 
 # Optional:
 # title = "Project documentation"
