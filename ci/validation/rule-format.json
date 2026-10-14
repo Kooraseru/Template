@@ -1,0 +1,31 @@
+{
+  "fields": {
+    "path": "string",
+    "kind": "string",
+    "message": "string",
+    "equals": "any",
+    "equals_path": "string",
+    "enum": "table",
+    "not_values": "table",
+    "min_length": "number",
+    "exact_length": "number",
+    "min_items": "number",
+    "pattern": "string",
+    "prefix": "string",
+    "contains": "any",
+    "required_substrings": "table",
+    "capture_pattern": "string",
+    "capture_length": "number",
+    "reject_patterns": "table",
+    "reject_substrings": "table",
+    "forbidden_components": "table",
+    "unique": "boolean",
+    "unique_by": "string",
+    "exists": "boolean",
+    "absent": "boolean",
+    "optional": "boolean",
+    "skip_pattern": "string",
+    "when": "table",
+    "use": "string"
+  }
+}

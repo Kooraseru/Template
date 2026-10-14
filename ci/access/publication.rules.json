@@ -1,0 +1,37 @@
+{
+  "rules": [
+    {
+      "path": "$",
+      "kind": "object"
+    },
+    {
+      "path": "localRun",
+      "equals": false
+    },
+    {
+      "path": "actions",
+      "equals": "true"
+    },
+    {
+      "path": "server",
+      "equals": "https://github.com"
+    },
+    {
+      "path": "event",
+      "equals": "push"
+    },
+    {
+      "path": "ref",
+      "equals": "refs/heads/source"
+    },
+    {
+      "path": "repository",
+      "kind": "string",
+      "min_length": 1
+    },
+    {
+      "path": "eventRepository",
+      "equals_path": "repository"
+    }
+  ]
+}

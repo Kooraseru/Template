@@ -1,0 +1,26 @@
+{
+  "definitions_source": "ci/validation/config.rules.json",
+  "manifest_file": "manifest.json",
+  "hash_algorithm": "sha256",
+  "hash_field": "sha256",
+  "rules": [
+    {
+      "path": "$",
+      "kind": "array",
+      "unique_by": "path"
+    },
+    {
+      "path": "*.path",
+      "use": "relative",
+      "not_values": [
+        "manifest.json"
+      ]
+    },
+    {
+      "path": "*.sha256",
+      "kind": "string",
+      "exact_length": 64,
+      "pattern": "^[a-f0-9]+$"
+    }
+  ]
+}

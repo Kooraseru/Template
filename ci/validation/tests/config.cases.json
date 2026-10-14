@@ -1,0 +1,242 @@
+{
+  "configuration": [
+    {
+      "name": "default configuration",
+      "patch": {},
+      "valid": true
+    },
+    {
+      "name": "self-hosted runner",
+      "patch": {
+        "build.runner": "self-hosted"
+      },
+      "valid": false
+    },
+    {
+      "name": "Git metadata publication",
+      "patch": {
+        "repository.include": [
+          ".git"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "build output publication",
+      "patch": {
+        "repository.include": [
+          "build"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "package outside build",
+      "patch": {
+        "build.package_paths": [
+          "src"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "empty image list",
+      "patch": {
+        "images.enabled": true,
+        "images.names": []
+      },
+      "valid": false
+    },
+    {
+      "name": "missing release version",
+      "patch": {
+        "release.enabled": true,
+        "release.version": ""
+      },
+      "valid": false
+    },
+    {
+      "name": "unversioned Rust",
+      "patch": {
+        "build.toolchains": [
+          "rust"
+        ],
+        "build.rust_version": ""
+      },
+      "valid": false
+    },
+    {
+      "name": "unversioned CMake",
+      "patch": {
+        "build.toolchains": [
+          "cmake"
+        ],
+        "build.cmake_version": "latest"
+      },
+      "valid": false
+    },
+    {
+      "name": "command string",
+      "patch": {
+        "build.commands": [
+          "cargo test"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "empty executable",
+      "patch": {
+        "build.commands": [
+          [
+            ""
+          ]
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "commands dictionary",
+      "patch": {
+        "build.commands": {
+          "named": [
+            "cargo",
+            "test"
+          ]
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "recursive package destination",
+      "patch": {
+        "build.package_paths": [
+          "build/artifacts"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "build root package",
+      "patch": {
+        "build.package_paths": [
+          "build/"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "reserved metadata",
+      "patch": {
+        "build.package_paths": [
+          "build/manifest.json"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "duplicate image",
+      "patch": {
+        "images.names": [
+          "smoke",
+          "smoke"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "platform matrix",
+      "patch": {
+        "build.matrix": [
+          {
+            "name": "linux",
+            "runner": "ubuntu-latest"
+          },
+          {
+            "name": "windows",
+            "runner": "windows-latest"
+          },
+          {
+            "name": "macos",
+            "runner": "macos-latest"
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "duplicate matrix name",
+      "patch": {
+        "build.matrix": [
+          {
+            "name": "linux",
+            "runner": "ubuntu-latest"
+          },
+          {
+            "name": "linux",
+            "runner": "ubuntu-latest"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "matrix self-hosted runner",
+      "patch": {
+        "build.matrix": [
+          {
+            "name": "unsafe",
+            "runner": "self-hosted"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "matrix path traversal name",
+      "patch": {
+        "build.matrix": [
+          {
+            "name": "../unsafe",
+            "runner": "ubuntu-latest"
+          }
+        ]
+      },
+      "valid": false
+    }
+  ],
+  "paths": [
+    {
+      "input": "../secret",
+      "valid": false
+    },
+    {
+      "input": "/tmp/file",
+      "valid": false
+    },
+    {
+      "input": "C:/secret",
+      "valid": false
+    },
+    {
+      "input": "src/../secret",
+      "valid": false
+    },
+    {
+      "input": "src\\file",
+      "valid": false
+    },
+    {
+      "input": "src",
+      "valid": true
+    },
+    {
+      "input": "assets/icon.png",
+      "valid": true
+    },
+    {
+      "input": "build/artifacts/package.zip",
+      "valid": true
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+# Template CI configuration.
+[repository]
+enabled = true
+publish = true
+include = ["src"]
+
+[pages]
+enabled = false
+publish = false
+title = "Project documentation"
+
+[release]
+enabled = false
+publish = false
+# Explicitly select an authored release record; a source push alone is not a release.
+version = ""
+
+[images]
+enabled = false
+publish = false
+names = []
+
+# Add only the toolchains and commands your project actually uses.
+# Commands are argv arrays, executed without implicit shell expansion.
+[build]
+runner = "ubuntu-latest"
+# Empty uses the runner above. Add named entries for additional configurations:
+# matrix = [{ name = "linux", runner = "ubuntu-latest" }, { name = "windows", runner = "windows-latest" }]
+matrix = []
+toolchains = []
+rust_version = ""
+cmake_version = ""
+commands = []
+package_paths = []

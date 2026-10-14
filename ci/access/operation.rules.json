@@ -1,0 +1,14 @@
+{
+  "rules": [
+    {
+      "path": "GH_TOKEN",
+      "kind": "string",
+      "min_length": 1
+    },
+    {
+      "path": "GITHUB_SHA",
+      "kind": "string",
+      "min_length": 1
+    }
+  ]
+}

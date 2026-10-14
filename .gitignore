@@ -1,0 +1,44 @@
+# Build output
+/build/
+/build[.-]*/
+/out/
+/cmake-build-*/
+/coverage/
+/src/target/
+
+# IDE / editor state
+/.vs/
+/.vscode/
+*.user
+*.user.*
+CMakeUserPresets.json
+compile_commands.json
+
+# Local/runtime state
+.cache/
+__pycache__/
+*.nonce
+
+# Profiling / crash output
+/crash-*
+/fuzz-*
+/fuzz/luau.pb.*
+/default.prof*
+*.profraw
+*.profdata
+*.dmp
+
+# Golden-test captured outputs
+*.output.tmp
+
+# Secrets
+*.key
+*.pem
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Development-tool runtime state
+/.kero/.runtime/
