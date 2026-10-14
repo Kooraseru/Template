@@ -32,6 +32,13 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
             end
             return process.exec("docker", dockerArguments)
         end
+        -- Windows resolves a relative program path before applying cwd.
+        -- Resolve checkout-local programs explicitly; leave PATH commands alone.
+        local sourceDirectory = process.env.CI_SOURCE_DIR
+        if sourceDirectory and executable:find("[/\\]")
+            and not executable:match("^[/\\]") and not executable:match("^%a:") then
+            executable = sourceDirectory .. "/" .. executable
+        end
         return process.exec(executable, arguments, { env = environment, cwd = process.env.CI_SOURCE_DIR })
     end
 

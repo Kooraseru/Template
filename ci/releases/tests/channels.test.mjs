@@ -41,6 +41,16 @@ for (const scenario of cases.snapshots) test(scenario.name, () => {
   for (const name of scenario.present) assert.ok(fs.existsSync(path.join(source, name)));
   for (const name of scenario.absent) assert.ok(!fs.existsSync(path.join(source, name)));
 });
+test('native programs execute from the selected checkout', () => {
+  const source = path.join(root, 'native-checkout');
+  fs.mkdirSync(path.join(source, 'build'), { recursive: true });
+  const name = process.platform === 'win32' ? 'source-node.exe' : 'source-node';
+  fs.copyFileSync(process.execPath, path.join(source, 'build', name));
+  fs.chmodSync(path.join(source, 'build', name), 0o755);
+  command('lune', ['run', 'ci/build/tests/native-execute.luau'], {
+    env: { ...process.env, CI_SOURCE_DIR: source, CI_BUILD_SPEC: '' },
+  });
+});
 for (const scenario of cases.channels) test(scenario.name, () => {
   const execute = () => validateChannels(expand(scenario.input), commits.merge, repository);
   if (scenario.valid) assert.ok(execute().length); else assert.throws(execute);

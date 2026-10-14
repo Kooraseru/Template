@@ -313,5 +313,20 @@
       ],
       "absent": []
     }
+  ],
+  "native_execution": [
+    {
+      "name": "selected checkout relative executable",
+      "argv": [
+        "build/source-node",
+        "--version"
+      ],
+      "windows_argv": [
+        "build/source-node.exe",
+        "--version"
+      ],
+      "code": 0,
+      "stdout_contains": "v"
+    }
   ]
 }
