@@ -44,10 +44,18 @@ export async function updateChannel(api, metadata, root, assertFresh) {
   const channel = metadata.channel;
   const oldRelease = await api.request(`/releases/tags/${channel}`, { missing: true });
   const oldRef = await api.request(`/git/ref/tags/${channel}`, { missing: true });
-  const generation = sha256(canonical({ source: metadata.source_sha, selection: metadata.selection_hash,
+  const generation = metadata.generation || sha256(canonical({ source: metadata.source_sha, selection: metadata.selection_hash,
     targets: metadata.targets, assets: metadata.assets })).slice(0, 16);
+  if (!/^[a-f0-9]{16}$/.test(generation)) throw Error('Invalid release generation');
   const marker = `<!-- release-generation:${generation} -->`;
-  if (oldRelease?.body?.includes(marker) && oldRef?.object?.sha === metadata.source_sha) {
+  const payloads = [...metadata.assets, { path: 'release.json', name: `${channel}-${metadata.source_sha}-release.json`, sha256: sha256(fs.readFileSync(`${root}/release.json`)) }];
+  const uploadedName = asset => asset.path !== 'release.json' && metadata.generation ? asset.name
+    : asset.name.replace(`${channel}-${metadata.source_sha}-`, `${channel}-${metadata.source_sha}-${generation}-`);
+  const existing = oldRelease ? await api.pages(`/releases/${oldRelease.id}/assets`) : [];
+  if (oldRelease?.body?.includes(marker) && oldRef?.object?.sha === metadata.source_sha
+      && payloads.every(asset => existing.some(entry => entry.name === uploadedName(asset)
+        && entry.digest === `sha256:${asset.sha256}` && entry.size === fs.statSync(`${root}/${asset.path}`).size))) {
+    await assertFresh();
     console.log(`${channel} already matches verified generation ${generation}`); return;
   }
   let release = oldRelease, created = false, moved = false;
@@ -60,11 +68,9 @@ export async function updateChannel(api, metadata, root, assertFresh) {
         name: channel, draft: true, prerelease: metadata.prerelease });
       created = true;
     }
-    const payloads = [...metadata.assets, { path: 'release.json', name: `${channel}-${metadata.source_sha}-release.json`, sha256: sha256(fs.readFileSync(`${root}/release.json`)) }];
-    const existing = await api.pages(`/releases/${release.id}/assets`);
     for (const asset of payloads) {
       // A generation suffix prevents overwriting previous assets while staging replacements for the same SHA.
-      const name = asset.name.replace(`${channel}-${metadata.source_sha}-`, `${channel}-${metadata.source_sha}-${generation}-`);
+      const name = uploadedName(asset);
       assetNames.add(name);
       const data = fs.readFileSync(path.join(root, asset.path));
       if (sha256(data) !== asset.sha256) throw Error(`Release asset changed after assembly: ${asset.path}`);
@@ -88,7 +94,8 @@ export async function updateChannel(api, metadata, root, assertFresh) {
     if (currentRef) await api.json('PATCH', `/git/refs/tags/${channel}`, { sha: metadata.source_sha, force: true });
     else await api.json('POST', '/git/refs', { ref: `refs/tags/${channel}`, sha: metadata.source_sha });
     moved = true;
-    const body = fs.readFileSync(`${root}/notes.md`, 'utf8').replaceAll(`${channel}-${metadata.source_sha}-`, `${channel}-${metadata.source_sha}-${generation}-`) + `\n${marker}\n`;
+    const notes = fs.readFileSync(`${root}/notes.md`, 'utf8');
+    const body = (metadata.generation ? notes : notes.replaceAll(`${channel}-${metadata.source_sha}-`, `${channel}-${metadata.source_sha}-${generation}-`)) + `\n${marker}\n`;
     await api.json('PATCH', `/releases/${release.id}`, { tag_name: channel, name: channel, body,
       draft: false, prerelease: metadata.prerelease, make_latest: channel === 'stable' ? 'true' : 'false' });
     const verifiedRef = await api.request(`/git/ref/tags/${channel}`);

@@ -98,11 +98,13 @@ export function history(selection, repository = '.', repoURL = '') {
     if (policy.bot_patterns.some(pattern => new RegExp(pattern, 'i').test(identity))) continue;
     people.set(match[2].toLowerCase(), match[1]);
   }
-  const refs = run(['for-each-ref', '--format=%(objectname)%09%(refname:short)', 'refs/heads', 'refs/remotes', 'refs/tags']);
+  const refs = run(['for-each-ref', '--format=%(objectname)%09%(*objectname)%09%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags']);
   const labels = new Map();
   for (const line of refs.split('\n')) {
-    const [sha, name] = line.split('\t');
-    if (!sha || !name || name.endsWith('/HEAD')) continue;
+    const [object, peeled, reference] = line.split('\t');
+    const sha = peeled || object;
+    if (!sha || !reference || reference.endsWith('/HEAD')) continue;
+    const name = reference.replace(/^refs\/(heads|remotes|tags)\//, '');
     if (!labels.has(sha)) labels.set(sha, []);
     labels.get(sha).push(name);
   }
@@ -116,6 +118,7 @@ export function layout(rows) {
   const lanes = [];
   return rows.map(row => {
     let lane = lanes.indexOf(row.sha);
+    const incoming = lane !== -1;
     if (lane === -1) { lane = lanes.indexOf(null); if (lane === -1) lane = lanes.length; lanes[lane] = row.sha; }
     const before = [...lanes];
     lanes[lane] = null;
@@ -131,7 +134,7 @@ export function layout(rows) {
     }
     const after = [...lanes];
     while (lanes.at(-1) === null) lanes.pop();
-    return { ...row, lane, before, after, edges };
+    return { ...row, lane, incoming, before, after, edges };
   });
 }
 export const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));

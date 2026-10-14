@@ -3,7 +3,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { git, write, sha256, validateChannels, history, layout, verifyDistribution, cacheEligible, artifactEligible, protectionsValid } from '../core.mjs';
-import { svg, htmlGraph } from '../render.mjs';
+import { svg, htmlGraph, finalizeAssets } from '../render.mjs';
 import { updateChannel, publish, client } from '../publish.mjs';
 
 const cases = JSON.parse(fs.readFileSync(new URL('./cases.json', import.meta.url)));
@@ -43,6 +43,17 @@ test('range, merge topology, mailmap and co-author credits', () => {
   assert.ok(!htmlGraph(rows, 'canary', commits.merge).includes('<script'));
   assert.equal(history({ from: 'beginning', source_sha: commits.merge }, repository).commits.length, cases.history.beginning_count);
   assert.equal(history({ from: commits.root, source_sha: commits.root }, repository).contributors.length, 0);
+});
+test('release metadata names match linked assets and final checksums', () => {
+  const dir = path.join(root, 'asset-names');
+  const metadata = { channel: 'canary', source_sha: commits.merge, selection_hash: sha256('range'), targets: [] };
+  write(`${dir}/notes.md`, `![Graph](https://github.com/example/project/releases/download/canary/canary-${commits.merge}-graph-001.png)`);
+  write(`${dir}/graph-001.png`, 'graph');
+  const result = finalizeAssets(dir, metadata, ['notes.md', 'graph-001.png']);
+  const notes = fs.readFileSync(`${dir}/notes.md`, 'utf8');
+  for (const asset of result.assets) assert.equal(asset.sha256, sha256(fs.readFileSync(`${dir}/${asset.path}`)));
+  assert.ok(notes.includes('/' + result.assets.find(asset => asset.path === 'graph-001.png').name + ')'));
+  assert.equal(JSON.parse(fs.readFileSync(`${dir}/release.json`)).generation, result.generation);
 });
 for (const scenario of cases.cache) test(scenario.name, () => {
   const run = { event: 'push', head_branch: 'source', head_sha: commits.merge, conclusion: 'success', head_repository: { full_name: 'example/project' } };
