@@ -61,3 +61,12 @@ The `act` server store lives in `cache/` because distribution packaging resets
 `build/artifacts/`. Keeping those outputs separate protects local transfers when
 the workflow uses a shared workspace. Build jobs continue to write their logs
 under `build/logs/`; save orchestration logs under `build/logs/ci/`.
+
+## CI execution tools
+
+CI installs Lune 0.10.5 and Node 24.10.0 explicitly. Node archive names and
+checksums are declared in `ci/tools/node.json`; the installer selects the actual
+executing machine architecture. It does not assume act's host architecture is
+the container architecture. The graph renderer uses that Node version in a
+pinned Docker image, a pinned npm lockfile, and a vendored licensed font.
+These are CI tools; they do not select a project language or project toolchain.

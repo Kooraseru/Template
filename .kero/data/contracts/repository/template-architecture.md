@@ -52,7 +52,7 @@ The same CI workflow supports different access contexts.
 - Allow validation and artifact generation.
 - Do not grant publication privileges merely because an input requests publication. Trusted GitHub context and repository authorization must still permit it.
 
-Release creation is governed by the project's release configuration. A successful source push does not automatically imply a new versioned GitHub Release.
+Release channels are governed by `ci/releases/channels.toml` and the [release contract](releases.md). Canary follows the newest verified source commit; stable and beta select explicit commits. Existing channel releases and tags move on promotion.
 
 The central principle is:
 
@@ -92,7 +92,7 @@ Do not create `ci/pipeline.luau` or another local CI orchestrator.
 
 Scripts inside `ci/` implement individual operations invoked by workflow jobs.
 
-Local `act` execution is artifact-only by default and must not publish remotely.
+Local `act` execution is artifact-only and must not publish remotely.
 
 We recognize that `act` uses Docker and cannot reproduce native macOS or Windows runner behavior. Native platform jobs are verified on their appropriate GitHub runners. This is a documented limitation, not a reason to create another workflow architecture.
 

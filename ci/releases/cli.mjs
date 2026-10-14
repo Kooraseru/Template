@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { command, git, write, sha256, canonical, sourceTip, validateChannels, cacheEligible, artifactEligible, verifyDistribution, policy } from './core.mjs';
 
 const read = file => JSON.parse(fs.readFileSync(file));

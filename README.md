@@ -17,7 +17,7 @@ options through the extension as needed.
 
 The same workflow defines local and hosted CI. Scripts under `ci/` perform
 individual operations; there is no separate local pipeline orchestrator.
-Local runs are artifact-only by default. They must not publish remotely.
+Local runs are artifact-only. They must not publish remotely.
 Native platform jobs still require verification on their appropriate GitHub
 runners; sharing a workflow does not guarantee identical host environments.
 

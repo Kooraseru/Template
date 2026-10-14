@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { sha256, canonical, write, policy, protectionsValid } from './core.mjs';
+import { sha256, canonical, policy, protectionsValid } from './core.mjs';
 
 export function client(token, repository, fetcher = fetch) {
   const base = `https://api.github.com/repos/${repository}`;

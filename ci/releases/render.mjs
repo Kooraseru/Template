@@ -68,7 +68,11 @@ export async function assemble(plan) {
     if (!pages.length) { write(`${graphDir}/graph-001.svg`, svg([])); pages.push('graph-001'); }
     renderPNGs(graphDir);
     // Public graph JSON deliberately excludes canonical email and raw commit bodies.
-    const publicRows = rows.map(({ email, body, ...row }) => row);
+    const publicRows = rows.map(row => {
+      const publicRow = { ...row };
+      delete publicRow.email; delete publicRow.body;
+      return publicRow;
+    });
     write(`${root}/graph.json`, publicRows);
     write(`${root}/graph.html`, htmlGraph(publicRows, selection.channel, selection.source_sha));
     const prefix = `${selection.channel}-${selection.source_sha}`;
