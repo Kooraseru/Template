@@ -22,14 +22,12 @@ local archive =
 assert(archive.ok, "package archive failed: " .. archive.stderr)
 files.copy("build/distribution.tar.gz", "build/artifacts/distribution.tar.gz")
 if spec then
-    local execution = serde.decode("json", fs.readFile("build/tmp/releases/execution.json"))
-    fs.writeFile("build/artifacts/provenance.json", serde.encode("json", {
-        schema = 1, source_sha = spec.source_sha, fingerprint = spec.fingerprint,
-        target = spec.name, controller_sha = process.env.GITHUB_SHA or "local",
-        tree = execution.tree, source_manifest_sha256 = execution.source_manifest_sha256,
-        execution = execution.execution,
-        resolved_fingerprint = execution.resolved_fingerprint,
-    }, true))
+    local provenance = fs.readFile("build/tmp/releases/execution.json")
+    local metadata = serde.decode("json", provenance)
+    assert(metadata.source_sha == spec.source_sha and metadata.fingerprint == spec.fingerprint,
+        "execution provenance does not match the package target")
+    -- Preserve JSON arrays exactly; an empty Luau table re-encodes as an object.
+    fs.writeFile("build/artifacts/provenance.json", provenance)
 end
 local function inspect(path: string, prefix: string)
     for _, name in fs.readDir(path) do

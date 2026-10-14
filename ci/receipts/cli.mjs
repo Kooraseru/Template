@@ -79,7 +79,8 @@ if (operation === 'authorize') {
     image_record:imageRecord } : { kind:'native', os:process.platform, arch:process.arch };
   execution.probe_logs = manifest('build/logs').filter(file => /^probe-\d+\.log$/.test(file.path));
   execution.node_version = process.version;
-  write('build/tmp/releases/execution.json', { ...selected, execution,
+  write('build/tmp/releases/execution.json', { schema:1, ...selected,
+    fingerprint:spec.fingerprint, target:spec.name, controller_sha:process.env.GITHUB_SHA || 'local', execution,
     resolved_fingerprint:sha256(canonical({inputs:spec.fingerprint,execution})) });
 } else if (operation === 'collect') {
   const plan = read(process.argv[3] || 'build/tmp/releases/plan.json');
