@@ -27,7 +27,8 @@ support and are currently rejected.
 | Hosted fallback | Disabled | Missing results wait for an admin request. |
 | Local target selection | Linux only | Native Windows/macOS require hosted validation; never inferred from act emulation. |
 
-The 32 template catalogue entries explicitly opt into tree reuse because they
+Compiler profiles are opt-in; the template baseline has no compiler workload.
+The 32 catalogue entries explicitly opt into tree reuse because they
 only run static compiler probes. When adding project commands, audit this
 declaration for every target. Use exact-commit identity if Git SHA, describe,
 history, branch names, or commit-derived versions influence output.
@@ -146,3 +147,8 @@ new local keys trust before their protected-source enrollment.
 
 References: https://docs.github.com/en/rest/checks/runs and
 https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/troubleshooting-rules
+
+Draft releases are visible only with repository write access. The trusted validation
+job retrieves and verifies accepted bundles, then transfers distributions and logs
+as named workflow artifacts. Build jobs remain read-only and recheck distribution
+provenance before reuse. They do not need draft-release access.

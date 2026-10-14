@@ -64,8 +64,13 @@ if (operation === 'resolve') {
   if (!new RegExp(policy.sha_pattern).test(entry.source_sha)) throw Error('Build source must be a full SHA');
   let reused = false;
   if (entry.accepted) {
-    const target = await restore(entry,'build/artifacts');
-    verifyDistribution('build/artifacts',{...entry, accepted_source_sha:target.source_sha});
+    const staged = path.join('build/accepted-distributions', entry.artifact);
+    if (fs.existsSync(staged)) {
+      fs.cpSync(staged, 'build/artifacts', {recursive:true});
+      const logs = path.join('build/accepted-logs', `build-logs-${entry.source_sha}-${entry.name}`);
+      if (fs.existsSync(logs)) fs.cpSync(logs,'build/logs',{recursive:true});
+    } else await restore(entry,'build/artifacts');
+    verifyDistribution('build/artifacts',{...entry, accepted_source_sha:entry.accepted.source_sha});
     reused = true;
   }
   if (entry.cache_run && fs.existsSync('build/artifacts/provenance.json')) {

@@ -23,6 +23,9 @@ permissions:
   actions: read
 jobs:
   validate:
+    permissions:
+      contents: write # Draft staging releases require write access to read.
+      actions: read
     runs-on: ubuntu-latest
     outputs:
       runner: ${{ steps.context.outputs.runner }}
@@ -42,9 +45,10 @@ jobs:
       release_matrix: ${{ steps.context.outputs.release_matrix }}
       build_requested: ${{ steps.context.outputs.build_requested }}
       receipt_ready: ${{ steps.context.outputs.receipt_ready }}
+      accepted_available: ${{ steps.context.outputs.accepted_available }}
       local_execution: ${{ steps.context.outputs.local_execution }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -69,10 +73,25 @@ jobs:
       - run: lune run ci/validation/tests/gate.luau
       - run: node --test ci/releases/tests/*.test.mjs
       - run: node --test ci/receipts/tests/*.test.mjs
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: release-plan
           path: build/tmp/releases/plan.json
+          if-no-files-found: error
+      - name: Transfer verified accepted distributions
+        if: steps.context.outputs.accepted_available == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: accepted-distributions
+          path: build/accepted-distributions
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Transfer verified accepted logs
+        if: steps.context.outputs.accepted_available == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: accepted-logs
+          path: build/accepted-logs
           if-no-files-found: error
   build:
     name: build (${{ matrix.name }})
@@ -88,34 +107,37 @@ jobs:
       CI_BUILD_SPEC: ${{ toJSON(matrix) }}
       CI_INPUT_REF: ${{ matrix.input_ref }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - name: Download reusable distribution
-        if: matrix.cache_run != ''
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - name: Download verified accepted distributions
+        if: matrix.accepted
+        uses: actions/download-artifact@v8
         with:
-          name: ${{ matrix.artifact }}
-          path: build/artifacts
-          github-token: ${{ github.token }}
-          run-id: ${{ matrix.cache_run }}
+          name: accepted-distributions
+          path: build/accepted-distributions
+      - name: Download verified accepted logs
+        if: matrix.accepted
+        uses: actions/download-artifact@v8
+        with:
+          name: accepted-logs
+          path: build/accepted-logs
       - id: prepared
         env:
           GH_TOKEN: ${{ github.token }}
         run: node ci/releases/cli.mjs prepare
       - name: Download selected build image
         if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.image_artifact }}
           path: build/selected-image
       - name: Set up native MSVC
         if: steps.prepared.outputs.reused != 'true' && matrix.msvc_arch != ''
-        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.msvc_arch }}
       - uses: ./.github/actions/setup-rust
@@ -135,13 +157,13 @@ jobs:
       - run: lune run ci/distribution/package.luau
         if: steps.prepared.outputs.reused != 'true'
       - run: node ci/releases/cli.mjs verify build/artifacts
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: build/artifacts
           include-hidden-files: true
           if-no-files-found: error
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: build-logs-${{ matrix.source_sha }}-${{ matrix.name }}
@@ -151,7 +173,7 @@ jobs:
     if: needs.validate.outputs.repository == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -160,7 +182,7 @@ jobs:
       - uses: ./.github/actions/build-repo
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: repository
           path: build/repository.tar
@@ -171,7 +193,7 @@ jobs:
     if: needs.validate.outputs.pages == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -179,7 +201,7 @@ jobs:
       - uses: ./.github/actions/setup-node
       - run: sudo apt-get update && sudo apt-get install --yes pandoc
       - uses: ./.github/actions/build-pages
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: pages-preview
           path: build/pages
@@ -189,22 +211,22 @@ jobs:
     if: needs.validate.outputs.release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
           path: build/distributions
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           name: release-plan
           path: build/tmp/releases
       - run: lune run ci/releases/build.luau
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: release
           path: build/releases
@@ -222,13 +244,13 @@ jobs:
       group: validation-pr-${{ inputs.pr || github.sha }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           name: release-plan
           path: build/tmp/releases
@@ -236,11 +258,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node ci/receipts/cli.mjs authorize
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
           path: build/distributions
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           pattern: build-logs-*
           path: build/validation-logs
@@ -248,7 +270,7 @@ jobs:
       - run: node ci/receipts/cli.mjs report
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: validation-receipt
           path: build/receipts/receipt.json
@@ -262,13 +284,13 @@ jobs:
     needs: [validate, build, repository, pages, release, images, validation-receipt]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         if: needs.validate.result == 'success'
         with:
           name: release-plan
@@ -302,7 +324,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node ci/receipts/cli.mjs verify-pr
     permissions:
-      contents: read
+      contents: write
       actions: read
       checks: write
 
@@ -316,13 +338,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           name: repository
           path: build
@@ -342,7 +364,7 @@ jobs:
       matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -354,7 +376,7 @@ jobs:
           CI_IMAGE_ID: ${{ matrix.artifact }}
           CI_INPUT_REF: ${{ matrix.input_ref }}
         run: lune run ci/images/build.luau "$IMAGE_NAME"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: build/images/${{ matrix.name }}
@@ -376,7 +398,7 @@ jobs:
       group: publication-pages
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
@@ -385,15 +407,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: lune run ci/access/require-publication.luau
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           name: pages-preview
           path: build/pages
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: build/pages
       - id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
+        uses: actions/deploy-pages@v5
 
   publish-release:
     strategy:
@@ -409,13 +431,13 @@ jobs:
       group: publication-release-${{ matrix.channel }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v8
         with:
           name: release
           path: build/releases

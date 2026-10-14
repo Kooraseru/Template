@@ -19,19 +19,20 @@ publish, even when a publication flag is true.
 | `pages.title` | Optional; `"Project documentation"` | Generated site's title. |
 | `release.enabled` | Baseline `true`; required | Assemble commit-based channels and distributions. |
 | `release.publish` | Baseline `true`; required | Allow gated updates of movable release channels. |
-| `images.enabled` | Baseline `true`; required | Build and export selected CI images. |
+| `images.enabled` | Baseline `false`; required | Build and export selected CI images. |
 | `images.names` | Baseline 24 catalogue names; omitted `[]` | Selected image variants; a nonempty selection is required when enabled. |
 | `build.runner` | Optional; `"ubuntu-latest"` | Fallback runner when neither targets nor a custom matrix is selected. |
 | `build.matrix` | Optional; `[]` | Custom named configurations; a nonempty list overrides `targets`. |
-| `build.targets` | Baseline 32 catalogue names; omitted `[]` | Selected targets from `build/targets.json`. Empty matrix and targets select one fallback target named `default`. |
+| `build.targets` | Optional; `[]` | Selected targets from `build/targets.json`. Empty matrix and targets select one fallback target named `default`. |
 | `build.toolchains` | Optional; `[]` | Extra native Rust/CMake setup; catalogue profiles already select their own setup. |
 | `build.rust_version` | Optional; `""` | Explicit version required when extra native Rust setup is enabled. |
 | `build.cmake_version` | Optional; `""` | Explicit version required when extra native CMake setup is enabled. |
 | `build.commands` | Optional; `[]` | Project build/test command argument arrays; empty means toolchain probes only. |
 | `build.package_paths` | Optional; `[]` | Existing paths under `build/` copied into distribution archives; empty means no application payload. |
 
-The populated baseline image and target selections are explicit in `config.toml`,
-not hidden fallbacks. See [image profiles](images/README.md) and the two JSON
+The template has no application build commands or payload. Routine CI validates the
+template itself; compiler environments are opt-in. All 24 image profiles and 32
+build targets remain available. Enable images and select targets when needed. See [image profiles](images/README.md) and the two JSON
 catalogues for their full names and platform settings.
 
 Release selections live in [releases/channels.toml](releases/channels.toml).
@@ -82,3 +83,8 @@ executing machine architecture. It does not assume act's host architecture is
 the container architecture. The graph renderer uses that Node version in a
 pinned Docker image, a pinned npm lockfile, and a vendored licensed font.
 These are CI tools; they do not select a project language or project toolchain.
+
+GitHub Actions use current stable major tags rather than commit SHA pins, so upstream
+patch updates are automatic. Draft receipt retrieval runs only in the trusted
+controller job with contents write access; build jobs receive verified workflow
+artifacts with read-only repository permissions.

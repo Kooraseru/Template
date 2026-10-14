@@ -140,7 +140,7 @@ const bytes=Buffer.isBuffer(result)?result:Buffer.from(JSON.stringify(result));r
     artifact:'distribution-'+selected.source_sha+'-linux-x64'};
   const script = path.join(root,'build/discover.mjs');
   write(script,`import fs from 'node:fs';import {discover} from ${JSON.stringify(pathToFileURL(path.resolve('ci/receipts/github.mjs')).href)};
-const plan=JSON.parse(fs.readFileSync('build/plan.json'));const accepted=await discover(plan);if(accepted.length!==Number(process.env.EXPECT_ACCEPTED))throw Error('Unexpected acceptance');
+const plan=JSON.parse(fs.readFileSync('build/plan.json'));const accepted=await discover(plan,null,true);if(accepted.length!==Number(process.env.EXPECT_ACCEPTED))throw Error('Unexpected acceptance');
 fs.writeFileSync('build/spec.json',JSON.stringify(plan.builds[0]));`);
   write(path.join(root,'build/plan.json'),{controller_hash:receipt.controller_hash,builds:[entry]});
   const env = {...process.env,GH_REPO:'owner/project',GITHUB_REPOSITORY:'owner/project',RECEIPT_FIXTURE:stateFile,

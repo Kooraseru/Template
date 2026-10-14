@@ -33,9 +33,9 @@ publish = true
 
 
 # Container Images
-# Build selected images and transfer them as workflow artifacts.
+# Optional compiler environments; enable when the project uses them.
 [images]
-enabled = true
+enabled = false
 names = [
     "alpine-gcc-x64",
     "alpine-gcc-arm64",
@@ -72,48 +72,10 @@ names = [
 # Run target probes and project build commands, then package outputs.
 [build]
 runner = "ubuntu-latest"
-targets = [
-    "alpine-gcc-x64",
-    "alpine-gcc-arm64",
-    "alpine-clang-x64",
-    "alpine-clang-arm64",
-    "alpine-rust-x64",
-    "alpine-rust-arm64",
-
-    "debian-gcc-x64",
-    "debian-gcc-arm64",
-    "debian-clang-x64",
-    "debian-clang-arm64",
-    "debian-rust-x64",
-    "debian-rust-arm64",
-    "debian-mingw-x64",
-    "debian-mingw-arm64",
-
-    "ubuntu-gcc-x64",
-    "ubuntu-gcc-arm64",
-    "ubuntu-clang-x64",
-    "ubuntu-clang-arm64",
-
-    "fedora-gcc-x64",
-    "fedora-gcc-arm64",
-    "fedora-clang-x64",
-    "fedora-clang-arm64",
-
-    "arch-gcc-x64",
-    "arch-clang-x64",
-
-    "windows-msvc-x64",
-    "windows-rust-x64",
-    "windows-msvc-arm64",
-    "windows-rust-arm64",
-
-    "macos-clang-x64",
-    "macos-rust-x64",
-    "macos-clang-arm64",
-    "macos-rust-arm64",
-]
+# Compiler targets are opt-in; see ci/build/targets.json for all 32 profiles.
 
 # Optional:
+# targets = ["alpine-gcc-x64", "windows-msvc-x64", "macos-clang-arm64"]
 # matrix = [{ name = "custom", runner = "ubuntu-latest" }]
 # toolchains = ["rust", "cmake"]
 # rust_version = "1.99.0"

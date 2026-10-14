@@ -47,7 +47,7 @@ if (operation === 'authorize') {
   const plan = read('build/tmp/releases/plan.json');
   const context = read(`${root}/context.json`);
   plan.context = context; plan.tested_sha = context.tested_sha;
-  if (!context.local) await discover(plan, context.pr.number ? context.pr : null);
+  if (!context.local) await discover(plan, context.pr.number ? context.pr : null, true);
   const complete = plan.builds.every(entry => entry.accepted);
   const run = context.requested || complete;
   const names = process.env.CI_LOCAL_TARGETS ? JSON.parse(process.env.CI_LOCAL_TARGETS) : null;
@@ -65,6 +65,7 @@ if (operation === 'authorize') {
   previous.build_requested = String(run); previous.receipt_ready = String(complete);
   previous.release_enabled = String(run && plan.selections.length > 0 && executing.length === plan.builds.length);
   previous.local_execution = String(context.local);
+  previous.accepted_available = String(plan.builds.some(entry => entry.accepted));
   write('build/tmp/releases/outputs.json', previous);
   console.log(complete ? 'Accepted validation covers all targets' : context.requested ? 'Admin/local execution requested' : 'Waiting for admin validation; expensive jobs remain disabled');
 } else if (operation === 'execution') {

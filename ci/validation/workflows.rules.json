@@ -59,7 +59,8 @@
       ],
       "exclude_keys": [
         "gate",
-        "validation-receipt"
+        "validation-receipt",
+        "validate"
       ]
     },
     {
@@ -89,8 +90,10 @@
           "optional": true,
           "skip_pattern": "^%./",
           "kind": "string",
-          "capture_pattern": "@([a-f0-9]+)$",
-          "capture_length": 40
+          "pattern": "@[%w%.%-]+$",
+          "reject_patterns": [
+            "@[a-f0-9]+$"
+          ]
         }
       ]
     }
@@ -102,8 +105,10 @@
         "optional": true,
         "skip_pattern": "^%./",
         "kind": "string",
-        "capture_pattern": "@([a-f0-9]+)$",
-        "capture_length": 40
+        "pattern": "@[%w%.%-]+$",
+        "reject_patterns": [
+          "@[a-f0-9]+$"
+        ]
       }
     ]
   }

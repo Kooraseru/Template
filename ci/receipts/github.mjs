@@ -80,7 +80,7 @@ export async function verifyEnvelope(envelope) {
   return authenticate(envelope, { repository: repository(), keys: trustedKeys(), isAdmin,
     hostedRun: id => hostedRun(id, envelope), allowBootstrap });
 }
-export async function discover(plan, pr = null) {
+export async function discover(plan, pr = null, materialize = false) {
   const candidates = [];
   for (const release of listStaging()) {
     try {
@@ -113,6 +113,12 @@ export async function discover(plan, pr = null) {
         archive_sha256: candidate.receipt.bundle_sha256, source_sha: target.source_sha,
         resolved_fingerprint:target.resolved_fingerprint,
         artifact: target.artifact, envelope: sha256(canonical(candidate.envelope)) };
+      if (materialize) {
+        fs.cpSync(path.join(candidate.root, 'distributions', target.artifact),
+          path.join('build/accepted-distributions', entry.artifact), { recursive: true });
+        fs.cpSync(path.join(candidate.root, 'logs', target.log_artifact),
+          path.join('build/accepted-logs', `build-logs-${entry.source_sha}-${entry.name}`), { recursive: true });
+      }
       accepted.push({ name: entry.name, selected_sha: entry.source_sha, tested_sha: target.source_sha,
         release_id: candidate.release_id, validator: candidate.validator });
     }
