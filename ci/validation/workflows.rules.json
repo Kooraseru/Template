@@ -1,0 +1,87 @@
+{
+  "rules": [
+    {
+      "path": "permissions.contents",
+      "equals": "read"
+    },
+    {
+      "path": "on.pull_request",
+      "exists": true
+    },
+    {
+      "path": "on.push",
+      "exists": true
+    },
+    {
+      "path": "on.workflow_dispatch",
+      "exists": true
+    },
+    {
+      "path": "on.pull_request_target",
+      "absent": true
+    },
+    {
+      "path": "on.workflow_run",
+      "absent": true
+    }
+  ],
+  "collections": [
+    {
+      "path": "jobs",
+      "exclude_key_pattern": "^publish%-",
+      "rules": [
+        {
+          "path": "permissions.*",
+          "optional": true,
+          "not_values": [
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "jobs",
+      "key_pattern": "^publish%-",
+      "rules": [
+        {
+          "path": "if",
+          "kind": "string",
+          "required_substrings": [
+            "github.event_name == 'push'",
+            "refs/heads/source"
+          ]
+        },
+        {
+          "path": "needs",
+          "kind": "array",
+          "contains": "gate"
+        }
+      ]
+    },
+    {
+      "path": "jobs",
+      "rules": [
+        {
+          "path": "steps.*.uses",
+          "optional": true,
+          "skip_pattern": "^%./",
+          "kind": "string",
+          "capture_pattern": "@([a-f0-9]+)$",
+          "capture_length": 40
+        }
+      ]
+    }
+  ],
+  "actions": {
+    "rules": [
+      {
+        "path": "runs.steps.*.uses",
+        "optional": true,
+        "skip_pattern": "^%./",
+        "kind": "string",
+        "capture_pattern": "@([a-f0-9]+)$",
+        "capture_length": 40
+      }
+    ]
+  }
+}

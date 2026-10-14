@@ -1,0 +1,16 @@
+# Repository environment configuration.
+#
+# This is structured text (KST). It holds portable per-mount policy;
+# source locations, grants, runtime status, and service details never belong here.
+#
+# Per-mount refresh override. The last matching mount section is active.
+# refresh values: manual | event
+# mount global
+#   refresh event
+# mount global
+#   refresh manual
+#
+# Writable access is not configured here. It requires a signed source-owned
+# syncGrant in the source environment configuration and `kero-host mount sync`.
+# KERO_HOME, install paths, PATH entries, service ports, and source paths are
+# host-local facts and must not be committed in this repository.

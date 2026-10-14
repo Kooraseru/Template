@@ -1,0 +1,7 @@
+name: Build Pages
+description: Generate a static site under build/pages.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: lune run ci/pages/build.luau

@@ -1,0 +1,74 @@
+{
+  "baseline": {
+    "results": {
+      "validate": {
+        "result": "success"
+      },
+      "build": {
+        "result": "success"
+      },
+      "repository": {
+        "result": "skipped"
+      },
+      "pages": {
+        "result": "skipped"
+      },
+      "release": {
+        "result": "skipped"
+      },
+      "images": {
+        "result": "skipped"
+      }
+    },
+    "enabled": {
+      "repository": "false",
+      "pages": "false",
+      "release": "false",
+      "images": "false"
+    }
+  },
+  "cases": [
+    {
+      "name": "disabled outputs",
+      "patch": {},
+      "valid": true
+    },
+    {
+      "name": "build failure",
+      "patch": {
+        "results.build.result": "failure"
+      },
+      "valid": false
+    },
+    {
+      "name": "validation failure",
+      "patch": {
+        "results.validate.result": "failure"
+      },
+      "valid": false
+    },
+    {
+      "name": "enabled Pages skipped",
+      "patch": {
+        "enabled.pages": "true"
+      },
+      "valid": false
+    },
+    {
+      "name": "enabled Pages success",
+      "patch": {
+        "enabled.pages": "true",
+        "results.pages.result": "success"
+      },
+      "valid": true
+    },
+    {
+      "name": "missing eligibility",
+      "remove": [
+        "enabled"
+      ],
+      "patch": {},
+      "valid": false
+    }
+  ]
+}

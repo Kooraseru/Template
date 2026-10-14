@@ -1,0 +1,266 @@
+name: CI
+on:
+  pull_request:
+    branches: [source]
+  push:
+    branches: [source]
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.context.outputs.runner }}
+      build_matrix: ${{ steps.context.outputs.build_matrix }}
+      rust: ${{ steps.context.outputs.rust }}
+      cmake: ${{ steps.context.outputs.cmake }}
+      rust_version: ${{ steps.context.outputs.rust_version }}
+      cmake_version: ${{ steps.context.outputs.cmake_version }}
+      repository: ${{ steps.context.outputs.repository }}
+      pages: ${{ steps.context.outputs.pages }}
+      release: ${{ steps.context.outputs.release }}
+      images: ${{ steps.context.outputs.images }}
+      publish_repository: ${{ steps.context.outputs.publish_repository }}
+      publish_pages: ${{ steps.context.outputs.publish_pages }}
+      publish_release: ${{ steps.context.outputs.publish_release }}
+      publish_images: ${{ steps.context.outputs.publish_images }}
+      image_matrix: ${{ steps.context.outputs.image_matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - id: context
+        run: lune run ci/access/resolve.luau
+      - run: lune run ci/validation/repository.luau
+      - run: lune run ci/validation/workflows.luau
+      - run: lune run ci/access/tests/policy.luau
+      - run: lune run ci/access/tests/publication.luau
+      - run: lune run ci/validation/tests/config.luau
+      - run: lune run ci/validation/tests/artifacts.luau
+      - run: lune run ci/validation/tests/rules.luau
+      - run: lune run ci/validation/tests/gate.luau
+  build:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.validate.outputs.build_matrix) }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      CI_BUILD_TARGET: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-rust
+        if: needs.validate.outputs.rust == 'true'
+        with:
+          toolchain: ${{ needs.validate.outputs.rust_version }}
+      - uses: ./.github/actions/setup-cmake
+        if: needs.validate.outputs.cmake == 'true'
+        with:
+          version: ${{ needs.validate.outputs.cmake_version }}
+      - run: lune run ci/build/run.luau
+      - run: lune run ci/distribution/package.luau
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: distribution-${{ matrix.name }}
+          path: build/artifacts
+          include-hidden-files: true
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: build-logs-${{ matrix.name }}
+          path: build/logs
+  repository:
+    needs: validate
+    if: needs.validate.outputs.repository == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/build-repo
+      - name: Archive publication tree preserving file modes
+        run: tar -cf build/repository.tar -C build/repo .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: repository
+          path: build/repository.tar
+          include-hidden-files: true
+          if-no-files-found: error
+  pages:
+    needs: validate
+    if: needs.validate.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - run: sudo apt-get update && sudo apt-get install --yes pandoc
+      - uses: ./.github/actions/build-pages
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pages-preview
+          path: build/pages
+          if-no-files-found: error
+  release:
+    needs: [validate, build]
+    if: needs.validate.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: distribution-*
+          path: build/distributions
+      - run: lune run ci/releases/build.luau
+      - name: Archive generated packages
+        run: tar -czf build/releases/packages.tar.gz -C build/releases/packages .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release
+          path: build/releases
+          include-hidden-files: true
+          if-no-files-found: error
+  gate:
+    if: always()
+    needs: [validate, build, repository, pages, release, images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - name: Require successful enabled jobs
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          ENABLED: ${{ toJSON(needs.validate.outputs) }}
+        run: lune run ci/validation/gate.luau
+
+  publish-repository:
+    concurrency:
+      group: publication-main
+      cancel-in-progress: false
+    needs: [validate, gate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_repository == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: repository
+          path: build
+      - name: Publish validated tree
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/repo/publish.sh
+
+  images:
+    needs: validate
+    if: needs.validate.outputs.images == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - name: Build and export image
+        env:
+          IMAGE_NAME: ${{ matrix.name }}
+        run: lune run ci/images/build.luau "$IMAGE_NAME"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: image-${{ matrix.name }}
+          path: build/images/${{ matrix.name }}
+          if-no-files-found: error
+
+  publish-pages:
+    needs: [validate, gate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_pages == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: publication-pages
+      cancel-in-progress: false
+    steps:
+      - name: Require hosted execution
+        run: test "${ACT:-false}" != true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pages-preview
+          path: build/pages
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: build/pages
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
+
+  publish-release:
+    needs: [validate, gate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publication-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release
+          path: build/releases
+      - name: Publish selected release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/releases/publish.sh
+
+  publish-images:
+    needs: [validate, gate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_images == 'true'
+    strategy:
+      matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: image-${{ matrix.name }}
+          path: build/images
+      - name: Publish validated image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_NAME: ${{ matrix.name }}
+        run: bash ci/images/publish.sh

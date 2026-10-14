@@ -1,0 +1,39 @@
+{
+  "scripts": [
+    "ci/repo/publish.sh",
+    "ci/releases/publish.sh",
+    "ci/images/publish.sh"
+  ],
+  "cases": [
+    {
+      "name": "syntax",
+      "arguments": [
+        "-n"
+      ],
+      "env": {},
+      "ok": true
+    },
+    {
+      "name": "local",
+      "arguments": [],
+      "env": {
+        "ACT": "true",
+        "GH_TOKEN": "test-placeholder"
+      },
+      "ok": false
+    },
+    {
+      "name": "pull request",
+      "arguments": [],
+      "env": {
+        "ACT": "false",
+        "GITHUB_ACTIONS": "true",
+        "GITHUB_SERVER_URL": "https://github.com",
+        "GITHUB_EVENT_NAME": "pull_request",
+        "GITHUB_REF": "refs/heads/source",
+        "GH_TOKEN": "test-placeholder"
+      },
+      "ok": false
+    }
+  ]
+}

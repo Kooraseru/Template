@@ -1,0 +1,7 @@
+name: Build repository publication
+description: Generate prospective main contents under build/repo.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: lune run ci/repo/build.luau

@@ -1,0 +1,27 @@
+{
+  "checks": [
+    {
+      "operation": "directory_entries",
+      "path": ".github/workflows",
+      "expected": [
+        "ci.yml"
+      ]
+    },
+    {
+      "operation": "absent_files",
+      "paths": [
+        "ci/pipeline.luau",
+        ".github/pipeline.luau"
+      ]
+    },
+    {
+      "operation": "existing_config_paths",
+      "config_path": "repository.include"
+    },
+    {
+      "operation": "file_contains",
+      "path": ".gitignore",
+      "text": "/build/"
+    }
+  ]
+}
