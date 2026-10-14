@@ -88,3 +88,5 @@ GitHub Actions use current stable major tags rather than commit SHA pins, so ups
 patch updates are automatic. Draft receipt retrieval runs only in the trusted
 controller job with contents write access; build jobs receive verified workflow
 artifacts with read-only repository permissions.
+
+Artifact upload v6 and download v7 are the Node 24 compatibility baseline: act 0.2.89 rejects upload v7's new mime_type request field. These remain floating major tags; upgrade together when act supports that protocol.

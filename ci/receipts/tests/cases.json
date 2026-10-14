@@ -52,6 +52,7 @@
     {"name":"archive symlink","path":"link","type":"2","link":"../outside"},
     {"name":"archive traversal","path":"../outside","type":"0"}
   ],
+  "download_layouts": [{"name":"flat single artifact", "flat":true}, {"name":"named artifact directory", "flat":false}],
   "source_files": [{"path":"source.txt","contents":"first source\n"},{"path":".gitignore","contents":"build/\n"}],
   "source_changes": [{"path":"source.txt","contents":"changed source\n"}]
 }

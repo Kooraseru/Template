@@ -15,6 +15,13 @@ export function write(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, typeof value === 'string' ? value : JSON.stringify(value, null, 2) + '\n');
 }
+export function normalizeArtifactDownload(root, name, marker) {
+  const destination = path.join(root, relative(name));
+  if (fs.existsSync(destination) || !fs.existsSync(path.join(root, marker))) return;
+  const entries = fs.readdirSync(root);
+  fs.mkdirSync(destination, {recursive:true});
+  for (const entry of entries) fs.renameSync(path.join(root,entry),path.join(destination,entry));
+}
 export function relative(file) {
   if (typeof file !== 'string' || !file || /[\\:\x00-\x1f]/.test(file) || file.startsWith('/')
       || file.split('/').some(part => !part || part === '.' || part === '..')) throw Error(`Unsafe path: ${file}`);

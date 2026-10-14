@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { command, git, write, sha256, canonical, history, layout, escapeHTML, escapeMarkdown, verifyDistribution, policy } from './core.mjs';
+import { command, git, write, sha256, canonical, history, layout, escapeHTML, escapeMarkdown, verifyDistribution, policy, normalizeArtifactDownload } from './core.mjs';
 
 export function svg(rows, expanded = false) {
   const columns = Math.max(1, ...rows.map(row => Math.max(row.before.length, row.after.length)));
@@ -70,6 +70,7 @@ export async function assemble(plan) {
     if (!entries.length) throw Error(`No selected build targets for ${selection.channel}`);
     const targets = [];
     for (const entry of entries) {
+      if (plan.builds.length === 1) normalizeArtifactDownload('build/distributions', entry.artifact, 'provenance.json');
       const input = `build/distributions/${entry.artifact}`;
       const verified = verifyDistribution(input, entry);
       fs.cpSync(input, `${root}/packages/${entry.name}`, { recursive: true });

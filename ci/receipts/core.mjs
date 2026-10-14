@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { canonical, command, git, relative, sha256, verifyDistribution } from '../releases/core.mjs';
+import { canonical, command, git, relative, sha256, verifyDistribution, normalizeArtifactDownload } from '../releases/core.mjs';
 
 export const policy = JSON.parse(fs.readFileSync(new URL('./policy.json', import.meta.url)));
 const shaPattern = /^[a-f0-9]{40}$/;
@@ -136,6 +136,11 @@ export function compare(claim, accepted) {
 }
 export function collect(plan, distributions, logs, context) {
   clean();
+  if (plan.builds.length === 1) {
+    normalizeArtifactDownload(distributions, plan.builds[0].artifact, 'provenance.json');
+    const marker = fs.existsSync(logs) ? fs.readdirSync(logs).find(name => name.endsWith('.log')) : null;
+    if (marker) normalizeArtifactDownload(logs, `build-logs-${plan.builds[0].source_sha}-${plan.builds[0].name}`, marker);
+  }
   const source = identity(context.tested_sha || plan.controller_sha);
   const targets = plan.builds.map(entry => {
     const root = path.join(distributions, entry.artifact);

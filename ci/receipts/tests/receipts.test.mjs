@@ -6,9 +6,17 @@ import crypto from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import { authenticate, applicable, bundle, clean, compare, executionValid, identity, manifest, sign, unpack, verifyBundle, verifyFiles } from '../core.mjs';
-import { canonical, command, sha256, write } from '../../releases/core.mjs';
+import { canonical, command, sha256, write, normalizeArtifactDownload } from '../../releases/core.mjs';
 
 const cases = JSON.parse(fs.readFileSync(new URL('./cases.json',import.meta.url)));
+for (const item of cases.download_layouts) test(item.name, () => {
+  const root = path.join('build/tests/receipt-downloads',crypto.randomUUID());
+  const destination = path.join(root,'distribution-fixture');
+  write(path.join(item.flat ? root : destination,'provenance.json'),'verified fixture');
+  normalizeArtifactDownload(root,'distribution-fixture','provenance.json');
+  assert.equal(fs.readFileSync(path.join(destination,'provenance.json'),'utf8'),'verified fixture');
+  assert.equal(fs.existsSync(path.join(root,'provenance.json')),false);
+});
 const now = Date.now();
 const keys = crypto.generateKeyPairSync('ed25519');
 const publicKey = keys.publicKey.export({type:'spki',format:'pem'});
