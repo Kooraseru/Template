@@ -28,8 +28,10 @@ local function execute(arguments: { string })
     local result = process.exec("docker", arguments, { stdio = "inherit" })
     assert(result.ok, "Docker image operation failed")
 end
-local baseTag = "template-ci/base-" .. image.name .. ":generated"
-local tag = "template-ci/" .. image.name .. ":generated"
+local identity = process.env.CI_IMAGE_ID or "generated"
+assert(identity:match("^[a-z0-9%-]+$"), "invalid image identity")
+local baseTag = "template-ci/base-" .. image.name .. ":" .. identity
+local tag = "template-ci/" .. image.name .. ":" .. identity
 execute({
     "build",
     "--platform",
@@ -89,6 +91,7 @@ fs.writeFile(
     output .. "/image.json",
     serde.encode("json", {
         name = image.name,
+        tag = tag,
         platform = image.platform,
         base = image.base,
         profile = image.profile,

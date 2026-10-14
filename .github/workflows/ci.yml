@@ -247,6 +247,7 @@ jobs:
       - name: Build and export image
         env:
           IMAGE_NAME: ${{ matrix.name }}
+          CI_IMAGE_ID: ${{ matrix.artifact }}
           CI_INPUT_REF: ${{ matrix.input_ref }}
         run: lune run ci/images/build.luau "$IMAGE_NAME"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

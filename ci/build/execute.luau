@@ -2,6 +2,7 @@
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local stdio = require("@lune/stdio")
+local serde = require("@lune/serde")
 local configModule = require("../lib/config")
 local catalogue = require("../lib/catalogue")
 local files = require("../lib/files")
@@ -39,6 +40,14 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
             return
         end
         local image = catalogue.image(target.image)
+        local imageRecord = serde.decode("json", fs.readFile("build/selected-image/image.json"))
+        assert(imageRecord.name == image.name and imageRecord.platform == image.platform
+            and imageRecord.base == image.base, "selected image definition mismatch")
+        local tag = imageRecord.tag or ("template-ci/" .. image.name .. ":generated")
+        if process.env.CI_BUILD_SPEC then
+            local spec = serde.decode("json", process.env.CI_BUILD_SPEC)
+            assert(tag == "template-ci/" .. image.name .. ":" .. spec.image_artifact, "selected image identity mismatch")
+        end
         local loaded =
             process.exec("docker", { "load", "--input", "build/selected-image/image.tar" })
         assert(loaded.ok, "could not load generated build image: " .. loaded.stderr)
@@ -64,7 +73,7 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
             image.platform,
             "--workdir",
             "/workspace",
-            "template-ci/" .. image.name .. ":generated",
+            tag,
             "sh",
             "-c",
             "while :; do sleep 3600; done",

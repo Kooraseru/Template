@@ -289,6 +289,15 @@
         "images.publish": true
       },
       "valid": false
+    },
+    {
+      "name": "reserved source provenance path",
+      "patch": {
+        "build.package_paths": [
+          "build/provenance.json"
+        ]
+      },
+      "valid": false
     }
   ],
   "paths": [

@@ -34,8 +34,12 @@ function renderPNGs(root) {
   fs.mkdirSync(context, { recursive: true });
   for (const file of ['package.json', 'package-lock.json', 'render-png.mjs']) fs.copyFileSync(`ci/releases/${file}`, `${context}/${file}`);
   fs.copyFileSync('ci/images/release-renderer/JetBrainsMono-Regular.ttf', `${context}/JetBrainsMono-Regular.ttf`);
-  command('docker', ['build', '--file', 'ci/images/release-renderer/Dockerfile', '--tag', 'template-ci/release-renderer:local', context], { stdio: 'inherit' });
-  const container = command('docker', ['create', 'template-ci/release-renderer:local']).trim();
+  const toolFiles = ['package.json', 'package-lock.json', 'render-png.mjs', 'JetBrainsMono-Regular.ttf'];
+  const identity = sha256(canonical([...toolFiles.map(file => sha256(fs.readFileSync(`${context}/${file}`))),
+    sha256(fs.readFileSync('ci/images/release-renderer/Dockerfile'))])).slice(0, 24);
+  const tag = `template-ci/release-renderer:${identity}`;
+  command('docker', ['build', '--file', 'ci/images/release-renderer/Dockerfile', '--tag', tag, context], { stdio: 'inherit' });
+  const container = command('docker', ['create', tag]).trim();
   try {
     command('docker', ['cp', `${root}/.`, `${container}:/input`]);
     command('docker', ['start', '--attach', container], { stdio: 'inherit' });

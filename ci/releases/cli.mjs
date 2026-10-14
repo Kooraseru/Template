@@ -31,6 +31,7 @@ if (operation === 'resolve') {
   const cacheRuns = new Map();
   function runsFor(sha) {
     if (cacheRuns.has(sha)) return cacheRuns.get(sha);
+    try {
     const repo = process.env.GITHUB_REPOSITORY;
     const runs = gh([`repos/${repo}/actions/workflows/ci.yml/runs?event=push&branch=source&head_sha=${sha}&status=success&per_page=${policy.cache_run_limit}`]).workflow_runs;
     const candidates = runs.filter(run => cacheEligible(run, sha, repo)).map(run => {
@@ -44,6 +45,11 @@ if (operation === 'resolve') {
     });
     cacheRuns.set(sha, candidates);
     return candidates;
+    } catch (error) {
+      console.warn(`Artifact discovery unavailable for ${sha}; rebuilding selected targets: ${error.message}`);
+      cacheRuns.set(sha, []);
+      return [];
+    }
   }
   for (const entry of plan.builds) {
     entry.fingerprint = sha256(canonical({ controllerHash, build: entry.build, target: {

@@ -32,3 +32,8 @@ use snapshot repositories or pinned package artifacts.
 The workflow runs Lune on the job runner, outside the build image. Images supply
 the selected compilation environment; Alpine does not assume a glibc Lune binary
 will run inside its musl container.
+
+Image artifacts and Docker tags include a hash of their declared image inputs.
+Different historical recipes can execute concurrently against act's shared
+Docker daemon without overwriting one another's tags. Identical image inputs
+are built once and shared across selected source snapshots.

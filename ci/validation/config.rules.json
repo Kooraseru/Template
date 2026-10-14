@@ -242,7 +242,8 @@
       "not_values": [
         "build/artifacts",
         "build/manifest.json",
-        "build/distribution.tar.gz"
+        "build/distribution.tar.gz",
+        "build/provenance.json"
       ],
       "reject_patterns": [
         "^build/artifacts/"
