@@ -41,5 +41,6 @@ values.release_matrix = matrices.release_matrix
 values.release = matrices.release_enabled
 values.build_requested = matrices.build_requested
 values.receipt_ready = matrices.receipt_ready
+values.accepted_available = matrices.accepted_available
 values.local_execution = matrices.local_execution
 outputs.write(process.env.GITHUB_OUTPUT, values)

@@ -208,7 +208,7 @@ jobs:
           if-no-files-found: error
   release:
     needs: [validate, build]
-    if: needs.validate.outputs.release == 'true'
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && needs.validate.outputs.release == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
