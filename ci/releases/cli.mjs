@@ -28,6 +28,23 @@ if (operation === 'resolve') {
     .filter(file => file && !controllerFiles.includes(file) && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
   const controllerHash = sha256(canonical([...controllerFiles, ...extra].sort().map(file => [file, sha256(fs.readFileSync(file))])));
   const imageArtifact = (definition, recipes) => 'image-' + definition.name + '-' + sha256(canonical({ definition, recipes })).slice(0, 24);
+  const cacheRuns = new Map();
+  function runsFor(sha) {
+    if (cacheRuns.has(sha)) return cacheRuns.get(sha);
+    const repo = process.env.GITHUB_REPOSITORY;
+    const runs = gh([`repos/${repo}/actions/workflows/ci.yml/runs?event=push&branch=source&head_sha=${sha}&status=success&per_page=${policy.cache_run_limit}`]).workflow_runs;
+    const candidates = runs.filter(run => cacheEligible(run, sha, repo)).map(run => {
+      const artifacts = [];
+      for (let page = 1; ; page++) {
+        const entries = gh([`repos/${repo}/actions/runs/${run.id}/artifacts?per_page=100&page=${page}`]).artifacts;
+        artifacts.push(...entries);
+        if (entries.length < 100) break;
+      }
+      return { id: run.id, artifacts };
+    });
+    cacheRuns.set(sha, candidates);
+    return candidates;
+  }
   for (const entry of plan.builds) {
     entry.fingerprint = sha256(canonical({ controllerHash, build: entry.build, target: {
       name: entry.name, runner: entry.runner, target: entry.target, profile: entry.profile, environment: entry.environment,
@@ -37,11 +54,8 @@ if (operation === 'resolve') {
     delete entry.recipes;
     entry.cache_run = '';
     if (!entry.current && process.env.ACT !== 'true' && process.env.GITHUB_ACTIONS === 'true' && process.env.GH_TOKEN) {
-      const repo = process.env.GITHUB_REPOSITORY;
-      const runs = gh([`repos/${repo}/actions/workflows/ci.yml/runs?event=push&branch=source&head_sha=${entry.source_sha}&status=success&per_page=${policy.cache_run_limit}`]).workflow_runs;
-      for (const run of runs.filter(run => cacheEligible(run, entry.source_sha, repo))) {
-        const artifacts = gh([`repos/${repo}/actions/runs/${run.id}/artifacts?per_page=100`]).artifacts;
-        if (artifacts.some(artifact => artifactEligible(artifact, entry.artifact))) { entry.cache_run = String(run.id); break; }
+      for (const run of runsFor(entry.source_sha)) {
+        if (run.artifacts.some(artifact => artifactEligible(artifact, entry.artifact))) { entry.cache_run = String(run.id); break; }
       }
     }
   }
