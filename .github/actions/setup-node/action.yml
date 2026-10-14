@@ -1,0 +1,7 @@
+name: Set up CI Node
+description: Install the checksum-verified pinned release-control runtime.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: lune run ci/tools/setup-node.luau

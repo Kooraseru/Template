@@ -46,7 +46,7 @@ The same CI workflow supports different access contexts.
 **Trusted push to `source`:**
 - Run the same validation and generation stages.
 - After required checks succeed, publish eligible outputs to their respective destinations.
-- Update generated `main`, deploy Pages, publish configured releases, and push configured images as applicable.
+- Update generated `main`, deploy Pages, publish configured releases, and transfer CI images as workflow artifacts.
 
 **Manual execution:**
 - Allow validation and artifact generation.
@@ -76,7 +76,7 @@ Optional signing or external publication must be explicitly configured by the co
 
 GitHub branch protection, environment restrictions, and token permissions remain authoritative. Configuration files and CI scripts cannot grant permissions.
 
-Publication must use the current repository’s automatically supplied `GITHUB_TOKEN`, without a PAT or stored publication secrets. Environments and review rules are optional settings configured by each consuming repository. If branch rules prevent an update, use the repository’s review process or document the required setting; approval cannot expand token permissions. Do not silently bypass protection.
+Publication must use the current repository's automatically supplied `GITHUB_TOKEN`, without a PAT or stored publication secrets. Source PR/check protection and admin-only PR merging must be configured in each consuming repository. Publication environments are optional. If branch rules prevent an update, use the repository's review process or document the required setting; approval cannot expand token permissions. Do not silently bypass protection.
 
 Never execute untrusted PR code on privileged self-hosted runners.
 

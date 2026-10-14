@@ -34,6 +34,11 @@ differences and `{root}` to refer to a fixture's output directory.
 options are rejected so a spelling mistake cannot silently remove a constraint.
 Manifest structure and output constraints also have dedicated rule files.
 
+Configuration rules may declare `default` for an omitted field. The configuration
+loader applies those values before validation; explicitly configured values win.
+Required categories and publication flags are still validated. Blank optional
+settings do not need assignments in `ci/config.toml`.
+
 `catalogue.rules.json` checks image and target shapes, named references, matched
 runner/platform/profile fields, required image generation, and recipe paths.
 Its `relations` declare source collections, reference fields, destination

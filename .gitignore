@@ -42,3 +42,6 @@ __pycache__/
 
 # Development-tool runtime state
 /.kero/.runtime/
+
+# Pinned release renderer dependencies
+node_modules/

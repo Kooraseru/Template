@@ -70,8 +70,9 @@ Use `build.matrix` for explicit custom entries; a nonempty matrix overrides
 named `default`. Distribution artifacts and logs are separated by target name;
 release assembly verifies every selected distribution.
 
-Edit publication templates under `ci/repo/templates/`; author release notes
-under `ci/releases/records/<version>.md` before selecting that version.
+Edit publication templates under `ci/repo/templates/`. Select commit-based
+release channels in `ci/releases/channels.toml`; authored introductions are
+optional. See [release channels and source protection](ci/releases/README.md).
 Image Dockerfiles belong under `ci/images/`, with image choices in its catalogue.
 Pages uses Markdown templates under `ci/pages/templates/`.
 
@@ -85,14 +86,16 @@ Allow the workflow's token to update `main` if generated-branch publication
 is desired. Signing and external destinations require consumer-specific trusted
 jobs; this template supplies no signing credentials.
 
-Approval requirements are optional repository settings. Maintainers may add an
+Source PR/check rules and admin-only merging are required for official
+publication; import both release protection rulesets in each consuming repo.
+Additional publication approval requirements are optional repository settings. Maintainers may add an
 environment with required reviewers to a publication job to pause it for approval
 in GitHub. Templates do not transfer those reviewer settings. Approval permits a
 job to start; it cannot increase token scopes or override branch protections.
 If branch rules require a reviewed change to `main`, use a publication pull
 request and merge it through GitHub rather than providing broader credentials.
 
-Local artifact storage is enabled by `.actrc` under `build/act-artifacts/`.
+Local artifact storage is enabled by `.actrc` under `build/cache/act-artifacts/`.
 Select a Docker runner image suitable for your host architecture in GitHub
 Local Actions. CLI users may pass `-P ubuntu-latest=<runner-image>` to `act`.
 Filter a Linux target while testing locally, for example

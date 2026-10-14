@@ -22,8 +22,7 @@ then its toolchain layer locally. It does not need a prepublished template image
 
 CI exports `image.tar`, `image.json`, and the actual installed package inventory
 in `versions.txt`. Build jobs download the selected image and execute within it.
-Publication jobs load that same artifact and push it to the current repository's
-GHCR namespace using the automatic workflow token.
+CI images remain workflow artifacts; there are no registry publication jobs.
 
 Base images are pinned by digest. Package repositories still change, especially
 Arch rolling; the inventory records what was installed rather than claiming

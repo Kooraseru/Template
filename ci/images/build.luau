@@ -6,6 +6,17 @@ local config = require("../lib/config").read()
 local catalogue = require("../lib/catalogue")
 local name = assert(process.args[1], "missing image name")
 local image = catalogue.image(name)
+local inputRoot = "ci/images"
+local ref = process.env.CI_INPUT_REF
+if ref and ref ~= "" then
+    inputRoot = "build/tmp/image-input/" .. ref
+    fs.writeDir(inputRoot)
+    local archive = process.exec("git", { "archive", "--format=tar", "--output=build/tmp/image-source.tar", ref, "ci/images" })
+    assert(archive.ok, "cannot export selected image recipes")
+    local extracted = process.exec("tar", { "-xf", "build/tmp/image-source.tar", "-C", inputRoot })
+    assert(extracted.ok, "cannot extract selected image recipes")
+    inputRoot ..= "/ci/images"
+end
 assert(
     config.images.enabled and table.find(config.images.names, image.name),
     "image generation is not selected"
@@ -24,21 +35,21 @@ execute({
     "--platform",
     image.platform,
     "--file",
-    "ci/images/" .. image.recipe,
+    inputRoot .. "/" .. image.recipe,
     "--build-arg",
     "BASE_IMAGE=" .. image.base,
     "--build-arg",
     "PACKAGES=" .. table.concat(image.common_packages, " "),
     "--tag",
     baseTag,
-    "ci/images",
+    inputRoot,
 })
 execute({
     "build",
     "--platform",
     image.platform,
     "--file",
-    "ci/images/toolchains/" .. image.profile .. "/Dockerfile",
+    inputRoot .. "/toolchains/" .. image.profile .. "/Dockerfile",
     "--build-arg",
     "BASE_IMAGE=" .. baseTag,
     "--build-arg",
@@ -52,7 +63,7 @@ execute({
     "org.opencontainers.image.revision=" .. (process.env.GITHUB_SHA or ""),
     "--tag",
     tag,
-    "ci/images",
+    inputRoot,
 })
 local inventoryArguments = { "run", "--rm", "--platform", image.platform, tag }
 for _, argument in image.inventory do

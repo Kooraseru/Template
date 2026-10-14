@@ -1,23 +1,41 @@
-# Template CI configuration.
+# CI configuration
+# See ci/README.md for available options and defaults.
+# Local act runs never publish artifacts, regardless of publish settings.
+#
+# Optional settings are omitted unless explicitly configured.
+# Commented examples show how to override their defaults.
+
+
+# Repository
+# Generate and publish the repository tree from selected paths.
 [repository]
 enabled = true
 publish = true
 include = ["src"]
 
+
+# Documentation
+# Generate and deploy the documentation site.
 [pages]
 enabled = false
 publish = false
-title = "Project documentation"
 
+# Optional:
+# title = "Project documentation"
+
+
+# Releases
+# Generate commit-based channels from ci/releases/channels.toml.
+# Canary follows source; stable and beta select explicit commits.
 [release]
-enabled = false
-publish = false
-# Explicitly select an authored release record; a source push alone is not a release.
-version = ""
-
-[images]
 enabled = true
 publish = true
+
+
+# Container Images
+# Build selected images and transfer them as workflow artifacts.
+[images]
+enabled = true
 names = [
     "alpine-gcc-x64",
     "alpine-gcc-arm64",
@@ -25,6 +43,7 @@ names = [
     "alpine-clang-arm64",
     "alpine-rust-x64",
     "alpine-rust-arm64",
+
     "debian-gcc-x64",
     "debian-gcc-arm64",
     "debian-clang-x64",
@@ -33,25 +52,26 @@ names = [
     "debian-rust-arm64",
     "debian-mingw-x64",
     "debian-mingw-arm64",
+
     "ubuntu-gcc-x64",
     "ubuntu-gcc-arm64",
     "ubuntu-clang-x64",
     "ubuntu-clang-arm64",
+
     "fedora-gcc-x64",
     "fedora-gcc-arm64",
     "fedora-clang-x64",
     "fedora-clang-arm64",
+
     "arch-gcc-x64",
     "arch-clang-x64",
 ]
 
-# Add only the toolchains and commands your project actually uses.
-# Commands are argv arrays, executed without implicit shell expansion.
+
+# Builds
+# Run target probes and project build commands, then package outputs.
 [build]
 runner = "ubuntu-latest"
-# A nonempty custom matrix overrides targets. With both lists empty, use runner.
-# matrix = [{ name = "linux", runner = "ubuntu-latest" }, { name = "windows", runner = "windows-latest" }]
-matrix = []
 targets = [
     "alpine-gcc-x64",
     "alpine-gcc-arm64",
@@ -59,6 +79,7 @@ targets = [
     "alpine-clang-arm64",
     "alpine-rust-x64",
     "alpine-rust-arm64",
+
     "debian-gcc-x64",
     "debian-gcc-arm64",
     "debian-clang-x64",
@@ -67,27 +88,35 @@ targets = [
     "debian-rust-arm64",
     "debian-mingw-x64",
     "debian-mingw-arm64",
+
     "ubuntu-gcc-x64",
     "ubuntu-gcc-arm64",
     "ubuntu-clang-x64",
     "ubuntu-clang-arm64",
+
     "fedora-gcc-x64",
     "fedora-gcc-arm64",
     "fedora-clang-x64",
     "fedora-clang-arm64",
+
     "arch-gcc-x64",
     "arch-clang-x64",
+
     "windows-msvc-x64",
     "windows-rust-x64",
     "windows-msvc-arm64",
     "windows-rust-arm64",
+
     "macos-clang-x64",
     "macos-rust-x64",
     "macos-clang-arm64",
     "macos-rust-arm64",
 ]
-toolchains = []
-rust_version = ""
-cmake_version = ""
-commands = []
-package_paths = []
+
+# Optional:
+# matrix = [{ name = "custom", runner = "ubuntu-latest" }]
+# toolchains = ["rust", "cmake"]
+# rust_version = "1.99.0"
+# cmake_version = "4.2.0"
+# commands = [["cmake", "--build", "build/cmake"]]
+# package_paths = ["build/bin"]

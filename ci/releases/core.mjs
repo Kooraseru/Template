@@ -1,0 +1,178 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+
+export const policy = JSON.parse(fs.readFileSync(new URL('./policy.json', import.meta.url)));
+export const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+export const canonical = value => JSON.stringify(value, (_, v) => v && !Array.isArray(v) && typeof v === 'object'
+  ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]])) : v);
+export function command(file, args, options = {}) {
+  return execFileSync(file, args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024, ...options });
+}
+export function git(args, options) { return command('git', args, options).trimEnd(); }
+export function write(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, typeof value === 'string' ? value : JSON.stringify(value, null, 2) + '\n');
+}
+export function relative(file) {
+  if (typeof file !== 'string' || !file || /[\\:\x00-\x1f]/.test(file) || file.startsWith('/')
+      || file.split('/').some(part => !part || part === '.' || part === '..')) throw Error(`Unsafe path: ${file}`);
+  return file;
+}
+export function validateChannels(channels, tip, repository = '.') {
+  const validSHA = value => typeof value === 'string' && new RegExp(policy.sha_pattern).test(value);
+  const run = args => git(args, { cwd: repository });
+  const ancestor = (a, b) => { try { run(['merge-base', '--is-ancestor', a, b]); return true; } catch { return false; } };
+  if (!validSHA(tip)) throw Error('Source tip must be a full SHA');
+  const result = [];
+  for (const [channel, selection] of Object.entries(channels)) {
+    if (!policy.channels.includes(channel)) throw Error(`Unknown channel: ${channel}`);
+    if (!selection || typeof selection !== 'object' || Array.isArray(selection)) throw Error('Invalid channel selection');
+    if (Object.keys(selection).some(key => !['from', 'commit', 'notes'].includes(key))) throw Error('Unknown channel option');
+    const latest = selection.commit === 'latest';
+    if (latest && channel !== 'canary') throw Error('Only canary may select latest');
+    const commit = latest ? tip : selection.commit;
+    if (!validSHA(commit) || !ancestor(commit, tip)) throw Error(`${channel} commit is not in source history`);
+    if (selection.from !== 'beginning' && (!validSHA(selection.from) || !ancestor(selection.from, commit))) {
+      throw Error(`${channel} range start must be an ancestor of the selected commit`);
+    }
+    if (selection.notes !== undefined) relative(selection.notes);
+    result.push({ channel, source_sha: commit, from: selection.from, latest, ...(selection.notes ? { notes: selection.notes } : {}) });
+  }
+  if (!result.length) throw Error('At least one release channel is required');
+  return result.sort((a, b) => a.channel.localeCompare(b.channel));
+}
+export function sourceTip() {
+  // Local previews resolve their checked-out source ancestry without network writes.
+  if (process.env.ACT === 'true' || process.env.GITHUB_ACTIONS !== 'true') {
+    if (git(['branch', '--show-current']) === 'source') return git(['rev-parse', 'HEAD']);
+    try { return git(['rev-parse', 'refs/remotes/origin/source']); } catch { return git(['rev-parse', 'HEAD']); }
+  }
+  const ref = git(['ls-remote', 'origin', 'refs/heads/source']).split(/\s/)[0];
+  if (!new RegExp(policy.sha_pattern).test(ref)) throw Error('Cannot resolve current source tip');
+  return ref;
+}
+export function history(selection, repository = '.', repoURL = '') {
+  const run = args => git(args, { cwd: repository });
+  const range = selection.from === 'beginning' ? selection.source_sha : `${selection.from}..${selection.source_sha}`;
+  const commits = run(['rev-list', '--topo-order', range]).split('\n').filter(Boolean).map(sha => {
+    const data = run(['show', '-s', '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%B', sha]).split('\0');
+    return { sha: data[0], parents: data[1].split(' ').filter(Boolean), name: data[2], email: data[3],
+      date: data[4], subject: data[5], body: data.slice(6).join('\0'), url: `${repoURL}/commit/${sha}` };
+  });
+  let context;
+  if (selection.from !== 'beginning') {
+    const parts = run(['show', '-s', '--format=%H%x00%P%x00%s', selection.from]).split('\0');
+    context = { sha: parts[0], parents: parts[1].split(' ').filter(Boolean), subject: parts[2], context: true,
+      url: `${repoURL}/commit/${parts[0]}` };
+  }
+  // Read mailmap from the selected source snapshot, never the mutable controller checkout.
+  const mapDir = path.resolve('build/tmp/mailmap', selection.source_sha);
+  fs.mkdirSync(mapDir, { recursive: true });
+  const mapPath = path.join(mapDir, 'mailmap');
+  let mailmap = '';
+  try { mailmap = run(['show', `${selection.source_sha}:.mailmap`]); } catch { /* optional */ }
+  fs.writeFileSync(mapPath, mailmap);
+  const identities = [];
+  for (const commit of commits) {
+    identities.push(`${commit.name} <${commit.email}>`);
+    const trailers = command('git', ['interpret-trailers', '--parse'], { input: commit.body, cwd: repository });
+    for (const line of trailers.split('\n')) {
+      if (!/^co-authored-by:/i.test(line)) continue;
+      const identity = line.replace(/^co-authored-by:\s*/i, '').trim();
+      if (/^.+ <[^<>\s]+>$/.test(identity)) identities.push(identity);
+      else console.warn(`Ignoring malformed co-author trailer on ${commit.sha}`);
+    }
+  }
+  const normalized = identities.length ? command('git', ['-c', `mailmap.file=${mapPath}`, '-c',
+    'mailmap.blob=', 'check-mailmap', '--stdin'],
+    { cwd: mapDir, input: identities.join('\n') + '\n', env: { ...process.env,
+      GIT_DIR: run(['rev-parse', '--absolute-git-dir']) } }) : '';
+  const people = new Map();
+  for (const identity of normalized.split('\n').filter(Boolean)) {
+    const match = identity.match(/^(.*) <([^<>]+)>$/);
+    if (!match) continue;
+    if (policy.bot_patterns.some(pattern => new RegExp(pattern, 'i').test(identity))) continue;
+    people.set(match[2].toLowerCase(), match[1]);
+  }
+  const refs = run(['for-each-ref', '--format=%(objectname)%09%(refname:short)', 'refs/heads', 'refs/remotes', 'refs/tags']);
+  const labels = new Map();
+  for (const line of refs.split('\n')) {
+    const [sha, name] = line.split('\t');
+    if (!sha || !name || name.endsWith('/HEAD')) continue;
+    if (!labels.has(sha)) labels.set(sha, []);
+    labels.get(sha).push(name);
+  }
+  for (const row of [...commits, ...(context ? [context] : [])]) row.refs = labels.get(row.sha) || [];
+  const emptyTree = run(['hash-object', '-t', 'tree', '--stdin']);
+  const stats = run(['diff', '--stat', selection.from === 'beginning' ? emptyTree : selection.from, selection.source_sha]);
+  const shortstat = run(['diff', '--shortstat', selection.from === 'beginning' ? emptyTree : selection.from, selection.source_sha]).trim();
+  return { commits, context, contributors: [...people.values()].sort((a, b) => a.localeCompare(b)), stats, shortstat };
+}
+export function layout(rows) {
+  const lanes = [];
+  return rows.map(row => {
+    let lane = lanes.indexOf(row.sha);
+    if (lane === -1) { lane = lanes.indexOf(null); if (lane === -1) lane = lanes.length; lanes[lane] = row.sha; }
+    const before = [...lanes];
+    lanes[lane] = null;
+    const edges = [];
+    for (const [index, parent] of row.parents.entries()) {
+      let destination = lanes.indexOf(parent);
+      if (destination === -1) {
+        destination = index === 0 && lanes[lane] === null ? lane : lanes.indexOf(null);
+        if (destination === -1) destination = lanes.length;
+        lanes[destination] = parent;
+      }
+      edges.push({ from: lane, to: destination, parent });
+    }
+    const after = [...lanes];
+    while (lanes.at(-1) === null) lanes.pop();
+    return { ...row, lane, before, after, edges };
+  });
+}
+export const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+export const escapeMarkdown = value => String(value).replace(/[\\`*_{}\[\]()<>#!|]/g, '\\$&').replace(/[\r\n]/g, ' ');
+export function verifyDistribution(root, expected) {
+  const metadata = JSON.parse(fs.readFileSync(path.join(root, 'provenance.json')));
+  if (metadata.schema !== 1 || metadata.source_sha !== expected.source_sha
+      || metadata.fingerprint !== expected.fingerprint || metadata.target !== expected.name) throw Error('Distribution provenance mismatch');
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json')));
+  if (!Array.isArray(manifest) || !manifest.some(entry => entry.path === 'provenance.json')
+      || !manifest.some(entry => entry.path === 'distribution.tar.gz')) throw Error('Incomplete distribution manifest');
+  const seen = new Set();
+  for (const entry of manifest) {
+    relative(entry.path);
+    if (seen.has(entry.path) || !/^[a-f0-9]{64}$/.test(entry.sha256)) throw Error('Invalid distribution manifest');
+    seen.add(entry.path);
+    const file = path.join(root, entry.path);
+    if (!fs.lstatSync(file).isFile() || sha256(fs.readFileSync(file)) !== entry.sha256) throw Error(`Distribution checksum mismatch: ${entry.path}`);
+  }
+  function inspect(dir, prefix = '') {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const name = prefix + entry.name;
+      if (entry.isDirectory()) inspect(path.join(dir, entry.name), name + '/');
+      else if (!entry.isFile() || (name !== 'manifest.json' && !seen.has(name))) throw Error(`Unlisted artifact: ${name}`);
+    }
+  }
+  inspect(root);
+  return { metadata, manifest };
+}
+export function cacheEligible(run, sha, repository) {
+  return run.event === 'push' && run.head_branch === 'source' && run.head_sha === sha
+    && run.conclusion === 'success' && run.head_repository?.full_name?.toLowerCase() === repository.toLowerCase();
+}
+export function protectionsValid(rulesets) {
+  const applicable = rulesets.filter(set => set.enforcement === 'active' && set.target === 'branch'
+    && set.conditions?.ref_name?.include?.some(ref => ['refs/heads/source', '~DEFAULT_BRANCH', '~ALL'].includes(ref))
+    && !(set.conditions?.ref_name?.exclude || []).some(ref => ['refs/heads/source', '~ALL', '~DEFAULT_BRANCH'].includes(ref)));
+  const checks = applicable.some(set => !(set.bypass_actors || []).length
+    && ['pull_request', 'non_fast_forward', 'deletion'].every(type => set.rules.some(rule => rule.type === type))
+    && set.rules.some(rule => rule.type === 'required_status_checks' && rule.parameters.strict_required_status_checks_policy
+      && rule.parameters.required_status_checks.some(check => check.context === 'gate' && check.integration_id === 15368)));
+  const restricted = applicable.some(set => set.rules.some(rule => rule.type === 'update')
+    && set.bypass_actors?.length === 1 && set.bypass_actors[0].actor_type === 'RepositoryRole'
+    && set.bypass_actors[0].actor_id === 5 && set.bypass_actors[0].bypass_mode === 'pull_request');
+  return checks && restricted;
+}

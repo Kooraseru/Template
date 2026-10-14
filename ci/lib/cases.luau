@@ -29,7 +29,12 @@ function cases.apply(baseline: any, case: any): any
         parent[tonumber(parts[#parts]) or parts[#parts]] = copy(value)
     end
     for _, key in case.remove or {} do
-        result[key] = nil
+        local parts = string.split(key, ".")
+        local parent = result
+        for index = 1, #parts - 1 do
+            parent = parent[tonumber(parts[index]) or parts[index]]
+        end
+        parent[tonumber(parts[#parts]) or parts[#parts]] = nil
     end
     return result
 end

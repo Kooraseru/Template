@@ -8,6 +8,10 @@ local policy = require("./policy")
 local catalogue = require("../lib/catalogue")
 
 local config = configuration.read()
+local resolved = process.exec("lune", { "run", "ci/releases/resolve.luau" })
+assert(resolved.ok, "could not resolve build inputs: " .. resolved.stdout .. resolved.stderr)
+local fs = require("@lune/fs")
+local matrices = serde.decode("json", fs.readFile("build/tmp/releases/outputs.json"))
 local canPublish = policy.canPublish(context.read(process.env))
 local values = {
     publish = tostring(canPublish),
@@ -38,6 +42,7 @@ end
 if #images == 0 then
     table.insert(images, { name = "disabled", runner = config.build.runner, platform = "" })
 end
-values.image_matrix = serde.encode("json", { include = images })
-values.build_matrix = serde.encode("json", { include = catalogue.targets(config) })
+values.image_matrix = matrices.image_matrix
+values.build_matrix = matrices.build_matrix
+values.release_matrix = matrices.release_matrix
 outputs.write(process.env.GITHUB_OUTPUT, values)

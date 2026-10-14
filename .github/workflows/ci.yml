@@ -7,6 +7,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: read
+  actions: read
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -24,14 +25,18 @@ jobs:
       publish_repository: ${{ steps.context.outputs.publish_repository }}
       publish_pages: ${{ steps.context.outputs.publish_pages }}
       publish_release: ${{ steps.context.outputs.publish_release }}
-      publish_images: ${{ steps.context.outputs.publish_images }}
       image_matrix: ${{ steps.context.outputs.image_matrix }}
+      release_matrix: ${{ steps.context.outputs.release_matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - id: context
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: lune run ci/access/resolve.luau
       - run: lune run ci/validation/repository.luau
       - run: lune run ci/validation/workflows.luau
@@ -42,6 +47,12 @@ jobs:
       - run: lune run ci/validation/tests/artifacts.luau
       - run: lune run ci/validation/tests/rules.luau
       - run: lune run ci/validation/tests/gate.luau
+      - run: node --test ci/releases/tests/*.test.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-plan
+          path: build/tmp/releases/plan.json
+          if-no-files-found: error
   build:
     name: build (${{ matrix.name }})
     needs: [validate, images]
@@ -53,42 +64,62 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       CI_BUILD_TARGET: ${{ matrix.name }}
+      CI_BUILD_SPEC: ${{ toJSON(matrix) }}
+      CI_INPUT_REF: ${{ matrix.input_ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - name: Download selected build image
-        if: matrix.image != ''
+      - uses: ./.github/actions/setup-node
+      - name: Download reusable distribution
+        if: matrix.cache_run != ''
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: image-${{ matrix.image }}
+          name: ${{ matrix.artifact }}
+          path: build/artifacts
+          github-token: ${{ github.token }}
+          run-id: ${{ matrix.cache_run }}
+      - id: prepared
+        run: node ci/releases/cli.mjs prepare
+      - name: Download selected build image
+        if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ matrix.image_artifact }}
           path: build/selected-image
       - name: Set up native MSVC
-        if: matrix.msvc_arch != ''
+        if: steps.prepared.outputs.reused != 'true' && matrix.msvc_arch != ''
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
         with:
           arch: ${{ matrix.msvc_arch }}
       - uses: ./.github/actions/setup-rust
-        if: matrix.image == '' && (needs.validate.outputs.rust == 'true' || matrix.profile == 'rust')
+        if: steps.prepared.outputs.reused != 'true' && matrix.image == '' && (contains(matrix.build.toolchains, 'rust') || matrix.profile == 'rust')
         with:
-          toolchain: ${{ matrix.rust_version || needs.validate.outputs.rust_version }}
+          toolchain: ${{ matrix.rust_version || matrix.build.rust_version }}
       - uses: ./.github/actions/setup-cmake
-        if: matrix.image == '' && needs.validate.outputs.cmake == 'true'
+        if: steps.prepared.outputs.reused != 'true' && matrix.image == '' && contains(matrix.build.toolchains, 'cmake')
         with:
-          version: ${{ needs.validate.outputs.cmake_version }}
+          version: ${{ matrix.build.cmake_version }}
       - run: lune run ci/build/run.luau
+        if: steps.prepared.outputs.reused != 'true'
+        env:
+          CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
       - run: lune run ci/distribution/package.luau
+        if: steps.prepared.outputs.reused != 'true'
+      - run: node ci/releases/cli.mjs verify build/artifacts
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: distribution-${{ matrix.name }}
+          name: ${{ matrix.artifact }}
           path: build/artifacts
           include-hidden-files: true
           if-no-files-found: error
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: build-logs-${{ matrix.name }}
+          name: build-logs-${{ matrix.source_sha }}-${{ matrix.name }}
           path: build/logs
   repository:
     needs: validate
@@ -98,7 +129,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/build-repo
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
@@ -116,7 +149,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - run: sudo apt-get update && sudo apt-get install --yes pandoc
       - uses: ./.github/actions/build-pages
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -132,14 +167,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: distribution-*
           path: build/distributions
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-plan
+          path: build/tmp/releases
       - run: lune run ci/releases/build.luau
-      - name: Archive generated packages
-        run: tar -czf build/releases/packages.tar.gz -C build/releases/packages .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release
@@ -154,7 +193,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - name: Require successful enabled jobs
         env:
           RESULTS: ${{ toJSON(needs) }}
@@ -174,7 +215,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: repository
@@ -186,7 +229,7 @@ jobs:
         run: bash ci/repo/publish.sh
 
   images:
-    name: images (${{ matrix.name }})
+    name: images (${{ matrix.name }}, ${{ matrix.source_sha }})
     needs: validate
     if: needs.validate.outputs.images == 'true'
     strategy:
@@ -198,14 +241,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - name: Build and export image
         env:
           IMAGE_NAME: ${{ matrix.name }}
+          CI_INPUT_REF: ${{ matrix.input_ref }}
         run: lune run ci/images/build.luau "$IMAGE_NAME"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: image-${{ matrix.name }}
+          name: ${{ matrix.artifact }}
           path: build/images/${{ matrix.name }}
           retention-days: 1
           if-no-files-found: error
@@ -218,14 +264,22 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     permissions:
+      contents: read
       pages: write
       id-token: write
     concurrency:
       group: publication-pages
       cancel-in-progress: false
     steps:
-      - name: Require hosted execution
-        run: test "${ACT:-false}" != true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
+      - name: Require hosted execution and source protection
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: lune run ci/access/require-publication.luau
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: pages-preview
@@ -237,19 +291,24 @@ jobs:
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
 
   publish-release:
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.validate.outputs.release_matrix) }}
     needs: [validate, gate]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_release == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     concurrency:
-      group: publication-release
+      group: publication-release-${{ matrix.channel }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: release
@@ -257,29 +316,5 @@ jobs:
       - name: Publish selected release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_CHANNEL: ${{ matrix.channel }}
         run: bash ci/releases/publish.sh
-
-  publish-images:
-    name: publish-images (${{ matrix.name }})
-    needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_images == 'true' }}
-    strategy:
-      matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-lune
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: image-${{ matrix.name }}
-          path: build/images
-      - name: Publish validated image
-        env:
-          GH_TOKEN: ${{ github.token }}
-          IMAGE_NAME: ${{ matrix.name }}
-        run: bash ci/images/publish.sh

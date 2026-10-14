@@ -5,6 +5,15 @@ runs:
   steps:
     - shell: bash
       run: |
+        # act may report the host architecture for a differently sized container.
+        # Select the executable for the machine actually running this step.
+        if [[ "$RUNNER_OS" == Linux ]]; then
+          case "$(uname -m)" in
+            x86_64) RUNNER_ARCH=X64 ;;
+            aarch64|arm64) RUNNER_ARCH=ARM64 ;;
+            *) echo "Unsupported Linux architecture" >&2; exit 1 ;;
+          esac
+        fi
         case "$RUNNER_OS/$RUNNER_ARCH" in
           Linux/X64) platform=linux-x86_64; checksum=1fb5dee6a1afa1d300092805c6e660fe06144d29dd68c45cf6956f040667f791 ;;
           Linux/ARM64) platform=linux-aarch64; checksum=176e1272d41ba3d9ea30087b528048a4a97e3d74cfa0eaa5d35d9e0d4122caa6 ;;

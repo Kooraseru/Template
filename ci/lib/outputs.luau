@@ -26,7 +26,7 @@ function outputs.write(path: string?, values: { [string]: string })
         local existing = if fs.isFile(path) then fs.readFile(path) else ""
         fs.writeFile(path, existing .. text)
     end
-    print(text)
+    print("Resolved workflow context (matrices are written to workflow outputs)")
 end
 
 return outputs

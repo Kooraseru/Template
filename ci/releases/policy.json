@@ -1,0 +1,11 @@
+{
+  "channels": ["stable", "beta", "canary"],
+  "sha_pattern": "^[a-f0-9]{40}$",
+  "bot_patterns": ["\\[bot\\]", "^dependabot$", "^renovate$"],
+  "graph_rows_per_page": 100,
+  "graph_colors": ["#58a6ff", "#bc8cff", "#3fb950", "#ffa657", "#ff7b72"],
+  "body_commit_limit": 80,
+  "artifact_retention_days": 30,
+  "cache_run_limit": 30,
+  "retry_attempts": 3
+}

@@ -48,14 +48,6 @@
       "valid": false
     },
     {
-      "name": "missing release version",
-      "patch": {
-        "release.enabled": true,
-        "release.version": ""
-      },
-      "valid": false
-    },
-    {
       "name": "unversioned Rust",
       "patch": {
         "build.toolchains": [
@@ -201,6 +193,100 @@
             "runner": "ubuntu-latest"
           }
         ]
+      },
+      "valid": false
+    },
+    {
+      "name": "omitted optional build fields",
+      "remove": [
+        "build.runner",
+        "build.matrix",
+        "build.targets",
+        "build.toolchains",
+        "build.rust_version",
+        "build.cmake_version",
+        "build.commands",
+        "build.package_paths"
+      ],
+      "valid": true
+    },
+    {
+      "name": "omitted optional page title",
+      "remove": [
+        "pages.title"
+      ],
+      "valid": true
+    },
+    {
+      "name": "omitted Rust version when enabled",
+      "patch": {
+        "build.toolchains": [
+          "rust"
+        ]
+      },
+      "remove": [
+        "build.rust_version"
+      ],
+      "valid": false
+    },
+    {
+      "name": "omitted CMake version when enabled",
+      "patch": {
+        "build.toolchains": [
+          "cmake"
+        ]
+      },
+      "remove": [
+        "build.cmake_version"
+      ],
+      "valid": false
+    },
+    {
+      "name": "omitted images while disabled",
+      "patch": {
+        "images.enabled": false,
+        "images.publish": false
+      },
+      "remove": [
+        "images.names"
+      ],
+      "valid": true
+    },
+    {
+      "name": "omitted images while enabled",
+      "patch": {
+        "images.enabled": true
+      },
+      "remove": [
+        "images.names"
+      ],
+      "valid": false
+    },
+    {
+      "name": "missing required build category",
+      "remove": [
+        "build"
+      ],
+      "valid": false
+    },
+    {
+      "name": "missing required publication flag",
+      "remove": [
+        "release.publish"
+      ],
+      "valid": false
+    },
+    {
+      "name": "omitted image publication flag",
+      "remove": [
+        "images.publish"
+      ],
+      "valid": true
+    },
+    {
+      "name": "reject registry publication",
+      "patch": {
+        "images.publish": true
       },
       "valid": false
     }

@@ -26,6 +26,7 @@
     "optional": "boolean",
     "skip_pattern": "string",
     "when": "table",
-    "use": "string"
+    "use": "string",
+    "default": "any"
   }
 }

@@ -1,7 +1,7 @@
 --!strict
-local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local config = {}
+local inputs = require("./inputs")
 
 local rules = require("./rules")
 local schema = rules.read("ci/validation/config.rules.json")
@@ -23,7 +23,7 @@ export type BuildEntry = {
 export type Config = {
     repository: Capability & { include: { string } },
     pages: Capability & { title: string },
-    release: Capability & { version: string },
+    release: Capability,
     images: Capability & { names: { string } },
     build: {
         runner: string,
@@ -44,12 +44,32 @@ end
 
 -- Runtime constraints are defined in the data schema, not duplicated here.
 function config.validate(value: any): Config
-    rules.validate(value, schema)
-    return value
+    local resolved = if type(value) == "table" then table.clone(value) else value
+    for _, definition in schema.rules do
+        if definition.default ~= nil then
+            local parts = string.split(definition.path, ".")
+            local section, name = parts[1], parts[2]
+            if type(resolved) == "table" and type(resolved[section]) == "table" then
+                local settings = table.clone(resolved[section])
+                if settings[name] == nil then
+                    local fallback = definition.default
+                    settings[name] = if type(fallback) == "table"
+                        then table.clone(fallback)
+                        else fallback
+                end
+                resolved[section] = settings
+            end
+        end
+    end
+    rules.validate(resolved, schema)
+    return resolved
 end
 
 function config.read(): Config
-    return config.validate(serde.decode("toml", fs.readFile("ci/config.toml")))
+    local value = serde.decode("toml", inputs.read("ci/config.toml"))
+    -- Older snapshots may contain the retired registry-publication flag.
+    if inputs.ref ~= "" then value.images.publish = false end
+    return config.validate(value)
 end
 
 return config

@@ -98,7 +98,10 @@
     },
     {
       "path": "images.publish",
-      "kind": "boolean"
+      "kind": "boolean",
+      "default": false,
+      "equals": false,
+      "message": "CI images are workflow artifacts; registry publication is retired"
     },
     {
       "path": "images.enabled",
@@ -127,24 +130,14 @@
     },
     {
       "path": "pages.title",
-      "kind": "string"
-    },
-    {
-      "path": "release.version",
-      "kind": "string"
-    },
-    {
-      "path": "release.version",
-      "pattern": "^[%w][%w%.%-_]*$",
-      "when": {
-        "path": "release.enabled",
-        "equals": true
-      }
+      "kind": "string",
+      "default": "Project documentation"
     },
     {
       "path": "images.names",
       "kind": "array",
-      "unique": true
+      "unique": true,
+      "default": []
     },
     {
       "path": "images.names.*",
@@ -176,19 +169,23 @@
         "windows-11-arm",
         "macos-15",
         "macos-15-intel"
-      ]
+      ],
+      "default": "ubuntu-latest"
     },
     {
       "path": "build.rust_version",
-      "kind": "string"
+      "kind": "string",
+      "default": ""
     },
     {
       "path": "build.cmake_version",
-      "kind": "string"
+      "kind": "string",
+      "default": ""
     },
     {
       "path": "build.toolchains",
-      "kind": "array"
+      "kind": "array",
+      "default": []
     },
     {
       "path": "build.toolchains.*",
@@ -216,7 +213,8 @@
     },
     {
       "path": "build.commands",
-      "kind": "array"
+      "kind": "array",
+      "default": []
     },
     {
       "path": "build.commands.*",
@@ -234,7 +232,8 @@
     },
     {
       "path": "build.package_paths",
-      "kind": "array"
+      "kind": "array",
+      "default": []
     },
     {
       "path": "build.package_paths.*",
@@ -252,7 +251,8 @@
     {
       "path": "build.matrix",
       "kind": "array",
-      "unique_by": "name"
+      "unique_by": "name",
+      "default": []
     },
     {
       "path": "build.matrix.*",
@@ -281,7 +281,8 @@
     {
       "path": "build.targets",
       "kind": "array",
-      "unique": true
+      "unique": true,
+      "default": []
     },
     {
       "path": "build.targets.*",

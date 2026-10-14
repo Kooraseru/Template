@@ -1,8 +1,7 @@
 {
   "scripts": [
     "ci/repo/publish.sh",
-    "ci/releases/publish.sh",
-    "ci/images/publish.sh"
+    "ci/releases/publish.sh"
   ],
   "cases": [
     {

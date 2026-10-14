@@ -4,12 +4,17 @@ local serde = require("@lune/serde")
 local configuration = require("./config")
 local rules = require("./rules")
 local catalogue = {}
-local imageDefinitions = serde.decode("json", fs.readFile("ci/images/catalogue.json"))
-local targetDefinitions = serde.decode("json", fs.readFile("ci/build/targets.json"))
+local inputs = require("./inputs")
+local function images(): any
+    return serde.decode("json", inputs.read("ci/images/catalogue.json"))
+end
+local function targets(): any
+    return serde.decode("json", inputs.read("ci/build/targets.json"))
+end
 local schema = rules.read("ci/validation/catalogue.rules.json")
 
 function catalogue.read(config: configuration.Config): any
-    return { images = imageDefinitions.images, targets = targetDefinitions.targets, config = config }
+    return { images = images().images, targets = targets().targets, config = config }
 end
 
 function catalogue.validate(document: any)
@@ -64,7 +69,7 @@ function catalogue.validate(document: any)
 end
 
 function catalogue.image(name: string): any
-    for _, entry in imageDefinitions.images do
+    for _, entry in images().images do
         if entry.name == name then
             return entry
         end
@@ -79,7 +84,7 @@ function catalogue.targets(config: configuration.Config): { configuration.BuildE
     elseif #config.build.targets > 0 then
         for _, name in config.build.targets do
             local found = false
-            for _, target in targetDefinitions.targets do
+            for _, target in targets().targets do
                 if target.name == name then
                     table.insert(entries, target)
                     found = true

@@ -31,7 +31,7 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
             end
             return process.exec("docker", dockerArguments)
         end
-        return process.exec(executable, arguments, { env = environment })
+        return process.exec(executable, arguments, { env = environment, cwd = process.env.CI_SOURCE_DIR })
     end
 
     local function prepare()
@@ -45,14 +45,18 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
 
         -- Copy only repository inputs. Docker cp works with a remote/shared
         -- daemon too; it does not assume the job's paths exist on that daemon.
-        local staging = "build/container-input/" .. target.name
+        local staging = "build/tmp/container-input/" .. target.name
         files.reset(staging)
         local listing =
             process.exec("git", { "ls-files", "--cached", "--others", "--exclude-standard", "-z" })
         assert(listing.ok, "could not enumerate repository inputs")
-        for path in listing.stdout:gmatch("[^%z]+") do
-            configModule.relative(path)
-            files.copy(path, staging .. "/" .. path)
+        if process.env.CI_SOURCE_DIR then
+            files.copy(process.env.CI_SOURCE_DIR, staging, true)
+        else
+            for path in listing.stdout:gmatch("[^%z]+") do
+                configModule.relative(path)
+                files.copy(path, staging .. "/" .. path)
+            end
         end
         local created = process.exec("docker", {
             "create",
@@ -124,6 +128,11 @@ function execute.run(config: configModule.Config, target: configModule.BuildEntr
         process.exec("docker", { "rm", "--force", container })
     end
     assert(ok, tostring(failure))
+    if not container and process.env.CI_SOURCE_DIR then
+        for _, path in config.build.package_paths do
+            files.copy(process.env.CI_SOURCE_DIR .. "/" .. path, path)
+        end
+    end
 end
 
 return execute
