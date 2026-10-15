@@ -96,12 +96,19 @@ for (const [index, scenario] of cases.provenance.entries()) test(scenario.name, 
   if (scenario.extra) write(`${dir}/secret.txt`, 'unlisted');
   if (scenario.valid) assert.ok(verifyDistribution(dir, expected)); else assert.throws(() => verifyDistribution(dir, expected));
 });
-test('source rules require no direct-push bypass and only admin PR merging', () => {
+test('source rules permit administrator overrides and reject non-admin bypass', () => {
   const sets = ['source-checks', 'source-admins'].map(name => JSON.parse(fs.readFileSync(`ci/releases/protection/${name}.json`)));
   assert.equal(protectionsValid(sets), true);
   assert.equal(protectionsValid([sets[0]]), false);
-  const unsafe = structuredClone(sets); unsafe[0].bypass_actors = [{ actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' }];
+  const adminOverride = structuredClone(sets);
+  for (const set of adminOverride) set.bypass_actors = [{ actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'always' }];
+  assert.equal(protectionsValid(adminOverride), true);
+  const unsafe = structuredClone(adminOverride); unsafe[0].bypass_actors[0].actor_id = 4;
   assert.equal(protectionsValid(unsafe), false);
+  const appBypass = structuredClone(adminOverride); appBypass[0].bypass_actors[0].actor_type = 'Integration';
+  assert.equal(protectionsValid(appBypass), false);
+  const unsafeUpdates = structuredClone(adminOverride); unsafeUpdates[1].bypass_actors[0].actor_id = 4;
+  assert.equal(protectionsValid(unsafeUpdates), false);
 });
 for (const scenario of cases.protection_visibility) test(scenario.name, () => {
   const rulesets = ['source-checks','source-admins'].map((name,index) => ({
@@ -112,7 +119,7 @@ for (const scenario of cases.protection_visibility) test(scenario.name, () => {
   for (const set of live) delete set.bypass_actors;
   if (scenario.changed_time) live[0].updated_at = '2026-10-14T01:00:00Z';
   if (scenario.changed_rules) live[0].rules = [];
-  if (scenario.unsafe) rulesets[0].bypass_actors = [{actor_id:5,actor_type:'RepositoryRole',bypass_mode:'always'}];
+  if (scenario.unsafe) rulesets[0].bypass_actors = [{actor_id:4,actor_type:'RepositoryRole',bypass_mode:'always'}];
   const snapshot = scenario.missing ? null : {schema:1,repository:scenario.wrong_repository?'other/repository':'owner/project',rulesets};
   const verify = () => assert.equal(protectionsValid(verifiedProtections(live,snapshot,'owner/project')),true);
   if (scenario.valid) verify(); else assert.throws(verify);

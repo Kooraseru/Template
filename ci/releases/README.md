@@ -44,9 +44,12 @@ an already verified generation is a no-op.
 Each consuming repository installs both JSON rulesets under `protection/`
 through GitHub Settings / Rules / Rulesets / Import. Templates do not transfer
 these settings. The checks ruleset requires PRs, the GitHub Actions `gate` check,
-up-to-date checks, and no force pushes or deletion, with no bypass actors.
-The update ruleset grants repository admin role (ID 5) a PR-only bypass.
-Together, only admins can merge source PRs and nobody can push source directly.
+up-to-date checks, and no force pushes or deletion. The supplied baseline has no
+bypass actors on that checks ruleset. The update ruleset grants repository admin
+role (ID 5) a PR-only bypass. Consumers may instead allow the administrator role
+an always-on bypass on either ruleset to support direct administrator source pushes.
+CI accepts both configurations and rejects non-admin roles or apps in bypass lists.
+Contributor updates still require the protected PR path; admin overrides are explicit.
 Zero required approvals permits a sole admin to merge their own passing PR.
 
 Admin CLI setup (no token stored in the repository):

@@ -32,10 +32,15 @@ for (const [name, paths] of Object.entries(groups)) {
 }
 evidence.success = !failed;
 write('build/validation/evidence.json', evidence);
+if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+  `\n## Validation results\n\nScope: ${controls.validation_scope}\n\n| Suite | Result |\n| --- | --- |\n`
+  + evidence.groups.map(group => `| ${group.name} | ${group.checks.every(check => check.success) ? 'Passed' : 'Failed'} |`).join('\n') + '\n');
 const planFile = 'build/tmp/releases/plan.json';
 if (fs.existsSync(planFile)) {
   const plan = JSON.parse(fs.readFileSync(planFile));
   plan.validation = evidence;
   write(planFile, plan);
+  if (process.env.GITHUB_STEP_SUMMARY && !plan.images?.length) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    '\nImage matrix: not selected for this plan. This does not skip validation or native builds.\n');
 }
 process.exitCode = failed ? 1 : 0;

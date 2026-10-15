@@ -40,7 +40,7 @@ export async function protect(repository, api) {
   const live = await Promise.all(summaries.map(set => api.request(`/rulesets/${set.id}`)));
   const attestation = process.env.CI_SOURCE_PROTECTION ? JSON.parse(process.env.CI_SOURCE_PROTECTION) : null;
   const rulesets = verifiedProtections(live, attestation, repository);
-  if (!protectionsValid(rulesets)) throw Error('Official publication requires source PR/check protections and admin-only PR merging. See ci/releases/README.md.');
+  if (!protectionsValid(rulesets)) throw Error('Official publication requires source PR/check protections and administrator-only updates or bypass. See ci/releases/README.md.');
   return true;
 }
 export async function updateChannel(api, metadata, root, assertFresh) {

@@ -184,13 +184,14 @@ export function protectionsValid(rulesets) {
   const applicable = rulesets.filter(set => set.enforcement === 'active' && set.target === 'branch'
     && set.conditions?.ref_name?.include?.some(ref => ['refs/heads/source', '~DEFAULT_BRANCH', '~ALL'].includes(ref))
     && !(set.conditions?.ref_name?.exclude || []).some(ref => ['refs/heads/source', '~ALL', '~DEFAULT_BRANCH'].includes(ref)));
-  const checks = applicable.some(set => Array.isArray(set.bypass_actors) && !set.bypass_actors.length
+  const adminOnly = actors => Array.isArray(actors) && actors.every(actor => actor.actor_type === 'RepositoryRole'
+    && actor.actor_id === 5 && ['pull_request', 'always'].includes(actor.bypass_mode));
+  const checks = applicable.some(set => adminOnly(set.bypass_actors)
     && ['pull_request', 'non_fast_forward', 'deletion'].every(type => set.rules.some(rule => rule.type === type))
     && set.rules.some(rule => rule.type === 'required_status_checks' && rule.parameters.strict_required_status_checks_policy
       && rule.parameters.required_status_checks.some(check => check.context === 'gate' && check.integration_id === 15368)));
   const restricted = applicable.some(set => set.rules.some(rule => rule.type === 'update')
-    && set.bypass_actors?.length === 1 && set.bypass_actors[0].actor_type === 'RepositoryRole'
-    && set.bypass_actors[0].actor_id === 5 && set.bypass_actors[0].bypass_mode === 'pull_request');
+    && set.bypass_actors?.length === 1 && adminOnly(set.bypass_actors));
   return checks && restricted;
 }
 export function verifiedProtections(live, attestation, repository) {
