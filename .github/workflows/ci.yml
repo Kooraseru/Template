@@ -1,4 +1,5 @@
 name: CI
+run-name: "CI · ${{ inputs.operation || github.event_name }} · ${{ inputs.target || github.ref_name }} ${{ inputs.pr }} · ${{ inputs.admin || 'None' }}"
 env:
   CI_SOURCE_PROTECTION: ${{ vars.CI_SOURCE_PROTECTION }}
 on:
@@ -8,18 +9,30 @@ on:
     branches: [source]
   workflow_dispatch:
     inputs:
+      operation:
+        description: 'Operation'
+        type: choice
+        default: Validate
+        options: [Validate, Build, Publish, Full Run]
+      target:
+        description: 'Target'
+        type: choice
+        default: Source
+        options: [Source, Pull request]
       pr:
-        description: 'PR number to independently validate; 0 validates source and release selections'
-        default: '0'
-        type: string
-      claim:
-        description: 'Optional contributor receipt JSON for comparison'
+        description: 'Pull request number (required for Pull request target)'
         default: ''
         type: string
-      bootstrap:
-        description: 'First-install only: admin validates the exact activation PR controller'
-        default: false
-        type: boolean
+      claim:
+        description: 'Validation receipt JSON (optional comparison evidence)'
+        default: ''
+        type: string
+      admin:
+        description: 'ADMIN: bypass controls (repository administrator only)'
+        type: choice
+        default: None
+        options: [None, Ignore gates, First-time activation]
+
 permissions:
   contents: read
   actions: read
@@ -30,6 +43,8 @@ jobs:
       actions: read
     runs-on: ubuntu-latest
     outputs:
+      operation: ${{ steps.dispatch.outputs.operation }}
+      ignore_gates: ${{ steps.dispatch.outputs.ignore_gates }}
       runner: ${{ steps.context.outputs.runner }}
       build_matrix: ${{ steps.context.outputs.build_matrix }}
       rust: ${{ steps.context.outputs.rust }}
@@ -56,6 +71,11 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
+      - name: Resolve operation and administrator controls
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ci/access/dispatch.mjs
       - name: Resolve execution authority and tested commit
         env:
           GH_TOKEN: ${{ github.token }}
@@ -98,7 +118,7 @@ jobs:
   build:
     name: build (${{ matrix.name }})
     needs: [validate, images]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.validate.outputs.build_requested == 'true' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.validate.outputs.build_requested == 'true' && needs.validate.outputs.operation != 'Validate' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -172,7 +192,7 @@ jobs:
           path: build/logs
   repository:
     needs: validate
-    if: needs.validate.outputs.repository == 'true'
+    if: needs.validate.outputs.repository == 'true' && needs.validate.outputs.operation != 'Validate'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -192,7 +212,7 @@ jobs:
           if-no-files-found: error
   pages:
     needs: validate
-    if: needs.validate.outputs.pages == 'true'
+    if: needs.validate.outputs.pages == 'true' && needs.validate.outputs.operation != 'Validate'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -210,7 +230,7 @@ jobs:
           if-no-files-found: error
   release:
     needs: [validate, build]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && needs.validate.outputs.release == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && needs.validate.outputs.release == 'true' && needs.validate.outputs.operation != 'Build' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -236,7 +256,7 @@ jobs:
           if-no-files-found: error
   validation-receipt:
     needs: [validate, build, images]
-    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || inputs.bootstrap) && needs.validate.outputs.local_execution == 'false' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || inputs.admin == 'First-time activation') && needs.validate.outputs.local_execution == 'false' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -297,15 +317,20 @@ jobs:
         with:
           name: release-plan
           path: build/tmp/releases
+      - name: Require successful validation
+        env:
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+        run: test "$VALIDATE_RESULT" = success
       - name: Require accepted validation or independently requested execution
-        if: needs.validate.result == 'success'
+        if: needs.validate.result == 'success' && needs.validate.outputs.operation != 'Validate' && needs.validate.outputs.ignore_gates != 'true'
         run: node ci/receipts/cli.mjs check-ready
       - name: Require hosted receipt reporting
-        if: github.event_name == 'workflow_dispatch' && needs.validate.outputs.local_execution == 'false'
+        if: github.event_name == 'workflow_dispatch' && needs.validate.outputs.local_execution == 'false' && needs.validate.outputs.operation != 'Validate' && needs.validate.outputs.ignore_gates != 'true'
         env:
           RECEIPT_RESULT: ${{ needs.validation-receipt.result }}
         run: test "$RECEIPT_RESULT" = success
       - name: Require successful enabled jobs
+        if: needs.validate.outputs.operation != 'Validate' && needs.validate.outputs.ignore_gates != 'true'
         env:
           RESULTS: >-
             {"validate":{"result":"${{ needs.validate.result }}"},
@@ -359,7 +384,7 @@ jobs:
   images:
     name: images (${{ matrix.name }}, ${{ matrix.source_sha }})
     needs: validate
-    if: needs.validate.outputs.images == 'true'
+    if: needs.validate.outputs.images == 'true' && needs.validate.outputs.operation != 'Validate'
     strategy:
       fail-fast: false
       max-parallel: 4

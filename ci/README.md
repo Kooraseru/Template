@@ -90,3 +90,28 @@ controller job with contents write access; build jobs receive verified workflow
 artifacts with read-only repository permissions.
 
 Current artifact majors require the local act compatibility build described in images/act/README.md until upstream fixes its artifact server.
+
+## Manual CI form
+
+The single CI workflow exposes Operation (Validate, Build, Publish, Full Run),
+Target (Source, Pull request), PR number, optional Validation receipt JSON, and
+ADMIN controls (None, Ignore gates, First-time activation). GitHub choices are
+static, so open PRs cannot populate the native form dynamically.
+
+Validate runs the validation job and stores its release plan artifact. Build
+runs validation and build jobs, storing distributions, logs, and accepted receipts.
+Publish requires matching accepted stored outputs and uses the existing reuse
+path rather than executing missing builds. Full Run selects the complete pipeline.
+Accepted staging bundles are the durable cache; Actions caches are not publication authority.
+
+Ignore gates skips the final readiness, receipt-reporting, and enabled-job gate
+checks. It requires a hosted administrator request. It does not bypass failed
+validation, artifact integrity, branch protections, publication authorization,
+or GitHub token permissions. First-time activation retains the exact activation
+PR restriction and cannot be combined with Ignore gates.
+
+This is the initial manual-operation interface. Manual Publish and Full Run still
+encounter the existing push-only publication policy: publication jobs currently
+run only on source pushes. Validation evidence reuse across separate Validate
+and Build dispatches is also not yet implemented. Do not interpret this interface
+as verified end-to-end manual publication support; hosted failures are deferred.

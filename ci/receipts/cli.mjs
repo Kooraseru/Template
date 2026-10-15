@@ -29,7 +29,7 @@ if (operation === 'authorize') {
     pr = currentPR(number); testedSHA = pr.head_sha;
   } else pr = { number: 0, head_sha: testedSHA, base_sha: testedSHA };
   const requested = local || dispatch;
-  const bootstrap = !local && dispatch && event.inputs?.bootstrap === 'true';
+  const bootstrap = !local && dispatch && (event.inputs?.admin === 'First-time activation' || event.inputs?.bootstrap === 'true');
   if (!local && dispatch && (!isAdmin(actor()) || (process.env.GITHUB_REF !== 'refs/heads/source'
     && !(bootstrap && number && pr.head_sha === process.env.GITHUB_SHA && predatesContract(pr.base_sha))))) throw Error('Hosted validation requires an administrator and the source controller');
   if (bootstrap && (pr.head_sha !== process.env.GITHUB_SHA || !predatesContract(pr.base_sha))) throw Error('Bootstrap is restricted to the first activation PR');
@@ -55,6 +55,8 @@ if (operation === 'authorize') {
     || names.some(name => !plan.builds.some(entry => entry.name === name)))) throw Error('Local target selection is invalid');
   const executing = context.local ? plan.builds.filter(entry => entry.runner.startsWith('ubuntu')
     && (!names || names.includes(entry.name))) : plan.builds;
+  const event = process.env.GITHUB_EVENT_PATH ? read(process.env.GITHUB_EVENT_PATH) : {};
+  if (event.inputs?.operation === 'Publish' && !complete) throw Error('Publish requires matching accepted cached outputs; run Build first');
   const requiredImages = new Set(executing.filter(entry => !entry.accepted).map(entry => entry.image_artifact));
   plan.images = run ? plan.images.filter(entry => requiredImages.has(entry.artifact)) : [];
   write('build/tmp/releases/plan.json', plan);
@@ -240,7 +242,7 @@ if (operation === 'authorize') {
   if (bootstrap && (!pr || pr.head_sha !== git(['rev-parse','HEAD']) || !predatesContract(pr.base_sha))) throw Error('Bootstrap requires the exact first activation PR checkout');
   const claimFile = process.argv[4] && !process.argv[4].startsWith('--') ? process.argv[4] : '';
   const claim = claimFile ? JSON.stringify(read(claimFile)) : '';
-  api(`repos/${repository()}/actions/workflows/ci.yml/dispatches`,'POST',{ref:bootstrap ? git(['branch','--show-current']) : 'source',inputs:{pr:String(number),claim,bootstrap:String(bootstrap)}});
+  api(`repos/${repository()}/actions/workflows/ci.yml/dispatches`,'POST',{ref:bootstrap ? git(['branch','--show-current']) : 'source',inputs:{operation:'Build',target:number ? 'Pull request' : 'Source',pr:number ? String(number) : '',claim,admin:bootstrap ? 'First-time activation' : 'None'}});
   console.log('Requested independent validation using the source controller');
 } else if (operation === 'check-ready') {
   const plan = read('build/tmp/releases/plan.json');
