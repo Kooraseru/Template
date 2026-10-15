@@ -1,9 +1,4 @@
 {
-  "channels": [
-    "stable",
-    "beta",
-    "canary"
-  ],
   "sha_pattern": "^[a-f0-9]{40}$",
   "bot_patterns": [
     "\\[bot\\]",

@@ -1,13 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { command, git, write, sha256, canonical, sourceTip, validateChannels, verifyDistribution, policy } from './core.mjs';
+import { command, git, write, sha256, canonical, sourceTip, selectReleases, validateReleases, verifyDistribution, policy } from './core.mjs';
 import { identity } from '../receipts/core.mjs';
 import { restore } from '../receipts/github.mjs';
 
 const read = file => JSON.parse(fs.readFileSync(file));
 const directory = 'build/tmp/releases';
 const operation = process.argv[2];
-if (operation === 'resolve') {
+if (operation === 'validate') {
+  const request = read(`${directory}/validation.json`);
+  validateReleases(request.versions, request.source_tip);
+} else if (operation === 'resolve') {
   const request = read(`${directory}/request.json`);
   const tip = sourceTip();
   // Checkout fetch-depth: 0 makes selected history available. Fetch a newly advanced hosted tip if necessary.
@@ -19,13 +22,15 @@ if (operation === 'resolve') {
     }
     git(['fetch', '--no-tags', 'origin', tip], { env });
   }
-  write(`${directory}/selections.json`, request.enabled ? validateChannels(request.channels, tip) : []);
+  write(`${directory}/selections.json`, request.enabled ? selectReleases(request.versions, request.controls || {}, tip) : []);
 } else if (operation === 'plan') {
   const plan = read(`${directory}/inputs.json`);
   // Lune serializes an empty table as an object, including an empty image list.
-  if (!Array.isArray(plan.images) && Object.keys(plan.images).length === 0) plan.images = [];
+  for (const name of ['images', 'selections']) {
+    if (!Array.isArray(plan[name]) && Object.keys(plan[name]).length === 0) plan[name] = [];
+  }
   const controllerFiles = git(['ls-tree','-r','--name-only',plan.controller_sha,'ci','.github/actions','.github/workflows/ci.yml']).split('\n')
-    .filter(file => file && !/README|\.md$|config\.toml$|channels\.toml$|records\//.test(file));
+    .filter(file => file && !/README|\.md$|config\.toml$|versions\.toml$|records\//.test(file));
   const controllerHash = sha256(canonical(controllerFiles.sort().map(file => [file,
     sha256(command('git',['show',`${plan.controller_sha}:${file}`],{encoding:null}))])));
   const imageArtifact = (definition, recipes) => 'image-' + definition.name + '-' + sha256(canonical({ definition, recipes })).slice(0, 24);
@@ -57,7 +62,7 @@ if (operation === 'resolve') {
   const imageMatrix = plan.images.length ? plan.images : [{ name: 'disabled', runner: 'ubuntu-latest', artifact: 'disabled', input_ref: '' }];
   const output = {
     build_matrix: JSON.stringify({ include: plan.builds }), image_matrix: JSON.stringify({ include: imageMatrix }),
-    release_matrix: JSON.stringify({ include: plan.selections.length ? plan.selections.map(({ channel }) => ({ channel })) : [{ channel: 'disabled' }] }),
+    release_matrix: JSON.stringify({ include: plan.selections.length ? plan.selections.map(({ version, type }) => ({ version, type })) : [{ version: 'disabled', type: 'Release' }] }),
     images_enabled: String(plan.images.length > 0),
   };
   write(`${directory}/outputs.json`, output);
@@ -103,7 +108,7 @@ if (operation === 'resolve') {
   await assemble(read(`${directory}/plan.json`));
 } else if (operation === 'publish') {
   const { publish } = await import('./publish.mjs');
-  await publish(process.env.RELEASE_CHANNEL);
+  await publish(process.env.RELEASE_VERSION);
 } else if (operation === 'attest-protection') {
   const {api,repository,actor,isAdmin} = await import('../receipts/github.mjs');
   const {protectionsValid} = await import('./core.mjs');

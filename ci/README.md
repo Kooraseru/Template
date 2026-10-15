@@ -18,7 +18,7 @@ publish, even when a publication flag is true.
 | `pages.publish` | Baseline `true`; required | Allow gated GitHub Pages deployment. |
 | `pages.title` | Optional; `"Project documentation"` | Generated site's title. |
 | `release.enabled` | Baseline `true`; required | Assemble commit-based channels and distributions. |
-| `release.publish` | Baseline `true`; required | Allow gated updates of movable release channels. |
+| `release.publish` | Baseline `true`; required | Allow gated publication of explicitly selected immutable versions. |
 | `images.enabled` | Baseline `false`; required | Build and export selected CI images. |
 | `images.names` | Baseline 24 catalogue names; omitted `[]` | Selected image variants; a nonempty selection is required when enabled. |
 | `build.runner` | Optional; `"ubuntu-latest"` | Fallback runner when neither targets nor a custom matrix is selected. |
@@ -35,9 +35,9 @@ template itself; compiler environments are opt-in. All 24 image profiles and 32
 build targets remain available. Enable images and select targets when needed. See [image profiles](images/README.md) and the two JSON
 catalogues for their full names and platform settings.
 
-Release selections live in [releases/channels.toml](releases/channels.toml).
-Canary follows source; stable and beta select explicit SHAs. Optional `notes`
-adds an authored introduction. See [release channels](releases/README.md) for
+Release selections live in [releases/versions.toml](releases/versions.toml).
+Each immutable SemVer version selects an explicit full source SHA. Optional `notes`
+adds an authored introduction. See [versioned releases](releases/README.md) for
 ranges, credits, graph defaults, provenance, and required source rulesets.
 The old versioned notes remain an unpublished draft. CI images transfer solely
 as workflow artifacts; registry publication is retired.
@@ -93,7 +93,8 @@ Current artifact majors require the local act compatibility build described in i
 
 ## Manual CI control panel
 
-The single workflow exposes twelve administrator dropdowns for operation, PR,
+The single workflow exposes twelve administrator dropdowns and paired optional
+SemVer version/source inputs. Dropdowns select operation, PR,
 validation scope, targets, compiler, architecture, images, generated outputs,
 cache behavior and gate overrides. See [the control panel](control/README.md)
 for stage grouping, PR-choice refresh permissions, and diagnostic evidence rules.

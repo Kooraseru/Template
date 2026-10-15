@@ -102,8 +102,8 @@ the template. Key records include admin login and revocation state; current
 repository admin permission is checked whenever a result is accepted.
 
 Staging uses unique `ci-validation-<UUID>` draft releases. Both receipt and
-archive uploads are downloaded and verified before acceptance. They are not
-stable/beta/canary releases. Local act never stages or officially publishes.
+archive uploads are downloaded and verified before acceptance. They are
+internal validation drafts, independent of public Release and Pre-Release versions. Local act never stages or officially publishes.
 Claim/input/result mismatches block acceptance. Non-reproducible checksum
 differences are reported; publication always uses admin-validated output.
 
@@ -126,7 +126,7 @@ without compiler execution or image rebuilding, rechecks cheap validation,
 assembles releases, and revalidates acceptance before publication. Missing outputs are rebuilt when the source push has verified administrator execution approval.
 Expired, revoked, altered, or incomplete artifacts are never accepted as successful builds.
 Without administrator approval, request source validation with `request 0` and rerun
-after accepted staging is available. Existing channel releases remain intact.
+after accepted staging is available. Existing published versions remain intact.
 
 ## First installation
 

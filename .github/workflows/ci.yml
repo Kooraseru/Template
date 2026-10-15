@@ -137,10 +137,8 @@ on:
           - "Configured"
           - "Skip"
           - "Assemble only"
-          - "Publish configured channels"
-          - "Publish canary"
-          - "Publish beta"
-          - "Publish stable"
+          - "Publish Release"
+          - "Publish Pre-Release"
       cache_policy:
         description: "Policy / Cache"
         type: choice
@@ -159,6 +157,14 @@ on:
           - "Ignore validation failures"
           - "Ignore incomplete coverage"
           - "Ignore both"
+      release_version:
+        description: "Release / Version (optional override, paired with source commit)"
+        type: string
+        default: ""
+      release_commit:
+        description: "Release / Source commit (full SHA, paired with version)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -638,7 +644,7 @@ jobs:
   publish-release:
     env:
       CI_PUBLICATION_JOB: 'true'
-    name: Publish / Release (${{ matrix.channel }})
+    name: Publish / ${{ matrix.type }} (${{ matrix.version }})
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.validate.outputs.release_matrix) }}
@@ -649,7 +655,7 @@ jobs:
       contents: write
       actions: read
     concurrency:
-      group: publication-release-${{ matrix.channel }}
+      group: publication-version-${{ matrix.version }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -665,5 +671,5 @@ jobs:
       - name: Publish selected release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_CHANNEL: ${{ matrix.channel }}
+          RELEASE_VERSION: ${{ matrix.version }}
         run: bash ci/releases/publish.sh

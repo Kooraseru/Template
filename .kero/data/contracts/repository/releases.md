@@ -1,41 +1,44 @@
-# Release channels
+# Versioned release contract
 
-The release list is `ci/releases/channels.toml`. Supported channels are stable,
-beta, and canary. Stable and beta select full source commit SHAs. Only canary may
-select `latest`, which resolves the newest source commit once per execution.
+Public publication has exactly two types: Release for `MAJOR.MINOR.PATCH` and
+Pre-Release for `MAJOR.MINOR.PATCH-pre.N`. Types are derived from the version.
+There are no public release channels, moving tags, alternate aliases or separate
+persistent release identities. Public tags equal the selected version string.
 
-Every channel declares `from`. A SHA range excludes that start and includes the
-selected commit. `beginning` includes all reachable history. Selected commits
-must belong to source history; a SHA start must be their ancestor. Equal start
-and endpoint is a valid empty range. Optional `notes` names an existing relative
-Markdown file in the controller checkout; omitting it generates no introduction.
+The publication selection list is `ci/releases/versions.toml`. Each entry declares
+an explicit version and full source commit SHA. An empty list publishes no public
+version. Commits must belong to source history. Optional `from` defaults to
+`beginning`; a SHA range excludes its ancestor start and includes the selected
+commit. Optional `notes` references an existing relative controller Markdown file.
+The manual workflow supports paired version and full source-SHA overrides.
 
-Channels are movable GitHub releases and tags. Stable is a normal release; beta
-and canary are prereleases. No immutable-release policy is imposed. Publication
-uses verified packages for the selected source identity. Exact-commit targets
-require that SHA; explicit source-tree targets may reuse another tested SHA only
-with matching trees and complete inputs. Both identities remain explicit.
-If the newest canary commit fails or is still building, retain the previously
-published SHA and assets. Recheck source freshness before updating the channel.
+Published content is immutable. Identical publication is a no-op; mismatched source,
+notes, type, manifest or assets fails without mutation. The publisher never moves
+or deletes tags and never patches published release content. Promotion from a
+prerelease to a stable version creates a new release and tag, preserving the
+prerelease. Historical releases and tags remain unchanged.
 
-The body presents authored notes, changes, commit graph, and contributor names,
-in that order. Credits cover Git authors and Co-authored-by trailers in the
-exclusive-start range, normalized by the selected snapshot's .mailmap. Canonical
-emails are internal identity keys and must not appear in generated public graph
-or contributor metadata. Bot exclusions are declared in the release policy.
+New publication uses a verified draft before making a version public. Only an
+unpublished draft owned by the failing attempt may be removed. Existing tags and
+published versions are never rolled back, even after an uncertain API response.
+Internal `ci-validation-*` drafts remain validation staging with existing receipts,
+retention and trust rules, independent of public version selection.
 
-Native source rules require PRs and passing GitHub Actions gate checks without
-direct-push bypass. A separate update restriction allows only repository admins
-to merge via PR. Admins may merge their own PRs. All source changes follow this
-policy, including the release list. Templates do not transfer rulesets: each
-consumer imports them separately. Publication fails closed without them.
+The single CI workflow preserves current build targets, accepted-artifact reuse,
+execution evidence, publication gates and source protection. Administrator merge
+or push approval authorizes missing builds to execute; it does not fabricate
+successful build evidence. Public packages require verified matching accepted
+receipts. Source PR/check rules and admin-only update or bypass permissions remain
+mandatory. Local act execution can produce previews but cannot publish.
 
-All operations belong to the single CI workflow. Local act runs generate
-previews but never publish. CI images are workflow artifacts, not registry
-packages. Deleting historical registry packages requires a separate reviewed
-cleanup. Generated release state lives under build/releases/<channel>/<SHA>.
+Public artifacts live under `build/releases/<version>/`. The public manifest
+contains version, source and build identity; transient controller and receipt
+locations remain in an internal publication manifest. Archive timestamps and
+ownership are normalized so restaging identical builds preserves public bytes.
 
-Artifact provenance includes source SHA, target, build-input fingerprint, and
-checksums. Reuse requires accepted independent admin validation and matching
-provenance. Missing, expired, or incompatible artifacts wait for an admin request.
-Only the automatic repository GITHUB_TOKEN is needed for official publication.
+Notes retain authored text, changes, commit graph and contributor names. Credits
+cover Git authors and Co-authored-by trailers in the selected range, normalized by
+the selected snapshot's .mailmap. Canonical emails remain internal. Bot exclusions
+are defined in the release policy. Registry packages remain out of scope.
+
+Reference: https://semver.org/spec/v2.0.0.html

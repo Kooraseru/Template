@@ -1,43 +1,95 @@
-# Release channels
+# Versioned releases
 
-Configure `channels.toml`; enable generation/publication in `ci/config.toml`.
-Canary initially selects `commit = "latest"` and `from = "beginning"`.
-Stable and beta remain commented examples until an admin selects full SHAs.
-Ranges exclude the start and include the selected commit. Optional `notes` adds
-an authored introduction; a configured missing file fails generation.
-The 10.1.2026 record remains an unpublished draft.
+The public release system has exactly two GitHub release types:
 
-Channels are movable GitHub tags/releases. Stable is a normal release; beta and
-canary are prereleases. The source SHA is explicit in the body and metadata.
-A failing or unfinished newest commit leaves the previous canary published.
-The publisher rechecks source freshness and protection before promotion.
+| Type | Version and tag | GitHub prerelease flag |
+| --- | --- | --- |
+| Release | `1.2.0` | false |
+| Pre-Release | `1.3.0-pre.1` | true |
 
-Normal builds check the current change. Additional distinct selections build
-their exact source snapshots, using their declared build configuration, target
-definitions, and image recipes with the current CI execution scripts. Cache
-reuse requires an accepted admin receipt with matching target, source identity,
-build fingerprint, execution evidence, and manifest checksums. Missing, expired,
-legacy, or incompatible artifacts wait for an admin validation request rather
-than automatically scheduling another hosted build. See ../receipts/README.md.
+Versions follow `MAJOR.MINOR.PATCH`, optionally followed by `-pre.N`. Numeric
+identifiers have no leading zeroes. The prerelease counter is a non-negative
+integer. No other prerelease identifiers, build metadata, floating source selectors
+or version aliases are accepted. Public tags are exactly the version string.
 
-Output lives under `build/releases/<channel>/<SHA>/`. Inspect `notes.md`,
-`release.json`, `packages.tar.gz`, PNGs, and `graph.html`. With no package paths
-configured, this template contains no application payload. Published assets are
-qualified by SHA and generation to stage replacements before deleting old ones.
+## Explicit version and source selection
 
-The body contains optional authored text, linked changes, graph, then credits.
-`changes.md` contains the complete commit list and file statistics; the body
-shows up to 80 commits. PNGs contain 100 graph rows per page; self-contained HTML
-contains the complete interactive graph. Credits include authors and
-Co-authored-by trailers, normalized through the selected snapshot's .mailmap.
-Names are public; canonical emails stay internal. Bot filters and pagination
-defaults are declared in `policy.json`. GitHub automatic PR notes are not used.
+`versions.toml` contains a publication selection list, not an inventory of all
+historical releases. The template starts with `releases = []`, so normal source
+pushes do not invent or automatically number a public release. Enable generation
+and publication through `release.enabled` and `release.publish` in `ci/config.toml`.
+Replace the empty list with entries such as:
 
-Publication uses the automatic workflow token. New assets are checksum verified
-before changing the channel. Failures restore the previous tag/body and remove
-staged assets; incomplete recovery fails explicitly. Multiple GitHub API calls
-are not an atomic transaction. Publication is serialized per channel; repeating
-an already verified generation is a no-op.
+```toml
+[[releases]]
+version = "1.3.0-pre.1"
+commit = "<full 40-character source commit SHA>"
+from = "beginning"
+# notes = "ci/releases/records/introduction.md"
+```
+
+Each commit must belong to source history. Optional `from` defaults to `beginning`;
+a full ancestor SHA excludes that starting commit and includes the selected commit.
+An equal start and endpoint is a valid empty notes range. Optional `notes` names an
+existing relative Markdown file in the trusted controller checkout. The historical
+versioned draft notes remain untouched.
+
+The manual CI panel keeps twelve dropdowns and adds paired optional Release version
+and Release source commit text inputs. Leaving both blank uses `versions.toml`.
+Supplying both explicitly selects one version and full source SHA. If that version
+already has a configured entry, its notes and range are preserved. A new version
+uses the default complete history range. Publish Release and Publish Pre-Release
+filter selected versions by their derived GitHub type. They are output choices,
+not persistent release identities. PR targets cannot publish public versions.
+
+## Immutability and promotion
+
+Each version identifies immutable public content. Publication checks the source
+commit, release type, title, complete notes, manifest and exact asset list with
+checksums and sizes. An existing identical published version is a no-op with no
+writes. Different content or a conflicting tag fails without changing the existing
+release or tag. Missing GitHub asset digests are checked by downloading the bytes.
+No publisher code moves or deletes a Git tag or modifies a published version.
+
+Promoting `1.3.0-pre.1` to `1.3.0` means selecting a new stable version, possibly
+with the same source SHA. It creates another release and tag. The prerelease and
+all its assets remain unchanged. Existing historical releases and tags remain
+unchanged by this migration and are never treated as aliases for new versions.
+
+New versions are uploaded and verified as drafts before becoming public. Only an
+unpublished draft created by a failed publication attempt may be cleaned up.
+A version tag that already exists or was created during the attempt is retained.
+A matching publisher-owned draft can resume; an unrelated or conflicting draft
+fails without mutation. An uncertain response after publication never triggers a
+rollback or deletion of the published version.
+
+## Builds, evidence and artifacts
+
+Normal builds check the current source change. Additional distinct version source
+selections build their exact snapshots with the current trusted controller. Cache
+reuse still requires matching accepted administrator receipts, source identity,
+build fingerprints, execution evidence and manifest checksums. Verified admin
+source pushes or manual requests permit missing builds to execute. Publication
+continues to require protected hosted source execution and fresh controller inputs.
+
+Output lives under `build/releases/<version>/`. Public assets include `release.json`,
+`notes.md`, `changes.md`, `packages.tar.gz`, graph PNGs, `graph.json` and `graph.html`.
+Names are qualified by version. Archive timestamps and ownership are normalized on
+Ubuntu. Public metadata records the version, type, selected commit and build
+provenance. The internal `publication.json` retains controller and receipt-location
+information and is not uploaded as a public asset. Restaging the same accepted
+build does not change public contents.
+
+Internal `ci-validation-*` drafts and build receipts retain their existing
+retention, trust and verification rules. They are internal validation staging,
+independent of the public version system.
+
+The body contains authored text, changes, graph and contributor names in that
+order. Complete changes and file statistics remain in `changes.md`; the body
+shows at most 80 commits. PNGs contain 100 graph rows per page and the interactive
+HTML contains the complete graph. Credits include Git authors and Co-authored-by
+trailers normalized through the selected source snapshot's `.mailmap`. Bot filters
+remain in `policy.json`; canonical emails stay out of public graph metadata.
 
 ## Required source protection
 
@@ -76,11 +128,15 @@ any ruleset edit, including a temporary admin bypass and its restoration.
 Templates do not transfer this repository variable; enroll it in each repository.
 No PAT, signing key, or publication secret is stored in the template.
 
-## Local previews
+## Local previews and verification
 
-Use the actual workflow through act/GitHub Local Actions. Select Linux targets
-and required images in an isolated standalone source checkout, then commit its
-preview configuration. Preserve the full baseline in the development checkout.
-A matrix filter alone does not change the release's expected target list.
-Native Windows/macOS jobs require their GitHub runners. Local runs suppress all
-publication, even when publish is true.
+Use the same workflow through act/GitHub Local Actions. Select compatible Linux
+targets and required images through manual controls; native Windows/macOS builds
+require their corresponding hosted runners. Local runs never publish remotely.
+Release assembly uses the Ubuntu job's Docker renderer and deterministic GNU tar.
+
+Regression tests cover version parsing, explicit commit ancestry, empty selections,
+manual overrides, immutable reruns, content conflicts, separate prerelease promotion,
+historical tag preservation, partial-draft failures and unchanged protection checks.
+
+Reference: https://semver.org/spec/v2.0.0.html

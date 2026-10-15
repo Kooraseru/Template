@@ -45,99 +45,6 @@
     "range_count": 3,
     "beginning_count": 4
   },
-  "channels": [
-    {
-      "name": "latest canary",
-      "input": {
-        "canary": {
-          "from": "beginning",
-          "commit": "latest"
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "pinned stable",
-      "input": {
-        "stable": {
-          "from": "$root",
-          "commit": "$merge"
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "empty range",
-      "input": {
-        "beta": {
-          "from": "$root",
-          "commit": "$root"
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "stable cannot float",
-      "input": {
-        "stable": {
-          "from": "beginning",
-          "commit": "latest"
-        }
-      },
-      "valid": false
-    },
-    {
-      "name": "short SHA",
-      "input": {
-        "stable": {
-          "from": "beginning",
-          "commit": "abcd123"
-        }
-      },
-      "valid": false
-    },
-    {
-      "name": "backwards range",
-      "input": {
-        "beta": {
-          "from": "$merge",
-          "commit": "$root"
-        }
-      },
-      "valid": false
-    },
-    {
-      "name": "sideways range",
-      "input": {
-        "beta": {
-          "from": "$feature",
-          "commit": "$main"
-        }
-      },
-      "valid": false
-    },
-    {
-      "name": "unknown channel",
-      "input": {
-        "other": {
-          "from": "beginning",
-          "commit": "latest"
-        }
-      },
-      "valid": false
-    },
-    {
-      "name": "unsafe notes path",
-      "input": {
-        "canary": {
-          "from": "beginning",
-          "commit": "latest",
-          "notes": "../private"
-        }
-      },
-      "valid": false
-    }
-  ],
   "cache": [
     {
       "name": "trusted completed source",
@@ -215,61 +122,6 @@
       "valid": false
     }
   ],
-  "publication": [
-    {
-      "name": "moving existing channel",
-      "failure": null,
-      "valid": true
-    },
-    {
-      "name": "upload failure restores old channel",
-      "failure": "upload",
-      "valid": false
-    },
-    {
-      "name": "body failure restores old tag",
-      "failure": "body",
-      "valid": false
-    },
-    {
-      "name": "stale before promotion retains old channel",
-      "failure": "stale",
-      "valid": false
-    },
-    {
-      "name": "same generation is idempotent",
-      "failure": null,
-      "valid": true,
-      "repeat": true
-    },
-    {
-      "name": "first channel creates release",
-      "initial": false,
-      "failure": null,
-      "valid": true
-    },
-    {
-      "name": "draft-created tag is handled",
-      "initial": false,
-      "draft_tag": true,
-      "failure": null,
-      "valid": true
-    },
-    {
-      "name": "failed first publication removes draft",
-      "initial": false,
-      "draft_tag": true,
-      "failure": "body",
-      "valid": false
-    },
-    {
-      "name": "graph uploads have an image content type",
-      "failure": null,
-      "valid": true,
-      "png": true,
-      "png_type": "image/png"
-    }
-  ],
   "artifacts": [
     {
       "name": "available matching artifact",
@@ -337,12 +189,179 @@
     }
   ],
   "protection_visibility": [
-    {"name":"verified snapshot restores hidden bypass actors","valid":true},
-    {"name":"hidden bypass actors without snapshot fail closed","missing":true,"valid":false},
-    {"name":"ruleset update invalidates snapshot","changed_time":true,"valid":false},
-    {"name":"changed visible rules invalidate snapshot","changed_rules":true,"valid":false},
-    {"name":"snapshot from another repository rejected","wrong_repository":true,"valid":false},
-    {"name":"unsafe bypass snapshot rejected","unsafe":true,"valid":false}
+    {
+      "name": "verified snapshot restores hidden bypass actors",
+      "valid": true
+    },
+    {
+      "name": "hidden bypass actors without snapshot fail closed",
+      "missing": true,
+      "valid": false
+    },
+    {
+      "name": "ruleset update invalidates snapshot",
+      "changed_time": true,
+      "valid": false
+    },
+    {
+      "name": "changed visible rules invalidate snapshot",
+      "changed_rules": true,
+      "valid": false
+    },
+    {
+      "name": "snapshot from another repository rejected",
+      "wrong_repository": true,
+      "valid": false
+    },
+    {
+      "name": "unsafe bypass snapshot rejected",
+      "unsafe": true,
+      "valid": false
+    }
   ],
-  "png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4iMAAAAASUVORK5CYII="
+  "png_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4iMAAAAASUVORK5CYII=",
+  "releases": [
+    {
+      "name": "explicit Release commit",
+      "input": {
+        "releases": [
+          {
+            "version": "1.2.0",
+            "commit": "$merge",
+            "from": "$root"
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "explicit Pre-Release commit",
+      "input": {
+        "releases": [
+          {
+            "version": "1.3.0-pre.1",
+            "commit": "$merge"
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "empty notes range",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "$root",
+            "from": "$root"
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "name": "floating source selection is rejected",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "latest"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "short SHA",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "abcd123"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "backwards range",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "$root",
+            "from": "$merge"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "sideways range",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "$main",
+            "from": "$feature"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown selection option",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "$merge",
+            "alias": "moving"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "unsafe notes path",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "$merge",
+            "notes": "../private"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "duplicate public version",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0",
+            "commit": "$root"
+          },
+          {
+            "version": "1.0.0",
+            "commit": "$merge"
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "name": "alternate prerelease identity rejected",
+      "input": {
+        "releases": [
+          {
+            "version": "1.0.0-beta.1",
+            "commit": "$merge"
+          }
+        ]
+      },
+      "valid": false
+    }
+  ]
 }

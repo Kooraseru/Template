@@ -25,8 +25,8 @@ publish = true
 
 
 # Releases
-# Generate commit-based channels from ci/releases/channels.toml.
-# Canary follows source; stable and beta select explicit commits.
+# Generate immutable Release and Pre-Release versions from ci/releases/versions.toml.
+# Each public version selects a full source SHA; an empty list publishes none.
 [release]
 enabled = true
 publish = true

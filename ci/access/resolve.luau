@@ -39,6 +39,7 @@ values.image_matrix = matrices.image_matrix
 values.build_matrix = matrices.build_matrix
 values.release_matrix = matrices.release_matrix
 values.release = matrices.release_enabled
+values.publish_release = tostring(canPublish and config.release.publish and matrices.release_enabled == "true")
 values.build_requested = matrices.build_requested
 values.receipt_ready = matrices.receipt_ready
 values.accepted_available = matrices.accepted_available

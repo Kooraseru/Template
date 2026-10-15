@@ -11,10 +11,11 @@ import { authorizePublication } from '../publication.mjs';
 import { pendingReceiptAllowed } from '../pending-receipt.mjs';
 import { sourceApproval } from '../source-approval.mjs';
 
-test('the admin panel has twelve controls and accepts every declared selection', () => {
-  assert.equal(Object.keys(definitions).length, 12);
+test('the admin panel has twelve dropdowns and two explicit release inputs', () => {
+  assert.equal(Object.keys(definitions).length, 14);
+  assert.equal(Object.values(definitions).filter(definition => !definition.type).length, 12);
   for (const [key, definition] of Object.entries(definitions)) {
-    for (const choice of definition.options) {
+    for (const choice of definition.options || []) {
       assert.equal(normalize({ [key]: choice })[key], choice);
     }
   }
@@ -32,6 +33,17 @@ test('PR identity is parsed independently of its display title', () => {
   assert.throws(() => normalize({ operation: 'Publish', pull_request: '#42 title' }));
   assert.throws(() => normalize({ operation: 'Full Run', pull_request: '#42 title' }));
   assert.throws(() => normalize({ operation: 'Publish', cache_policy: 'Rebuild outputs' }));
+});
+
+test('manual release inputs require an explicit valid version and full source commit', () => {
+  const release_commit = 'a'.repeat(40);
+  assert.equal(normalize({ release_version: '1.2.0', release_commit }).release_version, '1.2.0');
+  assert.equal(normalize({ release_version: '1.3.0-pre.1', release_commit, release_output: 'Publish Pre-Release' }).release_version, '1.3.0-pre.1');
+  assert.throws(() => normalize({ release_version: '1.2.0' }));
+  assert.throws(() => normalize({ release_commit }));
+  assert.throws(() => normalize({ release_version: '1.2.0', release_commit: 'latest' }));
+  assert.throws(() => normalize({ release_version: '1.2.0', release_commit, release_output: 'Publish Pre-Release' }));
+  assert.throws(() => normalize({ release_version: '1.2.0', release_commit, pull_request: '#17 title' }));
 });
 
 test('partial selections and gate overrides are diagnostic evidence', () => {

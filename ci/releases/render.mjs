@@ -24,10 +24,10 @@ export function svg(rows, expanded = false) {
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${content}</svg>`;
 }
-export function htmlGraph(rows, channel, sha) {
+export function htmlGraph(rows, version, sha) {
   const graph = svg(rows, true);
   const targets = rows.map((row, index) => `<a href="${escapeHTML(row.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHTML(`${row.sha}\n${row.subject}\n${row.name || ''}\n${row.date || ''}`)}" style="top:${index * 34 + 11}px;height:34px"><span class="sr">${escapeHTML(row.sha + ' ' + row.subject)}</span></a>`).join('');
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHTML(channel)} commit graph</title><style>body{background:#0d1117;color:#e6edf3;font:14px monospace;margin:24px}a{color:#58a6ff}.graph{position:relative;width:max-content}.graph>a{position:absolute;left:0;width:100%;display:block}.graph>a:hover{background:#58a6ff22;outline:1px solid #58a6ff}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style><h1>${escapeHTML(channel)}</h1><p>Selected source commit: ${escapeHTML(sha)}</p><p>Hover a row for details; select it to open the commit. Scroll to inspect the complete graph.</p><div class="graph">${graph}${targets}</div></html>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHTML(version)} commit graph</title><style>body{background:#0d1117;color:#e6edf3;font:14px monospace;margin:24px}a{color:#58a6ff}.graph{position:relative;width:max-content}.graph>a{position:absolute;left:0;width:100%;display:block}.graph>a:hover{background:#58a6ff22;outline:1px solid #58a6ff}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style><h1>${escapeHTML(version)}</h1><p>Selected source commit: ${escapeHTML(sha)}</p><p>Hover a row for details; select it to open the commit. Scroll to inspect the complete graph.</p><div class="graph">${graph}${targets}</div></html>`;
 }
 function renderPNGs(root) {
   const context = 'build/tmp/release-renderer';
@@ -47,27 +47,27 @@ function renderPNGs(root) {
   } finally { command('docker', ['rm', '--force', container]); }
 }
 export function finalizeAssets(root, metadata, files) {
-  const prefix = `${metadata.channel}-${metadata.source_sha}`;
-  // Compute the staging identity before inserting it into linked asset names.
-  const preimage = files.map(file => ({ path: file, sha256: sha256(fs.readFileSync(`${root}/${file}`)) }));
-  metadata.generation = sha256(canonical({ source: metadata.source_sha, selection: metadata.selection_hash,
-    targets: metadata.targets, content: preimage })).slice(0, 16);
-  const notes = fs.readFileSync(`${root}/notes.md`, 'utf8').replaceAll(`${prefix}-`, `${prefix}-${metadata.generation}-`);
-  write(`${root}/notes.md`, notes);
-  metadata.assets = files.map(file => ({ path: file, name: `${prefix}-${metadata.generation}-${path.basename(file)}`,
+  metadata.assets = files.map(file => ({ path: file, name: `${metadata.version}-${path.basename(file)}`,
     sha256: sha256(fs.readFileSync(`${root}/${file}`)) }));
+  if (new Set(metadata.assets.map(asset => asset.name)).size !== files.length) throw Error('Duplicate public asset names');
   write(`${root}/release.json`, metadata);
   return metadata;
 }
-export async function assemble(plan) {
+export function packageArchive(root) {
+  // Assembly runs on Ubuntu. Normalize tar metadata so receipt restoration times
+  // and file ownership do not change the contents of an immutable public version.
+  command('tar', ['--sort=name', '--mtime=@0', '--owner=0', '--group=0', '--numeric-owner', '--format=gnu',
+    '-czf', `${root}/packages.tar.gz`, '-C', `${root}/packages`, '.']);
+}
+export async function assemble(plan, { render = renderPNGs, archive = packageArchive } = {}) {
   const repo = process.env.GITHUB_REPOSITORY || git(['remote', 'get-url', 'origin']).replace(/^.*github\.com[:/]/, '').replace(/\.git$/, '');
   const repoURL = `https://github.com/${repo}`;
   for (const selection of plan.selections) {
-    const root = `build/releases/${selection.channel}/${selection.source_sha}`;
+    const root = `build/releases/${selection.version}`;
     fs.rmSync(root, { recursive: true, force: true });
     fs.mkdirSync(`${root}/packages`, { recursive: true });
     const entries = plan.builds.filter(entry => entry.source_sha === selection.source_sha);
-    if (!entries.length) throw Error(`No selected build targets for ${selection.channel}`);
+    if (!entries.length) throw Error(`No selected build targets for ${selection.version}`);
     const targets = [];
     for (const entry of entries) {
       if (plan.builds.length === 1) normalizeArtifactDownload('build/distributions', entry.artifact, 'provenance.json');
@@ -92,7 +92,7 @@ export async function assemble(plan) {
       pages.push(name);
     }
     if (!pages.length) { write(`${graphDir}/graph-001.svg`, svg([])); pages.push('graph-001'); }
-    renderPNGs(graphDir);
+    render(graphDir);
     // Public graph JSON deliberately excludes canonical email and raw commit bodies.
     const publicRows = rows.map(row => {
       const publicRow = { ...row };
@@ -100,9 +100,9 @@ export async function assemble(plan) {
       return publicRow;
     });
     write(`${root}/graph.json`, publicRows);
-    write(`${root}/graph.html`, htmlGraph(publicRows, selection.channel, selection.source_sha));
-    const prefix = `${selection.channel}-${selection.source_sha}`;
-    const assetURL = file => `${repoURL}/releases/download/${selection.channel}/${prefix}-${file}`;
+    write(`${root}/graph.html`, htmlGraph(publicRows, selection.version, selection.source_sha));
+    const prefix = selection.version;
+    const assetURL = file => `${repoURL}/releases/download/${selection.version}/${prefix}-${file}`;
     const changes = data.commits.map(commit => `- [${commit.sha.slice(0, 7)}](${commit.url}) ${escapeMarkdown(commit.subject)}`).join('\n');
     const compareURL = selection.from === 'beginning' ? `${repoURL}/commits/${selection.source_sha}` : `${repoURL}/compare/${selection.from}...${selection.source_sha}`;
     write(`${root}/changes.md`, `# Changes\n\n${changes || 'No commits in this range.'}\n\n\`\`\`text\n${data.stats}\n\`\`\`\n`);
@@ -115,12 +115,15 @@ export async function assemble(plan) {
       + `[Interactive graph](${assetURL('graph.html')}) · [Repository graph](${repoURL}/network)\n\n`
       + `## Contributors\n\n${data.contributors.map(name => `- ${escapeMarkdown(name)}`).join('\n') || 'No contributors in this range.'}\n`;
     write(`${root}/notes.md`, notes);
-    command('tar', ['-czf', `${root}/packages.tar.gz`, '-C', `${root}/packages`, '.']);
-    const metadata = { schema: 1, ...selection, controller_sha: plan.controller_sha, controller_hash: plan.controller_hash, targets,
-      prerelease: selection.channel !== 'stable', selection_hash: sha256(canonical(selection)),
-      contract_hash: sha256(fs.readFileSync('ci/releases/channels.toml')), assets: [] };
+    archive(root);
+    // Public metadata contains product identity, not transient receipt locations
+    // or the current publishing run. The latter stay in an internal manifest.
+    const metadata = { schema: 2, ...selection, targets: targets.map(({contract, ...target}) => target), assets: [] };
+    write(`${root}/publication.json`, { version: selection.version, source_sha: selection.source_sha,
+      controller_sha: plan.controller_sha, controller_hash: plan.controller_hash, targets,
+      contract_hash: sha256(fs.readFileSync('ci/releases/versions.toml')) });
     const assetFiles = ['packages.tar.gz', 'notes.md', 'changes.md', 'graph.html', 'graph.json', ...pages.map(name => `graph/${name}.png`)];
     finalizeAssets(root, metadata, assetFiles);
-    console.log(`Assembled ${selection.channel} at ${selection.source_sha} with ${targets.length} targets`);
+    console.log(`Assembled ${selection.version} at ${selection.source_sha} with ${targets.length} targets`);
   }
 }

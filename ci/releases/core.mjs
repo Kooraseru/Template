@@ -27,28 +27,55 @@ export function relative(file) {
       || file.split('/').some(part => !part || part === '.' || part === '..')) throw Error(`Unsafe path: ${file}`);
   return file;
 }
-export function validateChannels(channels, tip, repository = '.') {
+export function parseVersion(version) {
+  if (typeof version !== 'string' || !/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-pre\.(0|[1-9][0-9]*))?$/.test(version)) {
+    throw Error('Version must be MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-pre.N without leading zeroes');
+  }
+  const prerelease = version.includes('-pre.');
+  return { version, prerelease, type: prerelease ? 'Pre-Release' : 'Release' };
+}
+export function validateReleases(document, tip, repository = '.') {
   const validSHA = value => typeof value === 'string' && new RegExp(policy.sha_pattern).test(value);
   const run = args => git(args, { cwd: repository });
   const ancestor = (a, b) => { try { run(['merge-base', '--is-ancestor', a, b]); return true; } catch { return false; } };
   if (!validSHA(tip)) throw Error('Source tip must be a full SHA');
   const result = [];
-  for (const [channel, selection] of Object.entries(channels)) {
-    if (!policy.channels.includes(channel)) throw Error(`Unknown channel: ${channel}`);
-    if (!selection || typeof selection !== 'object' || Array.isArray(selection)) throw Error('Invalid channel selection');
-    if (Object.keys(selection).some(key => !['from', 'commit', 'notes'].includes(key))) throw Error('Unknown channel option');
-    const latest = selection.commit === 'latest';
-    if (latest && channel !== 'canary') throw Error('Only canary may select latest');
-    const commit = latest ? tip : selection.commit;
-    if (!validSHA(commit) || !ancestor(commit, tip)) throw Error(`${channel} commit is not in source history`);
-    if (selection.from !== 'beginning' && (!validSHA(selection.from) || !ancestor(selection.from, commit))) {
-      throw Error(`${channel} range start must be an ancestor of the selected commit`);
+  if (!document || typeof document !== 'object' || Array.isArray(document)
+      || Object.keys(document).some(key => key !== 'releases')) throw Error('Expected an explicit releases list');
+  let releases = document.releases;
+  // Lune's JSON encoding represents an empty TOML array as an empty object.
+  if (releases && !Array.isArray(releases) && typeof releases === 'object' && !Object.keys(releases).length) releases = [];
+  if (!Array.isArray(releases)) throw Error('Expected a releases array');
+  const seen = new Set();
+  for (const selection of releases) {
+    if (!selection || typeof selection !== 'object' || Array.isArray(selection)) throw Error('Invalid release selection');
+    if (Object.keys(selection).some(key => !['version', 'from', 'commit', 'notes'].includes(key))) throw Error('Unknown release option');
+    const version = parseVersion(selection.version);
+    if (seen.has(version.version)) throw Error(`Duplicate version: ${version.version}`);
+    seen.add(version.version);
+    const commit = selection.commit, from = selection.from ?? 'beginning';
+    if (!validSHA(commit) || !ancestor(commit, tip)) throw Error(`${version.version} commit must be a full SHA in source history`);
+    if (from !== 'beginning' && (!validSHA(from) || !ancestor(from, commit))) {
+      throw Error(`${version.version} range start must be an ancestor of the selected commit`);
     }
     if (selection.notes !== undefined) relative(selection.notes);
-    result.push({ channel, source_sha: commit, from: selection.from, latest, ...(selection.notes ? { notes: selection.notes } : {}) });
+    result.push({ ...version, source_sha: commit, from, ...(selection.notes ? { notes: selection.notes } : {}) });
   }
-  if (!result.length) throw Error('At least one release channel is required');
-  return result.sort((a, b) => a.channel.localeCompare(b.channel));
+  return result;
+}
+export function selectReleases(document, controls, tip, repository = '.') {
+  if (Boolean(controls.release_version) !== Boolean(controls.release_commit)) throw Error('Release version and source commit must be supplied together');
+  let selected = document;
+  if (controls.release_version) {
+    const configured = Array.isArray(document.releases) ? document.releases.find(entry => entry.version === controls.release_version) : null;
+    selected = { releases: [{ ...configured, version: controls.release_version, commit: controls.release_commit }] };
+  }
+  let releases = validateReleases(selected, tip, repository);
+  if (controls.release_output?.startsWith('Publish ')) {
+    releases = releases.filter(release => controls.release_output === `Publish ${release.type}`);
+    if (!releases.length) throw Error('No explicit versions match the selected public release type');
+  }
+  return releases;
 }
 export function sourceTip() {
   // Local previews resolve their checked-out source ancestry without network writes.

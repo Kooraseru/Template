@@ -2,8 +2,8 @@
 
 The single `.github/workflows/ci.yml` workflow serves automatic checks, local
 execution and hosted administrator operations. The hosted manual form is restricted
-to repository administrators. It contains twelve dropdowns and no receipt JSON or
-PR-number text field.
+to repository administrators. It contains twelve dropdowns, two optional release
+selection text inputs, and no receipt JSON or PR-number field.
 
 | Group | Setting | Choices |
 | --- | --- | --- |
@@ -16,11 +16,13 @@ PR-number text field.
 | Build | Container images | Configured, Skip, Required by selected builds, All catalogue images |
 | Outputs | Repository | Configured, Skip, Generate only, Generate and publish |
 | Outputs | Documentation | Configured, Skip, Generate only, Generate and publish |
-| Outputs | Releases | Configured, Skip, Assemble only, Publish configured channels, Publish canary, Publish beta, Publish stable |
+| Outputs | Releases | Configured, Skip, Assemble only, Publish Release, Publish Pre-Release |
 | Policy | Cache | Reuse matching results, Rebuild outputs, Rebuild images and outputs, Require stored results |
 | Policy | Gates | Enforce all, Ignore validation failures, Ignore incomplete coverage, Ignore both |
+| Release | Version | Optional explicit SemVer version, paired with source commit |
+| Release | Source commit | Optional full 40-character source SHA, paired with version |
 
-`options.json` defines the form contract. Workflow validation verifies its twelve
+`options.json` defines the form contract. Workflow validation verifies all fourteen
 controls against the YAML. The build-target dropdown additionally includes the
 32 entries from `ci/build/targets.json`.
 
@@ -36,7 +38,7 @@ its exact name because repository branch protection requires that status check.
   `validation-evidence` plus the release plan as workflow artifacts.
 - Build also builds or restores selected distributions, generates enabled outputs,
   assembles enabled release previews, and stages receipts and bundles. It never
-  publishes official repository, documentation or channel outputs.
+  publishes official repository, documentation or public version outputs.
 - Publish requires matching stored distributions for every selected target. It
   restores and verifies them, generates publication outputs and publishes enabled
   destinations. It never falls back to compiling missing targets.
@@ -73,8 +75,11 @@ are applied in memory, including when planning pinned release commits. Target,
 compiler and architecture filters intersect. Empty intersections and missing
 required image definitions fail before building. Configured images automatically
 include dependencies when explicitly selecting catalogue build targets; Skip is
-invalid if selected builds require images. Explicit release channels must already
-exist in `ci/releases/channels.toml`.
+invalid if selected builds require images. Public releases use explicit version/commit entries in `ci/releases/versions.toml`.
+An empty list selects no public release. Version/source overrides must be paired;
+the selected source must belong to source history. The two public types are derived
+from SemVer, not persistent identities. Published content is immutable; changed
+content requires a new version. See [versioned releases](../releases/README.md).
 
 Operation bounds publication. Choosing Generate and publish while running Build
 still generates only. Publish with either rebuild policy is rejected; use Full Run.

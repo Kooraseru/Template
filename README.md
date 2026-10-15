@@ -25,7 +25,7 @@ runners; sharing a workflow does not guarantee identical host environments.
 
 Open Actions, select CI, and choose Run workflow. The twelve dropdowns select
 operations, PRs, validation suites, build targets, output generation, cache behavior
-and gate overrides. See [the CI control panel](ci/control/README.md) for details.
+and gate overrides. Two optional paired inputs select a SemVer version and source SHA. See [the CI control panel](ci/control/README.md) for details.
 
 ## Repository responsibilities
 
@@ -77,8 +77,9 @@ named `default`. Distribution artifacts and logs are separated by target name;
 release assembly verifies every selected distribution.
 
 Edit publication templates under `ci/repo/templates/`. Select commit-based
-release channels in `ci/releases/channels.toml`; authored introductions are
-optional. See [release channels and source protection](ci/releases/README.md).
+immutable public versions and full source SHAs in `ci/releases/versions.toml`;
+the initial empty list publishes no public version. See
+[versioned releases and source protection](ci/releases/README.md).
 Image Dockerfiles belong under `ci/images/`, with image choices in its catalogue.
 Pages uses Markdown templates under `ci/pages/templates/`.
 

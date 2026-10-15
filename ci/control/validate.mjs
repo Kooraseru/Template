@@ -4,7 +4,7 @@ import { readRequest } from './request.mjs';
 import { git, write } from '../releases/core.mjs';
 
 const groups = {
-  Configuration: ['ci/validation/repository.luau', 'ci/validation/tests/config.luau', 'ci/validation/tests/catalogue.luau',
+  Configuration: ['ci/validation/repository.luau', 'ci/releases/validate.luau', 'ci/validation/tests/config.luau', 'ci/validation/tests/catalogue.luau',
     'ci/validation/tests/artifacts.luau', 'ci/validation/tests/rules.luau', 'ci/validation/tests/gate.luau'],
   'Workflow rules': ['ci/validation/workflows.luau'],
   'Access policy': ['ci/access/tests/policy.luau', 'ci/access/tests/publication.luau', 'ci/control/tests/config.luau'],
@@ -42,5 +42,7 @@ if (fs.existsSync(planFile)) {
   write(planFile, plan);
   if (process.env.GITHUB_STEP_SUMMARY && !plan.images?.length) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     '\nImage matrix: not selected for this plan. This does not skip validation or native builds.\n');
+  if (process.env.GITHUB_STEP_SUMMARY && !plan.selections?.length) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    '\nPublic releases: no explicit versions selected. Existing releases remain unchanged.\n');
 }
 process.exitCode = failed ? 1 : 0;
