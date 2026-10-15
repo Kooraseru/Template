@@ -97,7 +97,9 @@ export async function authenticate(envelope, { keys, isAdmin, hostedRun, reposit
   if (auth?.kind === 'hosted' && hostedRun) {
     const run = await hostedRun(auth.run_id);
     const bootstrap = auth.bootstrap === true && allowBootstrap && await allowBootstrap(envelope,run);
-    if (run.event !== 'workflow_dispatch' || (run.head_branch !== 'source' && !bootstrap)
+    const source = run.event === 'push' && ['admin-merge','admin-source-push'].includes(receipt.source_authorization?.kind)
+      && receipt.source_authorization.actor === run.actor.login && receipt.source_authorization.source_sha === run.head_sha;
+    if ((!source && run.event !== 'workflow_dispatch') || (run.head_branch !== 'source' && !bootstrap)
       || run.head_sha !== auth.controller_sha || (run.conclusion !== 'success' && !(allowPendingRun && await allowPendingRun(run)))
       || run.head_repository?.full_name?.toLowerCase() !== repository.toLowerCase()
       || run.path !== '.github/workflows/ci.yml' || !await isAdmin(run.actor.login)) throw Error('Untrusted hosted validation');
@@ -166,7 +168,7 @@ export function collect(plan, distributions, logs, context) {
     required_targets:plan.builds.map(entry => ({name:entry.name,source_sha:entry.source_sha})),
     diagnostic: context.diagnostic === true || plan.validation?.success === false,
     validation_scope: context.controls?.validation_scope || 'All',
-    controls: context.controls, partial:targets.length !== plan.builds.length };
+    controls: context.controls, source_authorization: context.source_authorization, partial:targets.length !== plan.builds.length };
   return validate(receipt);
 }
 export function bundle(root, receipt, distributions, logs) {

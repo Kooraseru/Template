@@ -1,5 +1,9 @@
 {
   "authentication": [
+    {"name":"admin source push with execution authorization is accepted","kind":"hosted","run_patch":{"event":"push"},"source_authorization":{"kind":"admin-source-push","actor":"admin","source_sha":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},"valid":true},
+    {"name":"admin source merge with execution authorization is accepted","kind":"hosted","run_patch":{"event":"push"},"source_authorization":{"kind":"admin-merge","actor":"admin","source_sha":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","pr":17},"valid":true},
+    {"name":"source authorization for another SHA is rejected","kind":"hosted","run_patch":{"event":"push"},"source_authorization":{"kind":"admin-source-push","actor":"admin","source_sha":"ffffffffffffffffffffffffffffffffffffffff"},"valid":false},
+    {"name":"source authorization cannot override admin permissions","kind":"hosted","admin":false,"run_patch":{"event":"push"},"source_authorization":{"kind":"admin-source-push","actor":"admin","source_sha":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},"valid":false},
     {"name":"diagnostic hosted receipt is not official validation","kind":"hosted","diagnostic":true,"valid":false},
     {"name":"explicit diagnostic cache capability accepts diagnostic evidence","kind":"hosted","diagnostic":true,"allow_diagnostic":true,"valid":true},
     {"name":"originating publication capability accepts pending run","kind":"hosted","allow_pending":true,"run_patch":{"status":"in_progress","conclusion":null},"valid":true},

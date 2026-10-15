@@ -179,6 +179,7 @@ jobs:
         with:
           ref: source
           persist-credentials: false
+      - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-node
       - name: Refresh open pull request choices
         env:
@@ -191,6 +192,7 @@ jobs:
     permissions:
       contents: write # Draft staging releases require write access to read.
       actions: read
+      pull-requests: read
     runs-on: ubuntu-latest
     outputs:
       operation: ${{ steps.dispatch.outputs.operation }}
@@ -447,17 +449,17 @@ jobs:
           pattern: distribution-*
           path: build/distributions
       - uses: actions/download-artifact@v8
-        if: github.event_name != 'workflow_dispatch'
+        if: needs.validation-receipt.result != 'success'
         with:
           name: release-plan
           path: build/tmp/releases
       - uses: actions/download-artifact@v8
-        if: github.event_name == 'workflow_dispatch'
+        if: needs.validation-receipt.result == 'success'
         with:
           name: accepted-release-plan
           path: build/tmp/accepted
       - name: Evidence / Select accepted release plan
-        if: github.event_name == 'workflow_dispatch'
+        if: needs.validation-receipt.result == 'success'
         run: node -e "require('fs').mkdirSync('build/tmp/releases', {recursive:true}); require('fs').copyFileSync('build/tmp/accepted/accepted-plan.json', 'build/tmp/releases/plan.json')"
       - run: lune run ci/releases/build.luau
       - uses: actions/upload-artifact@v7
@@ -470,11 +472,12 @@ jobs:
   validation-receipt:
     name: Evidence / Build receipts
     needs: [validate, build, images]
-    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || needs.validate.outputs.pr != '0') && needs.validate.outputs.local_execution == 'false' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || needs.validate.outputs.pr != '0') && needs.validate.outputs.local_execution == 'false' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
       actions: read
+      pull-requests: read
       checks: write
     concurrency:
       group: validation-pr-${{ needs.validate.outputs.pr || github.sha }}
@@ -563,6 +566,7 @@ jobs:
     permissions:
       contents: write
       actions: read
+      pull-requests: read
       checks: write
 
   publish-repository:

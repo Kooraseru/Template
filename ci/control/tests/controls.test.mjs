@@ -9,6 +9,7 @@ import { definitions, normalize, parsePR, diagnostic, diagnosticReuseAllowed } f
 import { renderChoices } from '../refresh-prs.mjs';
 import { authorizePublication } from '../publication.mjs';
 import { pendingReceiptAllowed } from '../pending-receipt.mjs';
+import { sourceApproval } from '../source-approval.mjs';
 
 test('the admin panel has twelve controls and accepts every declared selection', () => {
   assert.equal(Object.keys(definitions).length, 12);
@@ -79,11 +80,40 @@ test('pending receipts are restricted to publication within their originating ho
     GITHUB_RUN_ID: '123', GITHUB_SHA: 'a'.repeat(40), CI_PUBLICATION_JOB: 'true' };
   const run = { id: 123, head_sha: env.GITHUB_SHA, status: 'in_progress', conclusion: null, actor: { login: 'admin' } };
   assert.equal(pendingReceiptAllowed(run, env), true);
+  assert.equal(pendingReceiptAllowed(run, { ...env, GITHUB_EVENT_NAME: 'push' }), true);
   for (const patch of [{ GITHUB_RUN_ID: '124' }, { GITHUB_ACTOR: 'other' }, { CI_PUBLICATION_JOB: 'false' },
     { ACT: 'true' }, { GITHUB_SHA: 'b'.repeat(40) }]) {
     assert.equal(pendingReceiptAllowed(run, { ...env, ...patch }), false);
   }
   assert.equal(pendingReceiptAllowed({ ...run, status: 'completed', conclusion: 'failure' }, env), false);
+});
+
+test('source execution recognizes admin merges and distinguishes direct admin pushes', t => {
+  const sha = 'a'.repeat(40);
+  const env = { GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/source', GITHUB_ACTIONS: 'true',
+    GITHUB_SERVER_URL: 'https://github.com', GITHUB_SHA: sha, GITHUB_ACTOR: 'admin', GITHUB_REPOSITORY: 'owner/project' };
+  const pr = { number: 17, merged: true, merged_at: new Date().toISOString(), merge_commit_sha: sha,
+    base: { ref: 'source', repo: { full_name: 'owner/project' } }, merged_by: { login: 'admin' } };
+  const clients = { isAdmin: login => login === 'admin', api: route => {
+    if (route.includes('/commits/')) return [pr];
+    if (route.endsWith('/pulls/17')) return pr;
+    throw Error(`Unexpected API call: ${route}`);
+  } };
+  assert.deepEqual(sourceApproval(env, clients), { kind: 'admin-merge', actor: 'admin', merged_by: 'admin', pr: 17, source_sha: sha });
+  assert.equal(sourceApproval(env, { ...clients, api: () => [] }).kind, 'admin-source-push');
+  assert.equal(sourceApproval({ ...env, ACT: 'true' }, clients), null);
+  assert.equal(sourceApproval({ ...env, GITHUB_REF: 'refs/heads/other' }, clients), null);
+  assert.equal(sourceApproval({ ...env, GITHUB_ACTOR: 'contributor' }, clients), null);
+  assert.equal(sourceApproval({ ...env, GITHUB_EVENT_NAME: 'pull_request_target' }, clients), null);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-source-approval-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const file = path.join(root, 'event.json');
+  fs.writeFileSync(file, JSON.stringify({ after: 'b'.repeat(40), ref: env.GITHUB_REF, repository: { full_name: env.GITHUB_REPOSITORY } }));
+  assert.equal(sourceApproval({ ...env, GITHUB_EVENT_PATH: file }, clients), null);
+  fs.writeFileSync(file, JSON.stringify({ after: sha, ref: env.GITHUB_REF, repository: { full_name: env.GITHUB_REPOSITORY } }));
+  assert.equal(sourceApproval({ ...env, GITHUB_EVENT_PATH: file }, clients).kind, 'admin-merge');
+  const other = { ...pr, merge_commit_sha: 'b'.repeat(40) };
+  assert.equal(sourceApproval(env, { ...clients, api: () => [other] }).kind, 'admin-source-push');
 });
 
 test('manual publication requires hosted Source, an administrator and a publishing operation', t => {
@@ -108,13 +138,14 @@ test('gate overrides distinguish validation failures, coverage and failed builds
   const planFile = path.join(root, 'build/tmp/releases/plan.json');
   const eventFile = path.join(root, 'event.json');
   const gate = fileURLToPath(new URL('../gate.mjs', import.meta.url));
-  function run(policy, validation, receipt = 'success', build = 'success') {
+  function run(policy, validation, receipt = 'success', build = 'success', source = false) {
     fs.writeFileSync(eventFile, JSON.stringify({ inputs: { operation: 'Build', gate_policy: policy } }));
-    fs.writeFileSync(planFile, JSON.stringify({ validation: { success: validation } }));
+    fs.writeFileSync(planFile, JSON.stringify({ validation: { success: validation },
+      context: source ? { source_authorization: { kind: 'admin-source-push', actor: 'admin' } } : {} }));
     const results = Object.fromEntries(['validate', 'build', 'images', 'repository', 'pages', 'release', 'validation-receipt']
       .map(name => [name, { result: name === 'build' ? build : name === 'validation-receipt' ? receipt : name === 'validate' ? 'success' : 'skipped' }]));
     return spawnSync(process.execPath, [gate], { cwd: root, encoding: 'utf8', env: { ...process.env,
-      GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_EVENT_PATH: eventFile, GITHUB_STEP_SUMMARY: '',
+      GITHUB_EVENT_NAME: source ? 'push' : 'workflow_dispatch', GITHUB_EVENT_PATH: eventFile, GITHUB_STEP_SUMMARY: '',
       RESULTS: JSON.stringify(results), ENABLED: JSON.stringify({ images: 'false', repository: 'false', pages: 'false', release: 'false' }) } });
   }
   assert.equal(run('Enforce all', true).status, 0);
@@ -124,4 +155,7 @@ test('gate overrides distinguish validation failures, coverage and failed builds
   assert.equal(run('Ignore incomplete coverage', true, 'skipped').status, 0);
   assert.equal(run('Ignore both', false, 'skipped').status, 0);
   assert.notEqual(run('Ignore both', false, 'success', 'failure').status, 0);
+  assert.equal(run('Enforce all', true, 'success', 'success', true).status, 0);
+  assert.notEqual(run('Enforce all', true, 'skipped', 'success', true).status, 0);
+  assert.match(run('Enforce all', true, 'skipped', 'skipped', true).stderr, /Administrator-approved source run skipped required builds/);
 });

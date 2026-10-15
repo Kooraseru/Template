@@ -3,7 +3,7 @@
 PR events run cheap checks using the protected base controller. They inspect
 proposed Git objects and configuration without executing proposed controller
 scripts with reporting credentials. Missing admin validation leaves the gate
-unsatisfied. Expensive hosted execution requires an explicit admin request.
+unsatisfied. Expensive hosted execution requires an explicit admin request or a verified administrator source push.
 Only admins may have repository write access; contributors use forks. This
 boundary is checked before hosted execution. Admins merge through the receipt
 merge command: a green check by itself is not acceptance.
@@ -123,10 +123,10 @@ prove physical execution against a dishonest trusted operator.
 
 The source push first resolves accepted artifacts. It restores matching outputs
 without compiler execution or image rebuilding, rechecks cheap validation,
-assembles releases, and revalidates acceptance before publication. Missing,
-expired, revoked, altered, or incomplete artifacts block publication. Request
-source validation with `request 0`, then rerun the blocked source-push workflow
-after its accepted staging is available. Existing channel releases remain intact.
+assembles releases, and revalidates acceptance before publication. Missing outputs are rebuilt when the source push has verified administrator execution approval.
+Expired, revoked, altered, or incomplete artifacts are never accepted as successful builds.
+Without administrator approval, request source validation with `request 0` and rerun
+after accepted staging is available. Existing channel releases remain intact.
 
 ## First installation
 

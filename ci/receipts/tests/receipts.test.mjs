@@ -29,6 +29,7 @@ const fixture = () => ({schema:1,repository:'owner/project',tested_sha:'a'.repea
 for (const scenario of cases.authentication) test(scenario.name,async () => {
   const receipt = fixture();
   if (scenario.diagnostic) receipt.diagnostic = true;
+  if (scenario.source_authorization) receipt.source_authorization = scenario.source_authorization;
   if (scenario.age_days) receipt.created_at = new Date(now - scenario.age_days * 86400000).toISOString();
   let envelope;
   try { envelope = scenario.kind === 'signature' ? sign(receipt,'admin-key',keys.privateKey)

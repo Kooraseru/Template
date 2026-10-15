@@ -51,6 +51,21 @@ titles do not change PR identity. PRs support Validate and Build; publication
 operations require Source. First-install activation remains a receipt CLI operation
 using the exact eligible activation PR checkout and `request NUMBER --bootstrap`.
 
+## Source execution approval
+
+A hosted push to source by a verified repository administrator authorizes missing
+builds to execute. CI queries the commit's associated pull requests and records an
+exact matching administrator merge as `admin-merge`, including PR and merger.
+A direct administrator push is recorded separately as `admin-source-push`; it is
+not described as a reviewed PR. Local events, other branches and non-admin actors
+cannot grant this authority. The run summary explains which authority was found.
+
+Approval permits execution, not fabricated success. Matching accepted outputs are
+still reused when available; missing outputs are built and verified in this run.
+The Evidence stage stores receipts for authorized source pushes as well as manual
+runs. Publication verifies those receipts and still enforces source protection,
+artifact integrity and commit freshness.
+
 ## Selection and cache behavior
 
 Configured preserves each source snapshot's repository settings. Other selections

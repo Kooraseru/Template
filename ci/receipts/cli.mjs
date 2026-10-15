@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { sourceApproval } from '../control/source-approval.mjs';
 import { readRequest, parsePR, diagnostic, pullRequestLabel } from '../control/request.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -30,19 +31,24 @@ if (operation === 'authorize') {
   } else if (number) {
     pr = currentPR(number); testedSHA = pr.head_sha;
   } else pr = { number: 0, head_sha: testedSHA, base_sha: testedSHA };
-  const requested = local || dispatch;
+  const approval = !local ? sourceApproval(process.env, {api,isAdmin}) : null;
+  const requested = local || dispatch || approval !== null;
   const bootstrap = !local && dispatch && process.env.GITHUB_REF !== 'refs/heads/source' && number > 0
     && pr.head_sha === process.env.GITHUB_SHA && predatesContract(pr.base_sha);
   if (!local && dispatch && (!isAdmin(actor()) || (process.env.GITHUB_REF !== 'refs/heads/source'
     && !(bootstrap && number && pr.head_sha === process.env.GITHUB_SHA && predatesContract(pr.base_sha))))) throw Error('Hosted validation requires an administrator and the source controller');
   if (bootstrap && (pr.head_sha !== process.env.GITHUB_SHA || !predatesContract(pr.base_sha))) throw Error('Bootstrap is restricted to the first activation PR');
+  const authority = approval ? (approval.kind === 'admin-merge' ? `Administrator ${approval.merged_by} merged PR #${approval.pr}` : `Administrator ${approval.actor} pushed directly to source`)
+    : dispatch ? 'Explicit administrator dispatch' : local ? 'Local preview' : 'No execution approval';
+  console.log(`${authority}; ${requested ? 'missing builds may execute' : 'accepted results are required'}`);
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n## Execution approval\n\n${authority}. Approval permits execution; successful build evidence is still required.\n`);
   if (!local && testedSHA !== git(['rev-parse','HEAD'])) {
     const env = { ...process.env, GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
       GIT_CONFIG_VALUE_0: 'AUTHORIZATION: basic ' + Buffer.from(`x-access-token:${process.env.GH_TOKEN}`).toString('base64') };
     git(['fetch','--no-tags','origin',testedSHA], { env });
   }
   const context = { repository: process.env.GITHUB_REPOSITORY || repository(), tested_sha: testedSHA, pr, requested,
-    local, bootstrap, controls, diagnostic: dispatch && diagnostic(controls), event: process.env.GITHUB_EVENT_NAME || 'local' };
+    local, bootstrap, controls, source_authorization: approval, diagnostic: dispatch && diagnostic(controls), event: process.env.GITHUB_EVENT_NAME || 'local' };
   write(`${root}/context.json`, context);
   environment({ CI_TESTED_SHA: testedSHA, CI_VALIDATION_REQUESTED: String(requested), CI_RECEIPT_PR: String(number) });
   output({ requested: String(requested), tested_sha: testedSHA });
@@ -74,7 +80,7 @@ if (operation === 'authorize') {
   previous.local_execution = String(context.local);
   previous.accepted_available = String(plan.builds.some(entry => entry.accepted));
   write('build/tmp/releases/outputs.json', previous);
-  console.log(complete ? 'Accepted validation covers all targets' : context.requested ? 'Admin/local execution requested' : 'Waiting for admin validation; expensive jobs remain disabled');
+  console.log(complete ? 'Accepted validation covers all targets' : context.requested ? 'Execution approved; building missing targets' : 'Waiting for admin validation; expensive jobs remain disabled');
 } else if (operation === 'execution') {
   const spec = JSON.parse(process.env.CI_BUILD_SPEC);
   const selected = identity(spec.source_sha);
@@ -195,7 +201,8 @@ if (operation === 'authorize') {
   console.log(upload(envelope,archive).html_url);
 } else if (operation === 'report') {
   const context = read('build/tmp/releases/plan.json').context;
-  if (process.env.ACT === 'true' || process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'
+  if (process.env.ACT === 'true' || !['workflow_dispatch','push'].includes(process.env.GITHUB_EVENT_NAME)
+    || (process.env.GITHUB_EVENT_NAME === 'push' && !context.source_authorization)
     || (process.env.GITHUB_REF !== 'refs/heads/source' && !context.bootstrap) || !isAdmin(actor())) throw Error('Trusted admin source workflow required');
   const file = 'build/receipts/receipt.json';
   const envelope = read(file); freshPR(envelope.receipt);
@@ -221,7 +228,7 @@ if (operation === 'authorize') {
   const envelope = read('build/receipts/receipt.json');
   freshPR(envelope.receipt);
   if (envelope.receipt.diagnostic) { console.log('Diagnostic receipt cannot mint an official check'); process.exit(0); }
-  if (process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || (process.env.GITHUB_REF !== 'refs/heads/source' && !envelope.authentication.bootstrap)
+  if (!['workflow_dispatch','push'].includes(process.env.GITHUB_EVENT_NAME) || (process.env.GITHUB_REF !== 'refs/heads/source' && !envelope.authentication.bootstrap)
     || !isAdmin(actor())) throw Error('Trusted admin source workflow required');
   setCheck(envelope.receipt.pr.head_sha,'success',`Independent admin validation completed for ${envelope.receipt.targets.length} targets. Receipt retained in the validation-receipt run artifact.`);
 } else if (operation === 'verify-pr') {
