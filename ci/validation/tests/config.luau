@@ -1,7 +1,7 @@
 --!strict
 local config = require("../../lib/config")
 local cases = require("../../lib/cases")
-local definitions = cases.read("ci/validation/tests/config.cases.json")
+local definitions = cases.read("ci/validation/ruleset.json", "config.cases")
 local baseline = config.read()
 
 for _, case in definitions.configuration do

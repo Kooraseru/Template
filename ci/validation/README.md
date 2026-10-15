@@ -1,10 +1,11 @@
 # Declarative checks
 
-Define validation constraints in data files and test inputs with their expected
-results in `*.cases.json`. Luau scripts load those definitions and execute the
+Define validation constraints and test inputs with their expected results in
+`ruleset.json`. Each top-level section owns one behavior. There is no independent
+version field or architecture selection. Luau scripts load those definitions and execute the
 checks; adding a case should not require adding a Luau assertion or callback.
 
-`config.rules.json` defines the CI configuration constraints. Its rule paths use
+`config.rules` defines the CI configuration constraints. Its rule paths use
 dot-separated fields, numeric array positions, and `*` to visit collection items.
 `$` selects the root value.
 
@@ -19,18 +20,23 @@ Patch keys are dot-separated field paths. Cases may remove top-level fields
 with `remove`. Operation-specific executors handle setup, execution, and result
 comparison.
 
+Each behavior's `cases` section preserves its executor input document, including
+case lists, fixture roots, baseline patches, or configuration/path case groups.
+Validators read `<behavior>.rules`; test scripts read `<behavior>.cases`.
+Repository checks use `repository.checks` and the rule vocabulary uses `rules.format`.
+
 A cases document may declare a `baseline` patch for its executor to apply before
 individual cases. Catalogue cases use this to keep their fixture independent of
 the consuming repository's selected targets and optional image jobs.
 
 Publication eligibility lives in `ci/access/publication.rules.json`.
-Workflow structure and gate expectations live in `workflows.rules.json` and
-`gate.rules.json`. Filesystem checks live in `repository.checks.json`.
+Workflow structure and gate expectations live in `workflows.rules` and
+`gate.rules`. Filesystem checks live in `repository.checks`.
 Build fixtures use `*.fixture.json` for files, commands, expected exit codes,
 and optional expected output. Use `windows_argv` for native Windows command
 differences and `{root}` to refer to a fixture's output directory.
 
-`rule-format.json` lists supported rule options and their value types. Unknown
+`rules.format` lists supported rule options and their value types. Unknown
 options are rejected so a spelling mistake cannot silently remove a constraint.
 Manifest structure and output constraints also have dedicated rule files.
 
@@ -39,10 +45,10 @@ loader applies those values before validation; explicitly configured values win.
 Required categories and publication flags are still validated. Blank optional
 settings do not need assignments in `ci/config.toml`.
 
-`catalogue.rules.json` checks image and target shapes, named references, matched
+`catalogue.rules` checks image and target shapes, named references, matched
 runner/platform/profile fields, required image generation, and recipe paths.
 Its `relations` declare source collections, reference fields, destination
 collections, destination keys, and optional equal fields. Its `paths` declare
 required files using entry fields in `{field}` templates. Catalogue test inputs
-live in `tests/catalogue.cases.json`. Toolchain compile/run checks are target
+live in `catalogue.cases`. Toolchain compile/run checks are target
 `probes` in `ci/build/targets.json`, with expected exit codes and optional output.

@@ -4,7 +4,7 @@ local rules = require("../lib/rules")
 local config = require("../lib/config").read()
 local catalogue = require("../lib/catalogue")
 catalogue.validate(catalogue.read(config))
-local definitions = rules.read("ci/validation/repository.checks.json")
+local definitions = rules.read("ci/validation/ruleset.json", "repository")
 
 local operations: { [string]: (any) -> () } = {
     directory_entries = function(check)

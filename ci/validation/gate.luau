@@ -9,5 +9,5 @@ local context = {
     results = serde.decode("json", results),
     enabled = serde.decode("json", enabled),
 }
-rules.validate(context, rules.read("ci/validation/gate.rules.json"))
+rules.validate(context, rules.read("ci/validation/ruleset.json", "gate.rules"))
 print("CI gate passed")

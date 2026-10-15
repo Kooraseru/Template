@@ -1,5 +1,5 @@
 {
-  "definitions_source": "ci/validation/config.rules.json",
+  "definitions_source": "ci/validation/ruleset.json",
   "manifest_file": "manifest.json",
   "hash_algorithm": "sha256",
   "hash_field": "sha256",
@@ -22,5 +22,6 @@
       "exact_length": 64,
       "pattern": "^[a-f0-9]+$"
     }
-  ]
+  ],
+  "definitions_section": "config.rules"
 }

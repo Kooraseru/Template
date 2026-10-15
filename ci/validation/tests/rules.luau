@@ -4,7 +4,7 @@ local serde = require("@lune/serde")
 local cases = require("../../lib/cases")
 local files = require("../../lib/files")
 local rules = require("../../lib/rules")
-local definitions = cases.read("ci/validation/tests/rules.cases.json")
+local definitions = cases.read("ci/validation/ruleset.json", "rules.cases")
 files.reset(definitions.root)
 local path = definitions.root .. "/document.json"
 for _, case in definitions.cases do

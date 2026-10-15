@@ -1,6 +1,6 @@
 # CI configuration
 
-`config.toml` selects repository behavior. The existing `validation/config.rules.json` schema supplies
+`config.toml` selects repository behavior. The existing `validation/ruleset.json` configuration rules supplies
 omitted optional fields before validation. Explicit values win, including `false` and
 empty arrays. Required sections and their generation/publication flags remain
 explicit. Enabling a feature still requires its necessary inputs.

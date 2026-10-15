@@ -2,10 +2,15 @@
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local rules = {}
-local format = serde.decode("json", fs.readFile("ci/validation/rule-format.json"))
+local format = serde.decode("json", fs.readFile("ci/validation/ruleset.json")).rules.format
 
-function rules.read(path: string): any
+function rules.read(path: string, section: string?): any
     local document = serde.decode("json", fs.readFile(path))
+    if section then
+        for _, key in string.split(section, ".") do
+            document = assert(document[key], "missing validation section: " .. section)
+        end
+    end
     local function inspect(rule: any)
         for key, value in rule do
             local expected =
@@ -32,7 +37,7 @@ function rules.read(path: string): any
     end
     inspectDocument(document)
     if document.definitions_source then
-        document.definitions = rules.read(document.definitions_source).definitions
+        document.definitions = rules.read(document.definitions_source, document.definitions_section).definitions
     end
     return document
 end

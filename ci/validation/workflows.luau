@@ -2,7 +2,7 @@
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local rules = require("../lib/rules")
-local definitions = rules.read("ci/validation/workflows.rules.json")
+local definitions = rules.read("ci/validation/ruleset.json", "workflows.rules")
 local workflow = serde.decode("yaml", fs.readFile(".github/workflows/ci.yml"))
 rules.validate(workflow, definitions)
 

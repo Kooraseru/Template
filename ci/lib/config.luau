@@ -4,7 +4,7 @@ local config = {}
 local inputs = require("./inputs")
 
 local rules = require("./rules")
-local schema = rules.read("ci/validation/config.rules.json")
+local schema = rules.read("ci/validation/ruleset.json", "config.rules")
 
 export type Capability = { enabled: boolean, publish: boolean }
 export type Probe = { argv: { string }, code: number, stdout_contains: string? }

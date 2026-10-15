@@ -3,8 +3,14 @@ local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local cases = {}
 
-function cases.read(path: string): any
-    return serde.decode("json", fs.readFile(path))
+function cases.read(path: string, section: string?): any
+    local document = serde.decode("json", fs.readFile(path))
+    if section then
+        for _, key in string.split(section, ".") do
+            document = assert(document[key], "missing case section: " .. section)
+        end
+    end
+    return document
 end
 
 local function copy(value: any): any

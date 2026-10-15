@@ -1,0 +1,1755 @@
+{
+  "repository": {
+    "checks": [
+      {
+        "operation": "directory_entries",
+        "path": ".github/workflows",
+        "expected": [
+          "ci.yml"
+        ]
+      },
+      {
+        "operation": "absent_files",
+        "paths": [
+          "ci/pipeline.luau",
+          ".github/pipeline.luau"
+        ]
+      },
+      {
+        "operation": "existing_config_paths",
+        "config_path": "repository.include"
+      },
+      {
+        "operation": "file_contains",
+        "path": ".gitignore",
+        "text": "/build/"
+      }
+    ]
+  },
+  "catalogue": {
+    "rules": {
+      "rules": [
+        {
+          "path": "images",
+          "kind": "array",
+          "min_items": 1,
+          "unique_by": "name"
+        },
+        {
+          "path": "targets",
+          "kind": "array",
+          "min_items": 1,
+          "unique_by": "name"
+        },
+        {
+          "path": "images.*",
+          "kind": "object"
+        },
+        {
+          "path": "images.*.name",
+          "kind": "string",
+          "pattern": "^[a-z0-9][a-z0-9%-]*$",
+          "min_length": 1
+        },
+        {
+          "path": "images.*.runner",
+          "kind": "string",
+          "enum": [
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+            "windows-2025",
+            "windows-11-arm",
+            "macos-15-intel",
+            "macos-15"
+          ]
+        },
+        {
+          "path": "images.*.profile",
+          "kind": "string",
+          "enum": [
+            "gcc",
+            "clang",
+            "rust",
+            "mingw",
+            "msvc"
+          ]
+        },
+        {
+          "path": "images.*.platform",
+          "kind": "string",
+          "enum": [
+            "",
+            "linux/amd64",
+            "linux/arm64"
+          ]
+        },
+        {
+          "path": "images.*.probes",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "images.*.probes.*.argv",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "images.*.probes.*.argv.*",
+          "kind": "string"
+        },
+        {
+          "path": "images.*.probes.*.code",
+          "kind": "number"
+        },
+        {
+          "path": "targets.*",
+          "kind": "object"
+        },
+        {
+          "path": "targets.*.name",
+          "kind": "string",
+          "pattern": "^[a-z0-9][a-z0-9%-]*$",
+          "min_length": 1
+        },
+        {
+          "path": "targets.*.runner",
+          "kind": "string",
+          "enum": [
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+            "windows-2025",
+            "windows-11-arm",
+            "macos-15-intel",
+            "macos-15"
+          ]
+        },
+        {
+          "path": "targets.*.profile",
+          "kind": "string",
+          "enum": [
+            "gcc",
+            "clang",
+            "rust",
+            "mingw",
+            "msvc"
+          ]
+        },
+        {
+          "path": "targets.*.platform",
+          "kind": "string",
+          "enum": [
+            "",
+            "linux/amd64",
+            "linux/arm64"
+          ]
+        },
+        {
+          "path": "targets.*.probes",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "targets.*.probes.*.argv",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "targets.*.probes.*.argv.*",
+          "kind": "string"
+        },
+        {
+          "path": "targets.*.probes.*.code",
+          "kind": "number"
+        },
+        {
+          "path": "images.*.base",
+          "kind": "string",
+          "capture_pattern": "@sha256:([a-f0-9]+)$",
+          "capture_length": 64
+        },
+        {
+          "path": "images.*.recipe",
+          "kind": "string",
+          "prefix": "linux/",
+          "reject_substrings": [
+            "..",
+            "\\"
+          ]
+        },
+        {
+          "path": "images.*.packages",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "images.*.packages.*",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "images.*.common_packages",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "images.*.common_packages.*",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "images.*.inventory",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "images.*.inventory.*",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "images.*.packages.*",
+          "kind": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9%+%.%-]*$"
+        },
+        {
+          "path": "images.*.common_packages.*",
+          "kind": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9%+%.%-]*$"
+        },
+        {
+          "path": "targets.*.image",
+          "kind": "string"
+        },
+        {
+          "path": "targets.*.target",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "targets.*.environment",
+          "kind": "object"
+        },
+        {
+          "path": "targets.*.environment.*",
+          "kind": "string"
+        },
+        {
+          "path": "targets.*.probes.*.stdout_contains",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "images.*.platform",
+          "kind": "string",
+          "enum": [
+            "linux/amd64",
+            "linux/arm64"
+          ]
+        },
+        {
+          "path": "images.*.profile",
+          "kind": "string",
+          "enum": [
+            "gcc",
+            "clang",
+            "rust",
+            "mingw"
+          ]
+        },
+        {
+          "path": "images.*.distro",
+          "kind": "string",
+          "enum": [
+            "alpine",
+            "debian",
+            "ubuntu",
+            "fedora",
+            "arch"
+          ]
+        },
+        {
+          "path": "targets.*.reuse_identity",
+          "kind": "string",
+          "enum": [
+            "exact_commit",
+            "source_tree"
+          ],
+          "optional": true
+        },
+        {
+          "path": "targets.*.reproducible",
+          "kind": "boolean",
+          "optional": true
+        }
+      ],
+      "relations": [
+        {
+          "source": "targets",
+          "field": "image",
+          "destination": "images",
+          "key": "name",
+          "skip": "",
+          "equal_fields": [
+            "platform",
+            "profile",
+            "runner"
+          ]
+        },
+        {
+          "source": "config.images.names",
+          "destination": "images",
+          "key": "name"
+        },
+        {
+          "source": "config.build.targets",
+          "destination": "targets",
+          "key": "name"
+        },
+        {
+          "source": "selected",
+          "field": "image",
+          "destination": "config.images.names",
+          "skip": "",
+          "enabled_path": "config.images.enabled"
+        },
+        {
+          "source": "selected",
+          "field": "image",
+          "destination": "images",
+          "key": "name",
+          "skip": "",
+          "equal_fields": [
+            "platform",
+            "profile",
+            "runner"
+          ]
+        }
+      ],
+      "paths": [
+        {
+          "source": "images",
+          "template": "ci/images/{recipe}"
+        },
+        {
+          "source": "images",
+          "template": "ci/images/toolchains/{profile}/Dockerfile"
+        }
+      ],
+      "collections": [
+        {
+          "path": "images",
+          "rules": [
+            {
+              "path": "platform",
+              "equals": "linux/amd64",
+              "when": {
+                "path": "distro",
+                "equals": "arch"
+              }
+            },
+            {
+              "path": "runner",
+              "equals": "ubuntu-24.04",
+              "when": {
+                "path": "platform",
+                "equals": "linux/amd64"
+              }
+            },
+            {
+              "path": "runner",
+              "equals": "ubuntu-24.04-arm",
+              "when": {
+                "path": "platform",
+                "equals": "linux/arm64"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "cases": {
+      "cases": [
+        {
+          "name": "baseline",
+          "valid": true
+        },
+        {
+          "name": "unknown image",
+          "valid": false,
+          "patch": {
+            "config.images.names": [
+              "missing"
+            ]
+          }
+        },
+        {
+          "name": "unknown target",
+          "valid": false,
+          "patch": {
+            "config.build.targets": [
+              "missing"
+            ]
+          }
+        },
+        {
+          "name": "missing selected image",
+          "valid": false,
+          "patch": {
+            "config.images.names": []
+          }
+        },
+        {
+          "name": "image jobs disabled",
+          "valid": false,
+          "patch": {
+            "config.images.enabled": false
+          }
+        },
+        {
+          "name": "duplicate image",
+          "valid": false,
+          "patch": {
+            "images": []
+          }
+        },
+        {
+          "name": "native only without images",
+          "valid": true,
+          "patch": {
+            "config.build.targets": [
+              "windows-msvc-x64"
+            ],
+            "config.images.names": [],
+            "config.images.enabled": false
+          }
+        },
+        {
+          "name": "invalid platform",
+          "valid": false,
+          "patch": {
+            "images.1.platform": "linux/mips"
+          }
+        },
+        {
+          "name": "invalid package expression",
+          "valid": false,
+          "patch": {
+            "images.1.packages": [
+              "gcc; exit 0"
+            ]
+          }
+        },
+        {
+          "name": "unmatched runner architecture",
+          "valid": false,
+          "patch": {
+            "images.1.runner": "ubuntu-24.04-arm"
+          }
+        },
+        {
+          "name": "missing base digest",
+          "valid": false,
+          "patch": {
+            "images.1.base": "alpine:latest"
+          }
+        },
+        {
+          "name": "escaping recipe",
+          "valid": false,
+          "patch": {
+            "images.1.recipe": "linux/../../Dockerfile"
+          }
+        },
+        {
+          "name": "target image mismatch",
+          "valid": false,
+          "patch": {
+            "targets.1.profile": "clang"
+          }
+        }
+      ],
+      "baseline": {
+        "patch": {
+          "config.build.matrix": [],
+          "config.build.targets": [
+            "alpine-gcc-x64"
+          ],
+          "config.images.names": [
+            "alpine-gcc-x64"
+          ],
+          "config.images.enabled": true
+        }
+      }
+    }
+  },
+  "config": {
+    "rules": {
+      "description": "Template-owned validation rules. Patterns use Luau string patterns, not regular expressions.",
+      "definitions": {
+        "relative": {
+          "kind": "string",
+          "min_length": 1,
+          "reject_substrings": [
+            "\\",
+            ":",
+            "//"
+          ],
+          "reject_patterns": [
+            "^/",
+            "/$",
+            "[%c]"
+          ],
+          "forbidden_components": [
+            ".",
+            ".."
+          ]
+        }
+      },
+      "rules": [
+        {
+          "path": "$",
+          "kind": "object"
+        },
+        {
+          "path": "repository",
+          "kind": "object"
+        },
+        {
+          "path": "repository.enabled",
+          "kind": "boolean"
+        },
+        {
+          "path": "repository.publish",
+          "kind": "boolean"
+        },
+        {
+          "path": "repository.enabled",
+          "equals": true,
+          "when": {
+            "path": "repository.publish",
+            "equals": true
+          },
+          "message": "repository cannot publish while disabled"
+        },
+        {
+          "path": "pages",
+          "kind": "object"
+        },
+        {
+          "path": "pages.enabled",
+          "kind": "boolean"
+        },
+        {
+          "path": "pages.publish",
+          "kind": "boolean"
+        },
+        {
+          "path": "pages.enabled",
+          "equals": true,
+          "when": {
+            "path": "pages.publish",
+            "equals": true
+          },
+          "message": "pages cannot publish while disabled"
+        },
+        {
+          "path": "release",
+          "kind": "object"
+        },
+        {
+          "path": "release.enabled",
+          "kind": "boolean"
+        },
+        {
+          "path": "release.publish",
+          "kind": "boolean"
+        },
+        {
+          "path": "release.enabled",
+          "equals": true,
+          "when": {
+            "path": "release.publish",
+            "equals": true
+          },
+          "message": "release cannot publish while disabled"
+        },
+        {
+          "path": "images",
+          "kind": "object"
+        },
+        {
+          "path": "images.enabled",
+          "kind": "boolean"
+        },
+        {
+          "path": "images.publish",
+          "kind": "boolean",
+          "default": false,
+          "equals": false,
+          "message": "CI images are workflow artifacts; registry publication is retired"
+        },
+        {
+          "path": "images.enabled",
+          "equals": true,
+          "when": {
+            "path": "images.publish",
+            "equals": true
+          },
+          "message": "images cannot publish while disabled"
+        },
+        {
+          "path": "repository.include",
+          "kind": "array"
+        },
+        {
+          "path": "repository.include.*",
+          "use": "relative",
+          "not_values": [
+            "build",
+            ".git"
+          ],
+          "reject_patterns": [
+            "^build/",
+            "^%.git/"
+          ]
+        },
+        {
+          "path": "pages.title",
+          "kind": "string",
+          "default": "Project documentation"
+        },
+        {
+          "path": "images.names",
+          "kind": "array",
+          "unique": true,
+          "default": []
+        },
+        {
+          "path": "images.names.*",
+          "kind": "string",
+          "pattern": "^[a-z][a-z0-9%-]*$"
+        },
+        {
+          "path": "images.names",
+          "min_items": 1,
+          "when": {
+            "path": "images.enabled",
+            "equals": true
+          }
+        },
+        {
+          "path": "build",
+          "kind": "object"
+        },
+        {
+          "path": "build.runner",
+          "kind": "string",
+          "enum": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest",
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+            "windows-2025",
+            "windows-11-arm",
+            "macos-15",
+            "macos-15-intel"
+          ],
+          "default": "ubuntu-latest"
+        },
+        {
+          "path": "build.rust_version",
+          "kind": "string",
+          "default": ""
+        },
+        {
+          "path": "build.cmake_version",
+          "kind": "string",
+          "default": ""
+        },
+        {
+          "path": "build.toolchains",
+          "kind": "array",
+          "default": []
+        },
+        {
+          "path": "build.toolchains.*",
+          "kind": "string",
+          "enum": [
+            "rust",
+            "cmake"
+          ]
+        },
+        {
+          "path": "build.rust_version",
+          "pattern": "^%d+%.%d+%.%d+$",
+          "when": {
+            "path": "build.toolchains",
+            "contains": "rust"
+          }
+        },
+        {
+          "path": "build.cmake_version",
+          "pattern": "^%d+%.%d+%.%d+$",
+          "when": {
+            "path": "build.toolchains",
+            "contains": "cmake"
+          }
+        },
+        {
+          "path": "build.commands",
+          "kind": "array",
+          "default": []
+        },
+        {
+          "path": "build.commands.*",
+          "kind": "array",
+          "min_items": 1
+        },
+        {
+          "path": "build.commands.*.*",
+          "kind": "string"
+        },
+        {
+          "path": "build.commands.*.1",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "build.package_paths",
+          "kind": "array",
+          "default": []
+        },
+        {
+          "path": "build.package_paths.*",
+          "use": "relative",
+          "prefix": "build/",
+          "not_values": [
+            "build/artifacts",
+            "build/manifest.json",
+            "build/distribution.tar.gz",
+            "build/provenance.json"
+          ],
+          "reject_patterns": [
+            "^build/artifacts/"
+          ]
+        },
+        {
+          "path": "build.matrix",
+          "kind": "array",
+          "unique_by": "name",
+          "default": []
+        },
+        {
+          "path": "build.matrix.*",
+          "kind": "object"
+        },
+        {
+          "path": "build.matrix.*.name",
+          "kind": "string",
+          "pattern": "^[a-z][a-z0-9%-]*$"
+        },
+        {
+          "path": "build.matrix.*.runner",
+          "kind": "string",
+          "enum": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest",
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm",
+            "windows-2025",
+            "windows-11-arm",
+            "macos-15",
+            "macos-15-intel"
+          ]
+        },
+        {
+          "path": "build.targets",
+          "kind": "array",
+          "unique": true,
+          "default": []
+        },
+        {
+          "path": "build.targets.*",
+          "kind": "string",
+          "pattern": "^[a-z][a-z0-9%-]*$"
+        },
+        {
+          "path": "build.matrix.*.image",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.platform",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.profile",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.target",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.rust_version",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.msvc_arch",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.environment",
+          "kind": "object",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.probes",
+          "kind": "array",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.environment.*",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.probes.*.argv",
+          "kind": "array",
+          "min_items": 1,
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.probes.*.argv.*",
+          "kind": "string",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.probes.*.code",
+          "kind": "number",
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.reuse_identity",
+          "kind": "string",
+          "enum": [
+            "exact_commit",
+            "source_tree"
+          ],
+          "optional": true
+        },
+        {
+          "path": "build.matrix.*.reproducible",
+          "kind": "boolean",
+          "optional": true
+        }
+      ]
+    },
+    "cases": {
+      "configuration": [
+        {
+          "name": "default configuration",
+          "patch": {},
+          "valid": true
+        },
+        {
+          "name": "self-hosted runner",
+          "patch": {
+            "build.runner": "self-hosted"
+          },
+          "valid": false
+        },
+        {
+          "name": "Git metadata publication",
+          "patch": {
+            "repository.include": [
+              ".git"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "build output publication",
+          "patch": {
+            "repository.include": [
+              "build"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "package outside build",
+          "patch": {
+            "build.package_paths": [
+              "src"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "empty image list",
+          "patch": {
+            "images.enabled": true,
+            "images.names": []
+          },
+          "valid": false
+        },
+        {
+          "name": "unversioned Rust",
+          "patch": {
+            "build.toolchains": [
+              "rust"
+            ],
+            "build.rust_version": ""
+          },
+          "valid": false
+        },
+        {
+          "name": "unversioned CMake",
+          "patch": {
+            "build.toolchains": [
+              "cmake"
+            ],
+            "build.cmake_version": "latest"
+          },
+          "valid": false
+        },
+        {
+          "name": "command string",
+          "patch": {
+            "build.commands": [
+              "cargo test"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "empty executable",
+          "patch": {
+            "build.commands": [
+              [
+                ""
+              ]
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "commands dictionary",
+          "patch": {
+            "build.commands": {
+              "named": [
+                "cargo",
+                "test"
+              ]
+            }
+          },
+          "valid": false
+        },
+        {
+          "name": "recursive package destination",
+          "patch": {
+            "build.package_paths": [
+              "build/artifacts"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "build root package",
+          "patch": {
+            "build.package_paths": [
+              "build/"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "reserved metadata",
+          "patch": {
+            "build.package_paths": [
+              "build/manifest.json"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "duplicate image",
+          "patch": {
+            "images.names": [
+              "smoke",
+              "smoke"
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "platform matrix",
+          "patch": {
+            "build.matrix": [
+              {
+                "name": "linux",
+                "runner": "ubuntu-latest"
+              },
+              {
+                "name": "windows",
+                "runner": "windows-latest"
+              },
+              {
+                "name": "macos",
+                "runner": "macos-latest"
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "duplicate matrix name",
+          "patch": {
+            "build.matrix": [
+              {
+                "name": "linux",
+                "runner": "ubuntu-latest"
+              },
+              {
+                "name": "linux",
+                "runner": "ubuntu-latest"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "matrix self-hosted runner",
+          "patch": {
+            "build.matrix": [
+              {
+                "name": "unsafe",
+                "runner": "self-hosted"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "matrix path traversal name",
+          "patch": {
+            "build.matrix": [
+              {
+                "name": "../unsafe",
+                "runner": "ubuntu-latest"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "omitted optional build fields",
+          "remove": [
+            "build.runner",
+            "build.matrix",
+            "build.targets",
+            "build.toolchains",
+            "build.rust_version",
+            "build.cmake_version",
+            "build.commands",
+            "build.package_paths"
+          ],
+          "valid": true
+        },
+        {
+          "name": "omitted optional page title",
+          "remove": [
+            "pages.title"
+          ],
+          "valid": true
+        },
+        {
+          "name": "omitted Rust version when enabled",
+          "patch": {
+            "build.toolchains": [
+              "rust"
+            ]
+          },
+          "remove": [
+            "build.rust_version"
+          ],
+          "valid": false
+        },
+        {
+          "name": "omitted CMake version when enabled",
+          "patch": {
+            "build.toolchains": [
+              "cmake"
+            ]
+          },
+          "remove": [
+            "build.cmake_version"
+          ],
+          "valid": false
+        },
+        {
+          "name": "omitted images while disabled",
+          "patch": {
+            "images.enabled": false,
+            "images.publish": false
+          },
+          "remove": [
+            "images.names"
+          ],
+          "valid": true
+        },
+        {
+          "name": "omitted images while enabled",
+          "patch": {
+            "images.enabled": true
+          },
+          "remove": [
+            "images.names"
+          ],
+          "valid": false
+        },
+        {
+          "name": "missing required build category",
+          "remove": [
+            "build"
+          ],
+          "valid": false
+        },
+        {
+          "name": "missing required publication flag",
+          "remove": [
+            "release.publish"
+          ],
+          "valid": false
+        },
+        {
+          "name": "omitted image publication flag",
+          "remove": [
+            "images.publish"
+          ],
+          "valid": true
+        },
+        {
+          "name": "reject registry publication",
+          "patch": {
+            "images.publish": true
+          },
+          "valid": false
+        },
+        {
+          "name": "reserved source provenance path",
+          "patch": {
+            "build.package_paths": [
+              "build/provenance.json"
+            ]
+          },
+          "valid": false
+        }
+      ],
+      "paths": [
+        {
+          "input": "../secret",
+          "valid": false
+        },
+        {
+          "input": "/tmp/file",
+          "valid": false
+        },
+        {
+          "input": "C:/secret",
+          "valid": false
+        },
+        {
+          "input": "src/../secret",
+          "valid": false
+        },
+        {
+          "input": "src\\file",
+          "valid": false
+        },
+        {
+          "input": "src",
+          "valid": true
+        },
+        {
+          "input": "assets/icon.png",
+          "valid": true
+        },
+        {
+          "input": "build/artifacts/package.zip",
+          "valid": true
+        }
+      ]
+    }
+  },
+  "gate": {
+    "rules": {
+      "rules": [
+        {
+          "path": "enabled.repository",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "path": "enabled.pages",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "path": "enabled.release",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "path": "enabled.images",
+          "enum": [
+            "true",
+            "false"
+          ]
+        },
+        {
+          "path": "results.validate.result",
+          "equals": "success"
+        },
+        {
+          "path": "results.build.result",
+          "equals": "success"
+        },
+        {
+          "path": "results.repository.result",
+          "equals": "success",
+          "when": {
+            "path": "enabled.repository",
+            "equals": "true"
+          }
+        },
+        {
+          "path": "results.repository.result",
+          "equals": "skipped",
+          "when": {
+            "path": "enabled.repository",
+            "equals": "false"
+          }
+        },
+        {
+          "path": "results.pages.result",
+          "equals": "success",
+          "when": {
+            "path": "enabled.pages",
+            "equals": "true"
+          }
+        },
+        {
+          "path": "results.pages.result",
+          "equals": "skipped",
+          "when": {
+            "path": "enabled.pages",
+            "equals": "false"
+          }
+        },
+        {
+          "path": "results.release.result",
+          "equals": "success",
+          "when": {
+            "path": "enabled.release",
+            "equals": "true"
+          }
+        },
+        {
+          "path": "results.release.result",
+          "equals": "skipped",
+          "when": {
+            "path": "enabled.release",
+            "equals": "false"
+          }
+        },
+        {
+          "path": "results.images.result",
+          "equals": "success",
+          "when": {
+            "path": "enabled.images",
+            "equals": "true"
+          }
+        },
+        {
+          "path": "results.images.result",
+          "equals": "skipped",
+          "when": {
+            "path": "enabled.images",
+            "equals": "false"
+          }
+        }
+      ]
+    },
+    "cases": {
+      "baseline": {
+        "results": {
+          "validate": {
+            "result": "success"
+          },
+          "build": {
+            "result": "success"
+          },
+          "repository": {
+            "result": "skipped"
+          },
+          "pages": {
+            "result": "skipped"
+          },
+          "release": {
+            "result": "skipped"
+          },
+          "images": {
+            "result": "skipped"
+          }
+        },
+        "enabled": {
+          "repository": "false",
+          "pages": "false",
+          "release": "false",
+          "images": "false"
+        }
+      },
+      "cases": [
+        {
+          "name": "disabled outputs",
+          "patch": {},
+          "valid": true
+        },
+        {
+          "name": "build failure",
+          "patch": {
+            "results.build.result": "failure"
+          },
+          "valid": false
+        },
+        {
+          "name": "validation failure",
+          "patch": {
+            "results.validate.result": "failure"
+          },
+          "valid": false
+        },
+        {
+          "name": "enabled Pages skipped",
+          "patch": {
+            "enabled.pages": "true"
+          },
+          "valid": false
+        },
+        {
+          "name": "enabled Pages success",
+          "patch": {
+            "enabled.pages": "true",
+            "results.pages.result": "success"
+          },
+          "valid": true
+        },
+        {
+          "name": "missing eligibility",
+          "remove": [
+            "enabled"
+          ],
+          "patch": {},
+          "valid": false
+        }
+      ]
+    }
+  },
+  "workflows": {
+    "rules": {
+      "rules": [
+        {
+          "path": "permissions.contents",
+          "equals": "read"
+        },
+        {
+          "path": "on.pull_request_target",
+          "exists": true
+        },
+        {
+          "path": "on.push",
+          "exists": true
+        },
+        {
+          "path": "on.workflow_dispatch",
+          "exists": true
+        },
+        {
+          "path": "on.pull_request",
+          "absent": true
+        },
+        {
+          "path": "on.workflow_run",
+          "absent": true
+        },
+        {
+          "path": "jobs.validation-receipt.if",
+          "required_substrings": [
+            "github.event_name == 'workflow_dispatch'",
+            "refs/heads/source",
+            "local_execution == 'false'"
+          ]
+        },
+        {
+          "path": "jobs.build.permissions.checks",
+          "absent": true
+        },
+        {
+          "path": "jobs.build.permissions.contents",
+          "optional": true,
+          "not_values": [
+            "write"
+          ]
+        },
+        {
+          "path": "on.workflow_dispatch.inputs.claim",
+          "absent": true
+        },
+        {
+          "path": "on.workflow_dispatch.inputs.pr",
+          "absent": true
+        },
+        {
+          "path": "on.workflow_dispatch.inputs.target",
+          "absent": true
+        },
+        {
+          "path": "jobs.refresh-prs.name",
+          "equals": "Maintenance / Pull request choices"
+        }
+      ],
+      "collections": [
+        {
+          "path": "jobs",
+          "exclude_key_pattern": "^publish%-",
+          "rules": [
+            {
+              "path": "permissions.*",
+              "optional": true,
+              "not_values": [
+                "write"
+              ]
+            }
+          ],
+          "exclude_keys": [
+            "gate",
+            "validation-receipt",
+            "validate",
+            "refresh-prs"
+          ]
+        },
+        {
+          "path": "jobs",
+          "key_pattern": "^publish%-",
+          "rules": [
+            {
+              "path": "if",
+              "kind": "string",
+              "required_substrings": [
+                "github.event_name == 'push'",
+                "refs/heads/source"
+              ]
+            },
+            {
+              "path": "needs",
+              "kind": "array",
+              "contains": "gate"
+            }
+          ]
+        },
+        {
+          "path": "jobs",
+          "rules": [
+            {
+              "path": "steps.*.uses",
+              "optional": true,
+              "skip_pattern": "^%./",
+              "kind": "string",
+              "pattern": "@[%w%.%-]+$",
+              "reject_patterns": [
+                "@[a-f0-9]+$"
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": {
+        "rules": [
+          {
+            "path": "runs.steps.*.uses",
+            "optional": true,
+            "skip_pattern": "^%./",
+            "kind": "string",
+            "pattern": "@[%w%.%-]+$",
+            "reject_patterns": [
+              "@[a-f0-9]+$"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rules": {
+    "format": {
+      "fields": {
+        "path": "string",
+        "kind": "string",
+        "message": "string",
+        "equals": "any",
+        "equals_path": "string",
+        "enum": "table",
+        "not_values": "table",
+        "min_length": "number",
+        "exact_length": "number",
+        "min_items": "number",
+        "pattern": "string",
+        "prefix": "string",
+        "contains": "any",
+        "required_substrings": "table",
+        "capture_pattern": "string",
+        "capture_length": "number",
+        "reject_patterns": "table",
+        "reject_substrings": "table",
+        "forbidden_components": "table",
+        "unique": "boolean",
+        "unique_by": "string",
+        "exists": "boolean",
+        "absent": "boolean",
+        "optional": "boolean",
+        "skip_pattern": "string",
+        "when": "table",
+        "use": "string",
+        "default": "any"
+      }
+    },
+    "cases": {
+      "root": "build/tests/rules",
+      "cases": [
+        {
+          "name": "string pattern",
+          "input": "abc",
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "kind": "string",
+                "pattern": "^%a+$"
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "pattern mismatch",
+          "input": "123",
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "kind": "string",
+                "pattern": "^%a+$"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "misspelled option",
+          "input": "abc",
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "kind": "string",
+                "patern": "^%a+$"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "wrong option type",
+          "input": "abc",
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "kind": "string",
+                "min_length": "1"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "conditional false",
+          "input": {
+            "enabled": false,
+            "value": ""
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "value",
+                "min_length": 1,
+                "when": {
+                  "path": "enabled",
+                  "equals": true
+                }
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "conditional true",
+          "input": {
+            "enabled": true,
+            "value": ""
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "value",
+                "min_length": 1,
+                "when": {
+                  "path": "enabled",
+                  "equals": true
+                }
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "missing required field",
+          "input": {},
+          "document": {
+            "rules": [
+              {
+                "path": "required",
+                "exists": true
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "required false value",
+          "input": {
+            "required": false
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "required",
+                "exists": true
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "wildcard rejection",
+          "input": [
+            "a",
+            1
+          ],
+          "document": {
+            "rules": [
+              {
+                "path": "*",
+                "kind": "string"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "duplicate key",
+          "input": [
+            {
+              "name": "a"
+            },
+            {
+              "name": "a"
+            }
+          ],
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "kind": "array",
+                "unique_by": "name"
+              }
+            ]
+          },
+          "valid": false
+        }
+      ]
+    }
+  },
+  "artifacts": {
+    "cases": {
+      "root": "build/tests/artifacts",
+      "baseline": {
+        "files": {
+          "example.txt": "original"
+        },
+        "manifest": [
+          {
+            "path": "example.txt",
+            "hash_contents": "original"
+          }
+        ]
+      },
+      "cases": [
+        {
+          "name": "valid package",
+          "files": {},
+          "valid": true
+        },
+        {
+          "name": "tampered file",
+          "files": {
+            "example.txt": "tampered"
+          },
+          "valid": false
+        },
+        {
+          "name": "unlisted file",
+          "files": {
+            "unlisted.txt": "extra"
+          },
+          "valid": false
+        },
+        {
+          "name": "path traversal",
+          "files": {},
+          "manifest": [
+            {
+              "path": "../outside",
+              "hash_contents": "original"
+            }
+          ],
+          "valid": false
+        }
+      ]
+    }
+  }
+}

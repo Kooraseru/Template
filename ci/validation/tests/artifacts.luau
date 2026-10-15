@@ -4,7 +4,7 @@ local serde = require("@lune/serde")
 local artifacts = require("../../lib/artifacts")
 local files = require("../../lib/files")
 local cases = require("../../lib/cases")
-local definitions = cases.read("ci/validation/tests/artifacts.cases.json")
+local definitions = cases.read("ci/validation/ruleset.json", "artifacts.cases")
 local root = definitions.root
 
 for _, case in definitions.cases do

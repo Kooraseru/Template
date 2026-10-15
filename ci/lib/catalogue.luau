@@ -11,7 +11,7 @@ end
 local function targets(): any
     return serde.decode("json", inputs.read("ci/build/targets.json"))
 end
-local schema = rules.read("ci/validation/catalogue.rules.json")
+local schema = rules.read("ci/validation/ruleset.json", "catalogue.rules")
 
 function catalogue.read(config: configuration.Config): any
     return { images = images().images, targets = targets().targets, config = config }
