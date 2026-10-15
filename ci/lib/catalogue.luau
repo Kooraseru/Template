@@ -1,24 +1,38 @@
+-- ci/lib/catalogue.luau
 --!strict
-local fs = require("@lune/fs")
-local serde = require("@lune/serde")
-local configuration = require("./config")
-local rules = require("./rules")
-local catalogue = {}
-local inputs = require("./inputs")
-local function images(): any
-    return serde.decode("json", inputs.read("ci/images/catalogue.json"))
-end
-local function targets(): any
-    return serde.decode("json", inputs.read("ci/build/targets.json"))
-end
-local schema = rules.read("ci/validation/ruleset.json", "catalogue.rules")
 
-function catalogue.read(config: configuration.Config): any
+local Catalogue = {}
+local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
+local Configuration = require("./config")
+local Rules = require("./rules")
+local Inputs = require("./inputs")
+export type Image = {
+    name: string, runner: string, platform: string, profile: string,
+    base: string, version: string, recipe: string,
+    common_packages: { string }, packages: { string }, inventory: { string },
+    probes: { Configuration.Probe },
+}
+export type Document = { images: { Image }, targets: { Configuration.BuildEntry }, config: Configuration.Config, selected: { Configuration.BuildEntry }? }
+local function images(): { images: { Image } }
+    local document: unknown = Serde.decode("json", Inputs.Read("ci/images/catalogue.json"))
+    assert(type(document) == "table", "expected image catalogue")
+    return document :: { images: { Image } }
+end
+local function targets(): { targets: { Configuration.BuildEntry } }
+    local document: unknown = Serde.decode("json", Inputs.Read("ci/build/targets.json"))
+    assert(type(document) == "table", "expected target catalogue")
+    return document :: { targets: { Configuration.BuildEntry } }
+end
+local schema = Rules.Read("ci/validation/ruleset.json", "catalogue.rules")
+
+function Catalogue.Read(config: Configuration.Config): Document
     return { images = images().images, targets = targets().targets, config = config }
 end
 
-function catalogue.validate(document: any)
-    rules.validate(document, schema)
+function Catalogue.Validate(raw: unknown)
+    Rules.Validate(raw, schema)
+    local document = raw :: Document
     local selected = if #document.config.build.matrix > 0 then document.config.build.matrix else {}
     if #document.config.build.matrix == 0 then
         for _, name in document.config.build.targets do
@@ -30,21 +44,21 @@ function catalogue.validate(document: any)
         end
     end
     document.selected = selected
-    for _, relation in schema.relations do
-        local destination = rules.property(document, relation.destination)
-        for _, entry in rules.property(document, relation.source) do
-            local value = if relation.field then rules.property(entry, relation.field) else entry
+    for _, relation in assert(schema.relations, "missing catalogue relations") do
+        local destination = Rules.Property(document, relation.destination)
+        for _, entry in Rules.Entries(Rules.Property(document, relation.source)) do
+            local value = if relation.field then Rules.Property(entry, relation.field) else entry
             if value ~= nil and value ~= relation.skip then
                 if relation.enabled_path then
                     assert(
-                        rules.property(document, relation.enabled_path),
+                        Rules.Property(document, relation.enabled_path),
                         "reference requires enabled capability"
                     )
                 end
-                local matched: any = nil
-                for _, candidate in destination do
+                local matched: unknown = nil
+                for _, candidate in Rules.Entries(destination) do
                     local key = if relation.key
-                        then rules.property(candidate, relation.key)
+                        then Rules.Property(candidate, relation.key)
                         else candidate
                     if key == value then
                         matched = candidate
@@ -53,22 +67,22 @@ function catalogue.validate(document: any)
                 end
                 assert(matched ~= nil, "unknown reference: " .. tostring(value))
                 for _, field in relation.equal_fields or {} do
-                    assert(entry[field] == matched[field], "mismatched reference field: " .. field)
+                    assert(Rules.Entries(entry)[field] == Rules.Entries(matched)[field], "mismatched reference field: " .. field)
                 end
             end
         end
     end
-    for _, definition in schema.paths do
-        for _, entry in rules.property(document, definition.source) do
+    for _, definition in assert(schema.paths, "missing catalogue paths") do
+        for _, entry in Rules.Entries(Rules.Property(document, definition.source)) do
             local path = definition.template:gsub("{([^}]+)}", function(field)
-                return tostring(rules.property(entry, field))
+                return tostring(Rules.Property(entry, field))
             end)
-            assert(fs.isFile(path), "missing catalogue input: " .. path)
+            assert(Fs.isFile(path), "missing catalogue input: " .. path)
         end
     end
 end
 
-function catalogue.image(name: string): any
+function Catalogue.Image(name: string): Image
     for _, entry in images().images do
         if entry.name == name then
             return entry
@@ -77,7 +91,7 @@ function catalogue.image(name: string): any
     error("Unknown CI image: " .. name)
 end
 
-function catalogue.targets(config: configuration.Config): { configuration.BuildEntry }
+function Catalogue.Targets(config: Configuration.Config): { Configuration.BuildEntry }
     local entries = {}
     if #config.build.matrix > 0 then
         entries = config.build.matrix
@@ -112,8 +126,8 @@ function catalogue.targets(config: configuration.Config): { configuration.BuildE
     return result
 end
 
-function catalogue.target(config: configuration.Config, name: string): configuration.BuildEntry
-    for _, entry in catalogue.targets(config) do
+function Catalogue.Target(config: Configuration.Config, name: string): Configuration.BuildEntry
+    for _, entry in Catalogue.Targets(config) do
         if entry.name == name then
             return entry
         end
@@ -121,4 +135,4 @@ function catalogue.target(config: configuration.Config, name: string): configura
     error("Unknown selected build target: " .. name)
 end
 
-return catalogue
+return Catalogue

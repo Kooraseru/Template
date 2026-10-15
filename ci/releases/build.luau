@@ -1,6 +1,7 @@
+-- ci/releases/build.luau
 --!strict
-local process = require("@lune/process")
-local config = require("../lib/config").read()
+local Process = require("@lune/process")
+local config = require("../lib/config").Read()
 assert(config.release.enabled, "release generation is disabled")
-local result = process.exec("node", { "ci/releases/cli.mjs", "assemble" }, { stdio = "inherit" })
+local result = Process.exec("node", { "ci/releases/cli.mjs", "assemble" }, { stdio = "inherit" })
 assert(result.ok, "release assembly failed: " .. result.stdout .. result.stderr)

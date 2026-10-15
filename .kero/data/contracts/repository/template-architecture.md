@@ -52,7 +52,7 @@ The same CI workflow supports different access contexts.
 - Allow validation and artifact generation.
 - Do not grant publication privileges merely because an input requests publication. Trusted GitHub context and repository authorization must still permit it.
 
-Public versions are selected explicitly in `ci/releases/versions.toml` under the [release contract](releases.md). Release uses stable SemVer; Pre-Release uses `-pre.N`. Published versions and tags are immutable. Promotion creates a new version while preserving the prerelease. Internal validation staging remains separate.
+Public versions are selected explicitly in `ci/releases/versions.toml` under the [release contract](releases.md). Release uses stable SemVer; Pre-Release uses `-pre.N`. Published versions support replacement of their selected content and source tag. Promotion creates a new version while preserving the prerelease. Internal validation staging remains separate.
 
 The central principle is:
 

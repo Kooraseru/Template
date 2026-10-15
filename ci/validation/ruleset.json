@@ -1187,6 +1187,180 @@
           "input": "build/artifacts/package.zip",
           "valid": true
         }
+      ],
+      "controls_preserve_baseline": true,
+      "controls": [
+        {
+          "name": "all supported targets",
+          "inputs": {
+            "build_targets": "All supported"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "targets",
+                "key_count": 32
+              },
+              {
+                "path": "config.images.enabled",
+                "equals": true
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "Windows MSVC ARM64",
+          "inputs": {
+            "build_targets": "Windows",
+            "compiler": "MSVC",
+            "architecture": "ARM64"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "targets",
+                "key_count": 1
+              },
+              {
+                "path": "targets.1.name",
+                "equals": "windows-msvc-arm64"
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "macOS x64",
+          "inputs": {
+            "build_targets": "macOS",
+            "architecture": "x64"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "targets",
+                "key_count": 2
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "required target image",
+          "inputs": {
+            "build_targets": "alpine-gcc-x64",
+            "images": "Required by selected builds"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "config.images.names",
+                "key_count": 1
+              },
+              {
+                "path": "config.images.names.1",
+                "equals": "alpine-gcc-x64"
+              }
+            ]
+          },
+          "valid": true,
+          "catalogue_valid": true
+        },
+        {
+          "name": "dormant images stay inactive",
+          "inputs": {
+            "build_targets": "alpine-gcc-x64"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "config.images.names",
+                "key_count": 1
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "empty target intersection",
+          "inputs": {
+            "build_targets": "Windows",
+            "compiler": "GCC"
+          },
+          "expected": {
+            "rules": []
+          },
+          "valid": false
+        },
+        {
+          "name": "required images cannot be skipped",
+          "inputs": {
+            "build_targets": "alpine-gcc-x64",
+            "images": "Skip"
+          },
+          "expected": {
+            "rules": []
+          },
+          "valid": true,
+          "catalogue_valid": false
+        },
+        {
+          "name": "all catalogue images",
+          "inputs": {
+            "images": "All catalogue images"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "config.images.enabled",
+                "equals": true
+              },
+              {
+                "path": "config.images.names",
+                "min_items": 2
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "output selection",
+          "inputs": {
+            "repository_output": "Skip",
+            "documentation_output": "Generate only",
+            "release_output": "Publish Pre-Release"
+          },
+          "expected": {
+            "rules": [
+              {
+                "path": "config.repository.enabled",
+                "equals": false
+              },
+              {
+                "path": "config.repository.publish",
+                "equals": false
+              },
+              {
+                "path": "config.pages.enabled",
+                "equals": true
+              },
+              {
+                "path": "config.pages.publish",
+                "equals": false
+              },
+              {
+                "path": "config.release.enabled",
+                "equals": true
+              },
+              {
+                "path": "config.release.publish",
+                "equals": true
+              }
+            ]
+          },
+          "valid": true
+        }
       ]
     }
   },
@@ -1431,6 +1605,33 @@
         {
           "path": "jobs.refresh-prs.name",
           "equals": "Maintenance / Pull request choices"
+        },
+        {
+          "path": "on.workflow_dispatch.inputs",
+          "key_count": 14,
+          "message": "CI panel requires fourteen inputs"
+        },
+        {
+          "path": "on.workflow_dispatch.inputs",
+          "count_where": {
+            "field": "type",
+            "equals": "choice",
+            "count": 12
+          },
+          "message": "CI panel requires twelve dropdowns"
+        },
+        {
+          "path": "jobs.gate.name",
+          "absent": true,
+          "message": "Keep the required gate check name stable"
+        },
+        {
+          "path": "jobs.*.steps",
+          "requires_before": {
+            "field": "uses",
+            "value": "./.github/actions/setup-node",
+            "prerequisite": "./.github/actions/setup-lune"
+          }
         }
       ],
       "collections": [
@@ -1501,6 +1702,11 @@
             ]
           }
         ]
+      },
+      "controls": {
+        "source": "ci/control/options.json",
+        "path": "on.workflow_dispatch.inputs",
+        "default_type": "choice"
       }
     }
   },
@@ -1534,7 +1740,10 @@
         "skip_pattern": "string",
         "when": "table",
         "use": "string",
-        "default": "any"
+        "default": "any",
+        "key_count": "number",
+        "count_where": "table",
+        "requires_before": "table"
       }
     },
     "cases": {
@@ -1696,6 +1905,195 @@
                 "path": "$",
                 "kind": "array",
                 "unique_by": "name"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "object entry count",
+          "input": {
+            "one": 1,
+            "two": 2
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "key_count": 2
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "wrong object entry count",
+          "input": {
+            "one": 1
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "key_count": 2
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "filtered entry count",
+          "input": {
+            "one": {
+              "type": "choice"
+            },
+            "two": {
+              "type": "string"
+            }
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "count_where": {
+                  "field": "type",
+                  "equals": "choice",
+                  "count": 1
+                }
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "wrong filtered entry count",
+          "input": {
+            "one": {
+              "type": "string"
+            }
+          },
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "count_where": {
+                  "field": "type",
+                  "equals": "choice",
+                  "count": 1
+                }
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "prerequisite comes first",
+          "input": [
+            {
+              "uses": "prerequisite"
+            },
+            {
+              "uses": "consumer"
+            }
+          ],
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "requires_before": {
+                  "field": "uses",
+                  "value": "consumer",
+                  "prerequisite": "prerequisite"
+                }
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "prerequisite comes too late",
+          "input": [
+            {
+              "uses": "consumer"
+            },
+            {
+              "uses": "prerequisite"
+            }
+          ],
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "requires_before": {
+                  "field": "uses",
+                  "value": "consumer",
+                  "prerequisite": "prerequisite"
+                }
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "unused prerequisite is optional",
+          "input": [],
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "requires_before": {
+                  "field": "uses",
+                  "value": "consumer",
+                  "prerequisite": "prerequisite"
+                }
+              }
+            ]
+          },
+          "valid": true
+        },
+        {
+          "name": "skip patterns cannot bypass input types",
+          "input": 42,
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "skip_pattern": "^%./",
+                "kind": "string",
+                "pattern": "@tag$"
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "malformed prerequisite definition",
+          "input": [],
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "requires_before": {
+                  "field": "uses",
+                  "value": false,
+                  "prerequisite": "setup"
+                }
+              }
+            ]
+          },
+          "valid": false
+        },
+        {
+          "name": "malformed count filter",
+          "input": [],
+          "document": {
+            "rules": [
+              {
+                "path": "$",
+                "count_where": {
+                  "field": false,
+                  "count": 1
+                }
               }
             ]
           },

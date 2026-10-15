@@ -1,7 +1,9 @@
+-- ci/access/policy.luau
 --!strict
-local policy = {}
-local rules = require("../lib/rules")
-local definition = rules.read("ci/access/publication.rules.json")
+
+local Policy = {}
+local Rules = require("../lib/rules")
+local definition = Rules.Read("ci/access/publication.rules.json")
 
 export type Context = {
     localRun: boolean?,
@@ -16,9 +18,9 @@ export type Context = {
 
 -- Configuration selects eligible outputs; GitHub grants actual permissions.
 -- Local event payloads are not proof of authorization.
-function policy.canPublish(context: Context): boolean
-    local valid = pcall(rules.validate, context, definition)
+function Policy.CanPublish(context: unknown): boolean
+    local valid = pcall(Rules.Validate, context, definition)
     return valid
 end
 
-return policy
+return Policy

@@ -1,10 +1,12 @@
+-- ci/lib/config.luau
 --!strict
-local serde = require("@lune/serde")
-local config = {}
-local inputs = require("./inputs")
 
-local rules = require("./rules")
-local schema = rules.read("ci/validation/ruleset.json", "config.rules")
+local Config = {}
+local Serde = require("@lune/serde")
+local Inputs = require("./inputs")
+
+local Rules = require("./rules")
+local schema = Rules.Read("ci/validation/ruleset.json", "config.rules")
 
 export type Capability = { enabled: boolean, publish: boolean }
 export type Probe = { argv: { string }, code: number, stdout_contains: string? }
@@ -39,20 +41,27 @@ export type Config = {
     },
 }
 
-function config.relative(value: any): string
-    rules.check(value, schema.definitions.relative, "relative path")
+export type BuildSpec = BuildEntry & {
+    build: index<Config, "build">, source_sha: string, fingerprint: string,
+    image_artifact: string,
+}
+
+function Config.Relative(value: unknown): string
+    Rules.Check(value, schema.definitions.relative, "relative path")
+    assert(type(value) == "string", "expected relative path")
     return value
 end
 
 -- Runtime constraints are defined in the data schema, not duplicated here.
-function config.validate(value: any): Config
-    local resolved = if type(value) == "table" then table.clone(value) else value
+function Config.Validate(value: unknown): Config
+    assert(type(value) == "table", "expected CI configuration")
+    local resolved = table.clone(Rules.Entries(value))
     for _, definition in schema.rules do
         if definition.default ~= nil then
-            local parts = string.split(definition.path, ".")
+            local parts = string.split(assert(definition.path, "missing default path"), ".")
             local section, name = parts[1], parts[2]
             if type(resolved) == "table" and type(resolved[section]) == "table" then
-                local settings = table.clone(resolved[section])
+                local settings = table.clone(Rules.Entries(resolved[section]))
                 if settings[name] == nil then
                     local fallback = definition.default
                     settings[name] = if type(fallback) == "table"
@@ -63,15 +72,15 @@ function config.validate(value: any): Config
             end
         end
     end
-    rules.validate(resolved, schema)
-    return resolved
+    Rules.Validate(resolved, schema)
+    return resolved :: Config
 end
 
-function config.read(): Config
-    local value = serde.decode("toml", inputs.read("ci/config.toml"))
+function Config.Read(): Config
+    local value: Config = Serde.decode("toml", Inputs.Read("ci/config.toml")) :: Config
     -- Older snapshots may contain the retired registry-publication flag.
-    if inputs.ref ~= "" then value.images.publish = false end
-    return config.validate(require("../control/config").apply(value))
+    if Inputs.ref ~= "" then value.images.publish = false end
+    return Config.Validate(require("../control/config").Apply(value))
 end
 
-return config
+return Config

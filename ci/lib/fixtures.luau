@@ -1,27 +1,27 @@
+-- ci/lib/fixtures.luau
 --!strict
-local fs = require("@lune/fs")
-local process = require("@lune/process")
-local stdio = require("@lune/stdio")
-local files = require("./files")
-local config = require("./config")
-local cases = require("./cases")
-local fixtures = {}
+local Fs = require("@lune/fs")
+local Process = require("@lune/process")
+local Stdio = require("@lune/stdio")
+local Files = require("./files")
+local Config = require("./config")
+local Cases = require("./cases")
 
-function fixtures.run(path: string)
-    local definition = cases.read(path)
-    local root = config.relative(definition.root)
-    files.reset(root)
+return function(path: string)
+    local definition = Cases.Read(path)
+    local root = Config.Relative(definition.root)
+    Files.Reset(root)
     for name, contents in definition.files do
-        config.relative(name)
+        Config.Relative(name)
         local destination = root .. "/" .. name
         local parent = destination:match("^(.*)/[^/]+$")
         if parent then
-            fs.writeDir(parent)
+            Fs.writeDir(parent)
         end
-        fs.writeFile(destination, contents)
+        Fs.writeFile(destination, contents)
     end
     for index, command in definition.commands do
-        local source = if process.os == "windows" and command.windows_argv
+        local source = if Process.os == "windows" and command.windows_argv
             then command.windows_argv
             else command.argv
         local arguments: { string } = {}
@@ -31,9 +31,9 @@ function fixtures.run(path: string)
             end)))
         end
         local executable = assert(table.remove(arguments, 1), "missing fixture executable")
-        local result = process.exec(executable, arguments)
+        local result = Process.exec(executable, arguments)
         print(result.stdout)
-        stdio.ewrite(result.stderr)
+        Stdio.ewrite(result.stderr)
         assert(result.code == command.code, "fixture command " .. tostring(index) .. " failed")
         if command.stdout_contains then
             assert(
@@ -44,4 +44,3 @@ function fixtures.run(path: string)
     end
     print("Fixture checks passed: " .. path)
 end
-return fixtures

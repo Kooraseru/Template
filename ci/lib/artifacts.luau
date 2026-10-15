@@ -1,32 +1,37 @@
+-- ci/lib/artifacts.luau
 --!strict
-local fs = require("@lune/fs")
-local serde = require("@lune/serde")
-local config = require("./config")
-local artifacts = {}
-local rules = require("./rules")
-local definition = rules.read("ci/distribution/manifest.rules.json")
-function artifacts.verify(root: string)
-    local manifest = serde.decode("json", fs.readFile(root .. "/" .. definition.manifest_file))
-    rules.validate(manifest, definition)
+local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
+local Config = require("./config")
+local Rules = require("./rules")
+local definition = Rules.Read("ci/distribution/manifest.rules.json")
+return function(root: string)
+    local manifestFile = assert(definition.manifest_file, "missing manifest filename")
+    local hashAlgorithm = assert(definition.hash_algorithm, "missing manifest hash algorithm")
+    local hashField = assert(definition.hash_field, "missing manifest hash field")
+    local raw: unknown = Serde.decode("json", Fs.readFile(root .. "/" .. manifestFile))
+    Rules.Validate(raw, definition)
+    local manifest = Rules.Array(raw)
     local seen = {}
-    for _, entry in manifest do
-        local path = config.relative(entry.path)
+    for _, rawEntry in manifest do
+        local entry = Rules.Entries(rawEntry)
+        local path = Config.Relative(entry.path)
         seen[path] = true
-        assert(fs.isFile(root .. "/" .. path), "missing artifact: " .. path)
+        assert(Fs.isFile(root .. "/" .. path), "missing artifact: " .. path)
         assert(
-            serde.hash(definition.hash_algorithm, fs.readFile(root .. "/" .. path))
-                == entry[definition.hash_field],
+            Serde.hash(hashAlgorithm, Fs.readFile(root .. "/" .. path))
+                == entry[hashField],
             "artifact checksum mismatch: " .. path
         )
     end
     local function inspect(directory: string, prefix: string)
-        for _, name in fs.readDir(directory) do
+        for _, name in Fs.readDir(directory) do
             local path = prefix .. name
-            if fs.isDir(directory .. "/" .. name) then
+            if Fs.isDir(directory .. "/" .. name) then
                 inspect(directory .. "/" .. name, path .. "/")
             else
                 assert(
-                    path == definition.manifest_file or seen[path],
+                    path == manifestFile or seen[path],
                     "unlisted artifact: " .. path
                 )
             end
@@ -34,4 +39,3 @@ function artifacts.verify(root: string)
     end
     inspect(root, "")
 end
-return artifacts

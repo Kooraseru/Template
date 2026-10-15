@@ -52,3 +52,24 @@ collections, destination keys, and optional equal fields. Its `paths` declare
 required files using entry fields in `{field}` templates. Catalogue test inputs
 live in `catalogue.cases`. Toolchain compile/run checks are target
 `probes` in `ci/build/targets.json`, with expected exit codes and optional output.
+
+## Luau responsibilities
+
+The scripts in this directory and `tests/` are entry points. Shared validation
+operations use procedural table modules with PascalCase bindings and public
+functions (`Rules.Read`, `Rules.Validate`, `Cases.Apply`, `Cases.Check`). Helpers
+remain local camelCase functions. Single-operation helpers return a function.
+Every Luau file starts with its repository path and `--!strict`.
+
+`rules.format` owns the supported rule vocabulary. `key_count` counts collection
+entries; `count_where` counts entries matching a field; `requires_before` checks
+ordered prerequisites. Workflow control counts, the protected gate name and action
+setup ordering are declared in `workflows.rules`, not in Luau assertions.
+`config.cases.controls` owns manual-control expectations and baseline preservation.
+Raw decoded data stays `unknown` until a boundary check; rule and fixture document
+shapes stay quarantined in their readers. Public validation APIs expose named
+contracts or `unknown`, without `any` casts.
+
+The mounted Luau guidance is under `.kero/mnt/global/language/luau/`. These CI
+utilities own no entities or independent object lifetimes, so ECS and OOP
+structures do not apply to them.

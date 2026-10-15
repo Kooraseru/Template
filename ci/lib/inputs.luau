@@ -1,13 +1,15 @@
+-- ci/lib/inputs.luau
 --!strict
-local fs = require("@lune/fs")
-local process = require("@lune/process")
-local inputs = { ref = process.env.CI_INPUT_REF or "" }
-function inputs.read(path: string): string
-    if inputs.ref == "" then
-        return fs.readFile(path)
+local Fs = require("@lune/fs")
+local Process = require("@lune/process")
+-- One process-wide source selection; temporary selectors must restore the previous ref.
+local Inputs = { ref = Process.env.CI_INPUT_REF or "" }
+function Inputs.Read(path: string): string
+    if Inputs.ref == "" then
+        return Fs.readFile(path)
     end
-    local result = process.exec("git", { "show", inputs.ref .. ":" .. path })
+    local result = Process.exec("git", { "show", Inputs.ref .. ":" .. path })
     assert(result.ok, "missing selected commit input: " .. path .. "\n" .. result.stderr)
     return result.stdout
 end
-return inputs
+return Inputs

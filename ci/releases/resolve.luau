@@ -1,25 +1,27 @@
+-- ci/releases/resolve.luau
 --!strict
-local fs = require("@lune/fs")
-local serde = require("@lune/serde")
-local process = require("@lune/process")
-local inputs = require("../lib/inputs")
-local configuration = require("../lib/config")
-local catalogue = require("../lib/catalogue")
-local config = configuration.read()
-local headResult = process.exec("git", { "rev-parse", "HEAD" })
+local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
+local Process = require("@lune/process")
+local Inputs = require("../lib/inputs")
+local Configuration = require("../lib/config")
+local Catalogue = require("../lib/catalogue")
+local Rules = require("../lib/rules")
+local config = Configuration.Read()
+local headResult = Process.exec("git", { "rev-parse", "HEAD" })
 assert(headResult.ok, "cannot resolve controller commit")
 local head = headResult.stdout:gsub("%s+$", "")
-local tested = process.env.CI_TESTED_SHA or head
-fs.writeDir("build/tmp/releases")
-local releasing = config.release.enabled and (process.env.CI_RECEIPT_PR or "0") == "0"
-local versions = if releasing then serde.decode("toml", fs.readFile("ci/releases/versions.toml")) else { releases = {} }
-local controls = require("../control/config").read()
-fs.writeFile("build/tmp/releases/request.json", serde.encode("json", {
+local tested = Process.env.CI_TESTED_SHA or head
+Fs.writeDir("build/tmp/releases")
+local releasing = config.release.enabled and (Process.env.CI_RECEIPT_PR or "0") == "0"
+local versions = if releasing then Serde.decode("toml", Fs.readFile("ci/releases/versions.toml")) else { releases = {} }
+local controls = require("../control/config").Read()
+Fs.writeFile("build/tmp/releases/request.json", Serde.encode("json", {
     versions = versions, enabled = releasing, controls = controls,
 }))
-local resolve = process.exec("node", { "ci/releases/cli.mjs", "resolve" })
+local resolve = Process.exec("node", { "ci/releases/cli.mjs", "resolve" })
 assert(resolve.ok, "release version resolution failed (" .. tostring(resolve.code) .. "): " .. resolve.stdout .. resolve.stderr)
-local selections = serde.decode("json", fs.readFile("build/tmp/releases/selections.json"))
+local selections = Serde.decode("json", Fs.readFile("build/tmp/releases/selections.json")) :: { { source_sha: string } }
 local snapshots = { { sha = tested, current = true } }
 local seen = { [tested] = true }
 for _, selection in selections do
@@ -30,41 +32,44 @@ for _, selection in selections do
 end
 local builds, images = {}, {}
 for _, snapshot in snapshots do
-    inputs.ref = snapshot.sha
-    local selected = configuration.read()
-    catalogue.validate(catalogue.read(selected))
-    for _, target in catalogue.targets(selected) do
-        local entry: any = table.clone(target)
+    Inputs.ref = snapshot.sha
+    local selected = Configuration.Read()
+    Catalogue.Validate(Catalogue.Read(selected))
+    for _, target in Catalogue.Targets(selected) do
+        local entry = table.clone(Rules.Entries(target))
+        local imageName = target.image or ""
         entry.source_sha = snapshot.sha
-        entry.input_ref = inputs.ref
+        entry.input_ref = Inputs.ref
         entry.current = snapshot.current
         entry.artifact = "distribution-" .. snapshot.sha .. "-" .. target.name
-        entry.image_artifact = if entry.image == "" then "" else "image-" .. snapshot.sha .. "-" .. entry.image
+        entry.image_artifact = if imageName == "" then "" else "image-" .. snapshot.sha .. "-" .. imageName
         entry.build = selected.build
-        entry.image_definition = if entry.image == "" then nil else catalogue.image(entry.image)
-        entry.recipes = {}
-        if entry.image_definition then
-            for _, file in { entry.image_definition.recipe, "toolchains/" .. entry.profile .. "/Dockerfile", "install.sh" } do
-                entry.recipes[file] = inputs.read("ci/images/" .. file)
+        local imageDefinition = if imageName == "" then nil else Catalogue.Image(imageName)
+        entry.image_definition = imageDefinition
+        local recipes: { [string]: string } = {}
+        if imageDefinition then
+            for _, file in { imageDefinition.recipe, "toolchains/" .. (target.profile or "") .. "/Dockerfile", "install.sh" } do
+                recipes[file] = Inputs.Read("ci/images/" .. file)
             end
         end
+        entry.recipes = recipes
         table.insert(builds, entry)
     end
     if selected.images.enabled then
         for _, name in selected.images.names do
-            local image = catalogue.image(name)
+            local image = Catalogue.Image(name)
             local recipes = {}
             for _, file in { image.recipe, "toolchains/" .. image.profile .. "/Dockerfile", "install.sh" } do
-                recipes[file] = inputs.read("ci/images/" .. file)
+                recipes[file] = Inputs.Read("ci/images/" .. file)
             end
             table.insert(images, { name = name, runner = image.runner, source_sha = snapshot.sha,
-                input_ref = inputs.ref, definition = image, recipes = recipes })
+                input_ref = Inputs.ref, definition = image, recipes = recipes })
         end
     end
 end
-inputs.ref = ""
-fs.writeFile("build/tmp/releases/inputs.json", serde.encode("json", {
+Inputs.ref = ""
+Fs.writeFile("build/tmp/releases/inputs.json", Serde.encode("json", {
     controller_sha = head, builds = builds, images = images, selections = selections,
 }))
-local finalize = process.exec("node", { "ci/releases/cli.mjs", "plan" })
+local finalize = Process.exec("node", { "ci/releases/cli.mjs", "plan" })
 assert(finalize.ok, "release build planning failed: " .. finalize.stdout .. finalize.stderr)

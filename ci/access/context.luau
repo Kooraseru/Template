@@ -1,28 +1,37 @@
+-- ci/access/context.luau
 --!strict
-local process = require("@lune/process")
-local fs = require("@lune/fs")
-local serde = require("@lune/serde")
-local policy = require("./policy")
-local context = {}
 
-function context.repository(event: any): string?
-    if type(event) ~= "table" or type(event.repository) ~= "table" then
+local Context = {}
+local Process = require("@lune/process")
+local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
+local Policy = require("./policy")
+local Rules = require("../lib/rules")
+
+function Context.Repository(event: unknown): string?
+    if type(event) ~= "table" then return nil end
+    local repository = Rules.Entries(event).repository
+    if type(repository) ~= "table" then
         return nil
     end
-    local name = event.repository.full_name
+    local name = Rules.Entries(repository).full_name
     return if type(name) == "string" and name ~= "" then name else nil
 end
 
-function context.read(env: { [string]: string? }): policy.Context
+function Context.Read(env: { [string]: string? }): Policy.Context
     local repository: string? = nil
     if env.GITHUB_EVENT_PATH then
-        local event = serde.decode("json", fs.readFile(env.GITHUB_EVENT_PATH))
-        repository = context.repository(event)
+        local event = Serde.decode("json", Fs.readFile(env.GITHUB_EVENT_PATH))
+        repository = Context.Repository(event)
     end
 
+    local executionEnv: { [string]: string } = {}
+    for key, value in env do
+        if value ~= nil then executionEnv[key] = value end
+    end
     local manualAllowed = false
     if env.GITHUB_EVENT_NAME == "workflow_dispatch" then
-        manualAllowed = process.exec("node", { "ci/control/authorize-publication.mjs" }, { env = env }).ok
+        manualAllowed = Process.exec("node", { "ci/control/authorize-publication.mjs" }, { env = executionEnv }).ok
     end
     return {
         manualAllowed = manualAllowed,
@@ -36,4 +45,4 @@ function context.read(env: { [string]: string? }): policy.Context
     }
 end
 
-return context
+return Context

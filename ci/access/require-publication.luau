@@ -1,12 +1,13 @@
+-- ci/access/require-publication.luau
 --!strict
-local process = require("@lune/process")
-local context = require("./context")
-local policy = require("./policy")
-local rules = require("../lib/rules")
+local Process = require("@lune/process")
+local Context = require("./context")
+local Policy = require("./policy")
+local Rules = require("../lib/rules")
 
-assert(policy.canPublish(context.read(process.env)), "publication context is not eligible")
-rules.validate(process.env, rules.read("ci/access/operation.rules.json"))
-local protection = process.exec("node", {
-    "ci/releases/cli.mjs", "protect", assert(process.env.GITHUB_REPOSITORY),
+assert(Policy.CanPublish(Context.Read(Process.env)), "publication context is not eligible")
+Rules.Validate(Process.env, Rules.Read("ci/access/operation.rules.json"))
+local protection = Process.exec("node", {
+    "ci/releases/cli.mjs", "protect", assert(Process.env.GITHUB_REPOSITORY),
 }, { stdio = "inherit" })
 assert(protection.ok, "repository source protection is required for publication")

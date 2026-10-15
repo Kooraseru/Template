@@ -1,18 +1,19 @@
+-- ci/validation/tests/rules.luau
 --!strict
-local fs = require("@lune/fs")
-local serde = require("@lune/serde")
-local cases = require("../../lib/cases")
-local files = require("../../lib/files")
-local rules = require("../../lib/rules")
-local definitions = cases.read("ci/validation/ruleset.json", "rules.cases")
-files.reset(definitions.root)
+local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
+local Cases = require("../../lib/cases")
+local Files = require("../../lib/files")
+local Rules = require("../../lib/rules")
+local definitions = Cases.Read("ci/validation/ruleset.json", "rules.cases")
+Files.Reset(definitions.root)
 local path = definitions.root .. "/document.json"
 for _, case in definitions.cases do
-    fs.writeFile(path, serde.encode("json", case.document))
-    cases.check(case.name, case.valid, function()
-        rules.validate(case.input, rules.read(path))
+    Fs.writeFile(path, Serde.encode("json", case.document))
+    Cases.Check(case.name, case.valid, function()
+        Rules.Validate(case.input, Rules.Read(path))
         return true
     end)
 end
-files.reset(definitions.root)
+Files.Reset(definitions.root)
 print("Rule executor data cases passed")

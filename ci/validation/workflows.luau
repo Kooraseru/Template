@@ -1,40 +1,38 @@
+-- ci/validation/workflows.luau
 --!strict
-local fs = require("@lune/fs")
-local serde = require("@lune/serde")
-local rules = require("../lib/rules")
-local definitions = rules.read("ci/validation/ruleset.json", "workflows.rules")
-local workflow = serde.decode("yaml", fs.readFile(".github/workflows/ci.yml"))
-rules.validate(workflow, definitions)
+local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
+local Rules = require("../lib/rules")
+local definitions = Rules.Read("ci/validation/ruleset.json", "workflows.rules")
+local workflow = Serde.decode("yaml", Fs.readFile(".github/workflows/ci.yml"))
+Rules.Validate(workflow, definitions)
 
-local controls = serde.decode("json", fs.readFile("ci/control/options.json"))
-local count, dropdowns = 0, 0
-for key, definition in controls do
+local controlCheck = assert(definitions.controls, "missing control validation definition")
+local controls = Rules.Entries(Serde.decode("json", Fs.readFile(controlCheck.source)))
+local inputs = Rules.Property(workflow, controlCheck.path)
+assert(type(inputs) == "table", "missing workflow inputs")
+local count = 0
+for key, rawDefinition in controls do
+    assert(type(key) == "string", "expected control name")
+    local definition = Rules.Entries(rawDefinition)
     count += 1
-    local input = assert(workflow.on.workflow_dispatch.inputs[key], "missing CI control: " .. key)
-    assert(input.type == (definition.type or "choice") and input.default == definition.default, "incorrect CI control: " .. key)
-    if input.type == "choice" then dropdowns += 1 end
-    for _, choice in definition.options or {} do
-        assert(table.find(input.options, choice), "missing CI choice: " .. key .. " / " .. choice)
+    local input = Rules.Entries(assert(Rules.Entries(inputs)[key], "missing CI control: " .. key))
+    assert(type(input) == "table", "invalid CI control: " .. key)
+    assert(input.type == (definition.type or controlCheck.default_type), "incorrect CI control type: " .. key)
+    assert(input.default == definition.default, "incorrect CI control default: " .. key)
+    for _, choice in Rules.Entries(definition.options or {}) do
+        assert(type(choice) == "string", "expected control choice")
+        assert(type(input.options) == "table" and table.find(Rules.Array(input.options), choice), "missing CI choice: " .. key .. " / " .. choice)
     end
 end
 local actual = 0
-for _ in workflow.on.workflow_dispatch.inputs do actual += 1 end
-assert(count == 14 and dropdowns == 12 and actual == count, "the CI panel requires twelve dropdowns and two release inputs")
-assert(workflow.jobs.gate.name == nil, "keep the required gate check name stable")
-for name, job in workflow.jobs do
-    local luneReady = false
-    for _, step in job.steps or {} do
-        if step.uses == "./.github/actions/setup-lune" then luneReady = true end
-        if step.uses == "./.github/actions/setup-node" then
-            assert(luneReady, "setup-node requires setup-lune first in job: " .. name)
-        end
-    end
-end
+for _ in inputs do actual += 1 end
+assert(actual == count, "workflow inputs differ from the control catalogue")
 
-for _, name in fs.readDir(".github/actions") do
+for _, name in Fs.readDir(".github/actions") do
     local path = ".github/actions/" .. name .. "/action.yml"
-    if fs.isFile(path) then
-        rules.validate(serde.decode("yaml", fs.readFile(path)), definitions.actions)
+    if Fs.isFile(path) then
+        Rules.Validate(Serde.decode("yaml", Fs.readFile(path)), assert(definitions.actions, "missing action rules"))
     end
 end
 print("Workflow data checks passed")

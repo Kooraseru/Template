@@ -1,19 +1,20 @@
+-- ci/access/resolve.luau
 --!strict
-local process = require("@lune/process")
-local serde = require("@lune/serde")
-local configuration = require("../lib/config")
-local outputs = require("../lib/outputs")
-local context = require("./context")
-local policy = require("./policy")
+local Process = require("@lune/process")
+local Serde = require("@lune/serde")
+local Configuration = require("../lib/config")
+local Outputs = require("../lib/outputs")
+local Context = require("./context")
+local Policy = require("./policy")
 
-local config = configuration.read()
-local resolved = process.exec("lune", { "run", "ci/releases/resolve.luau" })
+local config = Configuration.Read()
+local resolved = Process.exec("lune", { "run", "ci/releases/resolve.luau" })
 assert(resolved.ok, "could not resolve build inputs: " .. resolved.stdout .. resolved.stderr)
-local receipts = process.exec("node", { "ci/receipts/cli.mjs", "plan" })
+local receipts = Process.exec("node", { "ci/receipts/cli.mjs", "plan" })
 assert(receipts.ok, "could not resolve accepted validation: " .. receipts.stdout .. receipts.stderr)
-local fs = require("@lune/fs")
-local matrices = serde.decode("json", fs.readFile("build/tmp/releases/outputs.json"))
-local canPublish = policy.canPublish(context.read(process.env))
+local Fs = require("@lune/fs")
+local matrices = Serde.decode("json", Fs.readFile("build/tmp/releases/outputs.json")) :: { [string]: string }
+local canPublish = Policy.CanPublish(Context.Read(Process.env))
 local values = {
     publish = tostring(canPublish),
     runner = config.build.runner,
@@ -23,7 +24,7 @@ local values = {
     cmake_version = config.build.cmake_version,
 }
 
-local capabilities: { [string]: configuration.Capability } = {
+local capabilities: { [string]: Configuration.Capability } = {
     repository = config.repository,
     pages = config.pages,
     release = config.release,
@@ -44,4 +45,4 @@ values.build_requested = matrices.build_requested
 values.receipt_ready = matrices.receipt_ready
 values.accepted_available = matrices.accepted_available
 values.local_execution = matrices.local_execution
-outputs.write(process.env.GITHUB_OUTPUT, values)
+Outputs.Write(Process.env.GITHUB_OUTPUT, values)

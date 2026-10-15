@@ -1,11 +1,12 @@
+-- ci/validation/tests/gate.luau
 --!strict
-local cases = require("../../lib/cases")
-local rules = require("../../lib/rules")
-local definitions = cases.read("ci/validation/ruleset.json", "gate.cases")
-local policy = rules.read("ci/validation/ruleset.json", "gate.rules")
+local Cases = require("../../lib/cases")
+local Rules = require("../../lib/rules")
+local definitions = Cases.Read("ci/validation/ruleset.json", "gate.cases")
+local policy = Rules.Read("ci/validation/ruleset.json", "gate.rules")
 for _, case in definitions.cases do
-    cases.check(case.name, case.valid, function()
-        rules.validate(cases.apply(definitions.baseline, case), policy)
+    Cases.Check(case.name, case.valid, function()
+        Rules.Validate(Cases.Apply(definitions.baseline, case), policy)
         return true
     end)
 end

@@ -1,20 +1,21 @@
+-- ci/access/tests/policy.luau
 --!strict
-local policy = require("../policy")
-local context = require("../context")
-local outputs = require("../../lib/outputs")
-local cases = require("../../lib/cases")
-local definitions = cases.read("ci/access/tests/policy.cases.json")
+local Policy = require("../policy")
+local Context = require("../context")
+local Outputs = require("../../lib/outputs")
+local Cases = require("../../lib/cases")
+local definitions = Cases.Read("ci/access/tests/policy.cases.json")
 
 for _, case in definitions.policy do
-    local result = policy.canPublish(cases.apply(definitions.baseline, case))
+    local result = Policy.CanPublish(Cases.Apply(definitions.baseline, case))
     assert(result == case.valid, case.name .. ": unexpected publication eligibility")
 end
 for index, case in definitions.repositories do
-    assert(context.repository(case.input) == case.expected, "repository case " .. tostring(index))
+    assert(Context.Repository(case.input) == case.expected, "repository case " .. tostring(index))
 end
 for index, case in definitions.outputs do
-    cases.check("output case " .. tostring(index), case.valid, function()
-        return outputs.encode(case.input)
+    Cases.Check("output case " .. tostring(index), case.valid, function()
+        return Outputs.Encode(case.input)
     end, case.expected)
 end
 print("Publication data cases passed")
