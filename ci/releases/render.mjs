@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { releaseNotes } from './notes.mjs';
 import path from 'node:path';
 import { command, git, write, sha256, canonical, history, layout, escapeHTML, escapeMarkdown, verifyDistribution, policy, normalizeArtifactDownload } from './core.mjs';
 
@@ -91,7 +92,7 @@ export function packageArchive(root) {
   command('tar', ['--sort=name', '--mtime=@0', '--owner=0', '--group=0', '--numeric-owner', '--format=gnu',
     '-czf', `${root}/packages.tar.gz`, '-C', `${root}/packages`, '.']);
 }
-export async function assemble(plan, { render = renderPNGs, archive = packageArchive } = {}) {
+export async function assemble(plan, { render = renderPNGs, archive = packageArchive, notesAPI } = {}) {
   const repo = process.env.GITHUB_REPOSITORY || git(['remote', 'get-url', 'origin']).replace(/^.*github\.com[:/]/, '').replace(/\.git$/, '');
   const repoURL = `https://github.com/${repo}`;
   for (const selection of plan.selections) {
@@ -134,13 +135,10 @@ export async function assemble(plan, { render = renderPNGs, archive = packageArc
     write(`${root}/graph.json`, publicRows);
     write(`${root}/graph.html`, htmlGraph(publicRows, selection.version, selection.source_sha));
     const changes = data.commits.map(commit => `- [${commit.sha.slice(0, 7)}](${commit.url}) ${escapeMarkdown(commit.subject)}`).join('\n');
-    const compareURL = selection.from === 'beginning' ? `${repoURL}/commits/${selection.source_sha}` : `${repoURL}/compare/${selection.from}...${selection.source_sha}`;
-    write(`${root}/changes.md`, `# Changes\n\n${changes || 'No commits in this range.'}\n\n\`\`\`text\n${data.stats}\n\`\`\`\n`);
-    const introduction = selection.notes ? fs.readFileSync(selection.notes, 'utf8').trim() + '\n\n' : '';
-    const notes = introduction + `Selected source commit: [\`${selection.source_sha}\`](${repoURL}/commit/${selection.source_sha})\n\n`
-      + `## Changes\n\n[View the range](${compareURL}) · ${data.commits.length} commits\n\n${escapeMarkdown(data.shortstat || 'No changed files.')}\n\n`
-      + data.commits.slice(0, policy.body_commit_limit).map(commit => `- [${commit.sha.slice(0, 7)}](${commit.url}) ${escapeMarkdown(commit.subject)}`).join('\n')
-      + `## Contributors\n\n${data.contributors.map(name => `- ${escapeMarkdown(name)}`).join('\n') || 'No contributors in this range.'}\n`;
+    write(`${root}/changes.md`, `# Changes\n\n${changes || 'No commits in this range.'}\n\n${data.stats}\n`);
+    const api = notesAPI !== undefined ? notesAPI : process.env.GH_TOKEN ? (await import('./publish.mjs')).client(process.env.GH_TOKEN, repo) : null;
+    if (notesAPI === undefined && process.env.GITHUB_ACTIONS === 'true' && !api) throw Error('Hosted release notes require GitHub PR access');
+    const notes = await releaseNotes(selection, data, repoURL, api);
     write(`${root}/notes.md`, notes);
     archive(root);
     // Internal release metadata contains product identity, not transient receipt locations

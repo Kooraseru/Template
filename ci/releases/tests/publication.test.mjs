@@ -96,7 +96,7 @@ test('stable and prerelease publication use exact SemVer tags and correct GitHub
     const release = f.releases.get(version);
     assert.equal(release.draft, false);
     assert.equal(release.prerelease, version.includes('-pre.'));
-    assert.equal(release.name, `${version.includes('-pre.') ? 'Pre-Release' : 'Release'} ${version}`);
+    assert.equal(release.name, version);
     assert.equal(f.refs.get(version).object.sha, source);
     assert.deepEqual(release.assets.map(asset => asset.name), [`${version}-app`]);
     assert.ok(release.discussion_url);
@@ -204,7 +204,7 @@ test('a matching publisher-owned draft can resume without replacement', async t 
   const f = fixture(t), prepared = f.prepare();
   const marker = `<!-- semver-release:1.2.0:${sha256(fs.readFileSync(`${prepared.dir}/release.json`))} -->`;
   const existing = await f.api.json('POST', '/releases', { tag_name: '1.2.0', target_commitish: source,
-    name: 'Release 1.2.0', body: fs.readFileSync(`${prepared.dir}/notes.md`, 'utf8') + `\n${marker}\n`, draft: true, prerelease: false });
+    name: '1.2.0', body: fs.readFileSync(`${prepared.dir}/notes.md`, 'utf8') + `\n${marker}\n`, draft: true, prerelease: false });
   await f.publish(prepared);
   assert.equal(f.releases.get('1.2.0').id, existing.id);
   assert.equal(f.releases.get('1.2.0').draft, false);

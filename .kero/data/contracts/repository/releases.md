@@ -36,7 +36,7 @@ contains version, source and build identity; transient controller and receipt
 locations remain in an internal publication manifest. Archive timestamps and
 ownership are normalized so restaging identical builds preserves payload bytes.
 
-Notes retain authored text, changes and contributor names. Credits
+Notes retain authored text, linked merged PRs, a Full Changelog link and co-author credits. Credits
 cover Git authors and Co-authored-by trailers in the selected range, normalized by
 the selected snapshot's .mailmap. Canonical emails remain internal. Bot exclusions
 are defined in the release policy. Registry packages remain out of scope.

@@ -59,7 +59,7 @@ export async function publishVersion(api, metadata, root, assertFresh) {
   if (metadata.schema !== 2 || identity.prerelease !== metadata.prerelease || identity.type !== metadata.type
       || !new RegExp(policy.sha_pattern).test(metadata.source_sha)) throw Error('Invalid version metadata');
   const version = identity.version;
-  const releaseName = `${identity.type} ${version}`;
+  const releaseName = version;
   const metadataBytes = fs.readFileSync(`${root}/release.json`);
   if (canonical(JSON.parse(metadataBytes)) !== canonical(metadata)) throw Error('Release manifest changed');
   const marker = `<!-- semver-release:${version}:${sha256(metadataBytes)} -->`;

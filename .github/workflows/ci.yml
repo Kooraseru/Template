@@ -443,6 +443,10 @@ jobs:
     needs: [validate, build, validation-receipt]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && (needs.validation-receipt.result == 'success' || needs.validation-receipt.result == 'skipped') && needs.validate.outputs.release == 'true' && needs.validate.outputs.operation != 'Validate' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -468,6 +472,8 @@ jobs:
         if: needs.validation-receipt.result == 'success'
         run: node -e "require('fs').mkdirSync('build/tmp/releases', {recursive:true}); require('fs').copyFileSync('build/tmp/accepted/accepted-plan.json', 'build/tmp/releases/plan.json')"
       - run: lune run ci/releases/build.luau
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v7
         with:
           name: release

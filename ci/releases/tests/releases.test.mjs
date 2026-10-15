@@ -103,7 +103,7 @@ test('public assembly is stable across internal receipt restaging', async () => 
   // the caller's working directory. Supply that history through the Git wrapper.
   const previousGit = process.env.GIT_DIR, previousWorkTree = process.env.GIT_WORK_TREE;
   process.env.GIT_DIR = path.join(repository, '.git'); process.env.GIT_WORK_TREE = repository;
-  const options = { render: dir => {
+  const options = { notesAPI: null, render: dir => {
     for (const name of fs.readdirSync(dir).filter(name => name.endsWith('.svg'))) write(`${dir}/${name.replace('.svg', '.png')}`, 'PNG fixture');
   }, archive: dir => write(`${dir}/packages.tar.gz`, 'deterministic package fixture') };
   try {

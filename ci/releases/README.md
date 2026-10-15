@@ -66,7 +66,9 @@ Output lives under `build/releases/<version>/`. Only packaged native executables
 and scripts with a shebang are uploaded to GitHub Releases. Libraries, reports,
 metadata, receipts and package archives remain internal workflow artifacts.
 Without executables, GitHub's automatic source archives are the only downloads.
-Release notes link source history directly, without report attachment links.
+Release notes list merged PRs with author handles, collapse direct changes, and link
+the Full Changelog. Co-authored-by credits come only from commit trailers; no
+duplicate Contributors section is emitted. Authored notes can supply thematic sections.
 
 ## Required source protection
 

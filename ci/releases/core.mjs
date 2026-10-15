@@ -111,13 +111,14 @@ export function history(selection, repository = '.', repoURL = '') {
   try { mailmap = run(['show', `${selection.source_sha}:.mailmap`]); } catch { /* optional */ }
   fs.writeFileSync(mapPath, mailmap);
   const identities = [];
+  const trailerIdentities = new Set();
   for (const commit of commits) {
     identities.push(`${commit.name} <${commit.email}>`);
     const trailers = command('git', ['interpret-trailers', '--parse'], { input: commit.body, cwd: repository });
     for (const line of trailers.split('\n')) {
       if (!/^co-authored-by:/i.test(line)) continue;
       const identity = line.replace(/^co-authored-by:\s*/i, '').trim();
-      if (/^.+ <[^<>\s]+>$/.test(identity)) identities.push(identity);
+      if (/^.+ <[^<>\s]+>$/.test(identity)) { identities.push(identity); trailerIdentities.add(identity); }
       else console.warn(`Ignoring malformed co-author trailer on ${commit.sha}`);
     }
   }
@@ -125,13 +126,16 @@ export function history(selection, repository = '.', repoURL = '') {
     'mailmap.blob=', 'check-mailmap', '--stdin'],
     { cwd: mapDir, input: identities.join('\n') + '\n', env: { ...process.env,
       GIT_DIR: run(['rev-parse', '--absolute-git-dir']) } }) : '';
-  const people = new Map();
+  const people = new Map(), coauthors = new Map();
+  const normalizedLines = normalized.split('\n').filter(Boolean);
+  const coauthorLines = new Set(normalizedLines.filter((_, index) => trailerIdentities.has(identities[index])));
   for (const identity of normalized.split('\n').filter(Boolean)) {
     const match = identity.match(/^(.*) <([^<>]+)>$/);
     if (!match) continue;
     if (policy.bot_patterns.some(pattern => [identity, match[1], match[2]]
       .some(value => new RegExp(pattern, 'i').test(value)))) continue;
     people.set(match[2].toLowerCase(), match[1]);
+    if (coauthorLines.has(identity)) coauthors.set(match[2].toLowerCase(), match[1]);
   }
   const refs = run(['for-each-ref', '--format=%(objectname)%09%(*objectname)%09%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags']);
   const labels = new Map();
@@ -147,7 +151,7 @@ export function history(selection, repository = '.', repoURL = '') {
   const emptyTree = run(['hash-object', '-t', 'tree', '--stdin']);
   const stats = run(['diff', '--stat', selection.from === 'beginning' ? emptyTree : selection.from, selection.source_sha]);
   const shortstat = run(['diff', '--shortstat', selection.from === 'beginning' ? emptyTree : selection.from, selection.source_sha]).trim();
-  return { commits, context, contributors: [...people.values()].sort((a, b) => a.localeCompare(b)), stats, shortstat };
+  return { commits, context, coauthors: [...coauthors.values()].sort((a, b) => a.localeCompare(b)), contributors: [...people.values()].sort((a, b) => a.localeCompare(b)), stats, shortstat };
 }
 export function layout(rows) {
   const lanes = [];
