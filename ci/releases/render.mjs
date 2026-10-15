@@ -46,6 +46,38 @@ function renderPNGs(root) {
     command('docker', ['cp', `${container}:/output/.`, root]);
   } finally { command('docker', ['rm', '--force', container]); }
 }
+// Inspect packaged payloads, never compiler probes or internal reports.
+export function isExecutable(bytes) {
+  if (bytes.length < 4) return false;
+  if (bytes.subarray(0, 2).toString() === '#!') return true;
+  if (bytes.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46]))) {
+    if (bytes.length < 18) return false;
+    const type = bytes[5] === 2 ? bytes.readUInt16BE(16) : bytes.readUInt16LE(16);
+    if (type === 2) return true;
+    // PIE has PT_INTERP; a shared library does not. Reject malformed offsets.
+    if (type !== 3 || ![1, 2].includes(bytes[4]) || bytes.length < 64) return false;
+    const little = bytes[5] === 1;
+    const u16 = offset => little ? bytes.readUInt16LE(offset) : bytes.readUInt16BE(offset);
+    const u32 = offset => little ? bytes.readUInt32LE(offset) : bytes.readUInt32BE(offset);
+    const wide = bytes[4] === 2;
+    const offset = wide ? Number(little ? bytes.readBigUInt64LE(32) : bytes.readBigUInt64BE(32)) : u32(28);
+    const size = u16(wide ? 54 : 42), count = u16(wide ? 56 : 44);
+    if (size < 4 || !Number.isSafeInteger(offset) || offset + size * count > bytes.length) return false;
+    for (let i = 0; i < count; i++) if (u32(offset + i * size) === 3) return true;
+    return false;
+  }
+  if (bytes[0] === 0x4d && bytes[1] === 0x5a && bytes.length >= 64) {
+    const offset = bytes.readUInt32LE(60);
+    return offset + 24 <= bytes.length && bytes.readUInt32LE(offset) === 0x4550
+      && !(bytes.readUInt16LE(offset + 22) & 0x2000);
+  }
+  const magic = bytes.readUInt32BE(0);
+  if ([0xfeedface, 0xfeedfacf, 0xcefaedfe, 0xcffaedfe].includes(magic) && bytes.length >= 16) {
+    return ([0xcefaedfe, 0xcffaedfe].includes(magic) ? bytes.readUInt32LE(12) : bytes.readUInt32BE(12)) === 2;
+  }
+  return false;
+}
+
 export function finalizeAssets(root, metadata, files) {
   metadata.assets = files.map(file => ({ path: file, name: `${metadata.version}-${path.basename(file)}`,
     sha256: sha256(fs.readFileSync(`${root}/${file}`)) }));
@@ -55,7 +87,7 @@ export function finalizeAssets(root, metadata, files) {
 }
 export function packageArchive(root) {
   // Assembly runs on Ubuntu. Normalize tar metadata so receipt restoration times
-  // and file ownership do not change the contents of an immutable public version.
+  // and file ownership do not change the contents of a repeated assembly.
   command('tar', ['--sort=name', '--mtime=@0', '--owner=0', '--group=0', '--numeric-owner', '--format=gnu',
     '-czf', `${root}/packages.tar.gz`, '-C', `${root}/packages`, '.']);
 }
@@ -101,8 +133,6 @@ export async function assemble(plan, { render = renderPNGs, archive = packageArc
     });
     write(`${root}/graph.json`, publicRows);
     write(`${root}/graph.html`, htmlGraph(publicRows, selection.version, selection.source_sha));
-    const prefix = selection.version;
-    const assetURL = file => `${repoURL}/releases/download/${selection.version}/${prefix}-${file}`;
     const changes = data.commits.map(commit => `- [${commit.sha.slice(0, 7)}](${commit.url}) ${escapeMarkdown(commit.subject)}`).join('\n');
     const compareURL = selection.from === 'beginning' ? `${repoURL}/commits/${selection.source_sha}` : `${repoURL}/compare/${selection.from}...${selection.source_sha}`;
     write(`${root}/changes.md`, `# Changes\n\n${changes || 'No commits in this range.'}\n\n\`\`\`text\n${data.stats}\n\`\`\`\n`);
@@ -110,19 +140,26 @@ export async function assemble(plan, { render = renderPNGs, archive = packageArc
     const notes = introduction + `Selected source commit: [\`${selection.source_sha}\`](${repoURL}/commit/${selection.source_sha})\n\n`
       + `## Changes\n\n[View the range](${compareURL}) · ${data.commits.length} commits\n\n${escapeMarkdown(data.shortstat || 'No changed files.')}\n\n`
       + data.commits.slice(0, policy.body_commit_limit).map(commit => `- [${commit.sha.slice(0, 7)}](${commit.url}) ${escapeMarkdown(commit.subject)}`).join('\n')
-      + `\n\n[Complete changes and file statistics](${assetURL('changes.md')})\n\n`
-      + `## Commit graph\n\n${pages.map(name => `![Commit graph](${assetURL(name + '.png')})`).join('\n\n')}\n\n`
-      + `[Interactive graph](${assetURL('graph.html')}) · [Repository graph](${repoURL}/network)\n\n`
       + `## Contributors\n\n${data.contributors.map(name => `- ${escapeMarkdown(name)}`).join('\n') || 'No contributors in this range.'}\n`;
     write(`${root}/notes.md`, notes);
     archive(root);
-    // Public metadata contains product identity, not transient receipt locations
+    // Internal release metadata contains product identity, not transient receipt locations
     // or the current publishing run. The latter stay in an internal manifest.
     const metadata = { schema: 2, ...selection, targets: targets.map(({contract, ...target}) => target), assets: [] };
     write(`${root}/publication.json`, { version: selection.version, source_sha: selection.source_sha,
       controller_sha: plan.controller_sha, controller_hash: plan.controller_hash, targets,
       contract_hash: sha256(fs.readFileSync('ci/releases/versions.toml')) });
-    const assetFiles = ['packages.tar.gz', 'notes.md', 'changes.md', 'graph.html', 'graph.json', ...pages.map(name => `graph/${name}.png`)];
+    const assetFiles = [];
+    for (const target of targets) {
+      for (const item of target.manifest) {
+        const input = `${root}/packages/${target.name}/${item.path}`;
+        if (!isExecutable(fs.readFileSync(input))) continue;
+        const file = `executables/${target.name}-${item.path.replaceAll('/', '-')}`;
+        fs.mkdirSync(`${root}/executables`, { recursive: true });
+        fs.copyFileSync(input, `${root}/${file}`);
+        assetFiles.push(file);
+      }
+    }
     finalizeAssets(root, metadata, assetFiles);
     console.log(`Assembled ${selection.version} at ${selection.source_sha} with ${targets.length} targets`);
   }

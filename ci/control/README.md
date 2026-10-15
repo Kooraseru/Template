@@ -78,8 +78,8 @@ include dependencies when explicitly selecting catalogue build targets; Skip is
 invalid if selected builds require images. Public releases use explicit version/commit entries in `ci/releases/versions.toml`.
 An empty list selects no public release. Version/source overrides must be paired;
 the selected source must belong to source history. The two public types are derived
-from SemVer, not persistent identities. Published content is immutable; changed
-content requires a new version. See [versioned releases](../releases/README.md).
+from SemVer, not persistent identities. Published versions support replacement; changed
+content replaces the selected version. See [versioned releases](../releases/README.md).
 
 Operation bounds publication. Choosing Generate and publish while running Build
 still generates only. Publish with either rebuild policy is rejected; use Full Run.

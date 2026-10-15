@@ -1,4 +1,4 @@
-# Explicit immutable public versions. An empty list publishes no public release.
+# Explicit explicit public versions. An empty list publishes no public release.
 # Replace this list with [[releases]] entries when selecting versions to publish.
 releases = []
 

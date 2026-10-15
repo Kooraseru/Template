@@ -12,11 +12,11 @@ version. Commits must belong to source history. Optional `from` defaults to
 commit. Optional `notes` references an existing relative controller Markdown file.
 The manual workflow supports paired version and full source-SHA overrides.
 
-Published content is immutable. Identical publication is a no-op; mismatched source,
-notes, type, manifest or assets fails without mutation. The publisher never moves
-or deletes tags and never patches published release content. Promotion from a
-prerelease to a stable version creates a new release and tag, preserving the
-prerelease. Historical releases and tags remain unchanged.
+Published versions support replacement. Identical publication is a no-op; changed
+content reconciles the selected version and its source tag. Other versions remain
+unchanged. Only executable payloads are attached; reports and receipts stay internal.
+Source-only releases use GitHub's generated source archives. Each release links an
+Announcements discussion.
 
 New publication uses a verified draft before making a version public. Only an
 unpublished draft owned by the failing attempt may be removed. Existing tags and
@@ -31,12 +31,12 @@ successful build evidence. Public packages require verified matching accepted
 receipts. Source PR/check rules and admin-only update or bypass permissions remain
 mandatory. Local act execution can produce previews but cannot publish.
 
-Public artifacts live under `build/releases/<version>/`. The public manifest
+Internal release assembly lives under `build/releases/<version>/`. The internal manifest
 contains version, source and build identity; transient controller and receipt
 locations remain in an internal publication manifest. Archive timestamps and
-ownership are normalized so restaging identical builds preserves public bytes.
+ownership are normalized so restaging identical builds preserves payload bytes.
 
-Notes retain authored text, changes, commit graph and contributor names. Credits
+Notes retain authored text, changes and contributor names. Credits
 cover Git authors and Co-authored-by trailers in the selected range, normalized by
 the selected snapshot's .mailmap. Canonical emails remain internal. Bot exclusions
 are defined in the release policy. Registry packages remain out of scope.

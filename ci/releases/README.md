@@ -42,26 +42,16 @@ uses the default complete history range. Publish Release and Publish Pre-Release
 filter selected versions by their derived GitHub type. They are output choices,
 not persistent release identities. PR targets cannot publish public versions.
 
-## Immutability and promotion
+## Replacement and promotion
 
-Each version identifies immutable public content. Publication checks the source
-commit, release type, title, complete notes, manifest and exact asset list with
-checksums and sizes. An existing identical published version is a no-op with no
-writes. Different content or a conflicting tag fails without changing the existing
-release or tag. Missing GitHub asset digests are checked by downloading the bytes.
-No publisher code moves or deletes a Git tag or modifies a published version.
-
-Promoting `1.3.0-pre.1` to `1.3.0` means selecting a new stable version, possibly
-with the same source SHA. It creates another release and tag. The prerelease and
-all its assets remain unchanged. Existing historical releases and tags remain
-unchanged by this migration and are never treated as aliases for new versions.
-
-New versions are uploaded and verified as drafts before becoming public. Only an
-unpublished draft created by a failed publication attempt may be cleaned up.
-A version tag that already exists or was created during the attempt is retained.
-A matching publisher-owned draft can resume; an unrelated or conflicting draft
-fails without mutation. An uncertain response after publication never triggers a
-rollback or deletion of the published version.
+Publication reconciles the selected version's source tag, notes, type and executable
+attachments. Identical content is a no-op. Changed content replaces that version,
+including moving its tag when a different source commit is explicitly selected.
+Only the selected version is changed. Replacement is not transactional: a failed
+upload can leave a partially updated release; retry the same selection to repair it.
+Promotion selects a new stable version and leaves the prerelease unchanged.
+Each published release links an Announcements discussion. Enable Discussions and
+create that category in repositories using this publisher.
 
 ## Builds, evidence and artifacts
 
@@ -72,24 +62,11 @@ build fingerprints, execution evidence and manifest checksums. Verified admin
 source pushes or manual requests permit missing builds to execute. Publication
 continues to require protected hosted source execution and fresh controller inputs.
 
-Output lives under `build/releases/<version>/`. Public assets include `release.json`,
-`notes.md`, `changes.md`, `packages.tar.gz`, graph PNGs, `graph.json` and `graph.html`.
-Names are qualified by version. Archive timestamps and ownership are normalized on
-Ubuntu. Public metadata records the version, type, selected commit and build
-provenance. The internal `publication.json` retains controller and receipt-location
-information and is not uploaded as a public asset. Restaging the same accepted
-build does not change public contents.
-
-Internal `ci-validation-*` drafts and build receipts retain their existing
-retention, trust and verification rules. They are internal validation staging,
-independent of the public version system.
-
-The body contains authored text, changes, graph and contributor names in that
-order. Complete changes and file statistics remain in `changes.md`; the body
-shows at most 80 commits. PNGs contain 100 graph rows per page and the interactive
-HTML contains the complete graph. Credits include Git authors and Co-authored-by
-trailers normalized through the selected source snapshot's `.mailmap`. Bot filters
-remain in `policy.json`; canonical emails stay out of public graph metadata.
+Output lives under `build/releases/<version>/`. Only packaged native executables
+and scripts with a shebang are uploaded to GitHub Releases. Libraries, reports,
+metadata, receipts and package archives remain internal workflow artifacts.
+Without executables, GitHub's automatic source archives are the only downloads.
+Release notes link source history directly, without report attachment links.
 
 ## Required source protection
 
@@ -136,7 +113,7 @@ require their corresponding hosted runners. Local runs never publish remotely.
 Release assembly uses the Ubuntu job's Docker renderer and deterministic GNU tar.
 
 Regression tests cover version parsing, explicit commit ancestry, empty selections,
-manual overrides, immutable reruns, content conflicts, separate prerelease promotion,
+manual overrides, identical reruns, version replacement, separate prerelease promotion,
 historical tag preservation, partial-draft failures and unchanged protection checks.
 
 Reference: https://semver.org/spec/v2.0.0.html

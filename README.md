@@ -77,7 +77,7 @@ named `default`. Distribution artifacts and logs are separated by target name;
 release assembly verifies every selected distribution.
 
 Edit publication templates under `ci/repo/templates/`. Select commit-based
-immutable public versions and full source SHAs in `ci/releases/versions.toml`;
+explicit public versions and full source SHAs in `ci/releases/versions.toml`;
 the initial empty list publishes no public version. See
 [versioned releases and source protection](ci/releases/README.md).
 Image Dockerfiles belong under `ci/images/`, with image choices in its catalogue.

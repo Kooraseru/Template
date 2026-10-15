@@ -653,6 +653,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      discussions: write
       actions: read
     concurrency:
       group: publication-version-${{ matrix.version }}

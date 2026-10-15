@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseVersion, sha256, write } from '../core.mjs';
-import { finalizeAssets } from '../render.mjs';
+import { finalizeAssets, isExecutable } from '../render.mjs';
 import { publishVersion } from '../publish.mjs';
 
 const source = 'a'.repeat(40);
@@ -30,7 +30,15 @@ function fixture(t, options = {}) {
       }
       if (route.startsWith('/git/ref/tags/')) return structuredClone(refs.get(route.slice('/git/ref/tags/'.length)) || null);
       if (route.startsWith('/git/tags/')) return { object: { type: 'commit', sha: source } };
-      if (route.startsWith('/releases/assets/')) return assetData.get(Number(route.split('/').at(-1)));
+      if (route.startsWith('/releases/assets/')) {
+        const id = Number(route.split('/').at(-1));
+        if (request.method === 'DELETE') {
+          writes.push(['DELETE', route]);
+          for (const release of releases.values()) release.assets = release.assets.filter(asset => asset.id !== id);
+          return null;
+        }
+        return assetData.get(id);
+      }
       const release = route.startsWith('/releases/tags/') ? releases.get(route.slice('/releases/tags/'.length)) : find(route.split('/').at(-1));
       if (request.method === 'DELETE') {
         assert.ok(release.draft, 'published releases must never be deleted');
@@ -52,35 +60,36 @@ function fixture(t, options = {}) {
         if (options.autoTag) refs.set(value.tag_name, { object: { type: 'commit', sha: value.target_commitish } });
         return structuredClone(release);
       }
-      if (route === '/git/refs') {
-        assert.equal(method, 'POST', 'version tags are never moved');
+      if (route.startsWith('/git/refs')) {
+        if (method === 'PATCH') { const name = route.slice('/git/refs/tags/'.length); refs.set(name, { object: { type: 'commit', sha: value.sha } }); return refs.get(name); }
         const name = value.ref.slice('refs/tags/'.length);
         assert.ok(!refs.has(name));
         const ref = { object: { type: 'commit', sha: value.sha } }; refs.set(name, ref); return structuredClone(ref);
       }
       assert.ok(route.startsWith('/releases/') && method === 'PATCH', 'unexpected mutation');
       const release = find(route.split('/').at(-1));
-      assert.ok(release.draft, 'published versions must never be patched');
+
       if (options.failPromotion) throw Error('promotion failed');
       Object.assign(release, value);
+      if (value.discussion_category_name) release.discussion_url = 'https://github.com/example/project/discussions/1';
       if (options.lostPromotionResponse) { options.lostPromotionResponse = false; throw Error('response lost after promotion'); }
       return structuredClone(release);
     },
   };
   function prepare(version = '1.2.0', content = 'packages') {
     const dir = path.join(root, version);
-    write(`${dir}/packages.tar.gz`, content);
+    write(`${dir}/app`, '#!/bin/sh\n' + content);
     write(`${dir}/notes.md`, `Notes for ${version}`);
     write(`${dir}/graph.png`, 'image');
     const metadata = finalizeAssets(dir, { schema: 2, ...parseVersion(version), source_sha: source, from: 'beginning', targets: [] },
-      ['packages.tar.gz', 'notes.md', 'graph.png']);
+      ['app']);
     return { metadata, dir };
   }
   const publish = (prepared, fresh = async () => {}) => publishVersion(api, prepared.metadata, prepared.dir, fresh);
   return { api, releases, refs, writes, prepare, publish };
 }
 
-test('stable and prerelease publication use exact immutable SemVer tags and correct GitHub types', async t => {
+test('stable and prerelease publication use exact SemVer tags and correct GitHub types', async t => {
   const f = fixture(t);
   for (const version of ['1.2.0', '1.3.0-pre.1']) {
     await f.publish(f.prepare(version));
@@ -89,7 +98,8 @@ test('stable and prerelease publication use exact immutable SemVer tags and corr
     assert.equal(release.prerelease, version.includes('-pre.'));
     assert.equal(release.name, `${version.includes('-pre.') ? 'Pre-Release' : 'Release'} ${version}`);
     assert.equal(f.refs.get(version).object.sha, source);
-    assert.ok(release.assets.find(asset => asset.name.endsWith('graph.png')).content_type === 'image/png');
+    assert.deepEqual(release.assets.map(asset => asset.name), [`${version}-app`]);
+    assert.ok(release.discussion_url);
   }
   assert.ok(f.writes.filter(([method, route]) => route.startsWith('/git/')).every(([method]) => method === 'POST'));
 });
@@ -114,22 +124,16 @@ test('prerelease promotion creates another release and leaves the prerelease unc
   assert.equal(f.refs.size, 2);
 });
 
-test('changed content for a published version fails without any mutation', async t => {
-  const f = fixture(t), prepared = f.prepare();
-  await f.publish(prepared);
-  const previous = structuredClone([...f.releases]), mutations = f.writes.length;
-  const changed = f.prepare('1.2.0', 'different packages');
-  await assert.rejects(() => f.publish(changed), /different content/);
-  assert.equal(f.writes.length, mutations);
-  assert.deepEqual([...f.releases], previous);
-});
-
-test('a conflicting preexisting tag is never moved or deleted', async t => {
-  const f = fixture(t), prepared = f.prepare();
+test('changed content replaces the selected version and a conflicting source tag', async t => {
+  const f = fixture(t);
+  await f.publish(f.prepare());
+  const id = f.releases.get('1.2.0').id;
   f.refs.set('1.2.0', { object: { type: 'commit', sha: 'b'.repeat(40) } });
-  await assert.rejects(() => f.publish(prepared), /another source commit/);
-  assert.equal(f.writes.length, 0);
-  assert.equal(f.refs.get('1.2.0').object.sha, 'b'.repeat(40));
+  const changed = f.prepare('1.2.0', 'new executable');
+  await f.publish(changed);
+  assert.equal(f.releases.get('1.2.0').id, id);
+  assert.equal(f.refs.get('1.2.0').object.sha, source);
+  assert.equal(f.releases.get('1.2.0').assets.length, 1);
 });
 
 test('a matching existing annotated version tag is reused without rewriting it', async t => {
@@ -188,13 +192,12 @@ test('stale source before publication makes no mutations', async t => {
   assert.equal(f.writes.length, 0);
 });
 
-test('unexpected assets on an existing version fail without deleting them', async t => {
+test('source-only replacement removes all uploaded attachments', async t => {
   const f = fixture(t), prepared = f.prepare();
   await f.publish(prepared);
-  f.releases.get('1.2.0').assets.push({ name: 'manual-attachment', size: 1 });
-  const mutations = f.writes.length;
-  await assert.rejects(() => f.publish(prepared), /different content/);
-  assert.equal(f.writes.length, mutations);
+  prepared.metadata = finalizeAssets(prepared.dir, prepared.metadata, []);
+  await f.publish(prepared);
+  assert.deepEqual(f.releases.get('1.2.0').assets, []);
 });
 
 test('a matching publisher-owned draft can resume without replacement', async t => {
@@ -206,15 +209,6 @@ test('a matching publisher-owned draft can resume without replacement', async t 
   assert.equal(f.releases.get('1.2.0').id, existing.id);
   assert.equal(f.releases.get('1.2.0').draft, false);
   assert.equal(f.writes.filter(([method, route]) => method === 'POST' && route === '/releases').length, 1);
-});
-
-test('an unrelated existing draft is never overwritten', async t => {
-  const f = fixture(t), prepared = f.prepare();
-  await f.api.json('POST', '/releases', { tag_name: '1.2.0', name: 'Someone else owns this draft', draft: true, body: 'draft', prerelease: false });
-  const mutations = f.writes.length;
-  await assert.rejects(() => f.publish(prepared), /different content/);
-  assert.equal(f.writes.length, mutations);
-  assert.equal(f.releases.get('1.2.0').body, 'draft');
 });
 
 test('source advancing during upload prevents publication and preserves tags', async t => {
@@ -229,7 +223,20 @@ test('source advancing during upload prevents publication and preserves tags', a
 
 test('changed local assets are rejected before any remote mutation', async t => {
   const f = fixture(t), prepared = f.prepare();
-  fs.writeFileSync(`${prepared.dir}/packages.tar.gz`, 'tampered');
+  fs.writeFileSync(`${prepared.dir}/app`, 'tampered');
   await assert.rejects(() => f.publish(prepared), /asset changed/);
   assert.equal(f.writes.length, 0);
+});
+
+ test('executable selection excludes metadata, libraries and fake executable extensions', () => {
+  for (const value of ['{}', 'report', 'MZfake.exe', 'archive']) assert.equal(isExecutable(Buffer.from(value)), false);
+  assert.equal(isExecutable(Buffer.from('#!/bin/sh\necho hi')), true);
+  const pe = Buffer.alloc(128); pe.write('MZ'); pe.writeUInt32LE(64,60); pe.writeUInt32LE(0x4550,64);
+  assert.equal(isExecutable(pe), true);
+  pe.writeUInt16LE(0x2000,86); assert.equal(isExecutable(pe), false);
+  const elf = Buffer.alloc(128); Buffer.from([0x7f,0x45,0x4c,0x46,2,1]).copy(elf); elf.writeUInt16LE(2,16);
+  assert.equal(isExecutable(elf), true);
+  elf.writeUInt16LE(3,16); assert.equal(isExecutable(elf), false);
+  elf.writeBigUInt64LE(64n,32); elf.writeUInt16LE(56,54); elf.writeUInt16LE(1,56); elf.writeUInt32LE(3,64);
+  assert.equal(isExecutable(elf), true);
 });

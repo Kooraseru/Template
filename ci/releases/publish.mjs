@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { isExecutable } from './render.mjs';
 import { authorizePublication } from '../control/publication.mjs';
 import path from 'node:path';
 import { sha256, canonical, policy, protectionsValid, verifiedProtections, parseVersion, relative } from './core.mjs';
@@ -63,12 +64,12 @@ export async function publishVersion(api, metadata, root, assertFresh) {
   if (canonical(JSON.parse(metadataBytes)) !== canonical(metadata)) throw Error('Release manifest changed');
   const marker = `<!-- semver-release:${version}:${sha256(metadataBytes)} -->`;
   const body = fs.readFileSync(`${root}/notes.md`, 'utf8') + `\n${marker}\n`;
-  const payloads = [...metadata.assets, { path: 'release.json', name: `${version}-release.json`, sha256: sha256(metadataBytes) }];
+  const payloads = metadata.assets;
   if (new Set(payloads.map(asset => asset.name)).size !== payloads.length) throw Error('Duplicate public asset names');
   const contentType = asset => policy.asset_content_types[path.extname(asset.path)] || 'application/octet-stream';
   for (const asset of payloads) {
     relative(asset.path);
-    if (asset.path === 'publication.json' || asset.name !== `${version}-${path.basename(asset.path)}`
+    if (!isExecutable(fs.readFileSync(path.join(root, asset.path))) || asset.name !== `${version}-${path.basename(asset.path)}`
         || !/^[a-f0-9]{64}$/.test(asset.sha256)
         || sha256(fs.readFileSync(path.join(root, asset.path))) !== asset.sha256) throw Error('Release asset changed after assembly');
   }
@@ -90,16 +91,14 @@ export async function publishVersion(api, metadata, root, assertFresh) {
     && release.prerelease === identity.prerelease && release.body === body;
   let release = await api.request(`/releases/tags/${version}`, { missing: true });
   const originalRef = await api.request(`/git/ref/tags/${version}`, { missing: true });
-  if (originalRef && await tagCommit(api, originalRef) !== metadata.source_sha) throw Error(`Immutable version ${version} already points to another source commit`);
+
   let assets = release ? await api.pages(`/releases/${release.id}/assets`) : [];
-  if (release) {
-    if (!matchesIdentity(release) || !await checkAssets(assets, !release.draft)
-        || (!release.draft && !originalRef)) throw Error(`Immutable version ${version} already exists with different content`);
-    if (!release.draft) {
-      await assertFresh();
-      console.log(`${version} already contains identical verified content; no changes`);
-      return;
-    }
+  if (release && !release.draft && matchesIdentity(release) && originalRef
+      && await tagCommit(api, originalRef) === metadata.source_sha && await checkAssets(assets, true)) {
+    await assertFresh();
+    if (!release.discussion_url) await api.json('PATCH', `/releases/${release.id}`, { discussion_category_name: 'Announcements' });
+    console.log(`${version} already contains identical verified content; no changes`);
+    return;
   }
   let created = false;
   try {
@@ -108,6 +107,16 @@ export async function publishVersion(api, metadata, root, assertFresh) {
       release = await api.json('POST', '/releases', { tag_name: version, target_commitish: metadata.source_sha,
         name: releaseName, body, draft: true, prerelease: identity.prerelease });
       created = true;
+    }
+    if (!created) {
+      await api.json('PATCH', `/releases/${release.id}`, { name: releaseName, body, prerelease: identity.prerelease });
+      for (const actual of assets) {
+        const expected = payloads.find(asset => asset.name === actual.name);
+        if (!expected || !await assetMatches(actual, expected)) {
+          await api.request(`/releases/assets/${actual.id}`, { method: 'DELETE' });
+        }
+      }
+      assets = await api.pages(`/releases/${release.id}/assets`);
     }
     for (const asset of payloads) {
       if (assets.some(actual => actual.name === asset.name)) continue;
@@ -118,12 +127,14 @@ export async function publishVersion(api, metadata, root, assertFresh) {
     }
     await assertFresh();
     const ref = await api.request(`/git/ref/tags/${version}`, { missing: true });
-    if (ref && await tagCommit(api, ref) !== metadata.source_sha) throw Error('Version tag changed during publication');
-    // Tags are created once. No path in this publisher moves or deletes a tag.
+    if (ref && await tagCommit(api, ref) !== metadata.source_sha) {
+      await api.json('PATCH', `/git/refs/tags/${version}`, { sha: metadata.source_sha, force: true });
+    }
+    // Only the explicitly selected version tag may be created or replaced.
     if (!ref) await api.json('POST', '/git/refs', { ref: `refs/tags/${version}`, sha: metadata.source_sha });
     assets = await api.pages(`/releases/${release.id}/assets`);
     if (!await checkAssets(assets, true)) throw Error('Draft release assets differ from the prepared version');
-    await api.json('PATCH', `/releases/${release.id}`, { draft: false, make_latest: identity.prerelease ? 'false' : 'legacy' });
+    await api.json('PATCH', `/releases/${release.id}`, { draft: false, discussion_category_name: 'Announcements', make_latest: identity.prerelease ? 'false' : 'legacy' });
     const published = await api.request(`/releases/${release.id}`);
     const publishedRef = await api.request(`/git/ref/tags/${version}`);
     const publishedAssets = await api.pages(`/releases/${release.id}/assets`);
@@ -170,6 +181,16 @@ export async function publish(version) {
     if (!publicTarget || canonical(publicTarget.manifest) !== canonical(packaged.manifest)
         || canonical(expected.manifest) !== canonical(packaged.manifest)) throw Error('Published packages differ from accepted validation');
   }
+  const expectedAssets = [];
+  for (const target of publication.targets) {
+    for (const item of metadata.targets.find(entry => entry.name === target.name).manifest) {
+      const bytes = fs.readFileSync(`${root}/packages/${target.name}/${item.path}`);
+      if (!isExecutable(bytes)) continue;
+      const file = `executables/${target.name}-${item.path.replaceAll('/', '-')}`;
+      expectedAssets.push({ path: file, name: `${version}-${path.basename(file)}`, sha256: sha256(bytes) });
+    }
+  }
+  if (canonical(expectedAssets) !== canonical(metadata.assets)) throw Error('Executable assets differ from accepted builds');
   if (metadata.targets.length !== publication.targets.length) throw Error('Public target coverage differs from accepted validation');
   const assertFresh = async () => {
     const ref = await api.request('/git/ref/heads/source');
