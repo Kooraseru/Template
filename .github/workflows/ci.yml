@@ -1,50 +1,203 @@
 name: CI
-run-name: "CI · ${{ inputs.operation || github.event_name }} · ${{ inputs.target || github.ref_name }} ${{ inputs.pr }} · ${{ inputs.admin || 'None' }}"
+run-name: "CI / ${{ inputs.operation || github.event_name }} / ${{ inputs.pull_request || github.ref_name }}"
 env:
+  CI_CONTROL_INPUTS: ${{ toJSON(inputs) }}
   CI_SOURCE_PROTECTION: ${{ vars.CI_SOURCE_PROTECTION }}
 on:
   pull_request_target:
     branches: [source]
+    types: [opened, synchronize, reopened, edited, closed, ready_for_review]
+  schedule:
+    - cron: "17 * * * *"
   push:
     branches: [source]
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Operation'
+        description: "Run / Operation"
         type: choice
-        default: Validate
-        options: [Validate, Build, Publish, Full Run]
-      target:
-        description: 'Target'
+        default: "Validate"
+        options:
+          - "Validate"
+          - "Build"
+          - "Publish"
+          - "Full Run"
+      pull_request:
+        description: "Run / Pull request"
         type: choice
-        default: Source
-        options: [Source, Pull request]
-      pr:
-        description: 'Pull request number (required for Pull request target)'
-        default: ''
-        type: string
-      claim:
-        description: 'Validation receipt JSON (optional comparison evidence)'
-        default: ''
-        type: string
-      admin:
-        description: 'ADMIN: bypass controls (repository administrator only)'
+        default: "Source"
+        # BEGIN GENERATED PR CHOICES
+        options:
+          - "Source"
+        # END GENERATED PR CHOICES
+      validation_scope:
+        description: "Validate / Scope"
         type: choice
-        default: None
-        options: [None, Ignore gates, First-time activation]
+        default: "All"
+        options:
+          - "All"
+          - "Configuration"
+          - "Workflow rules"
+          - "Access policy"
+          - "Receipts"
+          - "Release tooling"
+      build_targets:
+        description: "Build / Targets"
+        type: choice
+        default: "Configured"
+        options:
+          - "Configured"
+          - "All supported"
+          - "Linux"
+          - "Windows"
+          - "macOS"
+          - "alpine-gcc-x64"
+          - "alpine-gcc-arm64"
+          - "alpine-clang-x64"
+          - "alpine-clang-arm64"
+          - "alpine-rust-x64"
+          - "alpine-rust-arm64"
+          - "debian-gcc-x64"
+          - "debian-gcc-arm64"
+          - "debian-clang-x64"
+          - "debian-clang-arm64"
+          - "debian-rust-x64"
+          - "debian-rust-arm64"
+          - "debian-mingw-x64"
+          - "debian-mingw-arm64"
+          - "ubuntu-gcc-x64"
+          - "ubuntu-gcc-arm64"
+          - "ubuntu-clang-x64"
+          - "ubuntu-clang-arm64"
+          - "fedora-gcc-x64"
+          - "fedora-gcc-arm64"
+          - "fedora-clang-x64"
+          - "fedora-clang-arm64"
+          - "arch-gcc-x64"
+          - "arch-clang-x64"
+          - "windows-msvc-x64"
+          - "windows-rust-x64"
+          - "windows-msvc-arm64"
+          - "windows-rust-arm64"
+          - "macos-clang-x64"
+          - "macos-rust-x64"
+          - "macos-clang-arm64"
+          - "macos-rust-arm64"
+      compiler:
+        description: "Build / Compiler filter"
+        type: choice
+        default: "Any"
+        options:
+          - "Any"
+          - "GCC"
+          - "Clang"
+          - "MSVC"
+          - "MinGW"
+          - "Rust"
+      architecture:
+        description: "Build / Architecture filter"
+        type: choice
+        default: "Any"
+        options:
+          - "Any"
+          - "x64"
+          - "ARM64"
+      images:
+        description: "Build / Container images"
+        type: choice
+        default: "Configured"
+        options:
+          - "Configured"
+          - "Skip"
+          - "Required by selected builds"
+          - "All catalogue images"
+      repository_output:
+        description: "Outputs / Repository"
+        type: choice
+        default: "Configured"
+        options:
+          - "Configured"
+          - "Skip"
+          - "Generate only"
+          - "Generate and publish"
+      documentation_output:
+        description: "Outputs / Documentation"
+        type: choice
+        default: "Configured"
+        options:
+          - "Configured"
+          - "Skip"
+          - "Generate only"
+          - "Generate and publish"
+      release_output:
+        description: "Outputs / Releases"
+        type: choice
+        default: "Configured"
+        options:
+          - "Configured"
+          - "Skip"
+          - "Assemble only"
+          - "Publish configured channels"
+          - "Publish canary"
+          - "Publish beta"
+          - "Publish stable"
+      cache_policy:
+        description: "Policy / Cache"
+        type: choice
+        default: "Reuse matching results"
+        options:
+          - "Reuse matching results"
+          - "Rebuild outputs"
+          - "Rebuild images and outputs"
+          - "Require stored results"
+      gate_policy:
+        description: "Policy / Gates"
+        type: choice
+        default: "Enforce all"
+        options:
+          - "Enforce all"
+          - "Ignore validation failures"
+          - "Ignore incomplete coverage"
+          - "Ignore both"
 
 permissions:
   contents: read
   actions: read
 jobs:
+  refresh-prs:
+    name: Maintenance / Pull request choices
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    concurrency:
+      group: ci-pr-dropdown
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: source
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node
+      - name: Refresh open pull request choices
+        env:
+          GH_TOKEN: ${{ secrets.CI_WORKFLOW_TOKEN || github.token }}
+        run: node ci/control/refresh-prs.mjs --remote
+
   validate:
+    name: Validate / Plan and checks
+    if: github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
     permissions:
       contents: write # Draft staging releases require write access to read.
       actions: read
     runs-on: ubuntu-latest
     outputs:
       operation: ${{ steps.dispatch.outputs.operation }}
-      ignore_gates: ${{ steps.dispatch.outputs.ignore_gates }}
+      ignore_validation: ${{ steps.dispatch.outputs.ignore_validation }}
+      ignore_coverage: ${{ steps.dispatch.outputs.ignore_coverage }}
+      pr: ${{ steps.dispatch.outputs.pr }}
+      diagnostic: ${{ steps.dispatch.outputs.diagnostic }}
       runner: ${{ steps.context.outputs.runner }}
       build_matrix: ${{ steps.context.outputs.build_matrix }}
       rust: ${{ steps.context.outputs.rust }}
@@ -75,7 +228,7 @@ jobs:
         id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node ci/access/dispatch.mjs
+        run: node ci/control/dispatch.mjs
       - name: Resolve execution authority and tested commit
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,17 +237,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: lune run ci/access/resolve.luau
-      - run: lune run ci/validation/repository.luau
-      - run: lune run ci/validation/workflows.luau
-      - run: lune run ci/access/tests/policy.luau
-      - run: lune run ci/access/tests/publication.luau
-      - run: lune run ci/validation/tests/config.luau
-      - run: lune run ci/validation/tests/catalogue.luau
-      - run: lune run ci/validation/tests/artifacts.luau
-      - run: lune run ci/validation/tests/rules.luau
-      - run: lune run ci/validation/tests/gate.luau
-      - run: node --test ci/releases/tests/*.test.mjs
-      - run: node --test ci/receipts/tests/*.test.mjs
+      - name: Validate / Selected checks
+        id: checks
+        continue-on-error: ${{ steps.dispatch.outputs.ignore_validation == 'true' }}
+        run: node ci/control/validate.mjs
+      - name: Evidence / Store validation results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-evidence
+          path: build/validation
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v7
         with:
           name: release-plan
@@ -115,8 +268,52 @@ jobs:
           name: accepted-logs
           path: build/accepted-logs
           if-no-files-found: error
+
+  images:
+    name: Build / Images (${{ matrix.name }})
+    needs: validate
+    if: needs.validate.outputs.images == 'true' && needs.validate.outputs.operation != 'Validate'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-node
+      - name: Cache / Restore image archive
+        id: image-cache
+        if: inputs.cache_policy != 'Rebuild images and outputs'
+        uses: actions/cache/restore@v4
+        with:
+          path: build/images/${{ matrix.name }}
+          key: ci-image-${{ matrix.artifact }}
+      - name: Build and export image
+        if: steps.image-cache.outputs.cache-hit != 'true'
+        env:
+          IMAGE_NAME: ${{ matrix.name }}
+          CI_IMAGE_ID: ${{ matrix.artifact }}
+          CI_INPUT_REF: ${{ matrix.input_ref }}
+        run: lune run ci/images/build.luau "$IMAGE_NAME"
+      - name: Cache / Store image archive
+        if: steps.image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/images/${{ matrix.name }}
+          key: ci-image-${{ matrix.artifact }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: build/images/${{ matrix.name }}
+          retention-days: 1
+          if-no-files-found: error
+
   build:
-    name: build (${{ matrix.name }})
+    name: Build / Targets (${{ matrix.name }})
     needs: [validate, images]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.validate.outputs.build_requested == 'true' && needs.validate.outputs.operation != 'Validate' && (needs.images.result == 'success' || needs.images.result == 'skipped') }}
     strategy:
@@ -190,7 +387,9 @@ jobs:
         with:
           name: build-logs-${{ matrix.source_sha }}-${{ matrix.name }}
           path: build/logs
+
   repository:
+    name: Build / Repository
     needs: validate
     if: needs.validate.outputs.repository == 'true' && needs.validate.outputs.operation != 'Validate'
     runs-on: ubuntu-latest
@@ -210,7 +409,9 @@ jobs:
           path: build/repository.tar
           include-hidden-files: true
           if-no-files-found: error
+
   pages:
+    name: Build / Documentation
     needs: validate
     if: needs.validate.outputs.pages == 'true' && needs.validate.outputs.operation != 'Validate'
     runs-on: ubuntu-latest
@@ -228,9 +429,11 @@ jobs:
           name: pages-preview
           path: build/pages
           if-no-files-found: error
+
   release:
-    needs: [validate, build]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && needs.validate.outputs.release == 'true' && needs.validate.outputs.operation != 'Build' }}
+    name: Build / Release assembly
+    needs: [validate, build, validation-receipt]
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && (needs.validation-receipt.result == 'success' || needs.validation-receipt.result == 'skipped') && needs.validate.outputs.release == 'true' && needs.validate.outputs.operation != 'Validate' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -244,9 +447,18 @@ jobs:
           pattern: distribution-*
           path: build/distributions
       - uses: actions/download-artifact@v8
+        if: github.event_name != 'workflow_dispatch'
         with:
           name: release-plan
           path: build/tmp/releases
+      - uses: actions/download-artifact@v8
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: accepted-release-plan
+          path: build/tmp/accepted
+      - name: Evidence / Select accepted release plan
+        if: github.event_name == 'workflow_dispatch'
+        run: node -e "require('fs').mkdirSync('build/tmp/releases', {recursive:true}); require('fs').copyFileSync('build/tmp/accepted/accepted-plan.json', 'build/tmp/releases/plan.json')"
       - run: lune run ci/releases/build.luau
       - uses: actions/upload-artifact@v7
         with:
@@ -254,16 +466,18 @@ jobs:
           path: build/releases
           include-hidden-files: true
           if-no-files-found: error
+
   validation-receipt:
+    name: Evidence / Build receipts
     needs: [validate, build, images]
-    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || inputs.admin == 'First-time activation') && needs.validate.outputs.local_execution == 'false' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || needs.validate.outputs.pr != '0') && needs.validate.outputs.local_execution == 'false' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
       actions: read
       checks: write
     concurrency:
-      group: validation-pr-${{ inputs.pr || github.sha }}
+      group: validation-pr-${{ needs.validate.outputs.pr || github.sha }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -298,11 +512,19 @@ jobs:
           path: build/receipts/receipt.json
           retention-days: 30
           if-no-files-found: error
+      - name: Evidence / Store accepted release plan
+        uses: actions/upload-artifact@v7
+        with:
+          name: accepted-release-plan
+          path: build/receipts/accepted-plan.json
+          if-no-files-found: error
       - run: node ci/receipts/cli.mjs accepted-check
         env:
           GH_TOKEN: ${{ github.token }}
+
   gate:
-    if: always()
+    # Keep this status-check name stable for existing source protection.
+    if: always() && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
     needs: [validate, build, repository, pages, release, images, validation-receipt]
     runs-on: ubuntu-latest
     steps:
@@ -317,20 +539,7 @@ jobs:
         with:
           name: release-plan
           path: build/tmp/releases
-      - name: Require successful validation
-        env:
-          VALIDATE_RESULT: ${{ needs.validate.result }}
-        run: test "$VALIDATE_RESULT" = success
-      - name: Require accepted validation or independently requested execution
-        if: needs.validate.result == 'success' && needs.validate.outputs.operation != 'Validate' && needs.validate.outputs.ignore_gates != 'true'
-        run: node ci/receipts/cli.mjs check-ready
-      - name: Require hosted receipt reporting
-        if: github.event_name == 'workflow_dispatch' && needs.validate.outputs.local_execution == 'false' && needs.validate.outputs.operation != 'Validate' && needs.validate.outputs.ignore_gates != 'true'
-        env:
-          RECEIPT_RESULT: ${{ needs.validation-receipt.result }}
-        run: test "$RECEIPT_RESULT" = success
-      - name: Require successful enabled jobs
-        if: needs.validate.outputs.operation != 'Validate' && needs.validate.outputs.ignore_gates != 'true'
+      - name: Gate / Selected stages and policies
         env:
           RESULTS: >-
             {"validate":{"result":"${{ needs.validate.result }}"},
@@ -338,13 +547,14 @@ jobs:
             "repository":{"result":"${{ needs.repository.result }}"},
             "pages":{"result":"${{ needs.pages.result }}"},
             "release":{"result":"${{ needs.release.result }}"},
-            "images":{"result":"${{ needs.images.result }}"}}
+            "images":{"result":"${{ needs.images.result }}"},
+            "validation-receipt":{"result":"${{ needs.validation-receipt.result }}"}}
           ENABLED: >-
             {"repository":"${{ needs.validate.outputs.repository }}",
             "pages":"${{ needs.validate.outputs.pages }}",
             "release":"${{ needs.validate.outputs.release }}",
             "images":"${{ needs.validate.outputs.images }}"}
-        run: lune run ci/validation/gate.luau
+        run: node ci/control/gate.mjs
       - name: Verify accepted PR validation and report the exact PR head
         if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
         env:
@@ -356,11 +566,14 @@ jobs:
       checks: write
 
   publish-repository:
+    env:
+      CI_PUBLICATION_JOB: 'true'
+    name: Publish / Repository
     concurrency:
       group: publication-main
       cancel-in-progress: false
     needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_repository == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_repository == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -381,38 +594,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash ci/repo/publish.sh
 
-  images:
-    name: images (${{ matrix.name }}, ${{ matrix.source_sha }})
-    needs: validate
-    if: needs.validate.outputs.images == 'true' && needs.validate.outputs.operation != 'Validate'
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix: ${{ fromJSON(needs.validate.outputs.image_matrix) }}
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
-      - name: Build and export image
-        env:
-          IMAGE_NAME: ${{ matrix.name }}
-          CI_IMAGE_ID: ${{ matrix.artifact }}
-          CI_INPUT_REF: ${{ matrix.input_ref }}
-        run: lune run ci/images/build.luau "$IMAGE_NAME"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.artifact }}
-          path: build/images/${{ matrix.name }}
-          retention-days: 1
-          if-no-files-found: error
-
   publish-pages:
+    env:
+      CI_PUBLICATION_JOB: 'true'
+    name: Publish / Documentation
     needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_pages == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_pages == 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -445,11 +632,14 @@ jobs:
         uses: actions/deploy-pages@v5
 
   publish-release:
+    env:
+      CI_PUBLICATION_JOB: 'true'
+    name: Publish / Release (${{ matrix.channel }})
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.validate.outputs.release_matrix) }}
     needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_release == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_release == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

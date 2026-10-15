@@ -71,7 +71,7 @@ function config.read(): Config
     local value = serde.decode("toml", inputs.read("ci/config.toml"))
     -- Older snapshots may contain the retired registry-publication flag.
     if inputs.ref ~= "" then value.images.publish = false end
-    return config.validate(value)
+    return config.validate(require("../control/config").apply(value))
 end
 
 return config

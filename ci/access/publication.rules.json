@@ -18,7 +18,10 @@
     },
     {
       "path": "event",
-      "equals": "push"
+      "enum": [
+        "push",
+        "workflow_dispatch"
+      ]
     },
     {
       "path": "ref",
@@ -32,6 +35,14 @@
     {
       "path": "eventRepository",
       "equals_path": "repository"
+    },
+    {
+      "path": "manualAllowed",
+      "equals": true,
+      "when": {
+        "path": "event",
+        "equals": "workflow_dispatch"
+      }
     }
   ]
 }

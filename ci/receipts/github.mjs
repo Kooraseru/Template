@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import { pendingReceiptAllowed } from '../control/pending-receipt.mjs';
+import { diagnosticReuseAllowed } from '../control/request.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { canonical, command, sha256, write } from '../releases/core.mjs';
@@ -78,7 +80,9 @@ async function hostedRun(id, envelope) {
 }
 export async function verifyEnvelope(envelope) {
   return authenticate(envelope, { repository: repository(), keys: trustedKeys(), isAdmin,
-    hostedRun: id => hostedRun(id, envelope), allowBootstrap });
+    hostedRun: id => hostedRun(id, envelope), allowBootstrap,
+    allowPendingRun: run => pendingReceiptAllowed(run) && isAdmin(actor()),
+    allowDiagnostic: receipt => diagnosticReuseAllowed(receipt) });
 }
 export async function discover(plan, pr = null, materialize = false) {
   const candidates = [];

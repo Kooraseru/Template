@@ -81,8 +81,11 @@ export function sign(receipt, keyId, privateKey) {
   return { receipt, authentication: { kind: 'signature', key_id: keyId,
     signature: crypto.sign(null, Buffer.from(canonical(receipt)), privateKey).toString('base64') } };
 }
-export async function authenticate(envelope, { keys, isAdmin, hostedRun, repository, allowBootstrap }, now = Date.now()) {
+export async function authenticate(envelope, { keys, isAdmin, hostedRun, repository, allowBootstrap, allowPendingRun, allowDiagnostic }, now = Date.now()) {
   const receipt = validate(envelope.receipt, now);
+  if (receipt.diagnostic && !(allowDiagnostic && await allowDiagnostic(receipt))) {
+    throw Error('Diagnostic results cannot become accepted validation');
+  }
   if (receipt.repository.toLowerCase() !== repository.toLowerCase()) throw Error('Wrong repository');
   const auth = envelope.authentication;
   if (auth?.kind === 'signature') {
@@ -95,7 +98,7 @@ export async function authenticate(envelope, { keys, isAdmin, hostedRun, reposit
     const run = await hostedRun(auth.run_id);
     const bootstrap = auth.bootstrap === true && allowBootstrap && await allowBootstrap(envelope,run);
     if (run.event !== 'workflow_dispatch' || (run.head_branch !== 'source' && !bootstrap)
-      || run.head_sha !== auth.controller_sha || run.conclusion !== 'success'
+      || run.head_sha !== auth.controller_sha || (run.conclusion !== 'success' && !(allowPendingRun && await allowPendingRun(run)))
       || run.head_repository?.full_name?.toLowerCase() !== repository.toLowerCase()
       || run.path !== '.github/workflows/ci.yml' || !await isAdmin(run.actor.login)) throw Error('Untrusted hosted validation');
     return { receipt, validator: run.actor.login };
@@ -161,7 +164,9 @@ export function collect(plan, distributions, logs, context) {
     tree: source.tree, source_manifest_sha256: source.source_manifest_sha256, controller_hash: plan.controller_hash,
     controller_sha: plan.controller_sha, created_at: new Date().toISOString(), pr: context.pr, targets,
     required_targets:plan.builds.map(entry => ({name:entry.name,source_sha:entry.source_sha})),
-    partial:targets.length !== plan.builds.length };
+    diagnostic: context.diagnostic === true || plan.validation?.success === false,
+    validation_scope: context.controls?.validation_scope || 'All',
+    controls: context.controls, partial:targets.length !== plan.builds.length };
   return validate(receipt);
 }
 export function bundle(root, receipt, distributions, logs) {

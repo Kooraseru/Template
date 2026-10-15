@@ -5,6 +5,7 @@ local definition = rules.read("ci/access/publication.rules.json")
 
 export type Context = {
     localRun: boolean?,
+    manualAllowed: boolean?,
     actions: string?,
     server: string?,
     event: string?,

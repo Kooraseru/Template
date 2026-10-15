@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { readRequest, parsePR, diagnostic, pullRequestLabel } from '../control/request.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { canonical, command, git, sha256, write } from '../releases/core.mjs';
@@ -19,7 +20,8 @@ if (operation === 'authorize') {
   const local = process.env.ACT === 'true' || process.env.GITHUB_ACTIONS !== 'true';
   if (!local) assertAdminWriters();
   const dispatch = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
-  const number = Number(event.inputs?.pr || event.pull_request?.number || process.env.CI_RECEIPT_PR || 0);
+  const controls = readRequest();
+  const number = dispatch ? parsePR(controls.pull_request) : Number(event.pull_request?.number || process.env.CI_RECEIPT_PR || 0);
   let pr, testedSHA = process.env.CI_TESTED_SHA || git(['rev-parse','HEAD']);
   if (local) {
     clean();
@@ -29,7 +31,8 @@ if (operation === 'authorize') {
     pr = currentPR(number); testedSHA = pr.head_sha;
   } else pr = { number: 0, head_sha: testedSHA, base_sha: testedSHA };
   const requested = local || dispatch;
-  const bootstrap = !local && dispatch && (event.inputs?.admin === 'First-time activation' || event.inputs?.bootstrap === 'true');
+  const bootstrap = !local && dispatch && process.env.GITHUB_REF !== 'refs/heads/source' && number > 0
+    && pr.head_sha === process.env.GITHUB_SHA && predatesContract(pr.base_sha);
   if (!local && dispatch && (!isAdmin(actor()) || (process.env.GITHUB_REF !== 'refs/heads/source'
     && !(bootstrap && number && pr.head_sha === process.env.GITHUB_SHA && predatesContract(pr.base_sha))))) throw Error('Hosted validation requires an administrator and the source controller');
   if (bootstrap && (pr.head_sha !== process.env.GITHUB_SHA || !predatesContract(pr.base_sha))) throw Error('Bootstrap is restricted to the first activation PR');
@@ -39,7 +42,7 @@ if (operation === 'authorize') {
     git(['fetch','--no-tags','origin',testedSHA], { env });
   }
   const context = { repository: process.env.GITHUB_REPOSITORY || repository(), tested_sha: testedSHA, pr, requested,
-    local, bootstrap, event: process.env.GITHUB_EVENT_NAME || 'local', claim: event.inputs?.claim || '' };
+    local, bootstrap, controls, diagnostic: dispatch && diagnostic(controls), event: process.env.GITHUB_EVENT_NAME || 'local' };
   write(`${root}/context.json`, context);
   environment({ CI_TESTED_SHA: testedSHA, CI_VALIDATION_REQUESTED: String(requested), CI_RECEIPT_PR: String(number) });
   output({ requested: String(requested), tested_sha: testedSHA });
@@ -47,7 +50,7 @@ if (operation === 'authorize') {
   const plan = read('build/tmp/releases/plan.json');
   const context = read(`${root}/context.json`);
   plan.context = context; plan.tested_sha = context.tested_sha;
-  if (!context.local) await discover(plan, context.pr.number ? context.pr : null, true);
+  if (!context.local && !context.controls?.cache_policy?.startsWith('Rebuild')) await discover(plan, context.pr.number ? context.pr : null, true);
   const complete = plan.builds.every(entry => entry.accepted);
   const run = context.requested || complete;
   const names = process.env.CI_LOCAL_TARGETS ? JSON.parse(process.env.CI_LOCAL_TARGETS) : null;
@@ -56,16 +59,18 @@ if (operation === 'authorize') {
   const executing = context.local ? plan.builds.filter(entry => entry.runner.startsWith('ubuntu')
     && (!names || names.includes(entry.name))) : plan.builds;
   const event = process.env.GITHUB_EVENT_PATH ? read(process.env.GITHUB_EVENT_PATH) : {};
-  if (event.inputs?.operation === 'Publish' && !complete) throw Error('Publish requires matching accepted cached outputs; run Build first');
+  if ((event.inputs?.operation === 'Publish' || event.inputs?.cache_policy === 'Require stored results') && !complete) throw Error('Publish requires matching accepted cached outputs; run Build first');
   const requiredImages = new Set(executing.filter(entry => !entry.accepted).map(entry => entry.image_artifact));
-  plan.images = run ? plan.images.filter(entry => requiredImages.has(entry.artifact)) : [];
+  const imageChoice = context.controls?.images || 'Configured';
+  plan.images = run && context.controls?.operation !== 'Validate' && context.controls?.operation !== 'Publish'
+    ? (imageChoice === 'Required by selected builds' ? plan.images.filter(entry => requiredImages.has(entry.artifact)) : plan.images) : [];
   write('build/tmp/releases/plan.json', plan);
   const previous = read('build/tmp/releases/outputs.json');
   previous.images_enabled = String(plan.images.length > 0);
   previous.image_matrix = JSON.stringify({ include: plan.images.length ? plan.images : [{ name:'disabled', runner:'ubuntu-latest', artifact:'disabled', input_ref:'' }] });
   previous.build_matrix = JSON.stringify({ include: run ? executing : [{ name:'disabled', runner:'ubuntu-latest', input_ref:'' }] });
   previous.build_requested = String(run); previous.receipt_ready = String(complete);
-  previous.release_enabled = String(run && plan.selections.length > 0 && executing.length === plan.builds.length);
+  previous.release_enabled = String(run && context.controls?.operation !== 'Validate' && plan.selections.length > 0 && executing.length === plan.builds.length);
   previous.local_execution = String(context.local);
   previous.accepted_available = String(plan.builds.some(entry => entry.accepted));
   write('build/tmp/releases/outputs.json', previous);
@@ -109,12 +114,12 @@ if (operation === 'authorize') {
   const token = command('gh',['auth','token']).trim();
   git(['fetch','--no-tags','origin',pr.head_sha],{env:{...process.env,GIT_CONFIG_COUNT:'1',
     GIT_CONFIG_KEY_0:'http.https://github.com/.extraheader',GIT_CONFIG_VALUE_0:'AUTHORIZATION: basic ' + Buffer.from(`x-access-token:${token}`).toString('base64')}});
-  write(process.argv[4] || 'build/tmp/receipts/event.json',{inputs:{pr:String(pr.number)},receipt_context:pr});
+  write(process.argv[4] || 'build/tmp/receipts/event.json',{inputs:{operation:'Build',pull_request:`#${pr.number}`},receipt_context:pr});
 } else if (operation === 'claim-context') {
   clean();
   const pr = currentPR(Number(process.argv[3]));
   if (git(['rev-parse','HEAD']) !== pr.head_sha) throw Error('Contributor checkout must match the current PR head');
-  write(process.argv[4] || 'build/tmp/receipts/event.json',{inputs:{pr:String(pr.number)},receipt_context:pr});
+  write(process.argv[4] || 'build/tmp/receipts/event.json',{inputs:{operation:'Build',pull_request:`#${pr.number}`},receipt_context:pr});
 } else if (operation === 'claim-submit') {
   if (process.env.ACT === 'true' || process.env.GITHUB_ACTIONS === 'true') throw Error('Submit claims outside execution environments');
   const envelope = read(process.argv[3]);validate(envelope.receipt);freshPR(envelope.receipt);
@@ -194,18 +199,28 @@ if (operation === 'authorize') {
     || (process.env.GITHUB_REF !== 'refs/heads/source' && !context.bootstrap) || !isAdmin(actor())) throw Error('Trusted admin source workflow required');
   const file = 'build/receipts/receipt.json';
   const envelope = read(file); freshPR(envelope.receipt);
-  const differences = context.claim ? compare(JSON.parse(context.claim).receipt, envelope.receipt) : [];
+  if (envelope.receipt.diagnostic) console.log('Diagnostic results are staged for matching diagnostic runs only');
+  const differences = [];
   envelope.authentication = {kind:'hosted', run_id:process.env.GITHUB_RUN_ID, controller_sha:process.env.GITHUB_SHA,
     ...(context.bootstrap ? {bootstrap:true} : {})};
   envelope.receipt.comparison = differences;
   write(file,envelope);
   const release = upload(envelope,'build/receipts/bundle.tar.gz');
   write('build/receipts/acceptance.json',{release_id:release.id,differences});
+  const acceptedPlan = read('build/tmp/releases/plan.json');
+  const archive = release.assets.find(asset => asset.name === policy.archive_asset);
+  for (const entry of acceptedPlan.builds) {
+    const target = envelope.receipt.targets.find(target => target.name === entry.name && target.source_sha === entry.source_sha);
+    if (target) entry.accepted = {release_id:release.id,asset_id:archive.id,archive_sha256:envelope.receipt.bundle_sha256,
+      source_sha:target.source_sha,resolved_fingerprint:target.resolved_fingerprint,artifact:target.artifact,envelope:sha256(canonical(envelope))};
+  }
+  write('build/receipts/accepted-plan.json',acceptedPlan);
   // The run artifact is the authority for this unsigned hosted envelope.
   console.log('Staged hosted validation; official check is issued after receipt artifact upload');
 } else if (operation === 'accepted-check') {
   const envelope = read('build/receipts/receipt.json');
   freshPR(envelope.receipt);
+  if (envelope.receipt.diagnostic) { console.log('Diagnostic receipt cannot mint an official check'); process.exit(0); }
   if (process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || (process.env.GITHUB_REF !== 'refs/heads/source' && !envelope.authentication.bootstrap)
     || !isAdmin(actor())) throw Error('Trusted admin source workflow required');
   setCheck(envelope.receipt.pr.head_sha,'success',`Independent admin validation completed for ${envelope.receipt.targets.length} targets. Receipt retained in the validation-receipt run artifact.`);
@@ -241,8 +256,10 @@ if (operation === 'authorize') {
   const bootstrap = process.argv.includes('--bootstrap');
   if (bootstrap && (!pr || pr.head_sha !== git(['rev-parse','HEAD']) || !predatesContract(pr.base_sha))) throw Error('Bootstrap requires the exact first activation PR checkout');
   const claimFile = process.argv[4] && !process.argv[4].startsWith('--') ? process.argv[4] : '';
-  const claim = claimFile ? JSON.stringify(read(claimFile)) : '';
-  api(`repos/${repository()}/actions/workflows/ci.yml/dispatches`,'POST',{ref:bootstrap ? git(['branch','--show-current']) : 'source',inputs:{operation:'Build',target:number ? 'Pull request' : 'Source',pr:number ? String(number) : '',claim,admin:bootstrap ? 'First-time activation' : 'None'}});
+  if (claimFile) throw Error('Receipt JSON is no longer a workflow input; compare through local receipt signing tooling');
+  const selected = number ? api(`repos/${repository()}/pulls/${number}`) : null;
+  const label = selected ? pullRequestLabel(selected) : 'Source';
+  api(`repos/${repository()}/actions/workflows/ci.yml/dispatches`,'POST',{ref:bootstrap ? git(['branch','--show-current']) : 'source',inputs:{operation:'Build',pull_request:label}});
   console.log('Requested independent validation using the source controller');
 } else if (operation === 'check-ready') {
   const plan = read('build/tmp/releases/plan.json');

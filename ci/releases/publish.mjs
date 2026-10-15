@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { authorizePublication } from '../control/publication.mjs';
 import path from 'node:path';
 import { sha256, canonical, policy, protectionsValid, verifiedProtections } from './core.mjs';
 
@@ -137,8 +138,7 @@ export async function updateChannel(api, metadata, root, assertFresh) {
   console.log(`Published ${channel} at ${metadata.source_sha}`);
 }
 export async function publish(channel) {
-  if (process.env.ACT === 'true' || process.env.GITHUB_ACTIONS !== 'true'
-      || process.env.GITHUB_EVENT_NAME !== 'push' || process.env.GITHUB_REF !== 'refs/heads/source') throw Error('Local or untrusted publication denied');
+  authorizePublication();
   if (!policy.channels.includes(channel) || !process.env.GH_TOKEN) throw Error('Missing channel or automatic workflow token');
   const repo = process.env.GITHUB_REPOSITORY;
   const api = client(process.env.GH_TOKEN, repo);

@@ -84,6 +84,14 @@
       ],
       "patch": {},
       "valid": false
+    },
+    {
+      "name": "verified manual source publication",
+      "patch": {
+        "event": "workflow_dispatch",
+        "manualAllowed": true
+      },
+      "valid": true
     }
   ],
   "repositories": [

@@ -28,6 +28,7 @@ const fixture = () => ({schema:1,repository:'owner/project',tested_sha:'a'.repea
     files:['provenance.json','manifest.json','distribution.tar.gz'].map(path => ({path,sha256:'f'.repeat(64)})),logs:[{path:'commands.log',sha256:'f'.repeat(64)}]}]});
 for (const scenario of cases.authentication) test(scenario.name,async () => {
   const receipt = fixture();
+  if (scenario.diagnostic) receipt.diagnostic = true;
   if (scenario.age_days) receipt.created_at = new Date(now - scenario.age_days * 86400000).toISOString();
   let envelope;
   try { envelope = scenario.kind === 'signature' ? sign(receipt,'admin-key',keys.privateKey)
@@ -38,7 +39,8 @@ for (const scenario of cases.authentication) test(scenario.name,async () => {
     head_repository:{full_name:'owner/project'},actor:{login:'admin'},...scenario.run_patch};
   const execute = () => authenticate(envelope,{repository:scenario.repository || 'owner/project',
     keys:{keys:scenario.unknown ? [] : [{id:'admin-key',algorithm:'ed25519',public_key:publicKey,login:'admin',revoked:scenario.revoked || false}]},
-    isAdmin:async () => scenario.admin !== false,hostedRun:async () => run,allowBootstrap:async () => scenario.allow_bootstrap === true},now);
+    isAdmin:async () => scenario.admin !== false,hostedRun:async () => run,allowBootstrap:async () => scenario.allow_bootstrap === true,
+    allowDiagnostic:async () => scenario.allow_diagnostic === true,allowPendingRun:async () => scenario.allow_pending === true},now);
   if (scenario.valid) assert.equal((await execute()).validator,'admin');
   else await assert.rejects(execute);
 });

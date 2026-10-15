@@ -21,6 +21,12 @@ Local runs are artifact-only. They must not publish remotely.
 Native platform jobs still require verification on their appropriate GitHub
 runners; sharing a workflow does not guarantee identical host environments.
 
+## Hosted administrator controls
+
+Open Actions, select CI, and choose Run workflow. The twelve dropdowns select
+operations, PRs, validation suites, build targets, output generation, cache behavior
+and gate overrides. See [the CI control panel](ci/control/README.md) for details.
+
 ## Repository responsibilities
 
 - `.github/workflows/ci.yml`: triggers, jobs, dependencies, permissions, and publication gates.

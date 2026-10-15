@@ -1,5 +1,8 @@
 {
   "authentication": [
+    {"name":"diagnostic hosted receipt is not official validation","kind":"hosted","diagnostic":true,"valid":false},
+    {"name":"explicit diagnostic cache capability accepts diagnostic evidence","kind":"hosted","diagnostic":true,"allow_diagnostic":true,"valid":true},
+    {"name":"originating publication capability accepts pending run","kind":"hosted","allow_pending":true,"run_patch":{"status":"in_progress","conclusion":null},"valid":true},
     {"name":"valid admin signature","kind":"signature","valid":true},
     {"name":"contributor claim cannot pass","kind":"claim","valid":false},
     {"name":"tampered signature","kind":"signature","tamper":true,"valid":false},

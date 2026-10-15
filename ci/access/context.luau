@@ -1,4 +1,5 @@
 --!strict
+local process = require("@lune/process")
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local policy = require("./policy")
@@ -19,7 +20,12 @@ function context.read(env: { [string]: string? }): policy.Context
         repository = context.repository(event)
     end
 
+    local manualAllowed = false
+    if env.GITHUB_EVENT_NAME == "workflow_dispatch" then
+        manualAllowed = process.exec("node", { "ci/control/authorize-publication.mjs" }, { env = env }).ok
+    end
     return {
+        manualAllowed = manualAllowed,
         localRun = env.ACT == "true",
         actions = env.GITHUB_ACTIONS,
         server = env.GITHUB_SERVER_URL,

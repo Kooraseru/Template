@@ -13,6 +13,12 @@ local tested = process.env.CI_TESTED_SHA or head
 fs.writeDir("build/tmp/releases")
 local releasing = config.release.enabled and (process.env.CI_RECEIPT_PR or "0") == "0"
 local channels = if releasing then serde.decode("toml", fs.readFile("ci/releases/channels.toml")) else {}
+local choice = require("../control/config").read().release_output or "Configured"
+local channel = choice:match("^Publish (%w+)$")
+if releasing and channel and channel ~= "configured" then
+    assert(channels[channel] ~= nil, "Selected release channel is not configured: " .. channel)
+    channels = { [channel] = channels[channel] }
+end
 fs.writeFile("build/tmp/releases/request.json", serde.encode("json", { channels = channels, enabled = releasing }))
 local resolve = process.exec("node", { "ci/releases/cli.mjs", "resolve" })
 assert(resolve.ok, "release channel resolution failed (" .. tostring(resolve.code) .. "): " .. resolve.stdout .. resolve.stderr)

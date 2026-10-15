@@ -45,7 +45,7 @@ environment mismatch blocks comparison until those environments are aligned.
 Run the actual workflow with act/GitHub Local Actions and collect its artifacts.
 Contributor receipts are claims, not required-check authority. Submit the JSON
 receipt on the PR, or use `claim-submit` outside act with an existing GitHub CLI
-login. An admin can pass that JSON to their independent validation request.
+login. An admin can compare that JSON while signing independently collected local results.
 Missing native coverage is explicit; the admin completes those targets.
 
 ```powershell
@@ -67,10 +67,9 @@ For hosted validation, run from a trusted clean source controller checkout:
 
 ```powershell
 node ci/receipts/cli.mjs request 17
-# Optional independent comparison:
-# node ci/receipts/cli.mjs request 17 build/receipts/claim/receipt.json
 ```
 
+Hosted Build requests use the same twelve-control workflow and select the current PR dropdown label.
 Hosted validation reuses already accepted targets and executes missing ones.
 The reporting job has the automatic token; build jobs do not have check-write,
 publication, or signing permissions. Acceptance is bound to the completed admin

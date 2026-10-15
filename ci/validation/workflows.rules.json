@@ -42,6 +42,22 @@
       "not_values": [
         "write"
       ]
+    },
+    {
+      "path": "on.workflow_dispatch.inputs.claim",
+      "absent": true
+    },
+    {
+      "path": "on.workflow_dispatch.inputs.pr",
+      "absent": true
+    },
+    {
+      "path": "on.workflow_dispatch.inputs.target",
+      "absent": true
+    },
+    {
+      "path": "jobs.refresh-prs.name",
+      "equals": "Maintenance / Pull request choices"
     }
   ],
   "collections": [
@@ -60,7 +76,8 @@
       "exclude_keys": [
         "gate",
         "validation-receipt",
-        "validate"
+        "validate",
+        "refresh-prs"
       ]
     },
     {
