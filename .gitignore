@@ -40,7 +40,10 @@ __pycache__/
 .env.*
 !.env.example
 
-# Development-tool runtime state
+# KERO guidance snapshots are repository data; only host runtime state is local.
+!/.kero/
+!/.kero/mnt/
+!/.kero/mnt/**
 /.kero/.runtime/
 
 # Pinned release renderer dependencies

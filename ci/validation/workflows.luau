@@ -1,38 +1,94 @@
 -- ci/validation/workflows.luau
 --!strict
+
+local Workflows = {}
+
+--# Modules
+
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local Rules = require("../lib/rules")
-local definitions = Rules.Read("ci/validation/ruleset.json", "workflows.rules")
-local workflow = Serde.decode("yaml", Fs.readFile(".github/workflows/ci.yml"))
-Rules.Validate(workflow, definitions)
 
-local controlCheck = assert(definitions.controls, "missing control validation definition")
-local controls = Rules.Entries(Serde.decode("json", Fs.readFile(controlCheck.source)))
-local inputs = Rules.Property(workflow, controlCheck.path)
-assert(type(inputs) == "table", "missing workflow inputs")
-local count = 0
-for key, rawDefinition in controls do
-    assert(type(key) == "string", "expected control name")
-    local definition = Rules.Entries(rawDefinition)
-    count += 1
-    local input = Rules.Entries(assert(Rules.Entries(inputs)[key], "missing CI control: " .. key))
-    assert(type(input) == "table", "invalid CI control: " .. key)
-    assert(input.type == (definition.type or controlCheck.default_type), "incorrect CI control type: " .. key)
-    assert(input.default == definition.default, "incorrect CI control default: " .. key)
-    for _, choice in Rules.Entries(definition.options or {}) do
-        assert(type(choice) == "string", "expected control choice")
-        assert(type(input.options) == "table" and table.find(Rules.Array(input.options), choice), "missing CI choice: " .. key .. " / " .. choice)
+--# Types
+
+type ControlCheck = {
+    source: string,
+    path: string,
+    default_type: string,
+}
+
+--# Helpers
+
+local function readYaml(path: string): unknown
+    local source = Fs.readFile(path)
+
+    return Serde.decode("yaml", source)
+end
+
+local function validateControls(workflow: unknown, check: ControlCheck)
+    local source = Fs.readFile(check.source)
+    local controls = Rules.Entries(Serde.decode("json", source))
+    local inputs = Rules.Entries(Rules.Property(workflow, check.path))
+    local expectedCount = 0
+
+    for key, rawDefinition in pairs(controls) do
+        assert(type(key) == "string", "expected control name")
+
+        local definition = Rules.Entries(rawDefinition)
+        local rawInput = inputs[key]
+        assert(rawInput ~= nil, "missing CI control: " .. key)
+
+        local input = Rules.Entries(rawInput)
+        local expectedType = definition.type or check.default_type
+
+        assert(input.type == expectedType, "incorrect CI control type: " .. key)
+        assert(input.default == definition.default, "incorrect CI control default: " .. key)
+
+        if definition.options ~= nil then
+            local choices = Rules.Array(definition.options)
+            local offeredChoices = Rules.Array(input.options)
+
+            for _, choice in ipairs(choices) do
+                assert(type(choice) == "string", "expected control choice")
+                assert(table.find(offeredChoices, choice), "missing CI choice: " .. key .. " / " .. choice)
+            end
+        end
+
+        expectedCount += 1
+    end
+
+    local actualCount = 0
+
+    for _ in pairs(inputs) do
+        actualCount += 1
+    end
+
+    assert(actualCount == expectedCount, "workflow inputs differ from the control catalogue")
+end
+
+--# Functions
+
+function Workflows.Run()
+    local definitions = Rules.Read("ci/validation/ruleset.json", "workflows.rules")
+    local workflow = readYaml(".github/workflows/ci.yml")
+    local controlCheck = definitions.controls
+    local actionRules = definitions.actions
+
+    assert(controlCheck ~= nil, "missing control validation definition")
+    assert(actionRules ~= nil, "missing action validation rules")
+
+    Rules.Validate(workflow, definitions)
+    validateControls(workflow, controlCheck)
+
+    for _, name in ipairs(Fs.readDir(".github/actions")) do
+        local path = ".github/actions/" .. name .. "/action.yml"
+
+        if Fs.isFile(path) then
+            local action = readYaml(path)
+
+            Rules.Validate(action, actionRules)
+        end
     end
 end
-local actual = 0
-for _ in inputs do actual += 1 end
-assert(actual == count, "workflow inputs differ from the control catalogue")
 
-for _, name in Fs.readDir(".github/actions") do
-    local path = ".github/actions/" .. name .. "/action.yml"
-    if Fs.isFile(path) then
-        Rules.Validate(Serde.decode("yaml", Fs.readFile(path)), assert(definitions.actions, "missing action rules"))
-    end
-end
-print("Workflow data checks passed")
+return Workflows

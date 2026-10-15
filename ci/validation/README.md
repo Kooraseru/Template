@@ -53,23 +53,41 @@ required files using entry fields in `{field}` templates. Catalogue test inputs
 live in `catalogue.cases`. Toolchain compile/run checks are target
 `probes` in `ci/build/targets.json`, with expected exit codes and optional output.
 
-## Luau responsibilities
+## Luau module structure
 
-The scripts in this directory and `tests/` are entry points. Shared validation
-operations use procedural table modules with PascalCase bindings and public
-functions (`Rules.Read`, `Rules.Validate`, `Cases.Apply`, `Cases.Check`). Helpers
-remain local camelCase functions. Single-operation helpers return a function.
-Every Luau file starts with its repository path and `--!strict`.
+Every Luau file under this directory returns a procedural table module with a
+PascalCase identity and a public `Run()` function. Dependencies, types, local
+helpers and public functions are separated into their relevant phases. Files
+start with their repository path and `--!strict`. They contain no `print` calls,
+perform no validation on require, and keep fixture creation inside `Run()`.
+These modules own neither independent instances nor entities, so their shape is
+the procedural table-module format from the mounted guidance.
+
+Use the existing CI boundary to invoke one module:
+
+```powershell
+node ci/control/run-check.mjs ci/validation/workflows.luau
+node ci/control/run-check.mjs ci/validation/tests/rules.luau
+```
+
+The adapter generates a disposable Lune invocation under `build/validation/`.
+It is not a second pipeline: `ci/control/validate.mjs` still selects the checks
+for the single workflow. Logging belongs to the caller. Requiring a module only
+loads its implementation; fixture tests reset their output even after failure.
 
 `rules.format` owns the supported rule vocabulary. `key_count` counts collection
 entries; `count_where` counts entries matching a field; `requires_before` checks
 ordered prerequisites. Workflow control counts, the protected gate name and action
-setup ordering are declared in `workflows.rules`, not in Luau assertions.
-`config.cases.controls` owns manual-control expectations and baseline preservation.
-Raw decoded data stays `unknown` until a boundary check; rule and fixture document
-shapes stay quarantined in their readers. Public validation APIs expose named
-contracts or `unknown`, without `any` casts.
+setup ordering live in `workflows.rules`. `config.cases.controls` owns manual-control
+expectations and baseline preservation. There are no version or shape selectors.
 
-The mounted Luau guidance is under `.kero/mnt/global/language/luau/`. These CI
-utilities own no entities or independent object lifetimes, so ECS and OOP
-structures do not apply to them.
+The mounted guidance is tracked under `.kero/mnt/global/language/luau/`; repository
+ignore rules explicitly include the snapshot and exclude only local KERO runtime
+state. Source-owned global updates still require KERO's mount refresh operation.
+
+## Editor checks
+
+The repository uses Luau's new type solver for `index` and typed lookup surfaces.
+Enable `luau-lsp.fflags.enableNewSolver` in the editor. The same setting is recorded
+in `.luau-lsp/settings.json`; the analyzer CLI also accepts
+`--flag:LuauSolverV2=true`. No diagnostic categories are disabled.

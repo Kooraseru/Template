@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { readRequest } from './request.mjs';
+import { runLuauCheck } from './run-check.mjs';
 import { git, write } from '../releases/core.mjs';
 
 const groups = {
@@ -20,9 +21,10 @@ for (const [name, paths] of Object.entries(groups)) {
   console.log(`::group::Validate / ${name}`);
   const checks = [];
   for (const file of paths) {
-    const args = file.endsWith('.luau') ? ['run', file] : ['--test', ...fs.readdirSync(file)
-      .filter(name => name.endsWith('.test.mjs')).map(name => `${file}/${name}`)];
-    const result = spawnSync(file.endsWith('.luau') ? 'lune' : process.execPath, args, { stdio: 'inherit' });
+    const result = file.endsWith('.luau')
+      ? runLuauCheck(file, { stdio: 'inherit' })
+      : spawnSync(process.execPath, ['--test', ...fs.readdirSync(file)
+        .filter(name => name.endsWith('.test.mjs')).map(name => `${file}/${name}`)], { stdio: 'inherit' });
     const success = result.status === 0 && !result.error;
     failed ||= !success;
     checks.push({ path: file, success, error: result.error?.message });

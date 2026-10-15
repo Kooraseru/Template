@@ -1,34 +1,67 @@
 -- ci/validation/tests/artifacts.luau
 --!strict
+
+local ArtifactTests = {}
+
+--# Modules
+
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local VerifyArtifacts = require("../../lib/artifacts")
 local Files = require("../../lib/files")
 local Cases = require("../../lib/cases")
-local definitions = Cases.Read("ci/validation/ruleset.json", "artifacts.cases")
-local root = definitions.root
 
-for _, case in definitions.cases do
-    Files.Reset(root)
+--# Helpers
+
+local function writeFixture(root: string, definitions: Cases.Document, case: Cases.Case)
     local contents = table.clone(definitions.baseline.files)
-    for name, value in case.files do
+
+    for name, value in pairs(case.files) do
         contents[name] = value
     end
-    for name, value in contents do
+
+    for name, value in pairs(contents) do
         Fs.writeFile(root .. "/" .. name, value)
     end
+
     local manifest = {}
-    for _, entry in case.manifest or definitions.baseline.manifest do
-        table.insert(
-            manifest,
-            { path = entry.path, sha256 = Serde.hash("sha256", entry.hash_contents) }
-        )
+    local entries = case.manifest or definitions.baseline.manifest
+
+    for _, entry in ipairs(entries) do
+        table.insert(manifest, {
+            path = entry.path,
+            sha256 = Serde.hash("sha256", entry.hash_contents),
+        })
     end
-    Fs.writeFile(root .. "/manifest.json", Serde.encode("json", manifest))
-    Cases.Check(case.name, case.valid, function()
-        VerifyArtifacts(root)
-        return true
-    end)
+
+    local encoded = Serde.encode("json", manifest)
+
+    Fs.writeFile(root .. "/manifest.json", encoded)
 end
-Files.Reset(root)
-print("Artifact data cases passed")
+
+--# Functions
+
+function ArtifactTests.Run()
+    local definitions = Cases.Read("ci/validation/ruleset.json", "artifacts.cases")
+    local root = definitions.root
+
+    local success, failure = pcall(function()
+        for _, case in ipairs(definitions.cases) do
+            Files.Reset(root)
+            writeFixture(root, definitions, case)
+
+            Cases.Check(case.name, case.valid, function()
+                VerifyArtifacts(root)
+
+                return true
+            end)
+        end
+    end)
+
+    -- Unexpected assertions must not leave a later run with a previous fixture.
+    Files.Reset(root)
+
+    assert(success, tostring(failure))
+end
+
+return ArtifactTests
