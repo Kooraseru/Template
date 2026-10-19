@@ -1,0 +1,15 @@
+name: Set up native CI primitives
+description: Build the locked native helpers used by the Luau CI runtime.
+runs:
+  using: composite
+  steps:
+    - id: definition
+      uses: ./.github/actions/run-luau
+      with:
+        module: config/tools/setup-native
+    - uses: ./.github/actions/setup-rust
+      with:
+        toolchain: ${{ steps.definition.outputs.toolchain }}
+    - uses: ./.github/actions/run-luau
+      with:
+        module: libraries/bootstrap/native

@@ -31,7 +31,7 @@ Do not create separate `build.yml`, `release.yml`, `pages.yml`, `publish.yml`, o
 
 Use multiple jobs inside `ci.yml`, including parallel jobs where appropriate.
 
-`.github/actions/` contains reusable actions for individual operations. `ci/` contains their implementation scripts. Neither is a second orchestrator.
+`.github/actions/` contains reusable actions for individual operations. Implementation belongs to the ownership directories below. Neither is a second orchestrator.
 
 ## 3. Execution behavior
 
@@ -52,7 +52,7 @@ The same CI workflow supports different access contexts.
 - Allow validation and artifact generation.
 - Do not grant publication privileges merely because an input requests publication. Trusted GitHub context and repository authorization must still permit it.
 
-Public versions are selected explicitly in `ci/releases/versions.toml` under the [release contract](releases.md). Release uses stable SemVer; Pre-Release uses `-pre.N`. Published versions support replacement of their selected content and source tag. Promotion creates a new version while preserving the prerelease. Internal validation staging remains separate.
+Public versions are selected explicitly in `publication/releases/versions.toml` under the [release contract](releases.md). Release uses stable SemVer; Pre-Release uses `-pre.N`. Published versions support replacement of their selected content and source tag. Promotion creates a new version while preserving the prerelease. Internal validation staging remains separate.
 
 The central principle is:
 
@@ -90,7 +90,7 @@ Local execution must invoke the same `.github/workflows/ci.yml` as hosted GitHub
 
 Do not create `ci/pipeline.luau` or another local CI orchestrator.
 
-Scripts inside `ci/` implement individual operations invoked by workflow jobs.
+Implementation modules perform individual operations invoked by workflow jobs.
 
 Local `act` execution is artifact-only and must not publish remotely.
 
@@ -98,29 +98,31 @@ We recognize that `act` uses Docker and cannot reproduce native macOS or Windows
 
 ## 6. Directory ownership
 
-Keep these boundaries:
+The modular template owns these source boundaries:
 
-- `.github/workflows/ci.yml` — all workflow orchestration.
-- `.github/actions/` — reusable action implementations.
-- `ci/images/` — Dockerfiles and CI container image definitions, not runner wrappers.
-- `ci/validation/` — repository and configuration validation.
-- `ci/build/` — build/test execution helpers.
-- `ci/distribution/` — distributable packaging.
-- `ci/releases/` — release generation and publication implementations.
-- `ci/repo/` — generated `main` branch contents and publication.
-- `ci/pages/` — website generation and deployment.
-- `ci/lib/` — genuinely shared implementation utilities.
-- `src/` — actual project source, organized by subsystem.
-- `tests/` — cross-subsystem, integration, compatibility, and end-to-end tests.
-- `build/` — all disposable/generated output; Git-ignored.
-- `.kero/` — development-tool configuration and state.
-- `.kero/data/` — repository contracts, knowledge, decisions, and other tool data; do not place these beside `config`.
+- `.github/workflows/ci.yml`: the single hosted/local workflow.
+- `.github/actions/`: reusable hosted actions.
+- `.github/integration/`: GitHub-specific requests, controls, approvals, and adapters.
+- `config/`: project configuration and native tool settings.
+- `libraries/bootstrap/`: shared development infrastructure and native primitives.
+- `libraries/registry/`: development catalogues and configuration, not an application runtime registry.
+- `libraries/testing/`: shared typed metatable tests, execution, comparisons, and reporting.
+- `validation/`: repository, compatibility, declared-contract, and policy checks.
+- `fabricator/`: source target execution and packaging; images and toolchains live under `distribution/`.
+- `security/access/` and `security/receipts/`: separate authorization and evidence boundaries.
+- `publication/releases/`, `publication/repo/`, and `publication/pages/`: completed publication outputs.
+- `src/`: application-defined APIs, optional language implementation folders, plugins, Workshop content, and assets.
+- `build/`: disposable output; Git-ignored.
 
-Subsystem-local tests may live alongside their implementations under `src/`.
+No extra top-level source directories, mandatory empty language folders, or
+boilerplate manifests for ordinary modules. Existing hidden editor/tool metadata
+and the explicitly tracked `.kero` guidance remain repository tooling.
+`fabricator/workflow.luau` implements a build stage, not a second job orchestrator.
 
-Do not move source into language-specific top-level folders.
-
-Do not create placeholder files merely to fill the proposed tree.
+Plugin and Workshop contracts are independent and versionless. Workshop is
+data-only and cannot register execution providers. Applications enforce actual
+capabilities, permission authorization, isolation, format inspection, and lifecycle
+rollback; CI metadata does not establish those runtime guarantees.
 
 ## 7. Language and toolchain support
 
@@ -135,7 +137,7 @@ Toolchains are optional capabilities, not universal requirements.
 
 Preserve conventional configuration files where tools expect them, including `.luaurc`, `CMakeLists.txt`, `CMakePresets.json`, `.clangd`, `.clang-format`, `.cargo/config.toml`, and `rust-toolchain.toml` when applicable.
 
-Use platform-appropriate build matrices. Linux jobs may use custom Docker images from `ci/images/`; native Windows and macOS jobs use suitable runners.
+Use platform-appropriate build matrices. Linux jobs may use custom Docker images from `fabricator/distribution/images/`; native Windows and macOS jobs use suitable runners.
 
 Avoid circular dependencies where a CI image must already exist to build that same image.
 
@@ -166,9 +168,11 @@ Treat the full proposed tree as an architectural target, not an instruction to i
 
 Prefer the smallest implementation that satisfies these boundaries.
 
-Define validation rules and test cases in declarative data files such as JSON
-or TOML. Luau executes reusable check operations; it does not hardcode individual
-rules, expected results, or case definitions.
+Operational policy and catalogues may use JSON or TOML. Tests declare typed cases
+and bind their function under test through the shared Luau metatable testing
+library. Do not require separate test/cases/ruleset files per ordinary module.
+Project-managed Node must be removed as migration completes; retain frozen
+canonical-byte compatibility and publication authorization during that work.
 
 If a particular operation requires different permissions, use separate **jobs within `ci.yml`**, not another workflow.
 

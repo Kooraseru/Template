@@ -1,7 +1,0 @@
-{
-  "root": "build/tests/package",
-  "files": {
-    "example.txt": "template integration fixture\n"
-  },
-  "commands": []
-}

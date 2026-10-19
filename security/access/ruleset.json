@@ -1,0 +1,263 @@
+{
+  "operation": {
+    "rules": {
+      "rules": [
+        {
+          "path": "GH_TOKEN",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "GITHUB_SHA",
+          "kind": "string",
+          "min_length": 1
+        }
+      ]
+    }
+  },
+  "outputs": {
+    "rules": {
+      "rules": [
+        {
+          "path": "$",
+          "kind": "object"
+        },
+        {
+          "path": "*",
+          "kind": "string",
+          "reject_patterns": [
+            "[\r\n]"
+          ]
+        }
+      ],
+      "key_pattern": "^[a-z][a-z0-9_]*$"
+    }
+  },
+  "publication": {
+    "rules": {
+      "rules": [
+        {
+          "path": "$",
+          "kind": "object"
+        },
+        {
+          "path": "localRun",
+          "equals": false
+        },
+        {
+          "path": "actions",
+          "equals": "true"
+        },
+        {
+          "path": "server",
+          "equals": "https://github.com"
+        },
+        {
+          "path": "event",
+          "enum": [
+            "push",
+            "workflow_dispatch"
+          ]
+        },
+        {
+          "path": "ref",
+          "equals": "refs/heads/source"
+        },
+        {
+          "path": "repository",
+          "kind": "string",
+          "min_length": 1
+        },
+        {
+          "path": "eventRepository",
+          "equals_path": "repository"
+        },
+        {
+          "path": "manualAllowed",
+          "equals": true,
+          "when": {
+            "path": "event",
+            "equals": "workflow_dispatch"
+          }
+        }
+      ]
+    },
+    "cases": {
+      "scripts": [
+        "publication/repo/publish.sh",
+        "publication/releases/publish.sh"
+      ],
+      "cases": [
+        {
+          "name": "syntax",
+          "arguments": [
+            "-n"
+          ],
+          "env": {},
+          "ok": true
+        },
+        {
+          "name": "local",
+          "arguments": [],
+          "env": {
+            "ACT": "true",
+            "GH_TOKEN": "test-placeholder"
+          },
+          "ok": false
+        },
+        {
+          "name": "pull request",
+          "arguments": [],
+          "env": {
+            "ACT": "false",
+            "GITHUB_ACTIONS": "true",
+            "GITHUB_SERVER_URL": "https://github.com",
+            "GITHUB_EVENT_NAME": "pull_request",
+            "GITHUB_REF": "refs/heads/source",
+            "GH_TOKEN": "test-placeholder"
+          },
+          "ok": false
+        }
+      ]
+    }
+  },
+  "policy": {
+    "cases": {
+      "baseline": {
+        "localRun": false,
+        "actions": "true",
+        "server": "https://github.com",
+        "event": "push",
+        "ref": "refs/heads/source",
+        "repository": "example/project",
+        "eventRepository": "example/project"
+      },
+      "policy": [
+        {
+          "name": "trusted source push",
+          "patch": {},
+          "valid": true
+        },
+        {
+          "name": "deny localRun",
+          "patch": {
+            "localRun": true
+          },
+          "valid": false
+        },
+        {
+          "name": "deny actions",
+          "patch": {
+            "actions": "false"
+          },
+          "valid": false
+        },
+        {
+          "name": "deny ref",
+          "patch": {
+            "ref": "refs/heads/main"
+          },
+          "valid": false
+        },
+        {
+          "name": "deny repository",
+          "patch": {
+            "repository": ""
+          },
+          "valid": false
+        },
+        {
+          "name": "deny eventRepository",
+          "patch": {
+            "eventRepository": "someone/fork"
+          },
+          "valid": false
+        },
+        {
+          "name": "deny server",
+          "patch": {
+            "server": "http://localhost"
+          },
+          "valid": false
+        },
+        {
+          "name": "deny pull_request",
+          "patch": {
+            "event": "pull_request"
+          },
+          "valid": false
+        },
+        {
+          "name": "deny pull_request_target",
+          "patch": {
+            "event": "pull_request_target"
+          },
+          "valid": false
+        },
+        {
+          "name": "deny workflow_dispatch",
+          "patch": {
+            "event": "workflow_dispatch"
+          },
+          "valid": false
+        },
+        {
+          "name": "missing local flag",
+          "remove": [
+            "localRun"
+          ],
+          "patch": {},
+          "valid": false
+        },
+        {
+          "name": "verified manual source publication",
+          "patch": {
+            "event": "workflow_dispatch",
+            "manualAllowed": true
+          },
+          "valid": true
+        }
+      ],
+      "repositories": [
+        {
+          "input": {
+            "repository": {
+              "full_name": "example/project"
+            }
+          },
+          "expected": "example/project"
+        },
+        {
+          "input": {
+            "repository": "invalid"
+          }
+        },
+        {
+          "input": {
+            "repository": {
+              "full_name": 123
+            }
+          }
+        },
+        {
+          "input": false
+        }
+      ],
+      "outputs": [
+        {
+          "input": {
+            "runner": "ubuntu-latest\npublish=true"
+          },
+          "valid": false
+        },
+        {
+          "input": {
+            "enabled": "true"
+          },
+          "valid": true,
+          "expected": "enabled=true\n"
+        }
+      ]
+    }
+  }
+}

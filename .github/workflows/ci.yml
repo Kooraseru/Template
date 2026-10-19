@@ -186,11 +186,10 @@ jobs:
           ref: source
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
       - name: Refresh open pull request choices
         env:
           GH_TOKEN: ${{ secrets.CI_WORKFLOW_TOKEN || github.token }}
-        run: node ci/control/refresh-prs.mjs --remote
+        run: bash .github/integration/run.sh .github/integration/refresh-prs.luau --remote
 
   validate:
     name: Validate / Plan and checks
@@ -231,24 +230,25 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-native
       - uses: ./.github/actions/setup-node
       - name: Resolve operation and administrator controls
         id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node ci/control/dispatch.mjs
+        run: bash .github/integration/run.sh .github/integration/dispatch.luau
       - name: Resolve execution authority and tested commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node ci/receipts/cli.mjs authorize
+        run: node security/receipts/cli.mjs authorize
       - id: context
         env:
           GH_TOKEN: ${{ github.token }}
-        run: lune run ci/access/resolve.luau
+        run: bash .github/integration/run.sh security/access/resolve.luau
       - name: Validate / Selected checks
         id: checks
         continue-on-error: ${{ steps.dispatch.outputs.ignore_validation == 'true' }}
-        run: node ci/control/validate.mjs
+        run: bash .github/integration/run.sh validation/run.luau
       - name: Evidence / Store validation results
         if: always()
         uses: actions/upload-artifact@v7
@@ -292,7 +292,6 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
       - name: Cache / Restore image archive
         id: image-cache
         if: inputs.cache_policy != 'Rebuild images and outputs'
@@ -306,7 +305,7 @@ jobs:
           IMAGE_NAME: ${{ matrix.name }}
           CI_IMAGE_ID: ${{ matrix.artifact }}
           CI_INPUT_REF: ${{ matrix.input_ref }}
-        run: lune run ci/images/build.luau "$IMAGE_NAME"
+        run: bash .github/integration/run.sh fabricator/distribution/images/build.luau "$IMAGE_NAME"
       - name: Cache / Store image archive
         if: steps.image-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -355,7 +354,7 @@ jobs:
       - id: prepared
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node ci/releases/cli.mjs prepare
+        run: node publication/releases/cli.mjs prepare
       - name: Download selected build image
         if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
         uses: actions/download-artifact@v8
@@ -375,15 +374,15 @@ jobs:
         if: steps.prepared.outputs.reused != 'true' && matrix.image == '' && contains(matrix.build.toolchains, 'cmake')
         with:
           version: ${{ matrix.build.cmake_version }}
-      - run: lune run ci/build/run.luau
+      - run: bash .github/integration/run.sh fabricator/workflow.luau
         if: steps.prepared.outputs.reused != 'true'
         env:
           CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
-      - run: node ci/receipts/cli.mjs execution
+      - run: node security/receipts/cli.mjs execution
         if: steps.prepared.outputs.reused != 'true'
-      - run: lune run ci/distribution/package.luau
+      - run: bash .github/integration/run.sh fabricator/distribution/package.luau
         if: steps.prepared.outputs.reused != 'true'
-      - run: node ci/releases/cli.mjs verify build/artifacts
+      - run: node publication/releases/cli.mjs verify build/artifacts
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
@@ -407,7 +406,6 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
       - uses: ./.github/actions/build-repo
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
@@ -429,7 +427,6 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
       - run: sudo apt-get update && sudo apt-get install --yes pandoc
       - uses: ./.github/actions/build-pages
       - uses: actions/upload-artifact@v7
@@ -470,8 +467,10 @@ jobs:
           path: build/tmp/accepted
       - name: Evidence / Select accepted release plan
         if: needs.validation-receipt.result == 'success'
-        run: node -e "require('fs').mkdirSync('build/tmp/releases', {recursive:true}); require('fs').copyFileSync('build/tmp/accepted/accepted-plan.json', 'build/tmp/releases/plan.json')"
-      - run: lune run ci/releases/build.luau
+        run: |
+          mkdir -p build/tmp/releases
+          cp build/tmp/accepted/accepted-plan.json build/tmp/releases/plan.json
+      - run: bash .github/integration/run.sh publication/releases/build.luau
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v7
@@ -508,7 +507,7 @@ jobs:
       - name: Fetch tested objects without executing proposed controller code
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node ci/receipts/cli.mjs authorize
+        run: node security/receipts/cli.mjs authorize
       - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
@@ -517,8 +516,8 @@ jobs:
         with:
           pattern: build-logs-*
           path: build/validation-logs
-      - run: node ci/receipts/cli.mjs collect
-      - run: node ci/receipts/cli.mjs report
+      - run: node security/receipts/cli.mjs collect
+      - run: node security/receipts/cli.mjs report
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v7
@@ -533,7 +532,7 @@ jobs:
           name: accepted-release-plan
           path: build/receipts/accepted-plan.json
           if-no-files-found: error
-      - run: node ci/receipts/cli.mjs accepted-check
+      - run: node security/receipts/cli.mjs accepted-check
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -569,12 +568,12 @@ jobs:
             "pages":"${{ needs.validate.outputs.pages }}",
             "release":"${{ needs.validate.outputs.release }}",
             "images":"${{ needs.validate.outputs.images }}"}
-        run: node ci/control/gate.mjs
+        run: bash .github/integration/run.sh .github/integration/gate.luau
       - name: Verify accepted PR validation and report the exact PR head
         if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node ci/receipts/cli.mjs verify-pr
+        run: node security/receipts/cli.mjs verify-pr
     permissions:
       contents: write
       actions: read
@@ -608,7 +607,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash ci/repo/publish.sh
+        run: bash publication/repo/publish.sh
 
   publish-pages:
     env:
@@ -636,7 +635,7 @@ jobs:
       - name: Require hosted execution and source protection
         env:
           GH_TOKEN: ${{ github.token }}
-        run: lune run ci/access/require-publication.luau
+        run: bash .github/integration/run.sh security/access/require-publication.luau
       - uses: actions/download-artifact@v8
         with:
           name: pages-preview
@@ -679,4 +678,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ matrix.version }}
-        run: bash ci/releases/publish.sh
+        run: bash publication/releases/publish.sh

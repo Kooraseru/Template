@@ -3,5 +3,6 @@ description: Generate prospective main contents under build/repo.
 runs:
   using: composite
   steps:
-    - shell: bash
-      run: lune run ci/repo/build.luau
+    - uses: ./.github/actions/run-luau
+      with:
+        module: publication/repo/build

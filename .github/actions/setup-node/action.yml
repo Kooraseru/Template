@@ -3,5 +3,6 @@ description: Install the checksum-verified pinned release-control runtime.
 runs:
   using: composite
   steps:
-    - shell: bash
-      run: lune run ci/tools/setup-node.luau
+    - uses: ./.github/actions/run-luau
+      with:
+        module: config/tools/setup-node

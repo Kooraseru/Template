@@ -3,5 +3,6 @@ description: Generate a static site under build/pages.
 runs:
   using: composite
   steps:
-    - shell: bash
-      run: lune run ci/pages/build.luau
+    - uses: ./.github/actions/run-luau
+      with:
+        module: publication/pages/build

@@ -1,4 +1,4 @@
-# Repository template — contributor source
+# Repository template contributor source
 
 This is the development tree for a reusable repository template. Development and
 pull requests belong on `source`; `main` contains generated publication output.
@@ -15,8 +15,9 @@ for container jobs, open this repository in VS Code, and select **CI** in the
 extension's Workflows view. Configure event payloads, runners, inputs, and artifact
 options through the extension as needed.
 
-The same workflow defines local and hosted CI. Scripts under `ci/` perform
-individual operations; there is no separate local pipeline orchestrator.
+The same workflow defines local and hosted CI. Its operations belong to the
+infrastructure directories below. `fabricator/workflow.luau` executes a selected
+build stage; `.github/workflows/ci.yml` owns job orchestration.
 Local runs are artifact-only. They must not publish remotely.
 Native platform jobs still require verification on their appropriate GitHub
 runners; sharing a workflow does not guarantee identical host environments.
@@ -25,16 +26,20 @@ runners; sharing a workflow does not guarantee identical host environments.
 
 Open Actions, select CI, and choose Run workflow. The twelve dropdowns select
 operations, PRs, validation suites, build targets, output generation, cache behavior
-and gate overrides. Two optional paired inputs select a SemVer version and source SHA. See [the CI control panel](ci/control/README.md) for details.
+and gate overrides. Two optional paired inputs select a SemVer version and source SHA. See [the CI control panel](.github/integration/README.md) for details.
 
 ## Repository responsibilities
 
 - `.github/workflows/ci.yml`: triggers, jobs, dependencies, permissions, and publication gates.
 - `.github/actions/`: reusable operation steps.
-- `ci/`: validation, building, generation, packaging, and publication implementations.
-- `ci/images/`: custom CI Dockerfiles and image definitions.
-- `src/`: application source, organized by subsystem.
-- `tests/`: tests spanning subsystems.
+- `.github/integration/`: GitHub requests, manual controls, approvals, and stage adapters.
+- `config/`: project configuration and tool settings.
+- `libraries/`: reusable bootstrap utilities, development registry, and typed testing.
+- `validation/`: repository, policy, and declared-contract validation.
+- `fabricator/`: target execution, images, toolchains, and distribution packaging.
+- `security/`: publication access and trusted build receipts.
+- `publication/`: release, generated repository, and documentation outputs.
+- `src/`: application-defined APIs, implementation, plugins, Workshop content, and assets when used.
 - `.kero/`: development-tool configuration and state.
 - `.kero/data/`: repository contracts, knowledge, and decisions.
 - `build/`: disposable generated output, ignored by Git.
@@ -46,22 +51,22 @@ validated artifacts after all required checks pass.
 
 ## Declarative checks
 
-Validation rules, publication policies, test cases, image definitions, and build
-target probes live in JSON or TOML. Luau executes those definitions. See
-[declarative checks](ci/validation/README.md).
+Policies and operational catalogues use JSON or TOML. The shared
+[testing library](libraries/testing/README.md) supplies typed Luau declarations,
+execution, comparisons, and reporting. See [validation](validation/README.md).
 
 ## Configuring a consuming repository
 
 Set its default branch to `source` and target pull requests there.
-Edit `ci/config.toml` to select optional outputs, toolchains, and build/test
+Edit `config/project.toml` to select optional outputs, toolchains, and build/test
 commands. Commands are argument arrays; use an explicit shell invocation when
 a command needs shell syntax. Place all build output under `build/`.
 Rust and CMake require explicit versions when enabled.
 
-The populated baseline selects 24 Linux images and 32 build targets. Edit
-`build.targets` to select named entries from `ci/build/targets.json`, and select
+The catalogue offers 24 Linux images and 32 compiler profiles; they are opt-in. Edit
+`build.targets` to select named entries from `fabricator/targets.json`, and select
 their required images through `images.names`. The validation job checks those
-references before building. See [the image catalogue](ci/images/README.md) for
+references before building. See [the image catalogue](fabricator/distribution/images/README.md) for
 distributions and profiles. Windows and macOS each have x86_64 and ARM64 targets.
 
 Each target compiles a small toolchain fixture before running project commands.
@@ -76,12 +81,17 @@ Use `build.matrix` for explicit custom entries; a nonempty matrix overrides
 named `default`. Distribution artifacts and logs are separated by target name;
 release assembly verifies every selected distribution.
 
-Edit publication templates under `ci/repo/templates/`. Select commit-based
-explicit public versions and full source SHAs in `ci/releases/versions.toml`;
+Application source targets use separate `[[targets]]` entries with explicit `id`,
+`system`, and `path` fields. Cargo and CMake own compilation. Omit `build.projects`
+to build all declared targets, or select their identifiers explicitly. A repository
+with no application targets needs no language folders. See [project configuration](config/README.md).
+
+Edit publication templates under `publication/repo/templates/`. Select commit-based
+explicit public versions and full source SHAs in `publication/releases/versions.toml`;
 the initial empty list publishes no public version. See
-[versioned releases and source protection](ci/releases/README.md).
-Image Dockerfiles belong under `ci/images/`, with image choices in its catalogue.
-Pages uses Markdown templates under `ci/pages/templates/`.
+[versioned releases and source protection](publication/releases/README.md).
+Image Dockerfiles belong under `fabricator/distribution/images/`, with image choices in its catalogue.
+Pages uses Markdown templates under `publication/pages/templates/`.
 
 Publication uses the current repository's automatically supplied `GITHUB_TOKEN`;
 no PAT, signing key, organization app, or stored secret is required.

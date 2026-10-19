@@ -1,0 +1,13 @@
+name: Run a Luau module
+description: Invoke a returned module through its Run function without requiring Node.
+inputs:
+  module:
+    description: Repository-relative infrastructure module path without the .luau extension.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        LUAU_MODULE: ${{ inputs.module }}
+      run: bash .github/integration/run.sh "$LUAU_MODULE.luau"

@@ -21,6 +21,22 @@ export type ExecutionOptions = {
     }?,
 }
 
+export type Reader = {
+    readToEnd: (self: Reader) -> string,
+}
+
+export type Writer = {
+    write: (self: Writer, data: string | buffer) -> (),
+    close: (self: Writer) -> (),
+}
+
+export type Child = {
+    stdin: Writer,
+    stdout: Reader,
+    stderr: Reader,
+    status: (self: Child) -> { ok: boolean, code: number },
+}
+
 local Process = {} :: {
     os: "linux" | "macos" | "windows",
     arch: "x86_64" | "aarch64",
@@ -28,6 +44,7 @@ local Process = {} :: {
     args: { string },
     env: { [string]: string? },
     exec: (program: string, arguments: { string }?, options: ExecutionOptions?) -> Execution,
+    create: (program: string, arguments: { string }?, options: { cwd: string?, env: { [string]: string }? }?) -> Child,
     exit: (code: number?) -> never,
 }
 

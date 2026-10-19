@@ -5,7 +5,7 @@ Pre-Release for `MAJOR.MINOR.PATCH-pre.N`. Types are derived from the version.
 There are no public release channels, moving tags, alternate aliases or separate
 persistent release identities. Public tags equal the selected version string.
 
-The publication selection list is `ci/releases/versions.toml`. Each entry declares
+The publication selection list is `publication/releases/versions.toml`. Each entry declares
 an explicit version and full source commit SHA. An empty list publishes no public
 version. Commits must belong to source history. Optional `from` defaults to
 `beginning`; a SHA range excludes its ancestor start and includes the selected
