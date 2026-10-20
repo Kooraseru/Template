@@ -139,11 +139,13 @@ https://docs.github.com/en/actions/how-tos/monitor-workflows/use-the-visualizati
 
 ## Stage entry points
 
-The single workflow invokes composite actions named `validate`, `build`, `package`,
-`gate`, and `publish`. They delegate to implementation modules; job dependencies,
-permissions, matrices, and artifact transfers stay visible in `ci.yml`. Pages
-deployment retains its platform-specific actions and environment. The `gate` job
-keeps its existing status-check identity for branch protection.
+The CI orchestrator calls infrastructure modules through `run-luau` and retains
+generic setup adapters in `.github/actions/`. Documentation setup and generation
+are colocated in `publication/pages/action.yml`. Publication invokes its owning
+shell entry points directly. Job dependencies, permissions, matrices and artifact
+transfers remain visible in `ci.yml`; `gate` keeps its required check identity.
+The independent `template.yml` workflow performs optional upstream conformance,
+without becoming a build or publication dependency.
 
 `setup-github` checks GitHub CLI availability inside the runner. Under act, PR-choice
 maintenance performs no remote changes. Local current-source builds use worktree

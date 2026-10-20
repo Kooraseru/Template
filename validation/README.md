@@ -50,3 +50,22 @@ Canonical byte/signature vectors preserve the original signed representation,
 including nulls, empty arrays, Unicode edge cases, number spelling, and key order.
 Directory moves recognize historical receipt-contract/configuration paths without
 changing historical releases, tags, or authenticated receipt bytes.
+
+## Optional upstream template assessment
+
+`template.luau` reads another checkout using the current upstream workflow rules,
+configuration validators and Luau policy. It reports architecture drift without
+executing downstream code. Its hosted adapter is `.github/workflows/template.yml`,
+independent of CI and removable without altering publication gates. See the
+[conformance contract](../.kero/data/contracts/repository/template-conformance.md).
+
+For a local checker assessment from this trusted Template checkout:
+
+```sh
+bash .github/integration/run.sh validation/template.luau /path/to/subject UPSTREAM_COMMIT_SHA
+```
+
+This is a module check, not an extension workflow run. For workflow execution use
+the extension entry point documented in the local-testing contract. Only tracked
+regular files are consumed. JSON output defaults to `build/template-conformance.json`;
+set `TEMPLATE_REPORT` to select an existing output directory.

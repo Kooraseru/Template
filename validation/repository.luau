@@ -79,6 +79,11 @@ function Repository.Run()
 	Targets.Discover(config.targets)
 
 	local operations = {
+		required_files = function(check: Check)
+			for _, path in assert(check.paths, "missing required file paths") do
+				assert(Fs.isFile(path), "missing required file: " .. path)
+			end
+		end,
 		directory_entries = validateDirectoryEntries,
 		absent_files = validateAbsentFiles,
 		existing_config_paths = function(check: Check)

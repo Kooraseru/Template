@@ -14,7 +14,7 @@ local Stdio = require("@lune/stdio")
 
 --# Functions
 
-function LocalActions.Request(operation: string): string
+function LocalActions.Request(operation: string, workflow: string?): string
 
 	assert(operation == "status" or operation == "start", "expected status or start")
 	local root = ".kero/.runtime/local-actions/"
@@ -22,7 +22,16 @@ function LocalActions.Request(operation: string): string
 	local session = Serde.decode("json", Fs.readFile(root .. "session.json")) :: { token: string }
 	local id = Serde.hash("sha256", Datetime.now():toIsoDate() .. tostring(math.random())):sub(1, 32)
 	local path = root .. id
-	Fs.writeFile(path .. ".tmp", Serde.encode("json", { token = session.token, operation = operation }))
+	local request: { [string]: unknown } = { token = session.token, operation = operation }
+	if operation == "start" then
+		local file = workflow or "ci.yml"
+		assert(file:match("^[%w%-]+%.ya?ml$"), "expected a workflow filename")
+		local source = Fs.readFile(".github/workflows/" .. file)
+		request.workflow = file
+		request.source = source
+		request.definition = Serde.decode("yaml", source)
+	end
+	Fs.writeFile(path .. ".tmp", Serde.encode("json", request))
 	Fs.move(path .. ".tmp", path .. ".request.json")
 
 	for _ = 1, 150 do
@@ -46,7 +55,7 @@ end
 
 function LocalActions.Run()
 
-	Stdio.write(LocalActions.Request(Process.args[1] or "status") .. "\n")
+	Stdio.write(LocalActions.Request(Process.args[1] or "status", Process.args[2]) .. "\n")
 end
 
 return LocalActions

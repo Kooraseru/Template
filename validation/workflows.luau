@@ -109,8 +109,10 @@ function Workflows.CheckBoundaries(workflow: unknown)
 	end
 end
 
-function Workflows.CheckActions(workflow: unknown, actionRules: Rules.Document)
+function Workflows.CheckActions(workflow: unknown, actionRules: Rules.Document, load: ((string) -> unknown)?)
 	local visited: { [string]: boolean } = {}
+	local active: { [string]: boolean } = {}
+	local readAction = load or readYaml
 
 	local function inspect(document: unknown)
 		local function visitSteps(steps: unknown)
@@ -121,13 +123,15 @@ function Workflows.CheckActions(workflow: unknown, actionRules: Rules.Document)
 				if type(reference) == "string" and reference:sub(1, 2) == "./" then
 					assert(not reference:find("..", 3, true), "local action must remain inside repository")
 					local path = reference .. "/action.yml"
+					assert(not active[path], "cyclic local action reference: " .. reference)
 
 					if not visited[path] then
-						visited[path] = true
-						assert(Fs.isFile(path), "missing local action: " .. reference)
-						local action = readYaml(path)
+						active[path] = true
+						local action = readAction(path)
 						Rules.Validate(action, actionRules)
 						inspect(action)
+						active[path] = nil
+						visited[path] = true
 					end
 				end
 			end

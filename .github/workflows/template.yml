@@ -1,0 +1,66 @@
+name: Template conformance
+
+on:
+  pull_request:
+  push:
+    branches: [source]
+  schedule:
+    - cron: '23 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-conformance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    name: Template / Conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Initialize assessment
+        shell: bash
+        run: |
+          printf '%s\n' '{"status":"unable_to_assess","reason":"Upstream retrieval or checker execution did not complete."}' > "$RUNNER_TEMP/template-conformance.json"
+      - name: Read repository under assessment
+        uses: actions/checkout@v7
+        with:
+          path: subject
+          persist-credentials: false
+      - name: Retrieve current upstream checker and contract
+        id: upstream
+        uses: actions/checkout@v7
+        with:
+          repository: Kooraseru/Template
+          ref: source
+          path: template-upstream
+          persist-credentials: false
+      - name: Install upstream inspection runtime
+        uses: ./template-upstream/.github/actions/setup-lune
+      - name: Assess repository as data
+        working-directory: template-upstream
+        shell: bash
+        env:
+          TEMPLATE_REPORT: ${{ runner.temp }}/template-conformance.json
+          UPSTREAM_COMMIT: ${{ steps.upstream.outputs.commit }}
+        run: bash .github/integration/run.sh validation/template.luau "$GITHUB_WORKSPACE/subject" "$UPSTREAM_COMMIT"
+      - name: Report assessment availability
+        if: always()
+        shell: bash
+        run: |
+          if grep -q '"status":"unable_to_assess"' "$RUNNER_TEMP/template-conformance.json"; then
+            printf '%s\n' '# Template conformance' '' '**Unable to assess.** Upstream retrieval or checker execution failed; this is not a conformance result.' >> "$GITHUB_STEP_SUMMARY"
+            echo '::error title=Template assessment unavailable::Upstream retrieval or checker execution did not complete.'
+            exit 1
+          fi
+      - name: Preserve assessment report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: template-conformance
+          path: ${{ runner.temp }}/template-conformance.json
+          if-no-files-found: error
+          retention-days: 14

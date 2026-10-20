@@ -2,10 +2,9 @@
   "repository": {
     "checks": [
       {
-        "operation": "directory_entries",
-        "path": ".github/workflows",
-        "expected": [
-          "ci.yml"
+        "operation": "required_files",
+        "paths": [
+          ".github/workflows/ci.yml"
         ]
       },
       {
@@ -1406,6 +1405,49 @@
         "source": "-- validation/example.luau\n\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
         "valid": false
       }
+    ]
+  },
+  "template": {
+    "required": [
+      ".github/workflows/ci.yml",
+      "config/project.toml",
+      "libraries/bootstrap",
+      "libraries/registry",
+      "libraries/testing",
+      "validation",
+      "fabricator",
+      "security/access",
+      "security/receipts",
+      "publication/repo",
+      "publication/pages",
+      "publication/releases",
+      "src",
+      ".gitignore"
+    ],
+    "documents": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "format": "yaml",
+        "rules": "workflows.rules"
+      }
+    ],
+    "module_roots": [
+      ".github/integration/",
+      "config/tools/",
+      "libraries/",
+      "validation/",
+      "fabricator/",
+      "security/",
+      "publication/"
+    ],
+    "root_directories": [
+      "config",
+      "libraries",
+      "validation",
+      "src",
+      "fabricator",
+      "security",
+      "publication"
     ]
   }
 }

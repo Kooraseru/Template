@@ -63,7 +63,7 @@ From the workspace root, any agent can query or start the real extension task:
 
 ```sh
 bash .github/integration/run.sh .github/integration/local-actions.luau status
-bash .github/integration/run.sh .github/integration/local-actions.luau start
+bash .github/integration/run.sh .github/integration/local-actions.luau start ci.yml
 ```
 
 On Windows, use Git Bash for the command wrapper. `status` reports extension task
@@ -78,9 +78,12 @@ Discovery uses `.kero/.runtime/local-actions/session.json` in the open workspace
 The client handles the session credential internally. Do not commit or print that
 file, create it by hand, or copy it between machines. A missing or unresponsive
 session means editor access is unavailable. After a timeout, query status and logs
-before retrying; an already accepted command may still complete. The adapter supports file workspaces
-containing exactly one workflow named `ci.yml` and calls the installed extension's
-registered command. It does not spawn act itself.
+before retrying; an already accepted command may still complete. The adapter supports file workspaces with multiple workflows. `start` selects
+`ci.yml` by default; pass another workflow filename explicitly to run it alone.
+The Luau client parses the selected YAML and supplies the workflow object to the
+installed extension's `githubLocalActions.runWorkflow` command. The bridge verifies
+that the source still matches the workspace file before calling that command.
+It does not spawn act itself.
 
 The local act executable still needs the artifact-protocol support documented in
 `fabricator/distribution/images/act/README.md`. `.actrc` reuses installed runner

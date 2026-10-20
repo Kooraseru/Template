@@ -17,10 +17,12 @@ failure histories, and machine-specific installation paths do not belong here.
 source after authorization. Do not introduce another repository or require
 organization-specific infrastructure.
 
-`.github/workflows/ci.yml` is the single workflow. It owns events, job dependencies,
+`.github/workflows/ci.yml` is the single build and publication orchestrator. It owns events, job dependencies,
 matrices, runners, permissions, artifact transfers, and stage selection. Reusable
 actions and implementation modules perform individual operations, not independent
 pipeline orchestration. Separate permission boundaries use separate jobs.
+Independent maintenance workflows may exist without participating in CI gates.
+Template conformance is owned by [the conformance contract](template-conformance.md).
 
 
 ## Directory and build ownership

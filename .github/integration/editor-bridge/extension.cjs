@@ -66,23 +66,29 @@ async function activate(context) {
         let result;
         try {
           const bytes = await fs.readFile(path.join(state.root, name));
-          if (bytes.length > 4096) throw new Error("Request exceeds limit");
+          if (bytes.length > 1024 * 1024) throw new Error("Request exceeds limit");
           const request = JSON.parse(bytes);
           if (request.token !== state.token) throw new Error("Stale or unauthorized bridge session");
-          if (Object.keys(request).some(k => !["token", "operation"].includes(k))) throw new Error("Unknown request field");
+          if (Object.keys(request).some(k => !["token", "operation", "workflow", "source", "definition"].includes(k))) throw new Error("Unknown request field");
           if (!["status", "start"].includes(request.operation)) throw new Error("Unsupported operation");
           const before = [...active.values()].filter(t => t.workspace === state.folder.uri.fsPath);
           if (request.operation === "start") {
             if (before.length || Date.now() < state.startingUntil) throw new Error("A GitHub Local Actions run is already active in this workspace");
-            const workflows = (await fs.readdir(path.join(state.folder.uri.fsPath, ".github/workflows")))
-              .filter(n => /\.ya?ml$/.test(n));
-            if (workflows.length !== 1 || workflows[0] !== "ci.yml") throw new Error("Expected exactly one workflow: ci.yml");
+            const file = request.workflow;
+            if (typeof file !== "string" || !/^[a-zA-Z0-9_-]+\.ya?ml$/.test(file)) throw new Error("Expected a workflow filename");
+            const uri = vscode.Uri.file(path.join(state.folder.uri.fsPath, ".github/workflows", file));
+            const source = await fs.readFile(uri.fsPath, "utf8");
+            if (request.source !== source) throw new Error("Workflow changed before execution; retry with its current contents");
+            const definition = request.definition;
+            if (!definition || typeof definition !== "object" || !definition.jobs) throw new Error("Expected a parsed workflow document");
+            const name = definition.name || path.parse(file).name;
+            if (typeof name !== "string" || /[\r\n]/.test(name)) throw new Error("Invalid workflow name");
             const extension = vscode.extensions.getExtension("SanjulaGanepola.github-local-actions");
             if (!extension) throw new Error("GitHub Local Actions is not installed");
             await extension.activate();
             state.startingUntil = Date.now() + 15000;
             try {
-              await vscode.commands.executeCommand("githubLocalActions.runAllWorkflows", { workspaceFolder: state.folder });
+              await vscode.commands.executeCommand("githubLocalActions.runWorkflow", { workspaceFolder: state.folder, workflow: { uri, name, fileContent: source, yaml: definition } });
             } catch (error) { state.startingUntil = 0; throw error; }
           }
           result = { ok: true, logsDirectory: path.join(path.dirname(context.globalStorageUri.fsPath), "sanjulaganepola.github-local-actions"), starting: Date.now() < state.startingUntil, tasks: [...active.values(), ...completed.values()]
