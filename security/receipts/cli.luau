@@ -5,6 +5,7 @@ local Receipts = {}
 
 --# Modules
 
+local Coverage = require("../../fabricator/coverage")
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
@@ -174,14 +175,26 @@ function Receipts.Plan()
 		end
 	end
 	local executing: { C.Value } = {}
+	local skipped: { C.Value } = {}
 	local requiredImages: { [string]: boolean } = {}
 	for _, entry in builds do
 		local accepted = D.Get(entry, "accepted") ~= nil
 		complete = complete and accepted
 		anyAccepted = anyAccepted or accepted
-		if
-			not localRun or (D.Text(entry, "runner"):match("^ubuntu") and (not names or names[D.Text(entry, "name")]))
-		then
+		local available = Coverage.Local({ runner = D.Text(entry, "runner") })
+		local selected = not names or names[D.Text(entry, "name")]
+		if localRun and (not available.Execute or not selected) then
+			table.insert(
+				skipped,
+				C.Object({
+					name = D.Text(entry, "name"),
+					source_sha = D.Text(entry, "source_sha"),
+					status = "unverified",
+					reason = if not selected then "Not selected for this local run" else assert(available.Reason),
+				})
+			)
+		end
+		if not localRun or (available.Execute and selected) then
 			table.insert(executing, entry)
 			if not accepted then
 				requiredImages[D.Text(entry, "image_artifact")] = true
@@ -205,14 +218,24 @@ function Receipts.Plan()
 		end
 	end
 	plan = D.Set(plan, "images", C.Array(images))
+	plan = D.Set(plan, "local_skipped", C.Array(skipped))
+	plan = D.Set(plan, "local_executing", #executing)
+	if localRun then
+		D.Write(
+			"build/validation/local-coverage.json",
+			C.Object({ skipped = C.Array(skipped), executing = #executing })
+		)
+	end
 	D.Write("build/tmp/releases/plan.json", plan)
 	local outputs = D.Read("build/tmp/releases/outputs.json")
 	local disabled = C.Object({ name = "disabled", runner = "ubuntu-latest", artifact = "disabled", input_ref = "" })
 	local fields: { [string]: C.Value } = {
 		images_enabled = tostring(#images > 0),
 		image_matrix = assert(C.Encode(C.Object({ include = C.Array(if #images > 0 then images else { disabled }) }))),
-		build_matrix = assert(C.Encode(C.Object({ include = C.Array(if run then executing else { disabled }) }))),
-		build_requested = tostring(run),
+		build_matrix = assert(
+			C.Encode(C.Object({ include = C.Array(if run and #executing > 0 then executing else { disabled }) }))
+		),
+		build_requested = tostring(run and #executing > 0),
 		receipt_ready = tostring(complete),
 		release_enabled = tostring(
 			run and operation ~= "Validate" and #D.Items(plan, "selections") > 0 and #executing == #builds

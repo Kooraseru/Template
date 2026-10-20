@@ -1316,6 +1316,7 @@
         "security/receipts/authentication.luau",
         "fabricator/targets.luau",
         "fabricator/project.luau",
+        "fabricator/coverage.luau",
         "validation/plugins.luau",
         "validation/workshop.luau",
         "publication/releases/client.luau",

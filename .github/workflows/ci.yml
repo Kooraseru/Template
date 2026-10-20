@@ -182,12 +182,16 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
+        if: env.ACT != 'true'
         with:
           ref: source
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
+        if: env.ACT != 'true'
       - uses: ./.github/actions/setup-github
+        if: env.ACT != 'true'
       - name: Refresh open pull request choices
+        if: env.ACT != 'true'
         env:
           GH_TOKEN: ${{ secrets.CI_WORKFLOW_TOKEN || github.token }}
         run: bash .github/integration/run.sh .github/integration/refresh-prs.luau --remote
@@ -201,6 +205,7 @@ jobs:
       pull-requests: read
     runs-on: ubuntu-latest
     outputs:
+      tested_sha: ${{ steps.authority.outputs.tested_sha }}
       operation: ${{ steps.dispatch.outputs.operation }}
       ignore_validation: ${{ steps.dispatch.outputs.ignore_validation }}
       ignore_coverage: ${{ steps.dispatch.outputs.ignore_coverage }}
@@ -239,6 +244,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash .github/integration/run.sh .github/integration/dispatch.luau
       - name: Resolve execution authority and tested commit
+        id: authority
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash .github/integration/run.sh security/receipts/cli.luau authorize
@@ -307,6 +313,7 @@ jobs:
           IMAGE_NAME: ${{ matrix.name }}
           CI_IMAGE_ID: ${{ matrix.artifact }}
           CI_INPUT_REF: ${{ matrix.input_ref }}
+          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
         run: bash .github/integration/run.sh fabricator/distribution/images/build.luau "$IMAGE_NAME"
       - name: Cache / Store image archive
         if: steps.image-cache.outputs.cache-hit != 'true'
@@ -331,6 +338,7 @@ jobs:
       matrix: ${{ fromJSON(needs.validate.outputs.build_matrix) }}
     runs-on: ${{ matrix.runner }}
     env:
+      CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
       CI_BUILD_TARGET: ${{ matrix.name }}
       CI_BUILD_SPEC: ${{ toJSON(matrix) }}
       CI_INPUT_REF: ${{ matrix.input_ref }}

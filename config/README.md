@@ -70,5 +70,6 @@ font is under `publication/releases/assets/`. The native dependency lockfile and
 frozen canonical/signature vectors remain checked in.
 
 Stock GitHub actions may use Node internally; this template installs no Node
-runtime and ships no Node scripts or npm manifests. Worker installation and runtime
+runtime or executes project JavaScript in CI. The optional editor-host adapter
+uses VS Code's built-in extension API without npm dependencies. Worker installation and runtime
 sandboxing remain application responsibilities.

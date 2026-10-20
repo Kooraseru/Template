@@ -34,6 +34,7 @@ local TestingTests = require("./tests/testing")
 local PluginTests = require("./tests/plugins")
 local ActivationTests = require("./tests/activation")
 local WorkflowTests = require("./tests/workflows")
+local CoverageTests = require("../fabricator/tests/coverage")
 local WorkshopTests = require("./tests/workshop")
 local TargetTests = require("../fabricator/tests/targets")
 local DiscoveryTests = require("../fabricator/tests/discovery")
@@ -79,6 +80,7 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 			checks = {
 				{ path = "validation/tests/documents.luau", Run = suiteCheck(DocumentTests) },
 				{ path = "fabricator/tests/project.luau", Run = suiteCheck(ProjectTests) },
+				{ path = "fabricator/tests/coverage.luau", Run = suiteCheck(CoverageTests) },
 				{ path = "validation/tests/activation.luau", Run = suiteCheck(ActivationTests) },
 				{
 					path = "validation/tests/testing.luau",

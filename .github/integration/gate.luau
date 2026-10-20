@@ -38,7 +38,9 @@ function Gate.Check(
 	if controls.operation ~= "Validate" then
 		local build = Rules.Entries(results.build).result
 
-		if build ~= "success" then
+		if
+			build ~= "success" and not (context["local"] == true and plan.local_executing == 0 and build == "skipped")
+		then
 			table.insert(
 				errors,
 				if build ~= "skipped"
@@ -90,7 +92,18 @@ function Gate.Run()
 			text ..= "Source approval: " .. tostring(approval.kind) .. " by " .. tostring(approval.actor) .. ".\n\n"
 		end
 
-		text ..= if #errors > 0 then table.concat(errors, "\n\n") else "Selected stages passed."
+		local skipped = Rules.Array(plan.local_skipped or {})
+		if #skipped > 0 then
+			text ..= "Unverified local targets:\n\n"
+			for _, raw in skipped do
+				local target = Rules.Entries(raw)
+				text ..= "- " .. tostring(target.name) .. ": " .. tostring(target.reason) .. "\n"
+			end
+			text ..= "\n"
+		end
+		text ..= if #errors > 0
+			then table.concat(errors, "\n\n")
+			else "Selected executable stages completed; unverified targets are not passes."
 		Fs.writeFile(summary, (if Fs.isFile(summary) then Fs.readFile(summary) else "") .. text .. "\n")
 	end
 

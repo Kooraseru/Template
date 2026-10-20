@@ -186,7 +186,7 @@ function BuildExecutor.Run(config: ConfigModule.Config, target: ConfigModule.Bui
 
 	assert(ok, tostring(failure))
 
-	if not container and Process.env.CI_SOURCE_DIR then
+	if not container and Process.env.CI_SOURCE_DIR and Process.env.CI_SOURCE_DIR ~= Process.cwd then
 		for _, path in config.build.package_paths do
 			Files.Copy(Process.env.CI_SOURCE_DIR .. "/" .. path, path)
 		end

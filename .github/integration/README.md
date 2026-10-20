@@ -154,3 +154,8 @@ Workflow boundary checks reject missing core stages, write permissions on genera
 jobs, and publication jobs missing required gate, source-branch, or hosted-context
 conditions. These checks validate declared structure, not arbitrary expression
 equivalence or complete semantic security.
+
+Optional command-only VS Code integration lives in `editor-bridge/`; its agent entry
+point is `local-actions.luau`. Follow the Kero local-testing contract for installation,
+invocation, and genuine extension History/log access. This editor-only adapter does
+not participate in hosted CI execution.
