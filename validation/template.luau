@@ -14,6 +14,7 @@ local Policy = require("./policy")
 local Workflows = require("./workflows")
 local Project = require("../fabricator/project")
 local Config = require("../libraries/registry/config")
+local Canonical = require("../libraries/bootstrap/canonical")
 
 --# Types
 
@@ -160,7 +161,15 @@ function Template.Run()
 		upstream_commit = upstream,
 		findings = findings,
 	}
-	Fs.writeFile(destination, Serde.encode("json", report, true))
+	local rows: { Canonical.Value } = {}
+	for _, finding in findings do
+		table.insert(rows, Canonical.FromLune(finding))
+	end
+	Fs.writeFile(destination, assert(Canonical.Encode(Canonical.Object({
+		status = report.status,
+		upstream_commit = upstream,
+		findings = Canonical.Array(rows),
+	}))) .. "\n")
 	local summary = "# Template conformance\n\nResult: **"
 		.. report.status
 		.. "**\n\nExamined upstream commit: `"
