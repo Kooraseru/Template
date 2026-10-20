@@ -215,7 +215,8 @@ function Receipts.Plan()
 	if run and operation ~= "Validate" and operation ~= "Publish" then
 		for _, image in D.Items(plan, "images") do
 			if
-				D.Text(controls, "images") ~= "Required by selected builds" or requiredImages[D.Text(image, "artifact")]
+				D.Text(controls, "images") ~= "Required by selected builds"
+				or requiredImages[D.Text(image, "artifact")]
 			then
 				table.insert(images, image)
 			end
@@ -232,13 +233,10 @@ function Receipts.Plan()
 	end
 	D.Write("build/tmp/releases/plan.json", plan)
 	local outputs = D.Read("build/tmp/releases/outputs.json")
-	local disabled = C.Object({ name = "disabled", runner = "ubuntu-latest", artifact = "disabled", input_ref = "" })
 	local fields: { [string]: C.Value } = {
 		images_enabled = tostring(#images > 0),
-		image_matrix = assert(C.Encode(C.Object({ include = C.Array(if #images > 0 then images else { disabled }) }))),
-		build_matrix = assert(
-			C.Encode(C.Object({ include = C.Array(if run and #executing > 0 then executing else { disabled }) }))
-		),
+		image_matrix = assert(C.Encode(C.Object({ include = C.Array(images) }))),
+		build_matrix = assert(C.Encode(C.Object({ include = C.Array(if run then executing else {}) }))),
 		build_requested = tostring(run and #executing > 0),
 		receipt_ready = tostring(complete),
 		release_enabled = tostring(

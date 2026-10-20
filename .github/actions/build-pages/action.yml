@@ -1,8 +1,0 @@
-name: Build Pages
-description: Generate a static site under build/pages.
-runs:
-  using: composite
-  steps:
-    - uses: ./.github/actions/run-luau
-      with:
-        module: publication/pages/build

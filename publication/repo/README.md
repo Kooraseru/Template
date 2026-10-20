@@ -9,8 +9,8 @@ nested Git/build state, overlays `templates/`, and adds optional root licensing
 files. `publication.json` records the source commit and repository identity.
 Templates are editable source; generated copies are disposable output.
 
-`.github/actions/build-repo` invokes the module through the Node-free
-`.github/actions/run-luau` boundary. The module does not publish branches.
+The workflow invokes the module directly through the Node-free
+`.github/actions/run-luau` adapter. The module does not publish branches.
 `publish.sh` remains the separately authorized publication operation: it checks
 the staged identity and current source, then updates generated `main` using the
 automatic workflow token. Local or untrusted executions cannot publish.

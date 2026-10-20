@@ -72,6 +72,13 @@ end
 
 function Workflows.CheckBoundaries(workflow: unknown)
 	local jobs = Rules.Entries(Rules.Property(workflow, "jobs"))
+	local gate = Rules.Entries(jobs.gate)
+	assert(gate.name == nil, "gate must retain its required status identity")
+	assert(tostring(gate["if"]):find("always()", 1, true), "gate must evaluate failed dependencies")
+
+	for _, name in { "validate", "build", "repository", "pages", "release", "images", "validation-receipt" } do
+		assert(table.find(Rules.Array(gate.needs), name), "gate must observe stage: " .. name)
+	end
 
 	for _, name in { "validate", "build", "release", "gate", "publish-repository", "publish-pages", "publish-release" } do
 		assert(jobs[name] ~= nil, "missing workflow stage: " .. name)
@@ -102,6 +109,44 @@ function Workflows.CheckBoundaries(workflow: unknown)
 	end
 end
 
+function Workflows.CheckActions(workflow: unknown, actionRules: Rules.Document)
+	local visited: { [string]: boolean } = {}
+
+	local function inspect(document: unknown)
+		local function visitSteps(steps: unknown)
+			for _, rawStep in Rules.Array(steps) do
+				local step = Rules.Entries(rawStep)
+				local reference = step.uses
+
+				if type(reference) == "string" and reference:sub(1, 2) == "./" then
+					assert(not reference:find("..", 3, true), "local action must remain inside repository")
+					local path = reference .. "/action.yml"
+
+					if not visited[path] then
+						visited[path] = true
+						assert(Fs.isFile(path), "missing local action: " .. reference)
+						local action = readYaml(path)
+						Rules.Validate(action, actionRules)
+						inspect(action)
+					end
+				end
+			end
+		end
+
+		local fields = Rules.Entries(document)
+
+		if fields.jobs ~= nil then
+			for _, job in Rules.Entries(fields.jobs) do
+				visitSteps(Rules.Entries(job).steps)
+			end
+		else
+			visitSteps(Rules.Property(document, "runs.steps"))
+		end
+	end
+
+	inspect(workflow)
+end
+
 function Workflows.Run()
 	local definitions = Rules.Read("validation/ruleset.json", "workflows.rules")
 	local workflow = readYaml(".github/workflows/ci.yml")
@@ -113,6 +158,7 @@ function Workflows.Run()
 
 	Rules.Validate(workflow, definitions)
 	Workflows.CheckBoundaries(workflow)
+	Workflows.CheckActions(workflow, actionRules)
 	validateControls(workflow, controlCheck)
 
 	for _, name in ipairs(Fs.readDir(".github/actions")) do

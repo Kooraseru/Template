@@ -29,7 +29,7 @@ controls against the YAML. The build-target dropdown additionally includes the
 ## Stages and operations
 
 Jobs use stage prefixes in their display names: Maintenance, Validate, Build,
-Evidence and Publish. Validation suites also use GitHub's `::group::` log commands
+Evidence, Assemble and Publish. Validation suites also use GitHub's `::group::` log commands
 for collapsible sections. GitHub Actions does not have a job-label or nested stage
 property; the prefixes organize its native flat job list. The `gate` job retains
 its exact name because repository branch protection requires that status check.
@@ -168,3 +168,5 @@ is opt-in through `CI_WORKFLOW_SYNC_ENABLED=true` and an explicitly configured
 The job fails if enabled without the required credentials or permissions; it never
 falls back to the automatic token. Ordinary CI and publication need neither setting.
 The local refresh module can still generate choices for a reviewed authored change.
+
+See [CI ownership and execution](architecture.md) for the adapter audit, dependency graph and security boundaries.

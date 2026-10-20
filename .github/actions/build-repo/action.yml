@@ -1,8 +1,0 @@
-name: Build repository publication
-description: Generate prospective main contents under build/repo.
-runs:
-  using: composite
-  steps:
-    - uses: ./.github/actions/run-luau
-      with:
-        module: publication/repo/build

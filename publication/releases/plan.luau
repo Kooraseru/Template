@@ -250,18 +250,8 @@ function Plan.Finalize(raw: unknown): (Rules.Dictionary, { [string]: string })
 
 	local output = {
 		build_matrix = assert(Canonical.Encode(Canonical.Object({ include = arrayValue(builds) }))),
-		image_matrix = assert(Canonical.Encode(Canonical.Object({
-			include = arrayValue(if #images > 0
-				then images
-				else {
-					{ name = "disabled", runner = "ubuntu-latest", artifact = "disabled", input_ref = "" },
-				}),
-		}))),
-		release_matrix = assert(Canonical.Encode(Canonical.Object({
-			include = arrayValue(
-				if #releaseMatrix > 0 then releaseMatrix else { { version = "disabled", type = "Release" } }
-			),
-		}))),
+		image_matrix = assert(Canonical.Encode(Canonical.Object({ include = arrayValue(images) }))),
+		release_matrix = assert(Canonical.Encode(Canonical.Object({ include = arrayValue(releaseMatrix) }))),
 		images_enabled = tostring(#images > 0),
 	}
 	write("build/tmp/releases/plan.json", Canonical.Object(fields))

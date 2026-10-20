@@ -1101,14 +1101,6 @@
           "path": "jobs.gate.name",
           "absent": true,
           "message": "Keep the required gate check name stable"
-        },
-        {
-          "path": "jobs.*.steps",
-          "requires_before": {
-            "field": "uses",
-            "value": "./.github/actions/setup-node",
-            "prerequisite": "./.github/actions/setup-lune"
-          }
         }
       ],
       "collections": [

@@ -1,8 +1,0 @@
-name: Gate stage
-description: Execute the repository-owned gate stage.
-runs:
-  using: composite
-  steps:
-    - uses: ./.github/actions/run-luau
-      with:
-        module: .github/integration/gate

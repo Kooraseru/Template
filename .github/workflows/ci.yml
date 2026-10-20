@@ -255,7 +255,9 @@ jobs:
       - name: Validate / Selected checks
         id: checks
         continue-on-error: ${{ steps.dispatch.outputs.ignore_validation == 'true' }}
-        uses: ./.github/actions/validate
+        uses: ./.github/actions/run-luau
+        with:
+          module: validation/run
       - name: Evidence / Store validation results
         if: always()
         uses: actions/upload-artifact@v7
@@ -385,13 +387,19 @@ jobs:
         if: steps.prepared.outputs.reused != 'true' && matrix.image == '' && contains(matrix.build.toolchains, 'cmake')
         with:
           version: ${{ matrix.build.cmake_version }}
-      - uses: ./.github/actions/build
+      - name: Build selected target
+        uses: ./.github/actions/run-luau
+        with:
+          module: fabricator/workflow
         if: steps.prepared.outputs.reused != 'true'
         env:
           CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
       - run: bash .github/integration/run.sh security/receipts/cli.luau execution
         if: steps.prepared.outputs.reused != 'true'
-      - uses: ./.github/actions/package
+      - name: Package selected distribution
+        uses: ./.github/actions/run-luau
+        with:
+          module: fabricator/distribution/package
         if: steps.prepared.outputs.reused != 'true'
       - run: bash .github/integration/run.sh publication/releases/cli.luau verify build/artifacts
       - uses: actions/upload-artifact@v7
@@ -418,7 +426,10 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/build-repo
+      - name: Generate repository content
+        uses: ./.github/actions/run-luau
+        with:
+          module: publication/repo/build
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
       - uses: actions/upload-artifact@v7
@@ -440,8 +451,8 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - run: sudo apt-get update && sudo apt-get install --yes pandoc
-      - uses: ./.github/actions/build-pages
+      - name: Generate documentation preview
+        uses: ./publication/pages
       - uses: actions/upload-artifact@v7
         with:
           name: pages-preview
@@ -449,7 +460,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Package / Release assembly
+    name: Assemble / Releases
     needs: [validate, build, validation-receipt]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && (needs.validation-receipt.result == 'success' || needs.validation-receipt.result == 'skipped') && needs.validate.outputs.release == 'true' && needs.validate.outputs.operation != 'Validate' }}
     runs-on: ubuntu-latest
@@ -495,7 +506,7 @@ jobs:
           if-no-files-found: error
 
   validation-receipt:
-    name: Package / Build receipts
+    name: Evidence / Build receipts
     needs: [validate, build, images]
     if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || needs.validate.outputs.pr != '0') && needs.validate.outputs.local_execution == 'false' }}
     runs-on: ubuntu-latest
@@ -584,7 +595,9 @@ jobs:
             "pages":"${{ needs.validate.outputs.pages }}",
             "release":"${{ needs.validate.outputs.release }}",
             "images":"${{ needs.validate.outputs.images }}"}
-        uses: ./.github/actions/gate
+        uses: ./.github/actions/run-luau
+        with:
+          module: .github/integration/gate
       - name: Verify accepted PR validation and report the exact PR head
         if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
         env:
@@ -623,9 +636,8 @@ jobs:
       - name: Publish validated tree
         env:
           GH_TOKEN: ${{ github.token }}
-        uses: ./.github/actions/publish
-        with:
-          output: repository
+        shell: bash
+        run: bash publication/repo/publish.sh
 
   publish-pages:
     env:
@@ -698,6 +710,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ matrix.version }}
-        uses: ./.github/actions/publish
-        with:
-          output: release
+        shell: bash
+        run: bash publication/releases/publish.sh
