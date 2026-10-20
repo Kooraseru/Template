@@ -2,6 +2,7 @@
 
 Each contract owns its subject. Other documents must not restate or override it:
 
+- [Source updates](source-updates.md): development authority, post-push validation, and downstream eligibility.
 - [Local testing](local-testing.md): local execution, PR comparison, platform coverage, and log access.
 - [Build receipts](build-receipts.md): execution approval, evidence identity, signing, acceptance, and reuse.
 - [Releases](releases.md): public versions, release assets, replacement, and release notes.
@@ -21,10 +22,6 @@ matrices, runners, permissions, artifact transfers, and stage selection. Reusabl
 actions and implementation modules perform individual operations, not independent
 pipeline orchestration. Separate permission boundaries use separate jobs.
 
-Authorized hosted source execution may publish completed outputs after its gates
-succeed. Manual inputs request operations; they cannot grant permissions.
-Generation and publication consume the same artifacts, without a separate
-privileged rebuild.
 
 ## Directory and build ownership
 

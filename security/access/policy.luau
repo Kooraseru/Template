@@ -13,6 +13,7 @@ local definition = Rules.Read("security/access/ruleset.json", "publication.rules
 export type Context = {
 	localRun: boolean?,
 	manualAllowed: boolean?,
+	pushAllowed: boolean?,
 	actions: string?,
 	server: string?,
 	event: string?,

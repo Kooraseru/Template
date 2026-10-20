@@ -38,16 +38,17 @@ function Context.Read(env: { [string]: string? }): Policy.Context
 		repository = Context.Repository(event)
 	end
 
-	local manualAllowed = false
+	local allowed = false
 
-	if env.GITHUB_EVENT_NAME == "workflow_dispatch" then
-		manualAllowed = pcall(function()
+	if env.GITHUB_EVENT_NAME == "workflow_dispatch" or env.GITHUB_EVENT_NAME == "push" then
+		allowed = pcall(function()
 			Publication.Authorize(env)
 		end)
 	end
 
 	return {
-		manualAllowed = manualAllowed,
+		manualAllowed = env.GITHUB_EVENT_NAME == "workflow_dispatch" and allowed,
+		pushAllowed = env.GITHUB_EVENT_NAME == "push" and allowed,
 		localRun = env.ACT == "true",
 		actions = env.GITHUB_ACTIONS,
 		server = env.GITHUB_SERVER_URL,

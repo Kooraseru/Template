@@ -21,12 +21,16 @@ function Publication.Authorize(env: Request.Environment?, administrator: ((strin
 		"Local or untrusted publication denied; hosted source execution is required"
 	)
 
+	local isAdmin = administrator or GitHub.IsAdmin
 	if selected.GITHUB_EVENT_NAME == "push" then
+		assert(
+			isAdmin(selected.GITHUB_ACTOR or GitHub.Actor()),
+			"source publication requires an authorized administrator push"
+		)
 		return true
 	end
 
 	local controls = Request.Read(selected)
-	local isAdmin = administrator or GitHub.IsAdmin
 	assert(
 		selected.GITHUB_EVENT_NAME == "workflow_dispatch"
 			and Request.ParsePR(controls.pull_request) == 0

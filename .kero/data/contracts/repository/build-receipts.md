@@ -5,9 +5,8 @@ This contract governs trusted evidence, not ordinary development test eligibilit
 ## Approval and identity
 
 Automatic hosted PR execution performs cheap checks. Expensive hosted execution
-requires administrator approval or matching accepted builds. Administrator source
-merge or push approval permits missing builds to execute; it does not constitute
-successful evidence. Contributor claims never authorize merging or publication.
+requires administrator authorization or matching accepted builds. Contributor
+claims never authorize merging or publication.
 Fork contributions remain untrusted.
 
 Accepted receipts require committed clean inputs. Identity binds repository,

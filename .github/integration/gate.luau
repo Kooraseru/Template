@@ -35,6 +35,23 @@ function Gate.Check(
 		table.insert(errors, "Selected validation checks failed")
 	end
 
+	if event == "push" and context["local"] ~= true then
+		local authority = Rules.Entries(context.source_authorization or {})
+		if authority.kind ~= "admin-source-push" and authority.kind ~= "admin-merge" then
+			table.insert(errors, "Source update has no recognized administrator authority")
+		end
+		if
+			controls.operation ~= "Full Run"
+			or controls.validation_scope ~= "All"
+			or controls.gate_policy ~= "Enforce all"
+		then
+			table.insert(errors, "Source updates require the full configured pipeline without gate overrides")
+		end
+		if validation.success ~= true then
+			table.insert(errors, "Source revision has no successful validation evidence")
+		end
+	end
+
 	if controls.operation ~= "Validate" then
 		local build = Rules.Entries(results.build).result
 

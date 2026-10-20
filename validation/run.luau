@@ -25,6 +25,7 @@ local AccessTests = require("../security/access/tests/policy")
 local PublicationTests = require("../security/access/tests/publication")
 local ControlTests = require("../.github/integration/tests/config")
 local SourceApprovalTests = require("../.github/integration/tests/source-approval")
+local SourcePromotionTests = require("../.github/integration/tests/source-promotion")
 local PolicyTests = require("./tests/policy")
 local ModuleTests = require("../.github/integration/tests/modules")
 local RequestTests = require("../.github/integration/tests/request")
@@ -144,6 +145,7 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 				{ path = "security/access/tests/publication.luau", Run = PublicationTests.Run },
 				{ path = ".github/integration/tests/config.luau", Run = ControlTests.Run },
 				{ path = ".github/integration/tests/source-approval.luau", Run = SourceApprovalTests.Run },
+				{ path = ".github/integration/tests/source-promotion.luau", Run = suiteCheck(SourcePromotionTests) },
 				{ path = ".github/integration/tests/request.luau", Run = RequestTests.Run },
 				{ path = ".github/integration/tests/modules.luau", Run = ModuleTests.Run },
 			},

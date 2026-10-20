@@ -108,6 +108,10 @@ function Receipts.Authorize()
 		pr = C.Object({ number = 0, head_sha = tested, base_sha = tested })
 	end
 	local approval = if localRun then nil else SourceApproval.Read()
+	assert(
+		localRun or Process.env.GITHUB_EVENT_NAME ~= "push" or approval,
+		"source update has no recognized administrator authority"
+	)
 	local bootstrap = not localRun
 		and dispatch
 		and Process.env.GITHUB_REF ~= "refs/heads/source"

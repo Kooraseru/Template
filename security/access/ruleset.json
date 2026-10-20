@@ -73,6 +73,11 @@
           "equals_path": "repository"
         },
         {
+          "path": "pushAllowed",
+          "equals": true,
+          "when": { "path": "event", "equals": "push" }
+        },
+        {
           "path": "manualAllowed",
           "equals": true,
           "when": {
@@ -124,6 +129,7 @@
   "policy": {
     "cases": {
       "baseline": {
+        "pushAllowed": true,
         "localRun": false,
         "actions": "true",
         "server": "https://github.com",
@@ -133,6 +139,17 @@
         "eventRepository": "example/project"
       },
       "policy": [
+        {
+          "name": "unrecognized source authority",
+          "patch": { "pushAllowed": false },
+          "valid": false
+        },
+        {
+          "name": "missing source authority",
+          "remove": ["pushAllowed"],
+          "patch": {},
+          "valid": false
+        },
         {
           "name": "trusted source push",
           "patch": {},
