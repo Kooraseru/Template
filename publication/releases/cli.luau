@@ -92,7 +92,7 @@ function Releases.Run()
 			table.insert(sets, (assert(api.Request("/rulesets/" .. D.Number(summary, "id")))))
 		end
 		assert(Protection.Valid(sets), "required source protections absent")
-		local snapshot = C.Object({ schema = 1, repository = repository, rulesets = C.Array(sets) })
+		local snapshot = C.Object({ repository = repository, rulesets = C.Array(sets) })
 		D.Write("build/reports/source-protection-attestation.json", snapshot)
 		Commands.Run(
 			"gh",

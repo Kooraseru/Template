@@ -48,10 +48,10 @@ end
 
 function Publish.Version(api: Client.API, metadata: C.Value, root: string, assertFresh: () -> ())
 	local identity = Versions.Parse(D.Text(metadata, "version"))
+	assert(D.Get(metadata, "schema") == nil, "release contains unsupported schema field")
 	local sha = D.Text(metadata, "source_sha")
 	assert(
-		D.Get(metadata, "schema") == 2
-			and D.Get(metadata, "prerelease") == identity.prerelease
+		D.Get(metadata, "prerelease") == identity.prerelease
 			and D.Get(metadata, "type") == identity.type
 			and #sha == 40
 			and sha:match("^[a-f0-9]+$"),

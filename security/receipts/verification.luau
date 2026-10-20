@@ -16,7 +16,6 @@ local Config = require("../../libraries/registry/config")
 --# Types
 
 export type Policy = {
-	schema: number,
 	retention_days: number,
 	reuse_identities: { string },
 	native_runners: { [string]: string },
@@ -73,7 +72,7 @@ end
 
 function Verification.Policy(): Policy
 	local raw = Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile("security/receipts/ruleset.json"))).rules)
-	assert(type(raw.schema) == "number" and type(raw.retention_days) == "number", "invalid receipt retention policy")
+	assert(type(raw.retention_days) == "number", "invalid receipt retention policy")
 	local runners = {}
 
 	for key, value in Rules.Entries(raw.native_runners) do
@@ -82,7 +81,7 @@ function Verification.Policy(): Policy
 	end
 
 	return {
-		schema = raw.schema,
+
 		retention_days = raw.retention_days,
 		reuse_identities = strings(raw.reuse_identities),
 		native_runners = runners,
@@ -94,9 +93,9 @@ end
 
 function Verification.Validate(value: Canonical.Value, now: number?): Canonical.Object
 	local receipt = Json.Fields(value)
+	assert(receipt.schema == nil, "receipt contains unsupported schema field")
 	local policy = Verification.Policy()
 	required(receipt, policy.required_receipt_fields)
-	assert(Json.Number(receipt.schema) == policy.schema, "invalid receipt schema")
 	assert(Json.String(receipt.repository):match("^[^/%s]+/[^/%s]+$"), "invalid receipt repository")
 	hex(receipt.tested_sha, 40)
 	hex(receipt.tree, 40)

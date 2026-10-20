@@ -70,6 +70,7 @@ function Authentication.Authenticate(rawEnvelope: Canonical.Value, context: Cont
 	assert(Json.String(fields.repository):lower() == context.Repository:lower(), "wrong repository")
 	local auth = Json.Fields(envelope.authentication)
 	local kind = Json.String(auth.kind)
+	assert(Json.Fields(context.Keys).schema == nil, "key enrollment contains unsupported schema field")
 
 	if kind == "signature" then
 		local selected: { [string]: Canonical.Value }? = nil

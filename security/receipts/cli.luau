@@ -259,7 +259,7 @@ function Receipts.Execution()
 	end
 	execution = D.Set(execution, "probe_logs", C.Array(probes))
 	execution = D.Set(execution, "runtime", "Lune 0.10.5")
-	fields.schema = 1
+
 	fields.fingerprint = D.Required(spec, "fingerprint")
 	fields.target = D.Required(spec, "name")
 	fields.controller_sha = Process.env.GITHUB_SHA or "local"

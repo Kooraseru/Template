@@ -32,6 +32,7 @@ local CanonicalTests = require("./tests/canonical")
 local ReceiptAuthenticationTests = require("../security/receipts/tests/authentication")
 local TestingTests = require("./tests/testing")
 local PluginTests = require("./tests/plugins")
+local ActivationTests = require("./tests/activation")
 local WorkshopTests = require("./tests/workshop")
 local TargetTests = require("../fabricator/tests/targets")
 local DiscoveryTests = require("../fabricator/tests/discovery")
@@ -77,6 +78,7 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 			checks = {
 				{ path = "validation/tests/documents.luau", Run = suiteCheck(DocumentTests) },
 				{ path = "fabricator/tests/project.luau", Run = suiteCheck(ProjectTests) },
+				{ path = "validation/tests/activation.luau", Run = suiteCheck(ActivationTests) },
 				{
 					path = "validation/tests/testing.luau",
 					Run = suiteCheck(TestingTests),
@@ -179,7 +181,7 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 	}
 	local evidence = {
 		suites = suiteReports,
-		schema = 1,
+
 		controller_sha = revision.stdout:gsub("%s+$", ""),
 		tested_sha = Process.env.CI_TESTED_SHA,
 		controls = controls,

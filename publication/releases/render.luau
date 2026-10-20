@@ -377,7 +377,7 @@ function Render.Assemble(plan: C.Value, options: AssemblyOptions?)
 			})
 		end
 		local fields = Json.Fields(selection)
-		fields.schema = 2
+
 		fields.targets = C.Array(publicTargets)
 		D.Write(
 			root .. "/publication.json",

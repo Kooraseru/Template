@@ -40,6 +40,16 @@ function AuthenticationTests.Run()
 		return Json.Replace(assert(cases.fixture), "created_at", Datetime.fromUnixTimestamp(now / 1000):toIsoDate())
 	end
 
+	Verification.Validate(fixture(), now)
+	assert(
+		not pcall(Verification.Validate, Json.Replace(fixture(), "schema", 999), now),
+		"numeric markers must not grant compatibility"
+	)
+	assert(
+		not pcall(Verification.Validate, Json.Replace(fixture(), "tested_sha", "invalid"), now),
+		"malformed identity must fail structural validation"
+	)
+
 	for _, raw in Json.Array(cases.authentication) do
 		local scenario = Json.Fields(raw)
 		local receipt = fixture()

@@ -10,7 +10,6 @@ local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Config = require("../../../libraries/registry/config")
 local Catalogue = require("../../../libraries/registry/catalogue")
-local Inputs = require("../../../libraries/bootstrap/inputs")
 
 --# Types
 
@@ -33,11 +32,6 @@ local function exportRecipes(): string
 
 	local root = "build/tmp/image-input/" .. ref
 	local recipes = "fabricator/distribution/images"
-	local exists = Process.exec("git", { "cat-file", "-e", ref .. ":" .. recipes })
-
-	if not exists.ok then
-		recipes = Inputs.LegacyPath(recipes .. "/catalogue.json"):gsub("/catalogue.json$", "")
-	end
 
 	Fs.writeDir(root)
 

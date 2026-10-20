@@ -65,7 +65,7 @@ local function reuse(): boolean
 	local execution = C.Object({ kind = "native", os = "linux", arch = "x64", probe_logs = logFiles })
 	local resolved = C.Hash(C.Object({ inputs = fingerprint, execution = execution }))
 	local metadata = C.Object({
-		schema = 1,
+
 		source_sha = tested,
 		tree = tree,
 		source_manifest_sha256 = manifestHash,
@@ -93,7 +93,7 @@ local function reuse(): boolean
 		log_artifact = logName,
 	})
 	local receipt = C.Object({
-		schema = 1,
+
 		repository = "owner/project",
 		tested_sha = tested,
 		tree = tree,

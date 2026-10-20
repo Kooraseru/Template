@@ -100,7 +100,7 @@ function Protection.Verified(live: { C.Value }, attestation: C.Value?, repositor
 		return live
 	end
 	assert(
-		attestation and D.Get(attestation, "schema") == 1 and D.Get(attestation, "repository") == repository,
+		attestation and D.Get(attestation, "schema") == nil and D.Get(attestation, "repository") == repository,
 		"admin source-protection attestation required"
 	)
 	local enrolled = D.Items(attestation, "rulesets")

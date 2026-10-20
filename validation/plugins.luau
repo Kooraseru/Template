@@ -25,6 +25,13 @@ export type Descriptor = {
 
 export type Source = { Descriptor: unknown, Bundled: boolean }
 
+export type Host = {
+	Contract: Contract,
+	Bundled: boolean,
+	Granted: { string },
+	Interfaces: { [string]: { string } },
+}
+
 --# Helpers
 
 local function recognized(values: { string }, supported: { string }, label: string)
@@ -78,6 +85,28 @@ function Plugins.Resolve(providers: { Descriptor }, capability: string, selected
 	assert(found, "missing provider: " .. capability)
 
 	return found
+end
+
+function Plugins.ValidateActivation(value: unknown, host: Host, registrations: unknown): Descriptor
+
+	local descriptor = Plugins.Validate(value, host.Contract, host.Bundled)
+	local providers = Shape.Object(registrations, descriptor.provides)
+
+	for _, permission in descriptor.permissions do
+		assert(table.find(host.Granted, permission), "permission not authorized by host: " .. permission)
+	end
+
+	for _, capability in descriptor.provides do
+		local methods = assert(host.Interfaces[capability], "missing host API shape: " .. capability)
+		assert(#methods > 0, "empty host API shape: " .. capability)
+		local implementation = Shape.Object(providers[capability], methods)
+
+		for _, method in methods do
+			assert(type(implementation[method]) == "function", "missing API method: " .. capability .. "." .. method)
+		end
+	end
+
+	return descriptor
 end
 
 function Plugins.ValidateAll(sources: { Source }, contract: Contract, selections: { [string]: string }?): { Descriptor }

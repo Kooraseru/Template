@@ -104,7 +104,7 @@ function Hosted.VerifyEnvelope(envelope: C.Value): Authentication.Accepted
 	local keysResponse = api().Request("/contents/security/receipts/keys.json?ref=source", { Missing = true })
 	local keys = if keysResponse
 		then C.Decode(Base64.Decode(D.Text(keysResponse, "content"):gsub("%s", "")))
-		else C.Object({ schema = 1, keys = C.Array({}) })
+		else C.Object({ keys = C.Array({}) })
 	return Authentication.Authenticate(envelope, {
 		Repository = GitHub.Repository(),
 		Keys = keys,

@@ -9,7 +9,7 @@ fingerprint bytes, receipt authentication, and release tooling are validated
 before publication. Tests being migrated to the shared typed contract return
 `Test.new(...)`; their execution and comparisons belong to `libraries/testing/`.
 Policies and operational catalogues are data, not boilerplate manifests required
-for ordinary source modules. Remaining legacy JSON fixture readers are transitional.
+for ordinary source modules. Existing JSON fixture readers supply test data; they do not establish compatibility with retired formats.
 
 ## Independent source contracts
 

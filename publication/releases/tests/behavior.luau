@@ -182,7 +182,7 @@ local function execute(input: Input): boolean
 		local fingerprint = Serde.hash("sha256", "assembly fixture")
 		D.Write(
 			inputRoot .. "/provenance.json",
-			C.Object({ schema = 1, source_sha = sha, fingerprint = fingerprint, target = "fixture" })
+			C.Object({ source_sha = sha, fingerprint = fingerprint, target = "fixture" })
 		)
 		Fs.writeFile(inputRoot .. "/distribution.tar.gz", "payload")
 		Fs.writeFile(inputRoot .. "/runner.sh", "#!/bin/sh\necho fixture\n")
@@ -257,7 +257,7 @@ local function execute(input: Input): boolean
 		Files.Reset(root)
 		local source = string.rep("a", 40)
 		local fingerprint = Serde.hash("sha256", "inputs")
-		local metadata = C.Object({ schema = 1, source_sha = source, fingerprint = fingerprint, target = "linux" })
+		local metadata = C.Object({ source_sha = source, fingerprint = fingerprint, target = "linux" })
 		local patch = D.Get(scenario, "patch")
 		if patch then
 			for key, value in Json.Fields(patch) do
@@ -331,7 +331,7 @@ local function execute(input: Input): boolean
 		local snapshot = if D.Get(scenario, "missing") == true
 			then nil
 			else C.Object({
-				schema = 1,
+
 				repository = if D.Get(scenario, "wrong_repository") == true
 					then "other/repository"
 					else "owner/project",

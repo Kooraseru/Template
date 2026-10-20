@@ -1,6 +1,5 @@
 {
   "rules": {
-    "schema": 1,
     "retention_days": 30,
     "staging_prefix": "ci-validation-",
     "default_reuse_identity": "exact_commit",
@@ -13,7 +12,6 @@
       "macos": "darwin"
     },
     "required_receipt_fields": [
-      "schema",
       "repository",
       "tested_sha",
       "tree",
@@ -45,9 +43,7 @@
     "max_archive_bytes": 2000000000,
     "contract_paths": [
       "security/receipts/ruleset.json",
-      "security/receipts/policy.json",
-      "ci/receipts/policy.json",
-      "ci/receipts/ruleset.json"
+      "security/receipts/keys.json"
     ]
   },
   "cases": {
@@ -485,7 +481,6 @@
       }
     ],
     "fixture": {
-      "schema": 1,
       "repository": "owner/project",
       "tested_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",

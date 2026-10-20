@@ -184,7 +184,7 @@ local function prepare(version: string, payload: string?): (string, C.Value)
 	end
 	local identity = Versions.Parse(version)
 	local metadata = C.Object({
-		schema = 2,
+
 		version = version,
 		prerelease = identity.prerelease,
 		type = identity.type,

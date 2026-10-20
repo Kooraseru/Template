@@ -76,7 +76,7 @@ function Collection.Collect(plan: C.Value, distributions: string, logs: string, 
 	local controls = D.Get(context, "controls") or C.Object({})
 	local validation = D.Get(plan, "validation")
 	local receipt = C.Object({
-		schema = 1,
+
 		repository = D.Required(context, "repository"),
 		tested_sha = source.source_sha,
 		tree = source.tree,

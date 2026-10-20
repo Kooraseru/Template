@@ -6,7 +6,6 @@ local Project = {}
 --# Modules
 
 local Fs = require("@lune/fs")
-local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Inputs = require("../libraries/bootstrap/inputs")
 local Shape = require("../libraries/registry/shape")
@@ -35,13 +34,6 @@ function Project.Read(): Shape.Object
 			source = Fs.readFile("src/build.toml")
 		end
 	else
-		local exists = Process.exec("git", { "cat-file", "-e", Inputs.ref .. ":src/build.toml" })
-
-		if not exists.ok then
-			-- Historical snapshots predate the source-owned build declaration.
-			return repository :: Shape.Object
-		end
-
 		source = Inputs.Read("src/build.toml")
 	end
 

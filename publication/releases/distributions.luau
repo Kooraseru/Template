@@ -16,13 +16,13 @@ local Bundles = require("../../libraries/bootstrap/bundles")
 
 function Distributions.Verify(root: string, expected: C.Value): { metadata: C.Value, manifest: C.Value }
 	local metadata = D.Read(root .. "/provenance.json")
+	assert(D.Get(metadata, "schema") == nil, "provenance contains unsupported schema field")
 	local accepted = D.Get(expected, "accepted")
 	local source = if accepted
 		then D.Required(accepted, "source_sha")
 		else D.Get(expected, "accepted_source_sha") or D.Required(expected, "source_sha")
 	assert(
-		D.Get(metadata, "schema") == 1
-			and D.Equal(D.Get(metadata, "source_sha"), source)
+		D.Equal(D.Get(metadata, "source_sha"), source)
 			and D.Equal(D.Get(metadata, "fingerprint"), D.Get(expected, "fingerprint"))
 			and D.Equal(D.Get(metadata, "target"), D.Get(expected, "name")),
 		"distribution provenance mismatch"

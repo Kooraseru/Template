@@ -5,7 +5,6 @@ local Config = {}
 
 --# Modules
 
-local Inputs = require("../bootstrap/inputs")
 local Project = require("../../fabricator/project")
 local Targets = require("../../fabricator/targets")
 local Shape = require("./shape")
@@ -101,10 +100,6 @@ end
 
 function Config.Read(): Config
 	local value = Project.Read()
-	-- Older snapshots may contain the retired registry-publication flag.
-	if Inputs.ref ~= "" then
-		Rules.Entries(value.images).publish = false
-	end
 
 	return Config.Validate(require("../../.github/integration/config").Apply(value))
 end

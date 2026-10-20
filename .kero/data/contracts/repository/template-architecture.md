@@ -44,8 +44,7 @@ privileged rebuild.
 `src/build.toml` owns application targets, compiler requirements, environment
 selection, commands, and package contents. Native manifests and lockfiles own
 application dependencies. `config/project.toml` owns repository output controls.
-Source declarations cannot grant signing or publication authority. Historical
-source snapshots retain their original configuration layout.
+Source declarations cannot grant signing or publication authority.
 
 No extra top-level source directories, mandatory empty language folders, or
 boilerplate manifests for ordinary modules. Existing hidden editor metadata and
@@ -60,10 +59,7 @@ behavior, with native helpers for operations requiring exact external semantics.
 Tests bind typed cases to their actual function under test through the shared
 library. Do not require a separate case manifest for each ordinary module.
 
-Plugin and Workshop contracts are independent and versionless. Workshop is
-data-only and cannot register execution providers. Applications implement runtime
-permissions, isolation, format inspection, and recovery; CI cannot establish those
-guarantees from metadata.
+Application extension boundaries belong to [the extension contract](../extensions.md).
 
 Use explicit artifact transfers between isolated jobs. Keep build-environment
 creation free of circular dependencies on the image being created.
