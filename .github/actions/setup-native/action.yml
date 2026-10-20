@@ -4,9 +4,8 @@ runs:
   using: composite
   steps:
     - id: definition
-      uses: ./.github/actions/run-luau
-      with:
-        module: config/tools/setup-native
+      shell: bash
+      run: bash .github/integration/run.sh config/tools/setup-native.luau
     - uses: ./.github/actions/setup-rust
       with:
         toolchain: ${{ steps.definition.outputs.toolchain }}

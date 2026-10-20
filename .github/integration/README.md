@@ -159,3 +159,12 @@ Optional command-only VS Code integration lives in `editor-bridge/`; its agent e
 point is `local-actions.luau`. Follow the Kero local-testing contract for installation,
 invocation, and genuine extension History/log access. This editor-only adapter does
 not participate in hosted CI execution.
+
+## Optional hosted dropdown synchronization
+
+GitHub's automatic token cannot rewrite workflow files. Remote PR-choice refresh
+is opt-in through `CI_WORKFLOW_SYNC_ENABLED=true` and an explicitly configured
+`CI_WORKFLOW_TOKEN` authorized to update workflow files under repository protection.
+The job fails if enabled without the required credentials or permissions; it never
+falls back to the automatic token. Ordinary CI and publication need neither setting.
+The local refresh module can still generate choices for a reviewed authored change.
