@@ -68,15 +68,15 @@
       {
         "name": "selected checkout relative executable",
         "argv": [
-          "build/source-node",
+          "build/source-lune",
           "--version"
         ],
         "windows_argv": [
-          "build/source-node.exe",
+          "build/source-lune.exe",
           "--version"
         ],
         "code": 0,
-        "stdout_contains": "v"
+        "stdout_contains": "lune"
       }
     ]
   }

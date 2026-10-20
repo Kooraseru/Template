@@ -8,7 +8,10 @@ Built-in and independently installed plugin implementations belong under
 `workshop/`. Non-installable resources belong under `assets/`.
 
 Declare explicit source target paths and native build systems in
-`config/project.toml`. No application, provider implementation, runtime sandbox,
+`src/build.toml`. Dependencies and lockfiles belong beside their native manifests,
+not in repository tooling. Build commands, compiler requirements, environment
+selections, and package paths are source-owned. Paths remain repository-relative.
+Repository publication, signing, and release authority remain outside `src/`. No application, provider implementation, runtime sandbox,
 or language directory is required by this template. Keep tests with their owner;
 use the shared testing library for template validation.
 

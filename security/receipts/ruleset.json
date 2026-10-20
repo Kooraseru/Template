@@ -288,6 +288,12 @@
           "head_branch": "activation"
         },
         "valid": false
+      },
+      {
+        "name": "manual hosted receipt with null source authorization",
+        "kind": "hosted",
+        "source_authorization": null,
+        "valid": true
       }
     ],
     "reuse": [

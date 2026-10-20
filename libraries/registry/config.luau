@@ -5,8 +5,8 @@ local Config = {}
 
 --# Modules
 
-local Serde = require("@lune/serde")
 local Inputs = require("../bootstrap/inputs")
+local Project = require("../../fabricator/project")
 local Targets = require("../../fabricator/targets")
 local Shape = require("./shape")
 
@@ -100,10 +100,10 @@ function Config.Validate(value: unknown): Config
 end
 
 function Config.Read(): Config
-	local value: Config = Serde.decode("toml", Inputs.Read("config/project.toml")) :: Config
+	local value = Project.Read()
 	-- Older snapshots may contain the retired registry-publication flag.
 	if Inputs.ref ~= "" then
-		value.images.publish = false
+		Rules.Entries(value.images).publish = false
 	end
 
 	return Config.Validate(require("../../.github/integration/config").Apply(value))

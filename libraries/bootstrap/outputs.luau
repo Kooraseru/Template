@@ -35,7 +35,7 @@ end
 function Outputs.Write(path: string?, values: { [string]: string })
 	local text = Outputs.Encode(values)
 
-	if path then
+	if path and path ~= "" then
 		local existing = if Fs.isFile(path) then Fs.readFile(path) else ""
 		Fs.writeFile(path, existing .. text)
 	end

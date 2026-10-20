@@ -1,8 +1,0 @@
-name: Set up CI Node
-description: Install the checksum-verified pinned release-control runtime.
-runs:
-  using: composite
-  steps:
-    - uses: ./.github/actions/run-luau
-      with:
-        module: config/tools/setup-node

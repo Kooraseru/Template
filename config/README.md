@@ -1,10 +1,14 @@
 # Project configuration
 
-`project.toml` selects outputs, compiler environments, native tool settings, and
-application source targets. The template does not require application source or a
+`project.toml` controls repository, Pages, and release publication.
+`src/build.toml` owns application targets, compiler requirements, environment
+selections, commands, and package contents. Native dependencies and lockfiles
+stay alongside their source manifests. The template does not require application source or a
 specific language. `source` is authored; `main` is generated after authorization.
 
-## Source targets
+## Source-owned build configuration
+
+The following declarations belong in `src/build.toml`:
 
 ```toml
 [[targets]]
@@ -39,8 +43,9 @@ under ignored `build/`; publication consumes completed distributions and evidenc
 
 ## Outputs and policy
 
-`repository`, `pages`, `release`, and `images` each have an explicit `enabled` flag.
-The first three also have a gated `publish` flag. Local act runs and PRs cannot
+Repository-owned `repository`, `pages`, and `release` each have explicit `enabled`
+and gated `publish` flags. Source-owned `images` selects optional build environments
+and has an `enabled` flag; it cannot grant publication authority. Local act runs and PRs cannot
 publish. Manual controls do not grant authority. Public releases are Release or
 Pre-Release SemVer selections in `publication/releases/versions.toml`; replacement
 is supported. Internal receipt staging is independent of public releases.
@@ -57,9 +62,13 @@ and generic Plugin/Workshop descriptor checks are implemented. Existing access,
 receipts, source protection, and publication gates remain connected to the single
 GitHub workflow.
 
-Project-managed Node removal is not complete: receipt collection, release
-assembly/publication, remaining JavaScript tests, and PNG rendering still use the
-legacy Node setup. Those callers and frozen compatibility cases remain in place
-until their Luau/native replacements pass verification. The current tree must not
-be advertised as Node-free. Neither worker installation nor runtime sandboxing is
-implemented by template validation.
+Project-managed Node and the JavaScript interoperability layer have been removed.
+Receipt collection/authentication/reuse, release planning/assembly/publication, and
+their tests call Luau modules directly. Native primitives own Ed25519, exact number
+formatting, external key files, UUIDs, and SVG-to-PNG rendering. The licensed graph
+font is under `publication/releases/assets/`. The native dependency lockfile and
+frozen canonical/signature vectors remain checked in.
+
+Stock GitHub actions may use Node internally; this template installs no Node
+runtime and ships no Node scripts or npm manifests. Worker installation and runtime
+sandboxing remain application responsibilities.

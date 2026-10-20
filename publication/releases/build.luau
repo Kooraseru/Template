@@ -5,8 +5,9 @@ local ReleaseBuild = {}
 
 --# Modules
 
-local Process = require("@lune/process")
 local Config = require("../../libraries/registry/config")
+local Render = require("./render")
+local Documents = require("../../libraries/bootstrap/documents")
 
 --# Functions
 
@@ -14,9 +15,7 @@ function ReleaseBuild.Run()
 	local config = Config.Read()
 
 	assert(config.release.enabled, "release generation is disabled")
-	local result = Process.exec("node", { "publication/releases/cli.mjs", "assemble" }, { stdio = "inherit" })
-
-	assert(result.ok, "release assembly failed: " .. result.stdout .. result.stderr)
+	Render.Assemble(Documents.Read("build/tmp/releases/plan.json"))
 end
 
 return ReleaseBuild

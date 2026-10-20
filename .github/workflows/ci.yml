@@ -231,7 +231,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-native
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - name: Resolve operation and administrator controls
         id: dispatch
         env:
@@ -240,7 +240,7 @@ jobs:
       - name: Resolve execution authority and tested commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node security/receipts/cli.mjs authorize
+        run: bash .github/integration/run.sh security/receipts/cli.luau authorize
       - id: context
         env:
           GH_TOKEN: ${{ github.token }}
@@ -338,7 +338,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - name: Download verified accepted distributions
         if: matrix.accepted
         uses: actions/download-artifact@v8
@@ -354,7 +354,7 @@ jobs:
       - id: prepared
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node publication/releases/cli.mjs prepare
+        run: bash .github/integration/run.sh publication/releases/cli.luau prepare
       - name: Download selected build image
         if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
         uses: actions/download-artifact@v8
@@ -378,11 +378,11 @@ jobs:
         if: steps.prepared.outputs.reused != 'true'
         env:
           CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
-      - run: node security/receipts/cli.mjs execution
+      - run: bash .github/integration/run.sh security/receipts/cli.luau execution
         if: steps.prepared.outputs.reused != 'true'
       - run: bash .github/integration/run.sh fabricator/distribution/package.luau
         if: steps.prepared.outputs.reused != 'true'
-      - run: node publication/releases/cli.mjs verify build/artifacts
+      - run: bash .github/integration/run.sh publication/releases/cli.luau verify build/artifacts
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
@@ -450,7 +450,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
@@ -499,7 +499,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: release-plan
@@ -507,7 +507,7 @@ jobs:
       - name: Fetch tested objects without executing proposed controller code
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node security/receipts/cli.mjs authorize
+        run: bash .github/integration/run.sh security/receipts/cli.luau authorize
       - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
@@ -516,8 +516,8 @@ jobs:
         with:
           pattern: build-logs-*
           path: build/validation-logs
-      - run: node security/receipts/cli.mjs collect
-      - run: node security/receipts/cli.mjs report
+      - run: bash .github/integration/run.sh security/receipts/cli.luau collect
+      - run: bash .github/integration/run.sh security/receipts/cli.luau report
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v7
@@ -532,7 +532,7 @@ jobs:
           name: accepted-release-plan
           path: build/receipts/accepted-plan.json
           if-no-files-found: error
-      - run: node security/receipts/cli.mjs accepted-check
+      - run: bash .github/integration/run.sh security/receipts/cli.luau accepted-check
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -547,7 +547,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         if: needs.validate.result == 'success'
         with:
@@ -573,7 +573,7 @@ jobs:
         if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node security/receipts/cli.mjs verify-pr
+        run: bash .github/integration/run.sh security/receipts/cli.luau verify-pr
     permissions:
       contents: write
       actions: read
@@ -598,7 +598,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: repository
@@ -631,7 +631,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - name: Require hosted execution and source protection
         env:
           GH_TOKEN: ${{ github.token }}
@@ -669,7 +669,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: release

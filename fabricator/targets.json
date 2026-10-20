@@ -1064,7 +1064,6 @@
       "target": "x86_64-pc-windows-msvc",
       "profile": "msvc",
       "msvc_arch": "x64",
-      "rust_version": "1.99.0",
       "environment": {},
       "probes": [
         {
@@ -1103,7 +1102,6 @@
       "target": "x86_64-pc-windows-msvc",
       "profile": "rust",
       "msvc_arch": "x64",
-      "rust_version": "1.99.0",
       "environment": {},
       "probes": [
         {
@@ -1147,7 +1145,6 @@
       "target": "aarch64-pc-windows-msvc",
       "profile": "msvc",
       "msvc_arch": "arm64",
-      "rust_version": "1.99.0",
       "environment": {},
       "probes": [
         {
@@ -1186,7 +1183,6 @@
       "target": "aarch64-pc-windows-msvc",
       "profile": "rust",
       "msvc_arch": "arm64",
-      "rust_version": "1.99.0",
       "environment": {},
       "probes": [
         {
@@ -1229,7 +1225,6 @@
       "platform": "",
       "target": "x86_64-apple-darwin",
       "profile": "clang",
-      "rust_version": "1.99.0",
       "environment": {
         "CC": "clang",
         "CXX": "clang++"
@@ -1275,7 +1270,6 @@
       "platform": "",
       "target": "x86_64-apple-darwin",
       "profile": "rust",
-      "rust_version": "1.99.0",
       "environment": {},
       "probes": [
         {
@@ -1318,7 +1312,6 @@
       "platform": "",
       "target": "aarch64-apple-darwin",
       "profile": "clang",
-      "rust_version": "1.99.0",
       "environment": {
         "CC": "clang",
         "CXX": "clang++"
@@ -1364,7 +1357,6 @@
       "platform": "",
       "target": "aarch64-apple-darwin",
       "profile": "rust",
-      "rust_version": "1.99.0",
       "environment": {},
       "probes": [
         {

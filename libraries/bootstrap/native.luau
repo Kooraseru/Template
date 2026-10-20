@@ -54,7 +54,10 @@ function Native.Ensure(): string
 end
 
 function Native.Call(operation: string, input: unknown): unknown
-	assert(operation == "numbers" or operation == "sign" or operation == "verify", "invalid native operation")
+	assert(
+		table.find({ "numbers", "sign", "verify", "uuid", "png", "keyfile", "keygen" }, operation),
+		"invalid native operation"
+	)
 	local child = Process.create(Native.Ensure(), { operation })
 	child.stdin:write(Serde.encode("json", input))
 	child.stdin:close()
@@ -112,6 +115,12 @@ end
 
 function Native.Run()
 	Native.Ensure()
+end
+
+function Native.UUID(): string
+	local value = Native.Call("uuid", {})
+	assert(type(value) == "string", "invalid native UUID")
+	return value
 end
 
 return Native

@@ -36,6 +36,13 @@ local WorkshopTests = require("./tests/workshop")
 local TargetTests = require("../fabricator/tests/targets")
 local DiscoveryTests = require("../fabricator/tests/discovery")
 local ProviderTests = require("./tests/providers")
+local ReceiptBundleTests = require("../security/receipts/tests/bundles")
+local VersionTests = require("../publication/releases/tests/versions")
+local ReleaseBehaviorTests = require("../publication/releases/tests/behavior")
+local ReleasePublicationTests = require("../publication/releases/tests/publication")
+local NativeCheckoutTests = require("../fabricator/tests/checkout")
+local DocumentTests = require("./tests/documents")
+local ProjectTests = require("../fabricator/tests/project")
 
 --# Types
 
@@ -43,22 +50,6 @@ type Check = { path: string, Run: () -> () }
 type Group = { name: string, checks: { Check } }
 
 --# Helpers
-
-local function runNodeTests(directory: string)
-	local arguments = { "--test" }
-	local names = Fs.readDir(directory)
-	table.sort(names)
-
-	for _, name in names do
-		if name:sub(-9) == ".test.mjs" then
-			table.insert(arguments, directory .. "/" .. name)
-		end
-	end
-
-	assert(#arguments > 1, "test directory contains no legacy Node tests")
-	local result = Process.exec("node", arguments, { stdio = "inherit" })
-	assert(result.ok, "legacy release/receipt tests failed: " .. directory)
-end
 
 local function append(path: string, text: string)
 	Fs.writeFile(path, (if Fs.isFile(path) then Fs.readFile(path) else "") .. text)
@@ -84,6 +75,8 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 		{
 			name = "Configuration",
 			checks = {
+				{ path = "validation/tests/documents.luau", Run = suiteCheck(DocumentTests) },
+				{ path = "fabricator/tests/project.luau", Run = suiteCheck(ProjectTests) },
 				{
 					path = "validation/tests/testing.luau",
 					Run = suiteCheck(TestingTests),
@@ -154,7 +147,9 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 				{
 					path = "security/receipts/tests",
 					Run = function()
-						runNodeTests("security/receipts/tests")
+						ReceiptBundleTests:Run(function(report)
+							table.insert(suiteReports, report)
+						end)
 					end,
 				},
 			},
@@ -165,7 +160,18 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 				{
 					path = "publication/releases/tests",
 					Run = function()
-						runNodeTests("publication/releases/tests")
+						VersionTests:Run(function(report)
+							table.insert(suiteReports, report)
+						end)
+						ReleaseBehaviorTests:Run(function(report)
+							table.insert(suiteReports, report)
+						end)
+						ReleasePublicationTests:Run(function(report)
+							table.insert(suiteReports, report)
+						end)
+						NativeCheckoutTests:Run(function(report)
+							table.insert(suiteReports, report)
+						end)
 					end,
 				},
 			},

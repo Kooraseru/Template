@@ -118,9 +118,8 @@ is denied, the job reports the permission problem and the existing choices remai
 
 Control implementations and their tests are returned Luau table modules. Request
 normalization, diagnostic reuse, pending-run eligibility and publication authorization
-each have one Luau implementation. Remaining Node receipt/release consumers call
-those public APIs through `libraries/bootstrap/luau.mjs` during migration. No control behavior is
-implemented in that adapter.
+each have one Luau implementation. Receipt and release consumers call those Luau APIs directly. Workflow stages use
+the shared Luau module runner; no JavaScript interoperability bridge is installed.
 
 Administrators can refresh locally using an existing GitHub CLI login:
 

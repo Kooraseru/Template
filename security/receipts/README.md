@@ -49,10 +49,10 @@ login. An admin can compare that JSON while signing independently collected loca
 Missing native coverage is explicit; the admin completes those targets.
 
 ```powershell
-node security/receipts/cli.mjs claim-context 17
+bash .github/integration/run.sh security/receipts/cli.luau claim-context 17
 act workflow_dispatch --eventpath build/tmp/receipts/event.json --artifact-server-path build/cache/act-artifacts/claims --container-architecture linux/amd64
-node security/receipts/cli.mjs collect-act build/cache/act-artifacts/claims/1 build/receipts/claim
-node security/receipts/cli.mjs claim-submit build/receipts/claim/receipt.json
+bash .github/integration/run.sh security/receipts/cli.luau collect-act build/cache/act-artifacts/claims/1 build/receipts/claim
+bash .github/integration/run.sh security/receipts/cli.luau claim-submit build/receipts/claim/receipt.json
 ```
 
 Use a fresh artifact-server directory for each run. The collector requires its
@@ -66,7 +66,7 @@ configuration to select targets. act runner mappings remain as configured in
 For hosted validation, run from a trusted clean source controller checkout:
 
 ```powershell
-node security/receipts/cli.mjs request 17
+bash .github/integration/run.sh security/receipts/cli.luau request 17
 ```
 
 Hosted Build requests use the same twelve-control workflow and select the current PR dropdown label.
@@ -79,20 +79,20 @@ For local admin validation, stay on the trusted source controller, fetch the PR
 objects without checking out proposed controller code, then run act:
 
 ```powershell
-node security/receipts/cli.mjs local-context 17
+bash .github/integration/run.sh security/receipts/cli.luau local-context 17
 act workflow_dispatch --eventpath build/tmp/receipts/event.json --artifact-server-path build/cache/act-artifacts/admin --container-architecture linux/amd64
-node security/receipts/cli.mjs collect-act build/cache/act-artifacts/admin/1 build/receipts/admin
+bash .github/integration/run.sh security/receipts/cli.luau collect-act build/cache/act-artifacts/admin/1 build/receipts/admin
 ```
 
 This produces only executed Linux targets. Collect, sign, and stage outside act:
 
 ```powershell
 # One-time key creation; choose a new private-key path outside the repository:
-# node security/receipts/cli.mjs keygen C:/Users/USER/AppData/Local/TemplateCI/admin.pem
+# bash .github/integration/run.sh security/receipts/cli.luau keygen C:/Users/USER/AppData/Local/TemplateCI/admin.pem
 # Enroll the printed PUBLIC record in keys.json through an admin source PR.
-node security/receipts/cli.mjs sign build/receipts/admin/receipt.json ENROLLED_KEY_ID C:/Users/USER/AppData/Local/TemplateCI/admin.pem
-node security/receipts/cli.mjs submit build/receipts/admin/receipt.json
-node security/receipts/cli.mjs request 17
+bash .github/integration/run.sh security/receipts/cli.luau sign build/receipts/admin/receipt.json ENROLLED_KEY_ID C:/Users/USER/AppData/Local/TemplateCI/admin.pem
+bash .github/integration/run.sh security/receipts/cli.luau submit build/receipts/admin/receipt.json
+bash .github/integration/run.sh security/receipts/cli.luau request 17
 ```
 
 An optional final argument to `sign` supplies contributor receipt JSON for
@@ -110,7 +110,7 @@ differences are reported; publication always uses admin-validated output.
 ## Merge and release
 
 ```powershell
-node security/receipts/cli.mjs merge 17
+bash .github/integration/run.sh security/receipts/cli.luau merge 17
 ```
 
 The command regenerates the expected plan from trusted controller code,
@@ -134,7 +134,7 @@ The old source controller cannot validate a receipt protocol it does not contain
 For the first activation PR only, an admin may explicitly request:
 
 ```powershell
-node security/receipts/cli.mjs request 17 --bootstrap
+bash .github/integration/run.sh security/receipts/cli.luau request 17 --bootstrap
 ```
 
 This runs the exact same-repository activation PR head, with all required targets.

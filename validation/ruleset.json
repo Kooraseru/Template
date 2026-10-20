@@ -1315,8 +1315,17 @@
         "security/receipts/verification.luau",
         "security/receipts/authentication.luau",
         "fabricator/targets.luau",
+        "fabricator/project.luau",
         "validation/plugins.luau",
-        "validation/workshop.luau"
+        "validation/workshop.luau",
+        "publication/releases/client.luau",
+        "publication/releases/distributions.luau",
+        "publication/releases/history.luau",
+        "publication/releases/notes.luau",
+        "publication/releases/render.luau",
+        "publication/releases/tests/fixture.luau",
+        "security/receipts/collection.luau",
+        "security/receipts/hosted.luau"
       ]
     },
     "cases": [

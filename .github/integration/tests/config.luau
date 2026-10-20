@@ -5,7 +5,7 @@ local ControlTests = {}
 
 --# Modules
 
-local Fs = require("@lune/fs")
+local Project = require("../../../fabricator/project")
 local Serde = require("@lune/serde")
 local Controls = require("../config")
 local Config = require("../../../libraries/registry/config")
@@ -19,7 +19,7 @@ function ControlTests.Run()
 	local previousValue = Controls.Read
 	local success, failure = pcall(function()
 		local definitions = Cases.Read("validation/ruleset.json", "config.cases")
-		local baseline = Serde.decode("toml", Fs.readFile("config/project.toml"))
+		local baseline = Project.Read()
 		local originalBaseline = Serde.encode("json", baseline)
 
 		for _, case in definitions.controls do

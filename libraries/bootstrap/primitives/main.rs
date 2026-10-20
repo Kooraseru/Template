@@ -1,5 +1,8 @@
 use ed25519_dalek::{
-    pkcs8::{DecodePrivateKey, DecodePublicKey},
+    pkcs8::{
+        spki::der::pem::LineEnding, DecodePrivateKey, DecodePublicKey, EncodePrivateKey,
+        EncodePublicKey,
+    },
     Signature, Signer, SigningKey, VerifyingKey,
 };
 use std::io::{self, Read, Write};
@@ -40,6 +43,85 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
     match command.as_str() {
+        "png" => {
+            let request: serde_json::Value = serde_json::from_str(&input)?;
+            let mut options = resvg::usvg::Options::default();
+            options.font_family = "JetBrains Mono".into();
+            options
+                .fontdb_mut()
+                .load_font_file(field(&request, "font")?)?;
+            let tree = resvg::usvg::Tree::from_str(field(&request, "svg")?, &options)?;
+            let size = tree.size().to_int_size();
+            let pixels = u64::from(size.width()) * u64::from(size.height());
+            if pixels > 100_000_000 {
+                return Err("render exceeds pixel budget".into());
+            }
+            let mut pixmap = resvg::tiny_skia::Pixmap::new(size.width(), size.height())
+                .ok_or("invalid render size")?;
+            resvg::render(
+                &tree,
+                resvg::tiny_skia::Transform::default(),
+                &mut pixmap.as_mut(),
+            );
+            io::stdout().write_all(&serde_json::to_vec(&encode_hex(&pixmap.encode_png()?))?)?;
+        }
+        "keyfile" | "keygen" => {
+            let request: serde_json::Value = serde_json::from_str(&input)?;
+            let destination = std::path::Path::new(field(&request, "path")?);
+            if !destination.is_absolute() {
+                return Err("absolute external key path required".into());
+            }
+            let workspace = std::fs::canonicalize(field(&request, "workspace")?)?;
+            if command == "keyfile" {
+                let resolved = std::fs::canonicalize(destination)?;
+                if resolved.starts_with(&workspace) {
+                    return Err("key must live outside repository".into());
+                }
+                io::stdout()
+                    .write_all(&serde_json::to_vec(&std::fs::read_to_string(resolved)?)?)?;
+            } else {
+                let parent = destination.parent().ok_or("missing key directory")?;
+                std::fs::create_dir_all(parent)?;
+                let resolved_parent = std::fs::canonicalize(parent)?;
+                if resolved_parent.starts_with(&workspace) {
+                    return Err("key must live outside repository".into());
+                }
+                let mut seed = [0u8; 32];
+                getrandom::getrandom(&mut seed).map_err(|error| error.to_string())?;
+                let key = SigningKey::from_bytes(&seed);
+                let mut options = std::fs::OpenOptions::new();
+                options.write(true).create_new(true);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::OpenOptionsExt;
+                    options.mode(0o600);
+                }
+                let file =
+                    resolved_parent.join(destination.file_name().ok_or("missing key filename")?);
+                options
+                    .open(file)?
+                    .write_all(key.to_pkcs8_pem(LineEnding::LF)?.as_bytes())?;
+                io::stdout().write_all(&serde_json::to_vec(
+                    &key.verifying_key().to_public_key_pem(LineEnding::LF)?,
+                )?)?;
+            }
+        }
+        "uuid" => {
+            let mut bytes = [0u8; 16];
+            getrandom::getrandom(&mut bytes).map_err(|error| error.to_string())?;
+            bytes[6] = (bytes[6] & 0x0f) | 0x40;
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+            let hex = encode_hex(&bytes);
+            let uuid = format!(
+                "{}-{}-{}-{}-{}",
+                &hex[..8],
+                &hex[8..12],
+                &hex[12..16],
+                &hex[16..20],
+                &hex[20..]
+            );
+            io::stdout().write_all(&serde_json::to_vec(&uuid)?)?;
+        }
         "numbers" => {
             let numbers: Vec<String> = serde_json::from_str(&input)?;
             let mut buffer = ryu_js::Buffer::new();

@@ -10,9 +10,6 @@ local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Policy = require("../../../validation/policy")
 local Rules = require("../../../libraries/registry/rules")
-local Cases = require("../../../libraries/testing/cases")
-local Files = require("../../../libraries/bootstrap/files")
-local SetupNode = require("../../../config/tools/setup-node")
 local VerifyRepository = require("../../../publication/repo/verify")
 
 --# Helpers
@@ -65,23 +62,8 @@ function ModuleTests.Run()
 			assert(Fs.readFile(path) == "preserved", "module import reset its fixture")
 		end
 
-		local cases = Cases.Read("config/tools/ruleset.json", "node.cases")
-		Files.Reset(cases.root)
-
-		for _, case in cases.cases do
-			local path = cases.root .. "/node.json"
-			Fs.writeFile(path, Serde.encode("json", Cases.Apply(cases.baseline, case)))
-			Cases.Check(case.name, case.valid, function()
-				return SetupNode.ReadDefinition(path)
-			end)
-		end
-
-		Files.Reset(cases.root)
-		assert(next(SetupNode.ReadDefinition().platforms), "pinned runtime lacks platforms")
 		probe(
-			[[local SetupNode = require("../../config/tools/setup-node")
-assert(not pcall(SetupNode.Run), "missing runner context must fail before download")
-local Repository = require("../../publication/repo/build")
+			[[local Repository = require("../../publication/repo/build")
 local Config = require("../../libraries/registry/config")
 local config = Config.Read()
 config.repository.enabled = false

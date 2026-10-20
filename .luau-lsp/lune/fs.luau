@@ -2,6 +2,7 @@
 
 -- Analyzer-only declaration for the Lune filesystem module.
 local FileSystem = {} :: {
+    metadata: (path: string) -> {kind: string, exists: boolean},
     readFile: (path: string) -> string,
     readDir: (path: string) -> { string },
     writeFile: (path: string, contents: string | buffer) -> (),

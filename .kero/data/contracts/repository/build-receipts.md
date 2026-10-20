@@ -1,37 +1,50 @@
-# Build validation contract
+# Trusted build receipts
 
-One workflow owns local act and hosted execution. Automatic PR runs perform
-cheap checks; expensive validation requires an explicit admin request.
-Contributors may submit claims, but claims never authorize merging or releases.
-Only admins hold repository write access. Fork contributions are untrusted.
+This contract governs trusted evidence, not ordinary development test eligibility.
 
-Receipt identity binds repository, current PR head/base, tested source commit,
-Git tree, canonical SHA-256 source manifest, controller/build inputs, execution
-platform, target outcomes, logs, and artifact checksums. Committed clean inputs
-are mandatory. Missing native evidence cannot be replaced by act emulation.
+## Approval and identity
 
-Local admin receipt signatures use enrolled public keys from protected source;
-private keys stay outside execution environments. Hosted acceptance is bound to
-an admin source-controller dispatch and the original completed-run receipt
-artifact. Recheck current admin permission, revocation, age, and assets on reuse.
-First installation permits an explicit admin bootstrap run of the exact
-activation PR only when its base predates the contract.
+Automatic hosted PR execution performs cheap checks. Expensive hosted execution
+requires administrator approval or matching accepted builds. Administrator source
+merge or push approval permits missing builds to execute; it does not constitute
+successful evidence. Contributor claims never authorize merging or publication.
+Fork contributions remain untrusted.
 
-Every target defaults to exact-commit reuse. Explicit source-tree declarations
-permit SHA changes only when the complete tree and declared build inputs match.
-Retain the original tested SHA; selected release SHA is a separate identity.
-Template smoke probes explicitly opt in. Projects using Git-derived build
-information must require exact commits.
+Accepted receipts require committed clean inputs. Identity binds repository,
+current PR head/base, tested commit, Git tree, canonical SHA-256 source manifest,
+controller/build inputs, execution platform, target outcomes, logs, and artifact
+checksums. Preserve canonical fingerprint bytes across implementation changes.
+
+## Signing and acceptance
+
+Local administrator signatures use enrolled public keys from protected source;
+private keys remain outside execution environments. Hosted acceptance binds an
+administrator source-controller dispatch to its original completed-run artifact.
+Recheck administrator permission, key revocation, age, and bundle contents on reuse.
+
+First installation permits explicit administrator bootstrap of the exact activation
+PR only when its base predates this contract.
 
 Independent validation compares shared contributor targets and rejects changed
-inputs/results. Missing target evidence requires admin execution. Reproducible
-targets reject checksum differences; other differences are recorded. Admin
-output is authoritative. Trusted admins/machines remain an explicit trust
-boundary; SHA-256 alone does not prove execution.
+inputs/results. Missing target evidence requires administrator execution.
+Reproducible targets reject checksum differences; other differences are recorded.
+Administrator output is authoritative. Trusted administrators and machines remain
+a trust boundary; a checksum alone does not prove execution.
 
-Dedicated draft releases transport accepted bundles for 30 days. Channels and
-source files do not store receipts. Missing or expired acceptance waits for
-admin validation, with no automatic expensive fallback. Official publication
-uses the automatic token and rechecks accepted packages. Local act never
-publishes. Admin merging must use the freshly verified receipt merge command;
-a green check alone is not acceptance.
+## Reuse and publication evidence
+
+Targets default to exact-commit reuse. Explicit source-tree reuse permits commit
+changes only when the complete tree and declared build inputs match. Retain the
+original tested commit separately from the selected release commit. Template smoke
+probes opt in; Git-derived build information requires exact commits.
+
+Native target evidence cannot be replaced by emulated execution. Privileged signing
+may transform a validated unsigned artifact, followed by verification.
+
+Dedicated internal draft releases transport accepted bundles for 30 days. Source
+files do not store receipts. Missing or expired acceptance waits for administrator
+validation, with no automatic expensive fallback.
+
+Public packages require verified matching accepted receipts and rechecked packages.
+Administrator merging uses the freshly verified receipt merge command; a green
+check alone is not acceptance.

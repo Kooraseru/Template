@@ -8,6 +8,7 @@ local GitHub = {}
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Rules = require("../registry/rules")
+local Commands = require("./commands")
 
 --# Functions
 
@@ -34,14 +35,13 @@ function GitHub.Api(endpoint: string, method: string?, body: unknown): unknown
 		input = Serde.encode("json", body)
 	end
 
-	local result = Process.exec("gh", arguments, { stdio = { stdin = input } })
-	assert(result.ok, "GitHub request failed: " .. result.stderr)
+	local result = Commands.Run("gh", arguments, input)
 
-	if result.stdout:match("^%s*$") then
+	if result:match("^%s*$") then
 		return nil
 	end
 
-	return Serde.decode("json", result.stdout)
+	return Serde.decode("json", result)
 end
 
 function GitHub.IsAdmin(login: string?): boolean

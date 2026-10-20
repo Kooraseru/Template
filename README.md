@@ -58,8 +58,9 @@ execution, comparisons, and reporting. See [validation](validation/README.md).
 ## Configuring a consuming repository
 
 Set its default branch to `source` and target pull requests there.
-Edit `config/project.toml` to select optional outputs, toolchains, and build/test
-commands. Commands are argument arrays; use an explicit shell invocation when
+Edit `config/project.toml` for repository, documentation, and release publication.
+Edit `src/build.toml` for application targets, toolchains, environments, packaging,
+and build/test commands. Dependencies and lockfiles stay beside native source manifests. Commands are argument arrays; use an explicit shell invocation when
 a command needs shell syntax. Place all build output under `build/`.
 Rust and CMake require explicit versions when enabled.
 

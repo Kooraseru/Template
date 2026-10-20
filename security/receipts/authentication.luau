@@ -28,7 +28,7 @@ export type Accepted = { receipt: Canonical.Object, validator: string }
 --# Helpers
 
 local function stringField(value: Canonical.Value?, key: string): string?
-	if not value then
+	if not value or not Json.Truthy(value) then
 		return nil
 	end
 
@@ -101,7 +101,9 @@ function Authentication.Authenticate(rawEnvelope: Canonical.Value, context: Cont
 			and context.AllowBootstrap
 			and context.AllowBootstrap(rawEnvelope, rawRun)
 		local rawApproval = fields.source_authorization
-		local approval: { [string]: Canonical.Value } = if rawApproval then Json.Fields(rawApproval) else {}
+		local approval: { [string]: Canonical.Value } = if rawApproval and Json.Truthy(rawApproval)
+			then Json.Fields(rawApproval)
+			else {}
 		local rawKind = approval.kind
 		local approvalKind = if rawKind then Json.String(rawKind) else ""
 		local source = stringField(rawRun, "event") == "push"

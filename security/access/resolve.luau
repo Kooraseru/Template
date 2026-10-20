@@ -11,6 +11,7 @@ local Configuration = require("../../libraries/registry/config")
 local Outputs = require("../../libraries/bootstrap/outputs")
 local Context = require("./context")
 local Policy = require("./policy")
+local Receipts = require("../receipts/cli")
 local ResolveReleases = require("../../publication/releases/resolve")
 local Fs = require("@lune/fs")
 
@@ -20,9 +21,8 @@ function ResolveAccess.Run()
 	local config = Configuration.Read()
 	ResolveReleases.Run()
 
-	local receipts = Process.exec("node", { "security/receipts/cli.mjs", "plan" })
+	Receipts.Plan()
 
-	assert(receipts.ok, "could not resolve accepted validation: " .. receipts.stdout .. receipts.stderr)
 	local matrices = Serde.decode("json", Fs.readFile("build/tmp/releases/outputs.json")) :: { [string]: string }
 	local canPublish = Policy.CanPublish(Context.Read(Process.env))
 	local values = {

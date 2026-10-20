@@ -2,7 +2,7 @@
 
 `catalogue.json` declares 24 Linux image variants, with runner architecture,
 immutable base-image digest, packages, toolchain profile, and tool probes.
-Select variants using `images.names` in `config/project.toml`.
+Select variants using `images.names` in `src/build.toml`.
 
 | Environment | Architectures | Profiles |
 | --- | --- | --- |

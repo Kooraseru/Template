@@ -46,5 +46,5 @@ __pycache__/
 !/.kero/mnt/**
 /.kero/.runtime/
 
-# Pinned release renderer dependencies
+# Optional consuming-project dependencies
 node_modules/
