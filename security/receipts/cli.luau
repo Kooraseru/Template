@@ -98,7 +98,6 @@ function Receipts.Authorize()
 	local tested = Process.env.CI_TESTED_SHA or head
 	local pr: C.Value
 	if localRun then
-		Collection.Clean()
 		pr = D.Get(event(), "receipt_context") or C.Object({ number = number, head_sha = tested, base_sha = head })
 		tested = D.Text(pr, "head_sha")
 	elseif number > 0 then
@@ -132,7 +131,7 @@ function Receipts.Authorize()
 		bootstrap = bootstrap,
 		controls = D.From(controls),
 		source_authorization = if approval then D.From(approval) else C.Missing,
-		diagnostic = dispatch and Request.Diagnostic(controls),
+		diagnostic = localRun or (dispatch and Request.Diagnostic(controls)),
 		event = Process.env.GITHUB_EVENT_NAME or "local",
 	})
 	D.Write("build/tmp/receipts/context.json", context)
@@ -230,6 +229,7 @@ end
 function Receipts.Execution()
 	local spec = C.Decode(assert(Process.env.CI_BUILD_SPEC))
 	local fields = Json.Fields(D.From(Identity.Read(D.Text(spec, "source_sha"))))
+	fields.diagnostic = localExecution()
 	local os = if Process.os == "windows" then "win32" elseif Process.os == "macos" then "darwin" else "linux"
 	local arch = if Process.arch == "aarch64" then "arm64" else "x64"
 	local execution: C.Value = C.Object({ kind = "native", os = os, arch = arch })

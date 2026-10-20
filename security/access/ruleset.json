@@ -30,7 +30,7 @@
           ]
         }
       ],
-      "key_pattern": "^[a-z][a-z0-9_]*$"
+      "key_pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
     }
   },
   "publication": {
@@ -244,6 +244,11 @@
         }
       ],
       "outputs": [
+        {
+          "input": { "CI_TESTED_SHA": "selected-source" },
+          "valid": true,
+          "expected": "CI_TESTED_SHA=selected-source\n"
+        },
         {
           "input": {
             "runner": "ubuntu-latest\npublish=true"

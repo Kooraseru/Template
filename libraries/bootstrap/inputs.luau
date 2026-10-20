@@ -14,7 +14,7 @@ Inputs.ref = Process.env.CI_INPUT_REF or ""
 
 function Inputs.Read(path: string): string
 
-	if Inputs.ref == "" then
+	if Inputs.ref == "" or (Process.env.ACT == "true" and Inputs.ref == Process.env.CI_TESTED_SHA) then
 		return Fs.readFile(path)
 	end
 

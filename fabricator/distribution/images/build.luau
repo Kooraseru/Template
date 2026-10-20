@@ -26,7 +26,7 @@ end
 local function exportRecipes(): string
 	local ref = Process.env.CI_INPUT_REF
 
-	if not ref or ref == "" then
+	if not ref or ref == "" or (Process.env.ACT == "true" and ref == Process.env.CI_TESTED_SHA) then
 		return "fabricator/distribution/images"
 	end
 

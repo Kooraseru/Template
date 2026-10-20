@@ -136,3 +136,21 @@ References:
 https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
 https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions
 https://docs.github.com/en/actions/how-tos/monitor-workflows/use-the-visualization-graph
+
+## Stage entry points
+
+The single workflow invokes composite actions named `validate`, `build`, `package`,
+`gate`, and `publish`. They delegate to implementation modules; job dependencies,
+permissions, matrices, and artifact transfers stay visible in `ci.yml`. Pages
+deployment retains its platform-specific actions and environment. The `gate` job
+keeps its existing status-check identity for branch protection.
+
+`setup-github` checks GitHub CLI availability inside the runner. Under act, PR-choice
+maintenance performs no remote changes. Local current-source builds use worktree
+inputs and diagnostic provenance; accepted receipt generation remains a separate
+trusted operation. Explicitly selected other commits still use isolated checkouts.
+
+Workflow boundary checks reject missing core stages, write permissions on generation
+jobs, and publication jobs missing required gate, source-branch, or hosted-context
+conditions. These checks validate declared structure, not arbitrary expression
+equivalence or complete semantic security.

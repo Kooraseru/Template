@@ -1,0 +1,18 @@
+name: Publish stage
+description: Publish previously generated outputs through their protected implementation.
+inputs:
+  output:
+    description: Publication output, repository or release.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        PUBLICATION_OUTPUT: ${{ inputs.output }}
+      run: |
+        case "$PUBLICATION_OUTPUT" in
+          repository) bash publication/repo/publish.sh ;;
+          release) bash publication/releases/publish.sh ;;
+          *) echo "Unsupported publication output" >&2; exit 1 ;;
+        esac

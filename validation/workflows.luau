@@ -70,6 +70,38 @@ end
 
 --# Functions
 
+function Workflows.CheckBoundaries(workflow: unknown)
+	local jobs = Rules.Entries(Rules.Property(workflow, "jobs"))
+
+	for _, name in { "validate", "build", "release", "gate", "publish-repository", "publish-pages", "publish-release" } do
+		assert(jobs[name] ~= nil, "missing workflow stage: " .. name)
+	end
+
+	for _, name in { "images", "build", "repository", "pages", "release" } do
+		local permissions = Rules.Entries(Rules.Entries(jobs[name]).permissions or {})
+
+		for _, permission in permissions do
+			assert(permission ~= "write", "generation stage requests write permission: " .. name)
+		end
+	end
+
+	for _, name in { "publish-repository", "publish-pages", "publish-release" } do
+		local job = Rules.Entries(jobs[name])
+		assert(table.find(Rules.Array(job.needs), "gate"), "publication must depend on gate: " .. name)
+		local condition = tostring(job["if"])
+
+		for _, required in
+			{
+				"needs.gate.result == 'success'",
+				"needs.validate.outputs.local_execution == 'false'",
+				"github.ref == 'refs/heads/source'",
+			}
+		do
+			assert(condition:find(required, 1, true), "missing publication boundary: " .. name .. " / " .. required)
+		end
+	end
+end
+
 function Workflows.Run()
 	local definitions = Rules.Read("validation/ruleset.json", "workflows.rules")
 	local workflow = readYaml(".github/workflows/ci.yml")
@@ -80,6 +112,7 @@ function Workflows.Run()
 	assert(actionRules ~= nil, "missing action validation rules")
 
 	Rules.Validate(workflow, definitions)
+	Workflows.CheckBoundaries(workflow)
 	validateControls(workflow, controlCheck)
 
 	for _, name in ipairs(Fs.readDir(".github/actions")) do

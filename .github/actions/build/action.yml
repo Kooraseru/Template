@@ -1,0 +1,8 @@
+name: Build stage
+description: Execute the repository-owned build stage.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/run-luau
+      with:
+        module: fabricator/workflow

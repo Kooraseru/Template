@@ -57,7 +57,8 @@ function Gate.Check(
 		end
 
 		if
-			(event == "workflow_dispatch" or context.source_authorization)
+			context["local"] ~= true
+			and (event == "workflow_dispatch" or context.source_authorization)
 			and not Request.IgnoresCoverage(controls)
 			and Rules.Entries(results["validation-receipt"]).result ~= "success"
 		then

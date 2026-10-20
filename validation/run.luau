@@ -33,6 +33,7 @@ local ReceiptAuthenticationTests = require("../security/receipts/tests/authentic
 local TestingTests = require("./tests/testing")
 local PluginTests = require("./tests/plugins")
 local ActivationTests = require("./tests/activation")
+local WorkflowTests = require("./tests/workflows")
 local WorkshopTests = require("./tests/workshop")
 local TargetTests = require("../fabricator/tests/targets")
 local DiscoveryTests = require("../fabricator/tests/discovery")
@@ -129,7 +130,10 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 		},
 		{
 			name = "Workflow rules",
-			checks = { { path = "validation/workflows.luau", Run = WorkflowValidation.Run } },
+			checks = {
+				{ path = "validation/workflows.luau", Run = WorkflowValidation.Run },
+				{ path = "validation/tests/workflows.luau", Run = suiteCheck(WorkflowTests) },
+			},
 		},
 		{
 			name = "Access policy",

@@ -55,7 +55,11 @@ function Releases.Prepare()
 	D.Write("build/tmp/releases/build-spec.json", entry)
 	local relative = "build/tmp/source/" .. sha
 	local source = Process.cwd:gsub("\\", "/"):gsub("/$", "") .. "/" .. relative
-	if not reused then
+	local worktree = Process.env.ACT == "true" and sha == Process.env.CI_TESTED_SHA
+	if worktree then
+		source = Process.cwd
+	end
+	if not reused and not worktree then
 		Files.Reset(relative)
 		Git.Bytes({ "clone", "--no-hardlinks", "--no-checkout", Process.cwd, source })
 		Git.Bytes({ "-C", source, "checkout", "--detach", sha })

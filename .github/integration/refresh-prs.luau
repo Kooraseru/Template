@@ -55,6 +55,10 @@ function RefreshPRs.RenderChoices(source: string, raw: unknown): string
 end
 
 function RefreshPRs.Run()
+	if Process.env.ACT == "true" then
+		return
+	end
+
 	local repo = GitHub.Repository()
 	local pulls = {}
 	local page = 1

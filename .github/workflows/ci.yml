@@ -186,6 +186,7 @@ jobs:
           ref: source
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - name: Refresh open pull request choices
         env:
           GH_TOKEN: ${{ secrets.CI_WORKFLOW_TOKEN || github.token }}
@@ -230,7 +231,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
-      - uses: ./.github/actions/setup-native
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - name: Resolve operation and administrator controls
         id: dispatch
@@ -248,7 +249,7 @@ jobs:
       - name: Validate / Selected checks
         id: checks
         continue-on-error: ${{ steps.dispatch.outputs.ignore_validation == 'true' }}
-        run: bash .github/integration/run.sh validation/run.luau
+        uses: ./.github/actions/validate
       - name: Evidence / Store validation results
         if: always()
         uses: actions/upload-artifact@v7
@@ -292,6 +293,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - name: Cache / Restore image archive
         id: image-cache
         if: inputs.cache_policy != 'Rebuild images and outputs'
@@ -338,6 +340,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - name: Download verified accepted distributions
         if: matrix.accepted
@@ -374,13 +377,13 @@ jobs:
         if: steps.prepared.outputs.reused != 'true' && matrix.image == '' && contains(matrix.build.toolchains, 'cmake')
         with:
           version: ${{ matrix.build.cmake_version }}
-      - run: bash .github/integration/run.sh fabricator/workflow.luau
+      - uses: ./.github/actions/build
         if: steps.prepared.outputs.reused != 'true'
         env:
           CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
       - run: bash .github/integration/run.sh security/receipts/cli.luau execution
         if: steps.prepared.outputs.reused != 'true'
-      - run: bash .github/integration/run.sh fabricator/distribution/package.luau
+      - uses: ./.github/actions/package
         if: steps.prepared.outputs.reused != 'true'
       - run: bash .github/integration/run.sh publication/releases/cli.luau verify build/artifacts
       - uses: actions/upload-artifact@v7
@@ -406,6 +409,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/build-repo
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
@@ -427,6 +431,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - run: sudo apt-get update && sudo apt-get install --yes pandoc
       - uses: ./.github/actions/build-pages
       - uses: actions/upload-artifact@v7
@@ -436,7 +441,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Build / Release assembly
+    name: Package / Release assembly
     needs: [validate, build, validation-receipt]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' && (needs.validation-receipt.result == 'success' || needs.validation-receipt.result == 'skipped') && needs.validate.outputs.release == 'true' && needs.validate.outputs.operation != 'Validate' }}
     runs-on: ubuntu-latest
@@ -450,6 +455,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
@@ -481,7 +487,7 @@ jobs:
           if-no-files-found: error
 
   validation-receipt:
-    name: Evidence / Build receipts
+    name: Package / Build receipts
     needs: [validate, build, images]
     if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && !cancelled() && needs.build.result == 'success' && (github.ref == 'refs/heads/source' || needs.validate.outputs.pr != '0') && needs.validate.outputs.local_execution == 'false' }}
     runs-on: ubuntu-latest
@@ -499,6 +505,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
@@ -547,6 +554,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         if: needs.validate.result == 'success'
@@ -568,7 +576,7 @@ jobs:
             "pages":"${{ needs.validate.outputs.pages }}",
             "release":"${{ needs.validate.outputs.release }}",
             "images":"${{ needs.validate.outputs.images }}"}
-        run: bash .github/integration/run.sh .github/integration/gate.luau
+        uses: ./.github/actions/gate
       - name: Verify accepted PR validation and report the exact PR head
         if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
         env:
@@ -588,7 +596,7 @@ jobs:
       group: publication-main
       cancel-in-progress: false
     needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_repository == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.local_execution == 'false' && needs.validate.outputs.publish_repository == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -598,23 +606,25 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: repository
           path: build
       - name: Publish validated tree
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash publication/repo/publish.sh
+        uses: ./.github/actions/publish
+        with:
+          output: repository
 
   publish-pages:
     env:
       CI_PUBLICATION_JOB: 'true'
     name: Publish / Documentation
     needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_pages == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.local_execution == 'false' && needs.validate.outputs.publish_pages == 'true' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -631,6 +641,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - name: Require hosted execution and source protection
         env:
@@ -652,9 +663,9 @@ jobs:
     name: Publish / ${{ matrix.type }} (${{ matrix.version }})
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.validate.outputs.release_matrix) }}
+      matrix: ${{ fromJSON(needs.validate.outputs.release_matrix || '{"include":[]}') }}
     needs: [validate, gate]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.publish_release == 'true' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.gate.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/source' && needs.validate.outputs.local_execution == 'false' && needs.validate.outputs.publish_release == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -669,6 +680,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
+      - uses: ./.github/actions/setup-github
       - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
@@ -678,4 +690,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ matrix.version }}
-        run: bash publication/releases/publish.sh
+        uses: ./.github/actions/publish
+        with:
+          output: release

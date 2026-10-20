@@ -1,0 +1,8 @@
+name: Package stage
+description: Execute the repository-owned package stage.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/run-luau
+      with:
+        module: fabricator/distribution/package

@@ -1,0 +1,8 @@
+name: Validate stage
+description: Execute the repository-owned validate stage.
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/run-luau
+      with:
+        module: validation/run
