@@ -202,6 +202,10 @@ jobs:
       - name: Native primitive compatibility
         shell: bash
         run: bash ci/run.sh native-compat
+      - name: Full repository validation without Rust
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: bash ci/run.sh validate
   refresh-prs:
     name: Maintenance / Pull request choices
     if: github.ref == 'refs/heads/source' && github.event_name != 'workflow_dispatch' && vars.CI_WORKFLOW_SYNC_ENABLED == 'true'

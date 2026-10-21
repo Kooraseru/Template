@@ -11,8 +11,6 @@ local Serde = require("@lune/serde")
 local C = require("../../libraries/bootstrap/canonical")
 local D = require("../../libraries/bootstrap/documents")
 local Json = require("../../libraries/bootstrap/json")
-local Bytes = require("../../libraries/bootstrap/bytes")
-local Native = require("../../libraries/bootstrap/native")
 local Files = require("../../libraries/bootstrap/files")
 local Commands = require("../../libraries/bootstrap/commands")
 local Bundles = require("../../libraries/bootstrap/bundles")
@@ -236,12 +234,6 @@ function Render.HTML(rows: { C.Value }, version: string, sha: string): string
 		.. "</div></html>"
 end
 
-function Render.PNG(svg: string): string
-	local output = Native.Call("png", { svg = svg, font = "publication/releases/assets/JetBrainsMono-Regular.ttf" })
-	assert(type(output) == "string", "invalid native PNG result")
-	return Bytes.FromHex(output)
-end
-
 function Render.FinalizeAssets(root: string, metadata: C.Value, files: { string }): C.Value
 	local assets: { C.Value } = {}
 	local names: { [string]: boolean } = {}
@@ -332,7 +324,6 @@ function Render.Assemble(plan: C.Value, options: AssemblyOptions?)
 			local name = string.format("graph-%03d", math.floor((offset - 1) / pageSize) + 1)
 			local svg = Render.SVG(page)
 			Fs.writeFile(root .. "/graph/" .. name .. ".svg", svg)
-			Fs.writeFile(root .. "/graph/" .. name .. ".png", Render.PNG(svg))
 		end
 		local publicRows: { C.Value } = {}
 		for _, row in rows do

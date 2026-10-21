@@ -168,9 +168,9 @@ local function execute(input: Input): boolean
 		)
 		assert(empty:find("No changes in this range.", 1, true) and not empty:find("Co-authored-by:", 1, true))
 		return true
-	elseif input.Kind == "png" then
-		local png = Render.PNG(Render.SVG({}))
-		assert(png:sub(1, 8) == "\137PNG\13\10\26\10")
+	elseif input.Kind == "svg" then
+		local svg = Render.SVG({})
+		assert(svg:find("<svg", 1, true), "missing SVG release graph")
 		return true
 	elseif input.Kind == "assembly" then
 		local source = repository()
@@ -348,7 +348,7 @@ end
 
 local function cases(): { Test.Case<Input, boolean> }
 	local result: { Test.Case<Input, boolean> } = {}
-	for _, kind in { "history", "selection", "notes", "png", "assembly", "protection" } do
+	for _, kind in { "history", "selection", "notes", "svg", "assembly", "protection" } do
 		table.insert(result, { Name = kind, Input = { Kind = kind }, Expected = true })
 	end
 	local definitions = D.Required(D.Read("publication/releases/ruleset.json"), "cases")

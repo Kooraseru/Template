@@ -5,60 +5,29 @@ local Native = {}
 
 --# Modules
 
-local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Rules = require("../registry/rules")
 local Bytes = require("./bytes")
 
---# Helpers
-
-local function executable(): string
-	return "build/native/release/ci-native" .. (if Process.os == "windows" then ".exe" else "")
-end
-
 --# Functions
+local checked = false
 
 function Native.Ensure(): string
-	local sources = {
-		"libraries/bootstrap/primitives/Cargo.toml",
-		"libraries/bootstrap/primitives/Cargo.lock",
-		"libraries/bootstrap/primitives/main.rs",
-	}
-	local identity = {}
-
-	for _, path in sources do
-		table.insert(identity, Serde.hash("sha256", Fs.readFile(path)))
-	end
-
-	local expected = table.concat(identity, "\n")
-	local stamp = "build/native/inputs.sha256"
-	local binary = executable()
-
-	if not Fs.isFile(binary) or not Fs.isFile(stamp) or Fs.readFile(stamp) ~= expected then
-		local build = Process.exec("cargo", {
-			"build",
-			"--locked",
-			"--release",
-			"--manifest-path",
-			"libraries/bootstrap/primitives/Cargo.toml",
-			"--target-dir",
-			"build/native",
-		})
-		assert(build.ok, "cannot build native CI primitives: " .. build.stdout .. build.stderr)
-		assert(Fs.isFile(binary), "native CI executable was not produced")
-		Fs.writeFile(stamp, expected)
-	end
-
-	return binary
+    if not checked then
+        local version = Process.exec("node", { "--version" })
+        assert(version.ok, "Node.js is required for Rustless CI primitives: " .. version.stderr)
+        checked = true
+    end
+    return "ci/libraries/bootstrap/native.mjs"
 end
 
 function Native.Call(operation: string, input: unknown): unknown
 	assert(
-		table.find({ "numbers", "sign", "verify", "uuid", "png", "keyfile", "keygen" }, operation),
+		table.find({ "numbers", "sign", "verify", "uuid", "keyfile", "keygen" }, operation),
 		"invalid native operation"
 	)
-	local child = Process.create(Native.Ensure(), { operation })
+	local child = Process.create("node", { Native.Ensure(), operation })
 	child.stdin:write(Serde.encode("json", input))
 	child.stdin:close()
 	local stdout = child.stdout:readToEnd()
