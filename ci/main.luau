@@ -33,7 +33,7 @@ elseif op == "release-publish" then
     require("./publication/releases/publish").Run()
 else
     local subject
-    if op == "validate" then subject = require("./validation/run")
+    if op == "validate" then subject = require("./validation")
     elseif op == "template-check" then subject = require("./validation/template")
     elseif op == "integration-refresh-prs" then subject = require("./integration/refresh-prs")
     elseif op == "local-actions" then subject = require("./integration/local-actions")
