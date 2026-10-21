@@ -1,13 +1,15 @@
-# Rust language conventions
+# Rust conventions
 
-Rust is an **optional application language**. This repository's CI remains Luau-owned; Rust rules do not require Cargo, a Rust project, or language smoke tests in the base template.
+These rules describe **how to write and organize Rust code**. They are self-contained: no prior knowledge of another language, runtime, or repository automation system is needed.
 
-Read [`rust-system.md`](rust-system.md) to choose a file's responsibility, then the applicable rules:
+Start with [the Rust system](rust-system.md). Select a file's responsibility, its module role, and the appropriate structural family. Apply the language rules throughout.
 
-- [`language/`](language/): naming, good writing, control flow, expressions, functions, types, ownership, lifetimes, and error semantics
-- [`files/`](files/): package manifests, module roots, executable boundaries, and generated output
-- [`structures/`](structures/): select functional, procedural, object-oriented, data, ECS, concurrency, or FFI shapes **by responsibility** rather than aesthetics
+- [Language](language/): [writing](language/writing.md), [comments](language/comments.md), [control flow](language/control-flow.md), [functions](language/functions.md), [expressions](language/expressions.md), naming, types, errors, ownership, and lifetimes
+- [Files](files/): modules, module roots, entry points, generated files, and manifests
+- [Structures](structures/structure-system.md): data, functional, procedural, owned objects, ECS, concurrency, and FFI
 
-The Luau philosophy **“if not, not if”** is carried across as a *guard-first reasoning principle*: reject an invalid state, then let the valid path remain readable. In Rust, this can mean `if !condition { return ...; }`, `let Some(value) = input else { ... };`, `?`, `continue`, or a focused `match`. It does **not** mean mechanically negating every `if`.
+**House style:** make the main path easy to follow. Reject unmet preconditions early where appropriate; use `let ... else`, `?`, `match`, and explicit branches according to their actual semantics. Never manufacture negations or conceal errors to satisfy a slogan.
 
-See [Rust control flow](language/control-flow.md) and [good writing](language/writing.md). Follow idiomatic Rust spelling (`snake_case`) rather than copying Luau's exported-method naming conventions.
+**Documentation is required at meaningful boundaries.** Public APIs need Rustdoc contracts. Dense validation, traversal, state machines, unsafe/FFI code, numeric constraints, and multi-phase algorithms need nearby explanation of intent and invariants. Comments should make it possible to navigate the code without reverse engineering each expression.
+
+Project-specific build layouts belong to [manifests](files/manifests.md); these writing conventions apply to Rust whether the project uses Cargo or compiles via another supported workflow.

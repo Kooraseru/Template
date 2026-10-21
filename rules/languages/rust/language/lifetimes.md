@@ -20,4 +20,4 @@ An explicit lifetime makes clear that the returned reference cannot outlive the 
 
 Avoid putting borrowed fields into persistent service structs unless the caller can guarantee the owner lives long enough. Prefer owned buffers, IDs, or handles for independently retained state. Document safety invariants wherever `unsafe` manipulates raw pointers or reference lifetimes.
 
-Lifetimes are Rust-specific constraints; preserve Luau's intent to make ownership clear, not its reference semantics.
+If a lifetime relationship is unusual, document which owner must outlive the borrowed view. Don't rely on a lifetime parameter name alone to explain resource semantics.

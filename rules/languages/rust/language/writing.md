@@ -1,54 +1,67 @@
-# Writing Rust people can maintain
+# Readable Rust source
 
-Good Rust is not the shortest Rust. Favor code whose owner, input contract, failure paths, and mutations can be understood without decoding a sequence of tricks. Optimize a demonstrated bottleneck, not the source's line count.
+Write Rust for a future maintainer who must understand **which states are valid, who owns resources, what happens on failure, and why an algorithm is correct**. Concision is useful until it obscures those answers.
 
-## Reading order
+## Make the main path visible
 
-- Expose **guards first** and keep the normal path below them.
-- Give each intermediate result a name if it carries a policy, validation step, or unit conversion.
-- Use `match` when branches correspond to meaningful variants; do not hide multi-branch policies in boolean chains.
-- Use combinators (`map`, `filter`, `and_then`) for clear transformations; switch to a loop or `match` when control flow, ownership, or side effects matter.
-- Prefer a small private helper over duplicated decisions; avoid helpers that only rename one obvious call.
-- Keep variable scopes short, mutation local, and return values explicit where that aids comprehension.
+- Check blockers early when an early return or `continue` clarifies the rest of the operation.
+- Use `match` for real alternatives, `let ... else` for necessary patterns, and `?` for straightforward error propagation.
+- Give intermediate values names when they carry a contract, mathematical meaning, unit, or mutation.
+- Use iterator combinators for genuinely simple transformations. Prefer explicit loops and named predicates when validation, errors, index relationships, or side effects complicate them.
+- Do not force an algorithm into a single closure chain or macro invocation merely to reduce lines.
+- Keep mutable scope narrow. Use a `struct` only if values belong together; use methods if behavior belongs to that type.
 
-```rust
-fn selected_ids(items: &[Item]) -> Vec<Id> {
-    items
-        .iter()
-        .filter(|item| item.enabled)
-        .map(|item| item.id)
-        .collect()
-}
-```
+## Make complex operations navigable
 
-This pipeline is fine: it is one uncomplicated transformation. For a pipeline requiring validation, logging, and conditional failures, write a readable loop instead.
+When a method does multiple nontrivial jobs, readers must see **what each phase establishes**. Add short phase comments and consider separate, meaningfully named helpers. Document assumptions that later phases depend on.
 
 ```rust
-fn collect_enabled(items: &[Item]) -> Result<Vec<Id>, Error> {
-    let mut selected = Vec::new();
+/// Validates a rig before any playback resources are created.
+///
+/// # Errors
+/// Rejects invalid dimensions, non-finite transforms, and invalid ancestry.
+fn validate_rig(rig: &MotionRig) -> Result<()> {
+    // Bound both collections before walking parent indices.
+    validate_counts(rig)?;
 
-    for item in items {
-        if !item.enabled {
-            continue;
-        }
-        validate(item)?;
-        selected.push(item.id);
+    // Reject invalid numeric data before the renderer consumes transforms.
+    for (index, node) in rig.nodes.iter().enumerate() {
+        validate_transform(index, node)?;
     }
 
-    Ok(selected)
+    // Ancestry must terminate without cycles or out-of-range parent indices.
+    for index in 0..rig.nodes.len() {
+        validate_parent_chain(index, &rig.nodes)?;
+    }
+
+    Ok(())
 }
 ```
 
-## API and comments
+This is illustrative: names describe the contracts of helpers, not prescribed APIs. If a helper only forwards one obvious call, keep the operation inline.
 
-- Public contracts explain surprising guarantees, effects, panics, errors, and safety obligations using `///`.
-- Private comments explain **why** an invariant or ordering exists. Skip headers that merely say “Public Methods,” “Helpers,” or “Fields.”
-- Don't create `State` or `Manager` abstractions when a more precise domain name exists.
-- Don't hide control flow in macros, `unwrap`, `expect`, clever `Deref` implementations, or operator overloads without a compelling domain reason.
-- Format with `rustfmt` for active Rust projects; keep code and comments accurate together.
+### Dense expressions need explanation or extraction
 
-## Personal conventions translated carefully
+A large `ensure!` expression or a chain like `iter().chain().map().sum()` can be correct and still difficult to maintain. If it establishes a non-obvious invariant, **name the invariant in a nearby comment** and consider a named predicate or helper. Preserve actionable error context (e.g. which rig node failed).
 
-The Luau habit “if not, not if” carries over as **guard-first design**, not Luau spelling. Rust's `snake_case`, `PascalCase` types, `Option`/`Result`, `match`, and borrowing rules remain idiomatic. Do not use underscore-prefixed names merely to disguise unused data or private fields; an isolated `_` wildcard is fine. Avoid forcing OOP, ECS, or functional patterns on code that doesn't need them.
+```rust
+// A zero-length quaternion cannot be normalized reliably during playback.
+ensure!(
+    rotation_norm_squared > ROTATION_EPSILON,
+    "invalid rotation at node {index}"
+);
+```
 
-The structure documents describe which whole-file ingredients make sense for each responsibility. See [structure selection](../structures/structure-system.md).
+Do not replace purposeful comments with an unexplained helper call. Good source usually needs **both** meaningful names and an explanation of the constraint.
+
+## API and implementation hygiene
+
+- Public functions/types get `///` contract documentation, including relevant `# Errors`, `# Panics`, and `# Safety` sections.
+- Complex private routines get a short intent/contract comment even if they are not exported.
+- Important loops explain their termination condition and what makes index or pointer access safe.
+- Significant constants need a rationale and units where meaningful; do not scatter unlabelled limits.
+- Do not write a line-by-line prose duplicate of the code; explain the contract or design reason.
+- Avoid generic `Manager`, `State`, and `Helper` names when an actual domain name is available.
+- Prefer ordinary code over opaque macros, unchecked casts, and unreviewed `unwrap`/`expect`.
+
+See [comment requirements](comments.md), [guard clauses](control-flow.md), and [structure selection](../structures/structure-system.md).

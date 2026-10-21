@@ -19,4 +19,4 @@ Here the label is borrowed from the request. The explicit lifetime is illustrati
 
 **Guard-first borrowing:** use `.as_ref()` or `.as_deref()` when the caller still needs the owner after checking an optional field. A `let Some(value) = request.value else` can partially move an owned field and make later access invalid.
 
-See [lifetimes](lifetimes.md) and the relevant structure for long-lived resources.
+Annotate non-obvious ownership transfers and resource teardown requirements; see [comments](comments.md) and [lifetimes](lifetimes.md).

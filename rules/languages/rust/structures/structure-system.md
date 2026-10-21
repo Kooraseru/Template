@@ -12,7 +12,7 @@ Choose the structure because of the **problem's responsibility**, not because Ru
 | Task lifetimes, synchronization, and message passing | [Concurrency](concurrency/concurrency-system.md) |
 | Bridging C APIs, native handles, or foreign memory layouts | [FFI](ffi/ffi-system.md) |
 
-This is analogous to [Luau's structure selection](../../luau/structures/structure-system.md): name the responsibility first, choose a shape second. These are not exclusive language modes. A concurrent application can contain data records, pure functions, and stateful objects.
+These families are not exclusive language modes. A concurrent application can contain data records, pure functions, and stateful objects.
 
 ## Decide by the missing ingredient
 

@@ -14,7 +14,7 @@ src/
 
 The `render.rs` file declares `mod layout;` and `mod textures;` if it owns those children. Use explicit re-exports only when they improve a stable API.
 
-A directory-root `mod.rs` is also supported. Like Luau's `init.luau`, it is useful as a facade if it owns a genuine public contract; it should not exist solely to mirror a directory tree.
+A directory-root `mod.rs` is also supported. Use it as a module boundary when it owns a genuine public contract; it should not exist solely to mirror a directory tree.
 
 - Keep implementation submodules private by default; choose `pub(crate)` and `pub` deliberately.
 - Favor one crate until packages have a real independent build/versioning boundary.

@@ -22,4 +22,4 @@ fn main() -> Result<(), Error> {
 }
 ```
 
-For this repository's nonstandard Cargo layout, `src/cargo/Cargo.toml` explicitly declares paths to code under `src/app/` (see [manifests](manifests.md)). Rust applications are optional and cannot become prerequisites for Luau CI.
+In projects with a nonstandard Cargo manifest location, declare source targets explicitly; see [manifests](manifests.md).

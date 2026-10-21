@@ -20,6 +20,7 @@ local required = {
     "rules/languages/rust/files/modules.md",
     "rules/languages/rust/language/control-flow.md",
     "rules/languages/rust/language/writing.md",
+    "rules/languages/rust/language/comments.md",
     "rules/languages/rust/structures/structure-system.md",
 }
 
@@ -35,7 +36,7 @@ local function output(): string
         "",
         "Language-specific guidance:",
         "- Luau: `rules/languages/luau/README.md`, its control-flow rule, and module-root guidance",
-        "- Rust: `rules/languages/rust/README.md`, `language/control-flow.md`, `language/writing.md`, and `structures/structure-system.md`",
+        "- Rust: `rules/languages/rust/README.md`, `language/writing.md`, `language/comments.md`, and its chosen structure",
         "",
         "Read applicable tracked contracts under `rules/contracts/` when migrated.",
         "The `rules/` Markdown documents are authoritative. Do not use KERO.",

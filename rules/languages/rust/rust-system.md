@@ -1,26 +1,27 @@
-# Rust structure and writing system
+# Rust code organization
 
-Rust has no universal file skeleton. First identify *what the code owns*, then pick the appropriate file role and structural family, and only then apply general language conventions.
+Choose a structure for what the code **does and owns**, not because a language feature exists. There is no mandatory file skeleton.
 
 ```text
 rust/
 ├── rust-system.md
 ├── language/
+│   ├── writing.md
+│   ├── comments.md
+│   ├── control-flow.md
 │   ├── naming.md
 │   ├── types.md
 │   ├── functions.md
 │   ├── expressions.md
-│   ├── control-flow.md
 │   ├── errors.md
 │   ├── ownership.md
-│   ├── lifetimes.md
-│   └── writing.md
+│   └── lifetimes.md
 ├── files/
 │   ├── modules.md
 │   ├── module-roots.md
-│   ├── manifests.md
 │   ├── entry-points.md
-│   └── generated-files.md
+│   ├── generated-files.md
+│   └── manifests.md
 └── structures/
     ├── structure-system.md
     ├── data/
@@ -32,14 +33,16 @@ rust/
     └── ffi/
 ```
 
-Choose in this order:
+Review a file in this order:
 
-1. **Responsibility:** value transformation, retained state, lifecycle, external I/O, systems processing, or boundary adaptation
-2. **File role:** public module root, private child module, executable entry, generated code, or data definition
-3. **Structure:** functional, procedural, OOP, ECS, data, concurrency, or FFI
-4. **Language conventions:** naming, types, borrowing, errors, guard-first control flow, and source readability
-5. **Structure-specific contracts:** what that structure requires, allows, and deliberately omits
+1. **Responsibility:** data representation, pure transformation, coordination, instance lifetime, entity processing, concurrency, or external ABI
+2. **Module role:** public root, private child, entry point, or generated boundary
+3. **Structure family:** only the one(s) justified by the behavior
+4. **Language conventions:** Rust-native naming, ownership, error types, guard clauses, and expression readability
+5. **Documentation:** Rustdoc for API contracts; inline comments for phases, invariants, non-obvious decisions, and complicated algorithms
 
-The structure is for maintainers, not for persuading the compiler. A `struct` alone does not imply OOP; a `trait` alone does not imply an abstract class; a `mod.rs` alone does not require a façade. Preserve one useful owner for each behavior.
+Do not infer OOP from the presence of a `struct`, inheritance from `trait`, or the need for a facade from a directory. A design should minimize competing owners and moving parts.
 
-Rust differs from Luau in ownership, borrowing, algebraic data types, and compilation. Translate the *reasoning* of the Luau rules—clear guards, small responsibilities, deliberate composition—not its syntax or camelCase/PascalCase spellings.
+**Long functions are a warning to inspect, not a license to remove comments.** First identify named phases and annotate their intent. Extract helpers where each phase has a meaningful contract and testable outcome. Avoid fragmenting one readable algorithm into dozens of one-line forwarding functions.
+
+When code validates external data and then traverses it, readers should be able to locate these phases immediately: **input constraints → numeric/structural invariants → traversal rules → construction/commit**. This is a responsibility-based navigation aid, not a required set of decorative section banners. See [comments](language/comments.md).

@@ -18,6 +18,6 @@ Both can represent the same module. The parent declares `mod render;` once. Do n
 
 Use `mod.rs` when the directory itself is the coherent module root and a directory facade aids navigation; use `render.rs` when a single file remains a natural owner with child modules. Whichever form is chosen, that root owns public exports and private child declarations.
 
-This resembles a Luau directory's `init.luau` **in purpose**, not in import mechanics: Rust module discovery is compile-time and explicit, not a general-purpose `require("./directory")`.
+Rust module resolution is explicit and compile-time: a parent declares `mod render;` and the compiler loads the corresponding module file.
 
 Do not add a module root merely to satisfy symmetry; a lone module can stay a lone file.

@@ -1,7 +1,8 @@
 # Comments and documentation
 
 Comments explain the information a maintainer cannot reliably infer from the
-nearby syntax. Write them for ownership, intent, constraints, assumptions,
+nearby syntax. **For complex logic, phase and invariant comments are required,**
+not merely suggested. Write them for ownership, intent, constraints, assumptions,
 failure modes, ordering, side effects, lifecycle, accessibility, security,
 compatibility, and unusual performance costs. A comment should help someone
 decide whether a change is safe.
@@ -23,10 +24,15 @@ decide whether a change is safe.
 ## Content
 
 Explain **why** a rule exists or **what must remain true**. Do not paraphrase a
-function name, selector, element, or assignment. Avoid banners and repeated
-section headers in tiny files. Use stable terms from the module's contract.
+function name, selector, element, or assignment. Clear, concise section markers
+are encouraged in long multi-phase routines when they improve navigation; avoid
+ceremonial banners and repeated headings in tiny files. Use stable terms from the module's contract.
 When a workaround is temporary, name the exit condition and its owner; a bare
 `TODO` is not a migration plan.
+
+For exported APIs, unusual mathematics, indexed traversal, and security/FFI
+boundaries, the applicable language standard may require Rustdoc or stronger
+local comments. See [Rust comments](rust/language/comments.md).
 
 Keep comments accurate when behavior changes. Delete comments that no longer
 describe the code. Cite an external source beside the behavior it influenced

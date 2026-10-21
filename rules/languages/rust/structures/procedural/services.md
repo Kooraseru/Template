@@ -24,4 +24,4 @@ The guard here is only meaningful if a missing destination is an error **after**
 - Keep policy decisions testable separately from shell and network execution.
 - Avoid performing work just by importing a module.
 
-This repository's Luau-owned CI dispatcher is a concrete example of this responsibility. Rust application services should follow the same principle, not become another template bootstrap system.
+Document multi-phase workflows with phase comments and narrow operation contracts, especially when publication, credentials, rollback, or partial success are involved.

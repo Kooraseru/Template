@@ -1,6 +1,6 @@
-# Guard-first control flow: “if not, not if”
+# Guard clauses and readable control flow
 
-**Default mental model:** establish when a function **cannot** continue, handle that condition, and leave the primary path unindented. The negation belongs to the *precondition* rather than to every `if` expression.
+**Default:** handle unmet preconditions and exceptional states before the successful path. Use Rust’s native control-flow constructs to make outcomes explicit; do not mechanically negate conditions.
 
 ```rust
 fn render(target: Option<&Target>) {
@@ -51,7 +51,7 @@ fn publish(request: &Request) -> Result<Receipt, Error> {
 
 Rust's `?` is a guard in expression form: it passes through success and exits on failure. It is preferable to repeated `match Ok/Err` boilerplate when the error needs no special treatment.
 
-## Do not turn the mnemonic into a rule against `if`
+## Positive conditions remain valid
 
 A positive branch is clearer when the *branch itself is the purpose*:
 
@@ -61,8 +61,8 @@ if cache.contains_key(&id) {
 }
 ```
 
-Use `match` when variants deserve distinct behavior. Use `if let` when one pattern is the actual operation and the alternative needs no branch. Never write confusing double negatives merely to preserve `!`; rename negative predicates when possible.
+Use `match` when variants deserve distinct behavior. Use `if let` when one pattern is the actual operation and the alternative needs no branch. Never manufacture confusing double negatives; rename negative predicates when possible.
 
 Avoid stacking guards that silently discard important failures. A guard should say **return**, **continue**, **break**, or **error** deliberately. Preserve cleanup and transaction semantics; return early only after invariants are restored or via owned RAII guards.
 
-Read [expressions](expressions.md) and [errors](errors.md) for choosing compact versus explicit forms.
+For complicated guard groups or ancestor loops, explain the invariants in nearby [Rust comments](comments.md). See [expressions](expressions.md) and [errors](errors.md) for choosing compact versus explicit forms.
