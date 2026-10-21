@@ -13,10 +13,14 @@ local required = {
     "rules/workflows/review.md",
     "rules/languages/luau/README.md",
     "rules/languages/luau/files/module-roots.md",
+    "rules/languages/luau/language/control-flow.md",
     "rules/languages/rust/README.md",
     "rules/languages/rust/rust-system.md",
     "rules/languages/rust/files/manifests.md",
     "rules/languages/rust/files/modules.md",
+    "rules/languages/rust/language/control-flow.md",
+    "rules/languages/rust/language/writing.md",
+    "rules/languages/rust/structures/structure-system.md",
 }
 
 local function output(): string
@@ -30,8 +34,8 @@ local function output(): string
         "Consult `rules/workflows/review.md` when reviewing changes.",
         "",
         "Language-specific guidance:",
-        "- Luau: `rules/languages/luau/README.md` and `rules/languages/luau/files/module-roots.md`",
-        "- Rust: `rules/languages/rust/README.md` and its `files/` rules",
+        "- Luau: `rules/languages/luau/README.md`, its control-flow rule, and module-root guidance",
+        "- Rust: `rules/languages/rust/README.md`, `language/control-flow.md`, `language/writing.md`, and `structures/structure-system.md`",
         "",
         "Read applicable tracked contracts under `rules/contracts/` when migrated.",
         "The `rules/` Markdown documents are authoritative. Do not use KERO.",
