@@ -23,4 +23,4 @@ Choose an idiom based on the information it communicates:
 - `map`/`and_then` are good for local transformations; avoid chained closures hiding effects.
 - `matches!` is good for a concise shape check, not as an excuse for a large anonymous predicate.
 
-Avoid dense boolean puzzles and gratuitous double negatives. A positive branch is not forbidden by “if not, not if”; guard-first means remove blockers *where that improves the main path*.
+Avoid dense boolean puzzles and gratuitous double negatives. Guard-first means handling blockers early *where that improves the main path*; positive branches remain useful.

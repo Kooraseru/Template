@@ -14,4 +14,4 @@ Avoid creating a global scheduler, shared registry, or blanket `Arc<Mutex<_>>` g
 
 The language-wide guard-first convention applies to task admission and early cancellation. Do not return early while accidentally leaving unmanaged tasks or locks.
 
-[Example scoped workers](examples/scoped_workers.rs) illustrates the structure without adding a mandatory application or CI smoke test.
+[Example scoped workers](examples/scoped_workers.rs) illustrates one possible shape; adapt it to the project’s actual contracts.

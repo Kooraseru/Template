@@ -24,4 +24,4 @@ fn first_visible(items: &[Item]) -> Option<&Item> {
 }
 ```
 
-Prefer this explicit loop to a complicated closure if visibility requires multiple checks. If the predicate is a simple field read, `items.iter().find(|item| item.visible)` is equally clear. Do not outlaw idiomatic Rust merely to reproduce a Luau loop.
+Prefer this explicit loop to a complicated closure if visibility requires multiple checks. If the predicate is a simple field read, `items.iter().find(|item| item.visible)` is equally clear. Use whichever form communicates the condition and ownership most clearly.

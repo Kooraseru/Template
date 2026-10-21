@@ -11,6 +11,6 @@ FFI bridges Rust's safety model to external calling conventions, pointers, buffe
 
 An FFI module may own a stateful handle; that does not justify building the entire application as an unsafe object framework.
 
-See [boundary contracts](boundaries.md). Application FFI is optional and unrelated to the repository's Rustless CI helper.
+See [boundary contracts](boundaries.md). Use FFI only when a foreign ABI actually requires it.
 
-[Example validated FFI record](examples/dimensions.rs) illustrates the structure without adding a mandatory application or CI smoke test.
+[Example validated FFI record](examples/dimensions.rs) illustrates one possible shape; adapt it to the project’s actual contracts.

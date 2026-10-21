@@ -25,4 +25,4 @@ fn publish(request: &Request, client: &Client) -> Result<(), Error> {
 
 When a service has independently constructed instances and owned resources, consult [objects](../oop/objects.md).
 
-[Example procedural operation](examples/install_file.rs) illustrates the structure without adding a mandatory application or CI smoke test.
+[Example procedural operation](examples/install_file.rs) illustrates one possible shape; adapt it to the project’s actual contracts.

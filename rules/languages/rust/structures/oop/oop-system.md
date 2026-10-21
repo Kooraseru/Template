@@ -28,4 +28,4 @@ Methods express legitimate changes to owned state. There is no reason to make ev
 
 Interfaces and shared behavior are modeled with [traits](traits.md) and composition, not forced inheritance hierarchies.
 
-[Example owned object](examples/session.rs) illustrates the structure without adding a mandatory application or CI smoke test.
+[Example owned object](examples/session.rs) illustrates one possible shape; adapt it to the project’s actual contracts.
