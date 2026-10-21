@@ -23,7 +23,7 @@ local function execute(kind: string): boolean
 		assert(type(D.Get(value, "surrogate")) == "table" and not pcall(D.Text, value, "surrogate"))
 		assert(D.Equal(D.Get(value, "array"), C.Array({})) and D.Equal(D.Get(value, "null"), C.Null))
 	elseif kind == "stdin" then
-		assert(Commands.Run(Native.Ensure(), { "numbers" }, '["1.5000000000000000"]') == '["1.5"]')
+		assert(Commands.Run("node", { Native.Ensure(), "numbers" }, '["1.5000000000000000"]') == '["1.5"]')
 	elseif kind == "key-boundary" then
 		assert(not pcall(Native.Call, "keyfile", { path = Process.cwd .. "/README.md", workspace = Process.cwd }))
 		assert(
