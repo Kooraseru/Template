@@ -359,8 +359,8 @@ function Receipts.Report()
 	D.Write("build/receipts/accepted-plan.json", D.Set(plan, "builds", C.Array(builds)))
 end
 
-function Receipts.Run()
-	local args = Process.args
+function Receipts.Run(provided: { string }?)
+	local args = provided or Process.args
 	local operation = args[1]
 	if operation == "authorize" then
 		Receipts.Authorize()

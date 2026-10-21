@@ -133,9 +133,10 @@ function Template.Check(read: Reader, files: { string }): { Finding }
 	return findings
 end
 
-function Template.Run()
-	local root = assert(Process.args[1], "expected downstream checkout path")
-	local upstream = assert(Process.args[2], "expected examined upstream commit")
+function Template.Run(provided: { string }?)
+	local args = provided or Process.args
+	local root = assert(args[1], "expected downstream checkout path")
+	local upstream = assert(args[2], "expected examined upstream commit")
 	local destination = Process.env.TEMPLATE_REPORT or "build/template-conformance.json"
 	local listed = Process.exec("git", { "-C", root, "ls-files", "--stage", "-z" })
 	assert(listed.ok, "cannot inventory downstream checkout")

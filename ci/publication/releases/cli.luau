@@ -72,18 +72,19 @@ function Releases.Prepare()
 	Outputs.Write(Process.env.GITHUB_OUTPUT, { reused = tostring(reused), source_dir = source })
 end
 
-function Releases.Run()
-	local operation = Process.args[1]
+function Releases.Run(provided: { string }?)
+	local args = provided or Process.args
+	local operation = args[1]
 	if operation == "prepare" then
 		Releases.Prepare()
 	elseif operation == "verify" then
-		Distributions.Verify(assert(Process.args[2]), C.Decode(assert(Process.env.CI_BUILD_SPEC)))
+		Distributions.Verify(assert(args[2]), C.Decode(assert(Process.env.CI_BUILD_SPEC)))
 	elseif operation == "assemble" then
 		Render.Assemble(D.Read("build/tmp/releases/plan.json"))
 	elseif operation == "publish" then
 		Publish.Run()
 	elseif operation == "protect" then
-		Protection.Require(assert(Process.args[2] or Process.env.GITHUB_REPOSITORY))
+		Protection.Require(assert(args[2] or Process.env.GITHUB_REPOSITORY))
 	elseif operation == "attest-protection" then
 		assert(
 			Process.env.ACT ~= "true" and Process.env.GITHUB_ACTIONS ~= "true" and GitHub.IsAdmin(GitHub.Actor()),

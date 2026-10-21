@@ -54,7 +54,8 @@ function RefreshPRs.RenderChoices(source: string, raw: unknown): string
 	return table.concat(lines, "\n") .. "\n" .. source:sub(finish)
 end
 
-function RefreshPRs.Run()
+function RefreshPRs.Run(provided: { string }?)
+	local args = provided or Process.args
 	if Process.env.ACT == "true" then
 		return
 	end
@@ -80,7 +81,7 @@ function RefreshPRs.Run()
 	end
 
 	local file = ".github/workflows/ci.yml"
-	local remote = table.find(Process.args, "--remote") ~= nil
+	local remote = table.find(args, "--remote") ~= nil
 	local original = if remote
 		then Rules.Entries(GitHub.Api("repos/" .. repo .. "/contents/" .. file .. "?ref=source"))
 		else nil

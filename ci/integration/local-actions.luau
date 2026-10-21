@@ -53,9 +53,10 @@ function LocalActions.Request(operation: string, workflow: string?): string
 	)
 end
 
-function LocalActions.Run()
+function LocalActions.Run(provided: { string }?)
+	local args = provided or Process.args
 
-	Stdio.write(LocalActions.Request(Process.args[1] or "status", Process.args[2]) .. "\n")
+	Stdio.write(LocalActions.Request(args[1] or "status", args[2]) .. "\n")
 end
 
 return LocalActions

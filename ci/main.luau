@@ -48,17 +48,19 @@ else
     elseif op == "release-cli" then subject = require("./publication/releases/cli")
     elseif op == "release-build" then subject = require("./publication/releases/build")
     elseif op == "repo-build" then subject = require("./publication/repo/build")
+    elseif op == "repo-verify" then subject = require("./publication/repo/verify")
     elseif op == "pages-build" then subject = require("./publication/pages/build")
     else error("unknown CI operation: " .. tostring(op), 0)
     end
-    -- Legacy subcommands consume Process.args; strip the public operation token.
-    table.remove(args, 1)
+    -- The Lune-provided Process.args table is read-only. Forward an explicit slice.
+    local forwarded: { string } = {}
+    for index = 2, #args do table.insert(forwarded, args[index]) end
     local function stage(name: string, opening: boolean)
         Stdio.write(if opening then "::group::Validate / " .. name .. "\n" else "::endgroup::\n")
     end
     if subject.Cases then
         subject:Run()
     else
-        subject.Run(stage)
+        if op == "validate" then subject.Run(stage) else subject.Run(forwarded) end
     end
 end

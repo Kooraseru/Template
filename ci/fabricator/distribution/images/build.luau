@@ -150,9 +150,10 @@ end
 
 --# Functions
 
-function Images.Run()
+function Images.Run(provided: { string }?)
+	local args = provided or Process.args
 	local config = Config.Read()
-	local name = Process.args[1]
+	local name = args[1]
 
 	assert(name ~= nil, "missing image name")
 

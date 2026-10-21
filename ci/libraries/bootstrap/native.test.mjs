@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 const helper = resolve("ci/libraries/bootstrap/native.mjs");
-const fixtures = JSON.parse(readFileSync("libraries/bootstrap/ruleset.json", "utf8"));
+const fixtures = JSON.parse(readFileSync("ci/libraries/bootstrap/ruleset.json", "utf8"));
 
 function call(operation, input, succeeds = true) {
   const result = spawnSync(process.execPath, [helper, operation], {
