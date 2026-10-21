@@ -1,4 +1,4 @@
--- publication/releases/validate.luau
+-- ci/publication/releases/validate.luau
 --!strict
 
 local ValidateReleases = {}
@@ -18,7 +18,7 @@ function ValidateReleases.Run()
 	local success, failure = pcall(function()
 		-- Inspect proposed configuration as data using the trusted controller parser.
 		Inputs.ref = Process.env.CI_TESTED_SHA or previousValue
-		local document = Serde.decode("toml", Inputs.Read("publication/releases/versions.toml"))
+		local document = Serde.decode("toml", Inputs.Read("ci/publication/releases/versions.toml"))
 		local source = Process.exec("git", { "rev-parse", "HEAD" })
 
 		assert(source.ok, "cannot resolve trusted source controller")

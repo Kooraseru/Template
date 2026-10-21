@@ -1,7 +1,7 @@
--- publication/releases/tests/publication.luau
+-- ci/publication/releases/tests/publication.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../../libraries/testing/test")
 
 --# Modules
 

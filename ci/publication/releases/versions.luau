@@ -1,4 +1,4 @@
--- publication/releases/versions.luau
+-- ci/publication/releases/versions.luau
 --!strict
 
 local Versions = {}
@@ -8,7 +8,7 @@ local Versions = {}
 local Process = require("@lune/process")
 local Rules = require("../../libraries/registry/rules")
 local Config = require("../../libraries/registry/config")
-local Request = require("../../.github/integration/request")
+local Request = require("../../integration/request")
 
 --# Types
 

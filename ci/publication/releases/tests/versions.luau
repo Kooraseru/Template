@@ -1,7 +1,7 @@
--- publication/releases/tests/versions.luau
+-- ci/publication/releases/tests/versions.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../../libraries/testing/test")
 
 --# Modules
 
@@ -52,7 +52,7 @@ local function cases(): { Test.Case<Input, boolean> }
 	do
 		table.insert(result, { Name = version, Input = { Version = version }, Expected = false })
 	end
-	for _, scenario in D.Items(D.Required(D.Read("publication/releases/ruleset.json"), "cases"), "releases") do
+	for _, scenario in D.Items(D.Required(D.Read("ci/publication/releases/ruleset.json"), "cases"), "releases") do
 		table.insert(result, {
 			Name = D.Text(scenario, "name"),
 			Input = { Scenario = scenario },

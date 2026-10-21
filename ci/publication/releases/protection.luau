@@ -1,4 +1,4 @@
--- publication/releases/protection.luau
+-- ci/publication/releases/protection.luau
 --!strict
 
 local Protection = {}

@@ -1,7 +1,7 @@
--- publication/releases/tests/behavior.luau
+-- ci/publication/releases/tests/behavior.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../../libraries/testing/test")
 
 --# Modules
 
@@ -37,7 +37,7 @@ end
 local function execute(input: Input): boolean
 	if input.Kind == "history" then
 		local source = repository()
-		local rules = D.Required(D.Required(D.Read("publication/releases/ruleset.json"), "cases"), "history")
+		local rules = D.Required(D.Required(D.Read("ci/publication/releases/ruleset.json"), "cases"), "history")
 		local data = History.Read(
 			C.Object({ from = source.Commits.root, source_sha = source.Commits.merge }),
 			source.Root,
@@ -288,7 +288,7 @@ local function execute(input: Input): boolean
 			)
 		)
 	elseif input.Kind == "protection" then
-		local protection = D.Required(D.Read("publication/releases/ruleset.json"), "protection")
+		local protection = D.Required(D.Read("ci/publication/releases/ruleset.json"), "protection")
 		local sets: { C.Value } = { D.Required(protection, "source_checks"), D.Required(protection, "source_admins") }
 		assert(Protection.Valid(sets) and not Protection.Valid({ sets[1] }))
 		local actors = C.Array({ C.Object({ actor_id = 5, actor_type = "RepositoryRole", bypass_mode = "always" }) })
@@ -307,7 +307,7 @@ local function execute(input: Input): boolean
 		return true
 	elseif input.Kind == "visibility" then
 		local scenario = assert(input.Scenario)
-		local protection = D.Required(D.Read("publication/releases/ruleset.json"), "protection")
+		local protection = D.Required(D.Read("ci/publication/releases/ruleset.json"), "protection")
 		local sets: { C.Value } = {}
 		local live: { C.Value } = {}
 		for index, key in { "source_checks", "source_admins" } do
@@ -351,7 +351,7 @@ local function cases(): { Test.Case<Input, boolean> }
 	for _, kind in { "history", "selection", "notes", "svg", "assembly", "protection" } do
 		table.insert(result, { Name = kind, Input = { Kind = kind }, Expected = true })
 	end
-	local definitions = D.Required(D.Read("publication/releases/ruleset.json"), "cases")
+	local definitions = D.Required(D.Read("ci/publication/releases/ruleset.json"), "cases")
 	for _, group in { { "provenance", "provenance" }, { "visibility", "protection_visibility" } } do
 		for _, scenario in D.Items(definitions, group[2]) do
 			table.insert(result, {

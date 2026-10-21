@@ -1,4 +1,4 @@
--- publication/releases/publish.luau
+-- ci/publication/releases/publish.luau
 --!strict
 
 local Publish = {}
@@ -13,7 +13,7 @@ local D = require("../../libraries/bootstrap/documents")
 local Json = require("../../libraries/bootstrap/json")
 local Shape = require("../../libraries/registry/shape")
 local Base64 = require("../../libraries/bootstrap/base64")
-local Authorization = require("../../.github/integration/publication")
+local Authorization = require("../../integration/publication")
 local Hosted = require("../../security/receipts/hosted")
 local Versions = require("./versions")
 local Render = require("./render")
@@ -68,7 +68,7 @@ function Publish.Version(api: Client.API, metadata: C.Value, root: string, asser
 		.. " -->\n"
 	local payloads = D.Items(metadata, "assets")
 	local contentTypes =
-		D.Required(D.Required(D.Read("publication/releases/ruleset.json"), "rules"), "asset_content_types")
+		D.Required(D.Required(D.Read("ci/publication/releases/ruleset.json"), "rules"), "asset_content_types")
 	local function contentType(asset: C.Value): string
 		local extension = D.Text(asset, "path"):match("(%.[^./]+)$")
 		return if extension and D.Get(contentTypes, extension)

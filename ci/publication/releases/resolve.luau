@@ -1,4 +1,4 @@
--- publication/releases/resolve.luau
+-- ci/publication/releases/resolve.luau
 --!strict
 
 local ResolveReleases = {}
@@ -12,7 +12,7 @@ local Inputs = require("../../libraries/bootstrap/inputs")
 local Configuration = require("../../libraries/registry/config")
 local Catalogue = require("../../libraries/registry/catalogue")
 local Rules = require("../../libraries/registry/rules")
-local Controls = require("../../.github/integration/config")
+local Controls = require("../../integration/config")
 local Plan = require("./plan")
 local Targets = require("../../fabricator/targets")
 
@@ -30,7 +30,7 @@ function ResolveReleases.Run()
 		Fs.writeDir("build/tmp/releases")
 		local releasing = config.release.enabled and (Process.env.CI_RECEIPT_PR or "0") == "0"
 		local versions = if releasing
-			then Serde.decode("toml", Fs.readFile("publication/releases/versions.toml"))
+			then Serde.decode("toml", Fs.readFile("ci/publication/releases/versions.toml"))
 			else { releases = {} }
 		local controls = Controls.Read()
 		local selections = Plan.Selections(versions, releasing, controls)
@@ -74,7 +74,7 @@ function ResolveReleases.Run()
 							"install.sh",
 						}
 					do
-						recipes[file] = Inputs.Read("fabricator/distribution/images/" .. file)
+						recipes[file] = Inputs.Read("ci/fabricator/distribution/images/" .. file)
 					end
 				end
 				entry.recipes = recipes
@@ -87,7 +87,7 @@ function ResolveReleases.Run()
 					local recipes = {}
 
 					for _, file in { image.recipe, "toolchains/" .. image.profile .. "/Dockerfile", "install.sh" } do
-						recipes[file] = Inputs.Read("fabricator/distribution/images/" .. file)
+						recipes[file] = Inputs.Read("ci/fabricator/distribution/images/" .. file)
 					end
 					table.insert(images, {
 						name = name,

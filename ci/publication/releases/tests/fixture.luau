@@ -1,4 +1,4 @@
--- publication/releases/tests/fixture.luau
+-- ci/publication/releases/tests/fixture.luau
 --!strict
 
 local Fixture = {}
@@ -27,7 +27,7 @@ function Fixture.Create(): Repository
 	Git.Bytes({ "config", "user.email", "committer@example.test" }, root)
 	Git.Bytes({ "config", "commit.gpgsign", "false" }, root)
 	local commits: { [string]: string } = {}
-	local cases = D.Required(D.Read("publication/releases/ruleset.json"), "cases")
+	local cases = D.Required(D.Read("ci/publication/releases/ruleset.json"), "cases")
 	for _, entry in D.Items(D.Required(cases, "history"), "commits") do
 		if D.Get(entry, "parent") then
 			Git.Bytes({ "checkout", "-B", D.Text(entry, "branch"), assert(commits[D.Text(entry, "parent")]) }, root)

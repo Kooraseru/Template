@@ -1,4 +1,4 @@
--- publication/releases/render.luau
+-- ci/publication/releases/render.luau
 --!strict
 
 local Render = {}
@@ -125,7 +125,7 @@ function Render.SVG(rows: { C.Value }, expanded: boolean?): string
 	end
 	local graphWidth = 24 + columns * 22
 	local width, height = graphWidth + characters * 8 + 16, math.max(64, #rows * 34 + 28)
-	local colors = D.Items(D.Required(D.Read("publication/releases/ruleset.json"), "rules"), "graph_colors")
+	local colors = D.Items(D.Required(D.Read("ci/publication/releases/ruleset.json"), "rules"), "graph_colors")
 	local function color(lane: number): string
 		return text(colors[lane % #colors + 1])
 	end
@@ -315,7 +315,7 @@ function Render.Assemble(plan: C.Value, options: AssemblyOptions?)
 		local rows = History.Layout(commits)
 		Fs.writeDir(root .. "/graph")
 		local pageSize =
-			D.Number(D.Required(D.Read("publication/releases/ruleset.json"), "rules"), "graph_rows_per_page")
+			D.Number(D.Required(D.Read("ci/publication/releases/ruleset.json"), "rules"), "graph_rows_per_page")
 		for offset = 1, math.max(1, #rows), pageSize do
 			local page = {}
 			for index = offset, math.min(#rows, offset + pageSize - 1) do
@@ -378,7 +378,7 @@ function Render.Assemble(plan: C.Value, options: AssemblyOptions?)
 				controller_sha = D.Required(plan, "controller_sha"),
 				controller_hash = D.Required(plan, "controller_hash"),
 				targets = C.Array(targets),
-				contract_hash = Serde.hash("sha256", Fs.readFile("publication/releases/versions.toml")),
+				contract_hash = Serde.hash("sha256", Fs.readFile("ci/publication/releases/versions.toml")),
 			})
 		)
 		local files = {}
