@@ -1,4 +1,4 @@
--- libraries/bootstrap/outputs.luau
+-- ci/libraries/bootstrap/outputs.luau
 --!strict
 
 local Outputs = {}
@@ -7,7 +7,7 @@ local Outputs = {}
 
 local Fs = require("@lune/fs")
 local Rules = require("../registry/rules")
-local definition = Rules.Read("security/access/ruleset.json", "outputs.rules")
+local definition = Rules.Read("ci/security/access/ruleset.json", "outputs.rules")
 
 --# Functions
 

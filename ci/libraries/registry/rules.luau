@@ -1,4 +1,4 @@
--- libraries/registry/rules.luau
+-- ci/libraries/registry/rules.luau
 --!strict
 
 local Rules = {}
@@ -123,7 +123,7 @@ local function array(value: unknown): { unknown }
 end
 Rules.Array = array
 
-local vocabulary = entries(Serde.decode("json", Fs.readFile("validation/ruleset.json")))
+local vocabulary = entries(Serde.decode("json", Fs.readFile("ci/validation/ruleset.json")))
 local format = entries(entries(entries(vocabulary.rules).format).fields)
 
 local function inspectRule(raw: unknown): Rule

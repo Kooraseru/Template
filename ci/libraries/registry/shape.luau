@@ -1,4 +1,4 @@
--- libraries/registry/shape.luau
+-- ci/libraries/registry/shape.luau
 --!strict
 
 local Shape = {}

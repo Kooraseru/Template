@@ -1,4 +1,4 @@
--- libraries/testing/cases.luau
+-- ci/libraries/testing/cases.luau
 --!strict
 
 local Cases = {}

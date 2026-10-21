@@ -1,4 +1,4 @@
--- libraries/testing/fixtures.luau
+-- ci/libraries/testing/fixtures.luau
 --!strict
 
 local Fixtures = {}

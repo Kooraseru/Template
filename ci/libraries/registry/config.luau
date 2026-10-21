@@ -1,4 +1,4 @@
--- libraries/registry/config.luau
+-- ci/libraries/registry/config.luau
 --!strict
 
 local Config = {}
@@ -10,7 +10,7 @@ local Targets = require("../../fabricator/targets")
 local Shape = require("./shape")
 
 local Rules = require("./rules")
-local schema = Rules.Read("validation/ruleset.json", "config.rules")
+local schema = Rules.Read("ci/validation/ruleset.json", "config.rules")
 
 --# Types
 
@@ -101,7 +101,7 @@ end
 function Config.Read(): Config
 	local value = Project.Read()
 
-	return Config.Validate(require("../../.github/integration/config").Apply(value))
+	return Config.Validate(require("../../integration/config").Apply(value))
 end
 
 return Config

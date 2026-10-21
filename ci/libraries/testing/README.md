@@ -30,8 +30,8 @@ case and returns structured results, including failures and exceptions.
 the caller, so tests do not print success messages.
 
 Run an individual suite with
-`bash .github/integration/run.sh validation/tests/testing.luau`.
-The hosted workflow calls `validation/run.luau` to collect stage evidence.
+`bash ci/integration/run.sh ci/validation/tests/testing.luau`.
+The hosted workflow calls `ci/validation/run.luau` to collect stage evidence.
 
 The existing fixture helpers remain available for tests still being migrated.
 Frozen canonical-byte and signature vectors remain explicit security evidence;

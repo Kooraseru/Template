@@ -1,4 +1,4 @@
--- libraries/registry/catalogue.luau
+-- ci/libraries/registry/catalogue.luau
 --!strict
 
 local Catalogue = {}
@@ -35,7 +35,7 @@ export type Document = {
 --# Helpers
 
 local function images(): { images: { Image } }
-	local document: unknown = Serde.decode("json", Inputs.Read("fabricator/distribution/images/catalogue.json"))
+	local document: unknown = Serde.decode("json", Inputs.Read("ci/fabricator/distribution/images/catalogue.json"))
 
 	assert(type(document) == "table", "expected image catalogue")
 
@@ -43,14 +43,14 @@ local function images(): { images: { Image } }
 end
 
 local function targets(): { targets: { Configuration.BuildEntry } }
-	local document: unknown = Serde.decode("json", Inputs.Read("fabricator/targets.json"))
+	local document: unknown = Serde.decode("json", Inputs.Read("ci/fabricator/targets.json"))
 
 	assert(type(document) == "table", "expected target catalogue")
 
 	return document :: { targets: { Configuration.BuildEntry } }
 end
 
-local schema = Rules.Read("validation/ruleset.json", "catalogue.rules")
+local schema = Rules.Read("ci/validation/ruleset.json", "catalogue.rules")
 
 --# Functions
 

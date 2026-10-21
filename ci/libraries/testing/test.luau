@@ -1,4 +1,4 @@
--- libraries/testing/test.luau
+-- ci/libraries/testing/test.luau
 --!strict
 
 local Test = {}
