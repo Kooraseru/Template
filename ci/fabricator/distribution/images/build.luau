@@ -1,4 +1,4 @@
--- fabricator/distribution/images/build.luau
+-- ci/fabricator/distribution/images/build.luau
 --!strict
 
 local Images = {}
@@ -27,11 +27,11 @@ local function exportRecipes(): string
 	local ref = Process.env.CI_INPUT_REF
 
 	if not ref or ref == "" or (Process.env.ACT == "true" and ref == Process.env.CI_TESTED_SHA) then
-		return "fabricator/distribution/images"
+		return "ci/fabricator/distribution/images"
 	end
 
 	local root = "build/tmp/image-input/" .. ref
-	local recipes = "fabricator/distribution/images"
+	local recipes = "ci/fabricator/distribution/images"
 
 	Fs.writeDir(root)
 

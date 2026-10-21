@@ -1,4 +1,4 @@
--- fabricator/coverage.luau
+-- ci/fabricator/coverage.luau
 --!strict
 
 local Coverage = {}

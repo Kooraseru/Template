@@ -12,7 +12,7 @@ executor is a development tool, not a project release package.
 For Windows ARM64:
 
 ```sh
-docker build -f fabricator/distribution/images/act/Dockerfile --output type=local,dest=build/tools/act .
+docker build -f ci/fabricator/distribution/images/act/Dockerfile --output type=local,dest=build/tools/act .
 build/tools/act/act.exe push
 ```
 

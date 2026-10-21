@@ -5,7 +5,7 @@ ARG TARGET_OS=windows
 ARG TARGET_ARCH=arm64
 RUN git clone --depth 1 --branch "$ACT_REF" https://github.com/nektos/act.git /src
 WORKDIR /src
-COPY fabricator/distribution/images/act/patches.json /patches.json
+COPY ci/fabricator/distribution/images/act/patches.json /patches.json
 RUN python3 - <<'PY'
 import json
 from pathlib import Path
