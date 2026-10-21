@@ -48,3 +48,6 @@ __pycache__/
 
 # Optional consuming-project dependencies
 node_modules/
+
+# Generated AI agent instructions
+/AGENTS.md
