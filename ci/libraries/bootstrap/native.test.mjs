@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -48,6 +48,18 @@ test("RFC8032 Ed25519 signatures match existing golden vectors", () => {
     assert.equal(call("verify", { ...request, message_hex: request.message_hex + "0a" }), false);
     assert.equal(call("verify", { ...request, signature_hex: signature.slice(0, -2) }), false);
     assert.equal(call("verify", { ...request, signature_hex: "00".repeat(64) }), false);
+    const order = (1n << 252n) + 27742317777372353535851937790883648493n;
+    let scalar = 0n;
+    for (let index = 63; index >= 32; index--) {
+      scalar = (scalar << 8n) + BigInt(parseInt(signature.slice(index * 2, index * 2 + 2), 16));
+    }
+    scalar += order;
+    const replacement = Buffer.from(signature, "hex");
+    for (let index = 32; index < 64; index++) {
+      replacement[index] = Number(scalar & 255n);
+      scalar >>= 8n;
+    }
+    assert.equal(call("verify", { ...request, signature_hex: replacement.toString("hex") }), false, "noncanonical Ed25519 scalar accepted");
   }
 });
 
@@ -75,6 +87,17 @@ test("private key lifecycle respects external key restrictions", () => {
     call("keygen", { path: inside, workspace }, false);
     writeFileSync(inside, privatePem);
     call("keyfile", { path: inside, workspace }, false);
+    if (process.platform !== "win32") {
+      const linkedInside = join(workspace, "linked.pem");
+      symlinkSync(filename, linkedInside);
+      call("keyfile", { path: linkedInside, workspace }, false);
+      const linkedOutside = join(root, "linked-outside.pem");
+      symlinkSync(filename, linkedOutside);
+      call("keyfile", { path: linkedOutside, workspace }, false);
+      const directoryLink = join(workspace, "external-dir");
+      symlinkSync(root, directoryLink, "dir");
+      call("keygen", { path: join(directoryLink, "new.pem"), workspace }, false);
+    }
     call("keyfile", { path: "relative.pem", workspace }, false);
   } finally {
     rmSync(root, { recursive: true, force: true });

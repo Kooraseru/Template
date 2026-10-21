@@ -1,7 +1,7 @@
 // Candidate Rust-free native primitives. Not a production replacement until tests pass.
 import { createPrivateKey, createPublicKey, generateKeyPairSync, randomUUID, sign, verify } from "node:crypto";
-import { closeSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative, sep } from "node:path";
+import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 function unhex(hex) {
   if (typeof hex !== "string" || hex.length % 2 !== 0 || !/^[a-f0-9]*$/i.test(hex)) throw Error("invalid hexadecimal input");
@@ -17,15 +17,25 @@ function decodeKey(input, kind) {
     : createPublicKey({ key, format: "der", type: "spki" });
 }
 
+function inside(root, value) {
+  const rel = relative(root, value);
+  return rel === "" || (rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel));
+}
+
 function outsideWorkspace(path, workspace, forRead) {
   if (typeof path !== "string" || !isAbsolute(path) || typeof workspace !== "string")
     throw Error("absolute external key path required");
   const root = realpathSync(workspace);
-  const resolved = realpathSync(forRead ? path : dirname(path));
-  const rel = relative(root, resolved);
-  if (rel === "" || (rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel)))
-    throw Error("key must live outside repository");
-  return forRead ? resolved : join(resolved, basename(path));
+  // Reject in-tree paths even when they symlink to an external file.
+  if (inside(root, resolve(path))) throw Error("key must live outside repository");
+  const parent = realpathSync(dirname(path));
+  if (inside(root, parent)) throw Error("key parent must live outside repository");
+  if (!forRead) return join(parent, basename(path));
+  const stats = lstatSync(path);
+  if (!stats.isFile() || stats.isSymbolicLink()) throw Error("expected a regular non-symlink key file");
+  const actual = realpathSync(path);
+  if (inside(root, actual)) throw Error("key must live outside repository");
+  return actual;
 }
 
 function call(op, input) {
@@ -45,17 +55,28 @@ function call(op, input) {
     }
     case "uuid":
       return randomUUID();
-    case "keyfile":
-      return readFileSync(outsideWorkspace(input.path, input.workspace, true), "utf8");
+    case "keyfile": {
+      const path = outsideWorkspace(input.path, input.workspace, true);
+      const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+      try {
+        const stat = fstatSync(fd);
+        if (!stat.isFile() || stat.size > 65536) throw Error("invalid external key file");
+        return readFileSync(fd, "utf8");
+      } finally {
+        closeSync(fd);
+      }
+    }
     case "keygen": {
       if (typeof input.path !== "string" || !isAbsolute(input.path)) throw Error("absolute external key path required");
+      const root = realpathSync(input.workspace);
+      if (inside(root, resolve(input.path))) throw Error("key must live outside repository");
       mkdirSync(dirname(input.path), { recursive: true });
       const filename = outsideWorkspace(input.path, input.workspace, false);
       const keys = generateKeyPairSync("ed25519", {
         privateKeyEncoding: { format: "pem", type: "pkcs8" },
         publicKeyEncoding: { format: "pem", type: "spki" },
       });
-      const fd = openSync(filename, "wx", 0o600);
+      const fd = openSync(filename, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW || 0), 0o600);
       try { writeFileSync(fd, keys.privateKey); } finally { closeSync(fd); }
       return keys.publicKey;
     }
