@@ -199,6 +199,15 @@ jobs:
           bash ci/run.sh rules sync
           sha256sum --check "${RUNNER_TEMP}/agent.sha256"
           git diff --exit-code
+      - name: Audit remaining legacy references
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          for token in '.kero/' '.github/integration/' '.luau-lsp/' 'libraries/bootstrap/' 'publication/releases/'; do
+            echo "::group::Legacy reference: $token"
+            git grep -n -F "$token" -- ci config rules README.md .github | head -n 50 || true
+            echo '::endgroup::'
+          done
       - name: Native primitive compatibility
         shell: bash
         run: bash ci/run.sh native-compat
