@@ -1,4 +1,4 @@
--- fabricator/targets.luau
+-- ci/fabricator/targets.luau
 --!strict
 
 local Targets = {}

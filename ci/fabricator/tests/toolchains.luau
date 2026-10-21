@@ -1,4 +1,4 @@
--- fabricator/tests/toolchains.luau
+-- ci/fabricator/tests/toolchains.luau
 --!strict
 
 local ToolchainTests = {}
@@ -10,7 +10,7 @@ local Fixtures = require("../../libraries/testing/fixtures")
 --# Functions
 
 function ToolchainTests.Run()
-	Fixtures.Run("fabricator/ruleset.json", "toolchains.cases")
+	Fixtures.Run("ci/fabricator/ruleset.json", "toolchains.cases")
 end
 
 return ToolchainTests

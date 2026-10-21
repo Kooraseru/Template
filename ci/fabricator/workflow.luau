@@ -1,4 +1,4 @@
--- fabricator/workflow.luau
+-- ci/fabricator/workflow.luau
 --!strict
 
 local Build = {}

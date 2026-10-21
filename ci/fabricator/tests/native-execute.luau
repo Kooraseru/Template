@@ -1,4 +1,4 @@
--- fabricator/tests/native-execute.luau
+-- ci/fabricator/tests/native-execute.luau
 --!strict
 
 local NativeExecutionTests = {}
@@ -15,7 +15,7 @@ local BuildExecutor = require("../execute")
 
 function NativeExecutionTests.Run()
 	local config = Config.Read()
-	local definitions = Serde.decode("json", Fs.readFile("fabricator/ruleset.json")) :: {
+	local definitions = Serde.decode("json", Fs.readFile("ci/fabricator/ruleset.json")) :: {
 		native: { cases: { { argv: { string }, windows_argv: { string }, code: number, stdout_contains: string? } } },
 	}
 	config.build.commands = {}

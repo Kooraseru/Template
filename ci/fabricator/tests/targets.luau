@@ -1,7 +1,7 @@
--- fabricator/tests/targets.luau
+-- ci/fabricator/tests/targets.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../libraries/testing/test")
 
 --# Modules
 

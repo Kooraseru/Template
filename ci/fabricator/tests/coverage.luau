@@ -1,13 +1,13 @@
--- fabricator/tests/coverage.luau
+-- ci/fabricator/tests/coverage.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../libraries/testing/test")
 
 --# Modules
 
 local Coverage = require("../coverage")
-local Gate = require("../../.github/integration/gate")
-local Request = require("../../.github/integration/request")
+local Gate = require("../../integration/gate")
+local Request = require("../../integration/request")
 
 --# Helpers
 
