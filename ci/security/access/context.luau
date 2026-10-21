@@ -1,4 +1,4 @@
--- security/access/context.luau
+-- ci/security/access/context.luau
 --!strict
 
 local Context = {}
@@ -9,7 +9,7 @@ local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local Policy = require("./policy")
 local Rules = require("../../libraries/registry/rules")
-local Publication = require("../../.github/integration/publication")
+local Publication = require("../../integration/publication")
 
 --# Functions
 

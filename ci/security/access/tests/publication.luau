@@ -1,4 +1,4 @@
--- security/access/tests/publication.luau
+-- ci/security/access/tests/publication.luau
 --!strict
 
 local PublicationTests = {}
@@ -11,7 +11,7 @@ local Cases = require("../../../libraries/testing/cases")
 --# Functions
 
 function PublicationTests.Run()
-	local definitions = Cases.Read("security/access/ruleset.json", "publication.cases")
+	local definitions = Cases.Read("ci/security/access/ruleset.json", "publication.cases")
 
 	for _, script in definitions.scripts do
 		for _, case in definitions.cases do

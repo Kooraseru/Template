@@ -1,4 +1,4 @@
--- security/receipts/collection.luau
+-- ci/security/receipts/collection.luau
 --!strict
 
 local Collection = {}

@@ -1,4 +1,4 @@
--- security/receipts/authentication.luau
+-- ci/security/receipts/authentication.luau
 --!strict
 
 local Authentication = {}

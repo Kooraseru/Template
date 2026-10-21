@@ -1,4 +1,4 @@
--- security/access/tests/policy.luau
+-- ci/security/access/tests/policy.luau
 --!strict
 
 local PolicyTests = {}
@@ -13,7 +13,7 @@ local Cases = require("../../../libraries/testing/cases")
 --# Functions
 
 function PolicyTests.Run()
-	local definitions = Cases.Read("security/access/ruleset.json", "policy.cases")
+	local definitions = Cases.Read("ci/security/access/ruleset.json", "policy.cases")
 
 	for _, case in definitions.policy do
 		local result = Policy.CanPublish(Cases.Apply(definitions.baseline, case))

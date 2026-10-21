@@ -1,4 +1,4 @@
--- security/receipts/cli.luau
+-- ci/security/receipts/cli.luau
 --!strict
 
 local Receipts = {}
@@ -23,8 +23,8 @@ local Shape = require("../../libraries/registry/shape")
 local Stdio = require("@lune/stdio")
 local Client = require("../../publication/releases/client")
 local Resolve = require("../../publication/releases/resolve")
-local Request = require("../../.github/integration/request")
-local SourceApproval = require("../../.github/integration/source-approval")
+local Request = require("../../integration/request")
+local SourceApproval = require("../../integration/source-approval")
 local Identity = require("./identity")
 local Collection = require("./collection")
 local Hosted = require("./hosted")

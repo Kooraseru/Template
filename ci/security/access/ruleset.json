@@ -89,8 +89,8 @@
     },
     "cases": {
       "scripts": [
-        "publication/repo/publish.sh",
-        "publication/releases/publish.sh"
+        "ci/publication/repo/publish.sh",
+        "ci/publication/releases/publish.sh"
       ],
       "cases": [
         {

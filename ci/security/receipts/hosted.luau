@@ -1,4 +1,4 @@
--- security/receipts/hosted.luau
+-- ci/security/receipts/hosted.luau
 --!strict
 
 local Hosted = {}
@@ -19,8 +19,8 @@ local Commands = require("../../libraries/bootstrap/commands")
 local Files = require("../../libraries/bootstrap/files")
 local Bundles = require("../../libraries/bootstrap/bundles")
 local Shape = require("../../libraries/registry/shape")
-local Request = require("../../.github/integration/request")
-local Pending = require("../../.github/integration/pending-receipt")
+local Request = require("../../integration/request")
+local Pending = require("../../integration/pending-receipt")
 local Client = require("../../publication/releases/client")
 local Authentication = require("./authentication")
 local Verification = require("./verification")
@@ -33,7 +33,7 @@ local function api(): Client.API
 end
 
 local function policy(): C.Value
-	return D.Required(D.Read("security/receipts/ruleset.json"), "rules")
+	return D.Required(D.Read("ci/security/receipts/ruleset.json"), "rules")
 end
 
 local function temporary(category: string): string

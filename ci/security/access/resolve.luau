@@ -1,4 +1,4 @@
--- security/access/resolve.luau
+-- ci/security/access/resolve.luau
 --!strict
 
 local ResolveAccess = {}
