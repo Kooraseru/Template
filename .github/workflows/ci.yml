@@ -234,7 +234,7 @@ jobs:
 
   validate:
     name: Validate / Plan and checks
-    if: !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
+    if: ${{ !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited' }}
     permissions:
       contents: write # Draft staging releases require write access to read.
       actions: read
@@ -590,7 +590,7 @@ jobs:
 
   gate:
     # Keep this status-check name stable for existing source protection.
-    if: always() && !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
+    if: ${{ always() && !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited' }}
     needs: [validate, build, repository, pages, release, images, validation-receipt]
     runs-on: ubuntu-latest
     steps:
