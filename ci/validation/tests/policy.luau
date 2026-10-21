@@ -1,4 +1,4 @@
--- validation/tests/policy.luau
+-- ci/validation/tests/policy.luau
 --!strict
 
 local PolicyTests = {}
@@ -13,7 +13,7 @@ local Policy = require("../policy")
 --# Functions
 
 function PolicyTests.Run()
-	local document = Rules.Entries(Serde.decode("json", Fs.readFile("validation/ruleset.json")))
+	local document = Rules.Entries(Serde.decode("json", Fs.readFile("ci/validation/ruleset.json")))
 	local cases = Rules.Array(Rules.Entries(document.luau).cases)
 	local definition = Policy.Read()
 

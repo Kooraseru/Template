@@ -1,7 +1,7 @@
--- validation/tests/documents.luau
+-- ci/validation/tests/documents.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../libraries/testing/test")
 
 --# Modules
 

@@ -1,7 +1,7 @@
--- validation/tests/gate.luau
+-- ci/validation/tests/gate.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../libraries/testing/test")
 
 --# Modules
 
@@ -44,7 +44,7 @@ local baseline = {
 local function validate(input: Cases.Patch): boolean
 	return (
 		pcall(function()
-			Rules.Validate(Cases.Apply(baseline, input), Rules.Read("validation/ruleset.json", "gate.rules"))
+			Rules.Validate(Cases.Apply(baseline, input), Rules.Read("ci/validation/ruleset.json", "gate.rules"))
 		end)
 	)
 end

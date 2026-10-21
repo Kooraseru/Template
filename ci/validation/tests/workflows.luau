@@ -1,7 +1,7 @@
--- validation/tests/workflows.luau
+-- ci/validation/tests/workflows.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../libraries/testing/test")
 
 --# Modules
 
@@ -16,7 +16,7 @@ local Rules = require("../../libraries/registry/rules")
 local function validate(input: Cases.Patch): boolean
 	local workflow = Serde.decode("yaml", Fs.readFile(".github/workflows/ci.yml"))
 	local candidate = Cases.Apply(workflow, input)
-	local definitions = Rules.Read("validation/ruleset.json", "workflows.rules")
+	local definitions = Rules.Read("ci/validation/ruleset.json", "workflows.rules")
 	local actionRules = assert(definitions.actions, "missing action validation rules")
 
 	return (

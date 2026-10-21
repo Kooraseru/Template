@@ -1,4 +1,4 @@
--- validation/workshop.luau
+-- ci/validation/workshop.luau
 --!strict
 
 local Workshop = {}

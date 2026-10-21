@@ -1,4 +1,4 @@
--- validation/workflows.luau
+-- ci/validation/workflows.luau
 --!strict
 
 local Workflows = {}
@@ -152,7 +152,7 @@ function Workflows.CheckActions(workflow: unknown, actionRules: Rules.Document, 
 end
 
 function Workflows.Run()
-	local definitions = Rules.Read("validation/ruleset.json", "workflows.rules")
+	local definitions = Rules.Read("ci/validation/ruleset.json", "workflows.rules")
 	local workflow = readYaml(".github/workflows/ci.yml")
 	local controlCheck = definitions.controls
 	local actionRules = definitions.actions
