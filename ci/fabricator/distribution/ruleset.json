@@ -1,7 +1,7 @@
 {
   "manifest": {
     "rules": {
-      "definitions_source": "validation/ruleset.json",
+      "definitions_source": "ci/validation/ruleset.json",
       "manifest_file": "manifest.json",
       "hash_algorithm": "sha256",
       "hash_field": "sha256",

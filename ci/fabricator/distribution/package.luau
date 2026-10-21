@@ -1,4 +1,4 @@
--- fabricator/distribution/package.luau
+-- ci/fabricator/distribution/package.luau
 --!strict
 
 local Package = {}

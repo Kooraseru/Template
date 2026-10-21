@@ -1,4 +1,4 @@
--- fabricator/project.luau
+-- ci/fabricator/project.luau
 --!strict
 
 local Project = {}

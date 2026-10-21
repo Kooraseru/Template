@@ -29,7 +29,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -74,7 +74,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -119,7 +119,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -164,7 +164,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -206,7 +206,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -248,7 +248,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -293,7 +293,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -338,7 +338,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -383,7 +383,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -428,7 +428,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -470,7 +470,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -512,7 +512,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -558,7 +558,7 @@
         {
           "argv": [
             "x86_64-w64-mingw32-g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke.exe"
           ],
@@ -597,7 +597,7 @@
         {
           "argv": [
             "x86_64-w64-mingw32-g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke.exe"
           ],
@@ -635,7 +635,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -680,7 +680,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -725,7 +725,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -770,7 +770,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -815,7 +815,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -860,7 +860,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -905,7 +905,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -950,7 +950,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -995,7 +995,7 @@
         {
           "argv": [
             "g++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -1040,7 +1040,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -1078,7 +1078,7 @@
             "cl",
             "/nologo",
             "/EHsc",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "/Fobuild/toolchain-smoke.obj",
             "/Febuild/toolchain-smoke.exe"
           ],
@@ -1121,7 +1121,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke.exe"
           ],
@@ -1159,7 +1159,7 @@
             "cl",
             "/nologo",
             "/EHsc",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "/Fobuild/toolchain-smoke.obj",
             "/Febuild/toolchain-smoke.exe"
           ],
@@ -1202,7 +1202,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke.exe"
           ],
@@ -1247,7 +1247,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -1289,7 +1289,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -1334,7 +1334,7 @@
         {
           "argv": [
             "clang++",
-            "fabricator/tests/smoke.cpp",
+            "ci/fabricator/tests/smoke.cpp",
             "-o",
             "build/toolchain-smoke"
           ],
@@ -1376,7 +1376,7 @@
         {
           "argv": [
             "rustc",
-            "fabricator/tests/smoke.rs",
+            "ci/fabricator/tests/smoke.rs",
             "-o",
             "build/toolchain-smoke"
           ],

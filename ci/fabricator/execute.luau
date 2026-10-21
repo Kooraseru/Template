@@ -1,4 +1,4 @@
--- fabricator/execute.luau
+-- ci/fabricator/execute.luau
 --!strict
 
 local BuildExecutor = {}
