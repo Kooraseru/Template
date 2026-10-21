@@ -42,10 +42,12 @@ function ModuleTests.Run()
 
 	local success, failure = pcall(function()
 		for _, file in Policy.CheckRepository(definition) do
+			local modulePath = file:sub(1, -6)
+			if modulePath:sub(-5) == "/init" then modulePath = modulePath:sub(1, -6) end
 			table.insert(
 				lines,
 				"do\nlocal subject = require("
-					.. Serde.encode("json", "../../" .. file:sub(1, -6))
+					.. Serde.encode("json", "../../" .. modulePath)
 					.. ")\nassert(type(subject) == 'table')"
 			)
 
