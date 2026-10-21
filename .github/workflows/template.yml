@@ -3,7 +3,7 @@ name: Template conformance
 on:
   pull_request:
   push:
-    branches: [source, refactor/agent-rules-luau-ci]
+    branches: [source, "refactor/**"]
   schedule:
     - cron: '23 9 * * 1'
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: Kooraseru/Template
-          ref: ${{ github.ref_name == 'refactor/agent-rules-luau-ci' && 'refactor/agent-rules-luau-ci' || 'source' }}
+          ref: ${{ startsWith(github.ref_name, 'refactor/') && github.ref_name || 'source' }}
           path: template-upstream
           persist-credentials: false
       - name: Install upstream inspection runtime

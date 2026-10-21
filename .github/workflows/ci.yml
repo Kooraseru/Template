@@ -10,7 +10,7 @@ on:
   schedule:
     - cron: "17 * * * *"
   push:
-    branches: [source, refactor/agent-rules-luau-ci]
+    branches: [source, "refactor/**"]
   workflow_dispatch:
     inputs:
       operation:
@@ -172,7 +172,7 @@ permissions:
 jobs:
   refactor-check:
     name: Refactor / Rules and entry point (${{ matrix.os }})
-    if: github.event_name == 'push' && github.ref == 'refs/heads/refactor/agent-rules-luau-ci'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/refactor/')
     strategy:
       fail-fast: false
       matrix:
@@ -199,15 +199,6 @@ jobs:
           bash ci/run.sh rules sync
           sha256sum --check "${RUNNER_TEMP}/agent.sha256"
           git diff --exit-code
-      - name: Audit remaining legacy references
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          for token in '.kero/' '.github/integration/' '.luau-lsp/' 'libraries/bootstrap/' 'publication/releases/'; do
-            echo "::group::Legacy reference: $token"
-            git grep -n -F "$token" -- ci config rules README.md .github | head -n 50 || true
-            echo '::endgroup::'
-          done
       - name: Native primitive compatibility
         shell: bash
         run: bash ci/run.sh native-compat
@@ -243,7 +234,7 @@ jobs:
 
   validate:
     name: Validate / Plan and checks
-    if: github.ref != 'refs/heads/refactor/agent-rules-luau-ci' && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
+    if: !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
     permissions:
       contents: write # Draft staging releases require write access to read.
       actions: read
@@ -599,7 +590,7 @@ jobs:
 
   gate:
     # Keep this status-check name stable for existing source protection.
-    if: always() && github.ref != 'refs/heads/refactor/agent-rules-luau-ci' && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
+    if: always() && !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
     needs: [validate, build, repository, pages, release, images, validation-receipt]
     runs-on: ubuntu-latest
     steps:
