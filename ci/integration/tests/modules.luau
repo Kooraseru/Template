@@ -63,8 +63,8 @@ function ModuleTests.Run()
 		end
 
 		probe(
-			[[local Repository = require("../../../.github/publication/repo/build")
-local Config = require("../../../.github/libraries/registry/config")
+			[[local Repository = require("../../ci/publication/repo/build")
+local Config = require("../../ci/libraries/registry/config")
 local config = Config.Read()
 config.repository.enabled = false
 assert(not pcall(Repository.Generate, config, {source = "test", repository = "test"}))
@@ -74,7 +74,7 @@ assert(not pcall(Repository.Generate, config, {source = "test", repository = "te
 
 		Fs.writeDir("build/repo")
 		Fs.writeFile("build/repo/stale-output", "stale")
-		probe([[require("../../../.github/publication/repo/build").Run()]], {
+		probe([[require("../../ci/publication/repo/build").Run()]], {
 			GITHUB_SHA = string.rep("a", 40),
 			GITHUB_REPOSITORY = "fixture/project",
 			GITHUB_EVENT_NAME = "",

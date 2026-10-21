@@ -1400,10 +1400,10 @@
         "valid": false
       },
       {
-        "name": "wrong path label",
+        "name": "filename labels are optional",
         "file": "ci/validation/example.luau",
         "source": "-- other.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
-        "valid": false
+        "valid": true
       },
       {
         "name": "missing strict directive",

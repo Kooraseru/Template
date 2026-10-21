@@ -75,7 +75,10 @@
         {
           "path": "pushAllowed",
           "equals": true,
-          "when": { "path": "event", "equals": "push" }
+          "when": {
+            "path": "event",
+            "equals": "push"
+          }
         },
         {
           "path": "manualAllowed",
@@ -89,8 +92,7 @@
     },
     "cases": {
       "scripts": [
-        "ci/publication/repo/publish.sh",
-        "ci/publication/releases/publish.sh"
+        "ci/run.sh"
       ],
       "cases": [
         {
@@ -103,7 +105,9 @@
         },
         {
           "name": "local",
-          "arguments": [],
+          "arguments": [
+            "repo-publish"
+          ],
           "env": {
             "ACT": "true",
             "GH_TOKEN": "test-placeholder"
@@ -112,7 +116,35 @@
         },
         {
           "name": "pull request",
-          "arguments": [],
+          "arguments": [
+            "release-publish"
+          ],
+          "env": {
+            "ACT": "false",
+            "GITHUB_ACTIONS": "true",
+            "GITHUB_SERVER_URL": "https://github.com",
+            "GITHUB_EVENT_NAME": "pull_request",
+            "GITHUB_REF": "refs/heads/source",
+            "GH_TOKEN": "test-placeholder"
+          },
+          "ok": false
+        },
+        {
+          "name": "local release publish",
+          "arguments": [
+            "release-publish"
+          ],
+          "env": {
+            "ACT": "true",
+            "GH_TOKEN": "test-placeholder"
+          },
+          "ok": false
+        },
+        {
+          "name": "pull request repository publish",
+          "arguments": [
+            "repo-publish"
+          ],
           "env": {
             "ACT": "false",
             "GITHUB_ACTIONS": "true",
@@ -141,12 +173,16 @@
       "policy": [
         {
           "name": "unrecognized source authority",
-          "patch": { "pushAllowed": false },
+          "patch": {
+            "pushAllowed": false
+          },
           "valid": false
         },
         {
           "name": "missing source authority",
-          "remove": ["pushAllowed"],
+          "remove": [
+            "pushAllowed"
+          ],
           "patch": {},
           "valid": false
         },
@@ -262,7 +298,9 @@
       ],
       "outputs": [
         {
-          "input": { "CI_TESTED_SHA": "selected-source" },
+          "input": {
+            "CI_TESTED_SHA": "selected-source"
+          },
           "valid": true,
           "expected": "CI_TESTED_SHA=selected-source\n"
         },
