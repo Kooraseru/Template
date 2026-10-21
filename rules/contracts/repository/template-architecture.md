@@ -27,33 +27,27 @@ Template conformance is owned by [the conformance contract](template-conformance
 
 ## Directory and build ownership
 
-- `.github/actions/`: reusable workflow operations.
-- `.github/integration/`: GitHub-specific controls, requests, and adapters.
-- `config/`: repository publication settings and infrastructure tool configuration.
-- `libraries/bootstrap/`: shared utilities and native primitives.
-- `libraries/registry/`: development catalogues and configuration, not an application runtime registry.
-- `libraries/testing/`: typed metatable tests, comparisons, execution, and reporting.
-- `validation/`: repository, compatibility, contract, and policy checks.
-- `fabricator/`: generic target execution, environments, toolchains, and packaging mechanisms.
-- `security/`: authorization and trusted evidence.
-- `publication/`: repository, documentation, and release publication implementations.
-- `src/`: application implementation, contracts, dependencies, assets, and build declarations.
-- `build/`: disposable, Git-ignored output.
+- `.github/workflows/ci.yml`: GitHub job orchestration; `.github/actions/` contains environment setup
+- `ci/run.sh` → `ci/main.luau`: sole public CI command interface and explicit operation dispatcher
+- `ci/integration/`: GitHub-specific controls and editor adapters
+- `ci/libraries/`: shared utilities, registry, testing, and Node built-in native-compatible primitives
+- `ci/validation/`: conformance, contracts, and policy checks
+- `ci/fabricator/`: optional build targets, toolchains, images, and packages
+- `ci/security/`: publication authorization and signed receipts
+- `ci/publication/`: generated repository, Pages, and releases
+- `config/`: repository and developer-tool configuration
+- `rules/`: tracked Markdown guidance; ignored `AGENTS.md` is generated locally
+- `src/`: optional application implementation and `build.toml`
+- `build/`: disposable Git-ignored output and local bridge state
 
-`src/build.toml` owns application targets, compiler requirements, environment
-selection, commands, and package contents. Native manifests and lockfiles own
-application dependencies. `config/project.toml` owns repository output controls.
-Source declarations cannot grant signing or publication authority.
+`src/build.toml` controls application compilation, selected environments, and package paths. A Rust consumer places its entire optional Cargo manifest/lockfile/config under `src/cargo/`. The fabricator uses explicit paths. `config/project.toml` controls publication. Source declarations cannot grant signing or publishing authority.
 
-No extra top-level source directories, mandatory empty language folders, or
-boilerplate manifests for ordinary modules. Existing hidden editor metadata and
-tracked `.kero` guidance remain tooling. Development guidance belongs in `.kero/data/`.
+No mandatory language folder, compiler smoke project, root Cargo manifest, PowerShell entry points, or second AI rule runtime.
 
 ## Implementation boundaries
 
 The template is language-agnostic. Toolchains are optional; preserve native tool
-configuration formats. Project-managed Node is excluded. Luau owns controller
-behavior, with native helpers for operations requiring exact external semantics.
+configuration formats. Luau owns controller behavior. A small package-free Node helper provides ECMAScript-compatible number formatting and Ed25519 operations without Cargo; Node is a CI runtime dependency, not a mandated application language.
 
 Tests bind typed cases to their actual function under test through the shared
 library. Do not require a separate case manifest for each ordinary module.

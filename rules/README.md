@@ -1,9 +1,7 @@
-# Repository rules
+# Version-controlled repository rules
 
-This directory is the version-controlled source of coding-agent guidance. Files are ordinary Markdown. No KERO mount, runtime, or synchronization service is required to interpret them.
+This directory is the source of coding-agent guidance: ordinary Markdown standards, workflows, contracts, and applicable language conventions. It has no KERO dependency.
 
-Read `general.md` and `architecture.md` first, followed by task-specific language rules and contracts. The generated, Git-ignored root `AGENTS.md` is a lightweight index; documentation here remains authoritative.
+Read `general.md` and `architecture.md` first. Then read the task-specific conventions under `languages/`, `workflows/`, and `contracts/`. Only use rules relevant to the files being changed.
 
-Use `bash ci/run.sh rules sync` to regenerate the local agent index. Use `bash ci/run.sh rules check` to validate that required rule documents and ignore policy exist. The checker does not modify files.
-
-Migration is incremental: legacy `.kero/` documentation remains in the original tree until equivalent content has been reviewed and moved here.
+`bash ci/run.sh rules sync` produces the local `AGENTS.md` index. `bash ci/run.sh rules check` validates tracked rule inputs and the ignored output. The generated entry point is disposable and not committed.

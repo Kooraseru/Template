@@ -1,128 +1,64 @@
 # Repository template contributor source
 
-This is the development tree for a reusable repository template. Development and
-pull requests belong on `source`; `main` contains generated publication output.
-The template does not assume a particular application, organization, or language.
+The `source` branch is authored; `main` is generated publication output. This repository template is application-language agnostic. Optional toolchains and application dependencies belong to each consuming project.
 
-For the agreed boundaries and publication rules, read
-[the template architecture](rules/contracts/repository/template-architecture.md).
+## Entry points
 
-## Running CI locally
+The repository has one public CI command interface:
 
-Run `bash ci/run.sh validate` for repository checks or `bash ci/run.sh rules sync` to regenerate ignored `AGENTS.md`. The public CI interface is `ci/run.sh` -> `ci/main.luau`; the GitHub workflow invokes that interface from independent permission-scoped jobs.
+```bash
+bash ci/run.sh validate
+bash ci/run.sh rules sync
+bash ci/run.sh rules check
+bash ci/run.sh configure-editor
+bash ci/run.sh local-actions status
+bash ci/run.sh native-compat
+```
 
+`ci/run.sh` launches `ci/main.luau`, which explicitly dispatches supported operations to domain modules. These do not grant publication authority. GitHub Actions invokes the same interface from jobs with separate permission and evidence boundaries. A local `validate` verifies repository contracts; a hosted run provides platform and publication-specific evidence. No PowerShell wrappers or mandatory application compiler are needed for ordinary validation.
 
-Use [GitHub Local Actions for VS Code](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
-to run `.github/workflows/ci.yml` locally through `act`. Install `act` and Docker
-for container jobs, open this repository in VS Code, and select **CI** in the
-extension's Workflows view. Configure event payloads, runners, inputs, and artifact
-options through the extension as needed.
+The command-line GitHub Local Actions editor bridge and its requirements are described in [local testing](rules/contracts/repository/local-testing.md). Use its VS Code integration to get extension-owned local workflow History; ordinary Bash validation does not create that History.
 
-The same workflow defines local and hosted CI. Its operations belong to the
-infrastructure directories below. `ci/fabricator/workflow.luau` executes a selected
-build stage; `.github/workflows/ci.yml` owns job orchestration.
-Local runs are artifact-only. They must not publish remotely.
-Native platform jobs still require verification on their appropriate GitHub
-runners; sharing a workflow does not guarantee identical host environments.
+## Repository ownership
 
-## Hosted administrator controls
+| Location | Responsibility |
+| --- | --- |
+| `.github/workflows/ci.yml` | Job orchestration, privileges, evidence transfers, and publication gates |
+| `.github/actions/` | Reusable environment setup, not competing CI entry points |
+| `ci/integration/` | Hosted GitHub controls and optional editor bridge |
+| `ci/fabricator/` | Opt-in compilation targets, distribution packaging, and container images |
+| `ci/libraries/` | Shared Luau utilities, data contracts, and test framework |
+| `ci/validation/` | Template and repository conformance, policy, and tests |
+| `ci/security/` | Publication authorization and signed build receipts |
+| `ci/publication/` | Generated repository, documentation, and release publication |
+| `config/` | Project publication and explicitly located developer-tool settings |
+| `src/` | Optional application code and `build.toml` |
+| `rules/` | Tracked Markdown instructions, language guidance, and repository contracts |
+| `build/` | Generated outputs and runtime state, Git-ignored |
 
-Open Actions, select CI, and choose Run workflow. The twelve dropdowns select
-operations, PRs, validation suites, build targets, output generation, cache behavior
-and gate overrides. Two optional paired inputs select a SemVer version and source SHA. See [the CI control panel](ci/integration/README.md) for details.
+`AGENTS.md` is generated locally from the tracked rules by `bash ci/run.sh rules sync`; it is **not committed**. No KERO runtime is required.
 
-## Repository responsibilities
+## Application builds
 
-- `.github/workflows/ci.yml`: triggers, jobs, dependencies, permissions, and publication gates.
-- `.github/actions/`: reusable environment setup steps.
-- `ci/integration/`: GitHub requests, manual controls, approvals, and stage adapters.
-- `config/`: project configuration and tool settings.
-- `ci/libraries/`: reusable bootstrap utilities, development registry, and typed testing.
-- `ci/validation/`: repository, policy, and declared-contract validation.
-- `ci/fabricator/`: target execution, images, toolchains, and distribution packaging.
-- `ci/security/`: publication access and trusted build receipts.
-- `ci/publication/`: release, generated repository, and documentation outputs.
-- `src/`: application-defined APIs, implementation, plugins, Workshop content, and assets when used.
-- `.kero/`: development-tool configuration and state.
-- `rules/`: repository contracts, knowledge, and decisions.
-- `build/`: disposable generated output, ignored by Git.
+`config/project.toml` owns repository, Pages, and release publication toggles. `src/build.toml` owns application targets and compiler requirements. It may contain zero targets.
 
-Toolchains are optional capabilities. A consumer enables the toolchains and
-outputs its project actually uses. Pull requests generate inspectable outputs
-without publication privileges. Authorized pushes to `source` may publish those
-validated artifacts after all required checks pass.
+For an optional Rust application, keep all Cargo metadata under `src/cargo/`:
 
-## Declarative checks
+```text
+src/
+├── build.toml
+├── cargo/
+│   ├── Cargo.toml
+│   ├── Cargo.lock
+│   └── config.toml
+└── app/
+    └── main.rs
+```
 
-Policies and operational catalogues use JSON or TOML. The shared
-[testing library](ci/libraries/testing/README.md) supplies typed Luau declarations,
-execution, comparisons, and reporting. See [validation](ci/validation/README.md).
+The fabricator passes the explicit manifest path and optional Cargo `--config` path. No root manifest, mandatory Rust toolchain, or language smoke project exists. Toolchain version and container probes apply only to explicitly selected build environments.
 
-## Configuring a consuming repository
+## Security and publication
 
-Set its default branch to `source` and target pull requests there.
-Edit `config/project.toml` for repository, documentation, and release publication.
-Edit `src/build.toml` for application targets, toolchains, environments, packaging,
-and build/test commands. Dependencies and lockfiles stay beside native source manifests. Commands are argument arrays; use an explicit shell invocation when
-a command needs shell syntax. Place all build output under `build/`.
-Rust and CMake require explicit versions when enabled.
+`source` is the pull request and development branch. `main` is generated only from authorized, validated artifacts. PR or local runs cannot publish; an administrative workflow selection cannot override GitHub permissions. The native primitive compatibility layer uses Node's built-in crypto and ECMAScript number formatting, without Cargo or npm dependencies.
 
-The catalogue offers 24 Linux images and 32 compiler profiles; they are opt-in. Edit
-`build.targets` to select named entries from `ci/fabricator/targets.json`, and select
-their required images through `images.names`. The validation job checks those
-references before building. See [the image catalogue](ci/fabricator/distribution/images/README.md) for
-distributions and profiles. Windows and macOS each have x86_64 and ARM64 targets.
-
-Each target compiles a small toolchain fixture before running project commands.
-Native targets execute it; MinGW targets compile a Windows executable from Linux.
-Container targets build within their selected image. Native targets use their
-specified Windows or macOS runner. Commands receive `CI_BUILD_TARGET` and
-`CI_TARGET_TRIPLE`; container profiles also provide compiler settings. MinGW's
-CMake toolchain file is available through `CMAKE_TOOLCHAIN_FILE`.
-
-Use `build.matrix` for explicit custom entries; a nonempty matrix overrides
-`build.targets`. If both lists are empty, `build.runner` supplies a single entry
-named `default`. Distribution artifacts and logs are separated by target name;
-release assembly verifies every selected distribution.
-
-Application source targets use separate `[[targets]]` entries with explicit `id`,
-`system`, and `path` fields. Cargo and CMake own compilation. Omit `build.projects`
-to build all declared targets, or select their identifiers explicitly. A repository
-with no application targets needs no language folders. See [project configuration](config/README.md).
-
-Edit publication templates under `ci/publication/repo/templates/`. Select commit-based
-explicit public versions and full source SHAs in `ci/publication/releases/versions.toml`;
-the initial empty list publishes no public version. See
-[versioned releases and source protection](ci/publication/releases/README.md).
-Image Dockerfiles belong under `ci/fabricator/distribution/images/`, with image choices in its catalogue.
-Pages uses Markdown templates under `ci/publication/pages/templates/`.
-
-Publication uses the current repository's automatically supplied `GITHUB_TOKEN`;
-no PAT, signing key, organization app, or stored secret is required.
-For Pages, enable GitHub Actions as the Pages source. Its `github-pages`
-deployment environment is created in the consuming repository when used.
-Repository branch rules and token permissions
-remain authoritative: publication will fail rather than bypass protection.
-Allow the workflow's token to update `main` if generated-branch publication
-is desired. Signing and external destinations require consumer-specific trusted
-jobs; this template supplies no signing credentials.
-
-Source PR/check rules and admin-only merging are required for official
-publication; import both release protection rulesets in each consuming repo.
-Additional publication approval requirements are optional repository settings. Maintainers may add an
-environment with required reviewers to a publication job to pause it for approval
-in GitHub. Templates do not transfer those reviewer settings. Approval permits a
-job to start; it cannot increase token scopes or override branch protections.
-If branch rules require a reviewed change to `main`, use a publication pull
-request and merge it through GitHub rather than providing broader credentials.
-
-Local artifact storage is enabled by `.actrc` under `build/cache/act-artifacts/`.
-Select a Docker runner image suitable for your host architecture in GitHub
-Local Actions. CLI users may pass `-P ubuntu-latest=<runner-image>` to `act`.
-Filter a Linux target while testing locally, for example
-`act workflow_dispatch --matrix name:alpine-gcc-arm64`, and map its runner label
-(`ubuntu-24.04-arm` here) to your local runner image. Include a mapping for
-`ubuntu-latest`, which runs validation and generation. The selected target's image
-is built by the same workflow. Native Windows/macOS jobs require their native
-hosted runners; Linux Docker execution through `act` cannot reproduce them.
-No repository access token is required for local validation and generation.
+For exact boundaries, read [template architecture](rules/contracts/repository/template-architecture.md), [source updates](rules/contracts/repository/source-updates.md), [build receipts](rules/contracts/repository/build-receipts.md), and [release publication](rules/contracts/repository/releases.md). The [CI architecture](ci/integration/architecture.md) describes job ownership and migration decisions.

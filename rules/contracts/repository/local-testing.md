@@ -5,9 +5,7 @@
 Use GitHub Local Actions in VS Code to run `.github/workflows/ci.yml` through act.
 Follow [editor automation](../../standards/editor-automation.md) for non-GUI access.
 
-Trigger the extension itself so the run appears in its History with job results
-and logs the user can inspect. Calling act directly is not an equivalent workflow
-validation entry point, even when it executes the same YAML. Never manufacture or
+For extension-managed local workflow History, trigger GitHub Local Actions itself so the run and logs remain visible in VS Code. `bash ci/run.sh validate` runs the direct repository checks but does not claim to create extension-owned History. Never manufacture or
 inject extension history records. If extension invocation is unavailable, disclose
 that limitation instead of silently substituting a direct act run.
 Inspect its existing History and saved logs before starting another run. Leave a
@@ -51,7 +49,7 @@ Bash must be available to the calling agent:
 
 
 ```sh
-python .github/integration/editor-bridge/install.py
+python ci/integration/editor-bridge/install.py
 ```
 
 The installer uses the existing VS Code CLI and extension host. It requires no npm
@@ -62,8 +60,8 @@ report the missing bridge rather than initiating a different runner.
 From the workspace root, any agent can query or start the real extension task:
 
 ```sh
-bash .github/integration/run.sh .github/integration/local-actions.luau status
-bash .github/integration/run.sh .github/integration/local-actions.luau start ci.yml
+bash ci/run.sh local-actions status
+bash ci/run.sh local-actions start ci.yml
 ```
 
 On Windows, use Git Bash for the command wrapper. `status` reports extension task
@@ -74,7 +72,7 @@ active. When execution ends, inspect its saved log for the exit code and job res
 a finished task alone does not mean success. The extension remains the owner of
 History and logs.
 
-Discovery uses `.kero/.runtime/local-actions/session.json` in the open workspace.
+Discovery uses `build/runtime/local-actions/session.json` in the open workspace.
 The client handles the session credential internally. Do not commit or print that
 file, create it by hand, or copy it between machines. A missing or unresponsive
 session means editor access is unavailable. After a timeout, query status and logs

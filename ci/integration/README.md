@@ -124,7 +124,7 @@ the shared Luau module runner; no JavaScript interoperability bridge is installe
 Administrators can refresh locally using an existing GitHub CLI login:
 
 ```powershell
-bash ci/integration/run.sh ci/integration/refresh-prs.luau
+bash ci/run.sh integration-refresh-prs --remote
 git add .github/workflows/ci.yml
 git commit -m "Refresh CI pull request choices"
 ```

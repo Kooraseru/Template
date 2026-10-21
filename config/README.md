@@ -36,7 +36,7 @@ and carried with the selected source snapshot, rather than inferred from the
 publication controller checkout.
 
 Fabricator invokes the native build tool without an implicit shell. Cargo uses
-`build --locked --release`; CMake configures into `build/targets/<id>` and builds
+`build --locked --release --manifest-path <path>/Cargo.toml` and also passes `--config <path>/config.toml` when that optional file exists; CMake configures into `build/targets/<id>` and builds
 Release. Extra `build.commands` run before source-target compilation. Configure
 required tools and `build.package_paths` explicitly. Compilation output belongs
 under ignored `build/`; publication consumes completed distributions and evidence.
