@@ -1,4 +1,4 @@
--- .github/integration/tests/request.luau
+-- ci/integration/tests/request.luau
 --!strict
 
 local RequestTests = {}
@@ -7,8 +7,8 @@ local RequestTests = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Rules = require("../../../libraries/registry/rules")
-local Files = require("../../../libraries/bootstrap/files")
+local Rules = require("../../libraries/registry/rules")
+local Files = require("../../libraries/bootstrap/files")
 local Request = require("../request")
 local Gate = require("../gate")
 local Publication = require("../publication")
@@ -19,10 +19,10 @@ local ConfigureEditor = require("../configure-editor")
 --# Functions
 
 function RequestTests.Run()
-	local document = Rules.Entries(Serde.decode("json", Fs.readFile(".github/integration/ruleset.json")))
+	local document = Rules.Entries(Serde.decode("json", Fs.readFile("ci/integration/ruleset.json")))
 	local definition = Rules.Entries(document.request)
 	local options =
-		Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile(".github/integration/ruleset.json"))).controls)
+		Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile("ci/integration/ruleset.json"))).controls)
 	local count = 0
 	local dropdowns = 0
 

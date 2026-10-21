@@ -1,4 +1,4 @@
--- .github/integration/request.luau
+-- ci/integration/request.luau
 --!strict
 
 local Request = {}
@@ -8,7 +8,7 @@ local Request = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../libraries/registry/rules")
 
 --# Types
 
@@ -58,8 +58,8 @@ end
 
 function Request.Normalize(raw: unknown, manual: boolean?): Controls
 	local definitions =
-		Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile(".github/integration/ruleset.json"))).controls)
-	local catalogue = Rules.Entries(Serde.decode("json", Fs.readFile("fabricator/targets.json")))
+		Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile("ci/integration/ruleset.json"))).controls)
+	local catalogue = Rules.Entries(Serde.decode("json", Fs.readFile("ci/fabricator/targets.json")))
 	local inputs = Rules.Entries(raw or {})
 	local controls: Controls = {}
 

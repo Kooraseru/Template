@@ -1,4 +1,4 @@
--- .github/integration/publication.luau
+-- ci/integration/publication.luau
 --!strict
 
 local Publication = {}
@@ -7,7 +7,7 @@ local Publication = {}
 
 local Process = require("@lune/process")
 local Request = require("./request")
-local GitHub = require("../../libraries/bootstrap/github")
+local GitHub = require("../libraries/bootstrap/github")
 
 --# Functions
 

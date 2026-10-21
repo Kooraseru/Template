@@ -1,7 +1,7 @@
--- .github/integration/tests/source-promotion.luau
+-- ci/integration/tests/source-promotion.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../libraries/testing/test")
 
 --# Modules
 

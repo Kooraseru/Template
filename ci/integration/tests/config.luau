@@ -1,24 +1,24 @@
--- .github/integration/tests/config.luau
+-- ci/integration/tests/config.luau
 --!strict
 
 local ControlTests = {}
 
 --# Modules
 
-local Project = require("../../../fabricator/project")
+local Project = require("../../fabricator/project")
 local Serde = require("@lune/serde")
 local Controls = require("../config")
-local Config = require("../../../libraries/registry/config")
-local Catalogue = require("../../../libraries/registry/catalogue")
-local Cases = require("../../../libraries/testing/cases")
-local Rules = require("../../../libraries/registry/rules")
+local Config = require("../../libraries/registry/config")
+local Catalogue = require("../../libraries/registry/catalogue")
+local Cases = require("../../libraries/testing/cases")
+local Rules = require("../../libraries/registry/rules")
 
 --# Functions
 
 function ControlTests.Run()
 	local previousValue = Controls.Read
 	local success, failure = pcall(function()
-		local definitions = Cases.Read("validation/ruleset.json", "config.cases")
+		local definitions = Cases.Read("ci/validation/ruleset.json", "config.cases")
 		local baseline = Project.Read()
 		local originalBaseline = Serde.encode("json", baseline)
 

@@ -1,4 +1,4 @@
--- .github/integration/gate.luau
+-- ci/integration/gate.luau
 --!strict
 
 local Gate = {}
@@ -9,7 +9,7 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Request = require("./request")
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../libraries/registry/rules")
 
 --# Functions
 

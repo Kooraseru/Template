@@ -1,4 +1,4 @@
--- .github/integration/tests/source-approval.luau
+-- ci/integration/tests/source-approval.luau
 --!strict
 
 local SourceApprovalTests = {}
@@ -7,15 +7,15 @@ local SourceApprovalTests = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Rules = require("../../../libraries/registry/rules")
-local Files = require("../../../libraries/bootstrap/files")
+local Rules = require("../../libraries/registry/rules")
+local Files = require("../../libraries/bootstrap/files")
 local SourceApproval = require("../source-approval")
-local Base64 = require("../../../libraries/bootstrap/base64")
+local Base64 = require("../../libraries/bootstrap/base64")
 
 --# Functions
 
 function SourceApprovalTests.Run()
-	local document = Rules.Entries(Serde.decode("json", Fs.readFile(".github/integration/ruleset.json")))
+	local document = Rules.Entries(Serde.decode("json", Fs.readFile("ci/integration/ruleset.json")))
 	local definition = Rules.Entries(document.sourceApproval)
 	local baseline = Rules.Entries(definition.baseline)
 	local root = "build/tests/source-approval"

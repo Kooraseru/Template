@@ -1,4 +1,4 @@
--- .github/integration/tests/modules.luau
+-- ci/integration/tests/modules.luau
 --!strict
 
 local ModuleTests = {}
@@ -8,9 +8,9 @@ local ModuleTests = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Policy = require("../../../validation/policy")
-local Rules = require("../../../libraries/registry/rules")
-local VerifyRepository = require("../../../publication/repo/verify")
+local Policy = require("../../validation/policy")
+local Rules = require("../../libraries/registry/rules")
+local VerifyRepository = require("../../publication/repo/verify")
 
 --# Helpers
 
@@ -63,8 +63,8 @@ function ModuleTests.Run()
 		end
 
 		probe(
-			[[local Repository = require("../../publication/repo/build")
-local Config = require("../../libraries/registry/config")
+			[[local Repository = require("../../../.github/publication/repo/build")
+local Config = require("../../../.github/libraries/registry/config")
 local config = Config.Read()
 config.repository.enabled = false
 assert(not pcall(Repository.Generate, config, {source = "test", repository = "test"}))
@@ -74,7 +74,7 @@ assert(not pcall(Repository.Generate, config, {source = "test", repository = "te
 
 		Fs.writeDir("build/repo")
 		Fs.writeFile("build/repo/stale-output", "stale")
-		probe([[require("../../publication/repo/build").Run()]], {
+		probe([[require("../../../.github/publication/repo/build").Run()]], {
 			GITHUB_SHA = string.rep("a", 40),
 			GITHUB_REPOSITORY = "fixture/project",
 			GITHUB_EVENT_NAME = "",
@@ -87,9 +87,9 @@ assert(not pcall(Repository.Generate, config, {source = "test", repository = "te
 			"repository identity differs"
 		)
 
-		for _, file in Fs.readDir("publication/repo/templates") do
+		for _, file in Fs.readDir("ci/publication/repo/templates") do
 			assert(
-				Fs.readFile("build/repo/" .. file) == Fs.readFile("publication/repo/templates/" .. file),
+				Fs.readFile("build/repo/" .. file) == Fs.readFile("ci/publication/repo/templates/" .. file),
 				"repository template differs"
 			)
 		end
@@ -97,7 +97,7 @@ assert(not pcall(Repository.Generate, config, {source = "test", repository = "te
 		for _, raw in
 			Rules.Array(
 				Rules.Entries(
-					Rules.Entries(Serde.decode("json", Fs.readFile("publication/repo/ruleset.json"))).publication
+					Rules.Entries(Serde.decode("json", Fs.readFile("ci/publication/repo/ruleset.json"))).publication
 				).cases
 			)
 		do
