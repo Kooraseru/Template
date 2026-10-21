@@ -10,7 +10,7 @@ on:
   schedule:
     - cron: "17 * * * *"
   push:
-    branches: [source]
+    branches: [source, "refactor/**"]
   workflow_dispatch:
     inputs:
       operation:
@@ -170,9 +170,45 @@ permissions:
   contents: read
   actions: read
 jobs:
+  refactor-check:
+    name: Refactor / Rules and entry point (${{ matrix.os }})
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/refactor/')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-lune
+      - name: Verify tracked rule inputs
+        shell: bash
+        run: bash ci/run.sh rules check
+      - name: Verify deterministic ignored agent output
+        shell: bash
+        run: |
+          bash ci/run.sh rules sync
+          test -f AGENTS.md
+          git check-ignore -q AGENTS.md
+          sha256sum AGENTS.md > "${RUNNER_TEMP}/agent.sha256"
+          bash ci/run.sh rules sync
+          sha256sum --check "${RUNNER_TEMP}/agent.sha256"
+          git diff --exit-code
+      - name: Native primitive compatibility
+        shell: bash
+        run: bash ci/run.sh native-compat
+      - name: Full repository validation without Rust
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: bash ci/run.sh validate
   refresh-prs:
     name: Maintenance / Pull request choices
-    if: github.event_name != 'workflow_dispatch' && vars.CI_WORKFLOW_SYNC_ENABLED == 'true'
+    if: github.ref == 'refs/heads/source' && github.event_name != 'workflow_dispatch' && vars.CI_WORKFLOW_SYNC_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -194,11 +230,11 @@ jobs:
         if: env.ACT != 'true'
         env:
           GH_TOKEN: ${{ secrets.CI_WORKFLOW_TOKEN }}
-        run: bash .github/integration/run.sh .github/integration/refresh-prs.luau --remote
+        run: bash ci/run.sh integration-refresh-prs --remote
 
   validate:
     name: Validate / Plan and checks
-    if: github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
+    if: ${{ !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited' }}
     permissions:
       contents: write # Draft staging releases require write access to read.
       actions: read
@@ -237,27 +273,24 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - name: Resolve operation and administrator controls
         id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh .github/integration/dispatch.luau
+        run: bash ci/run.sh integration-dispatch
       - name: Resolve execution authority and tested commit
         id: authority
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh security/receipts/cli.luau authorize
+        run: bash ci/run.sh receipts authorize
       - id: context
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh security/access/resolve.luau
+        run: bash ci/run.sh access-resolve
       - name: Validate / Selected checks
         id: checks
         continue-on-error: ${{ steps.dispatch.outputs.ignore_validation == 'true' }}
-        uses: ./.github/actions/run-luau
-        with:
-          module: validation/run
+        run: bash ci/run.sh validate
       - name: Evidence / Store validation results
         if: always()
         uses: actions/upload-artifact@v7
@@ -316,7 +349,7 @@ jobs:
           CI_IMAGE_ID: ${{ matrix.artifact }}
           CI_INPUT_REF: ${{ matrix.input_ref }}
           CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
-        run: bash .github/integration/run.sh fabricator/distribution/images/build.luau "$IMAGE_NAME"
+        run: bash ci/run.sh images-build "$IMAGE_NAME"
       - name: Cache / Store image archive
         if: steps.image-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -351,7 +384,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - name: Download verified accepted distributions
         if: matrix.accepted
         uses: actions/download-artifact@v8
@@ -367,7 +399,7 @@ jobs:
       - id: prepared
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh publication/releases/cli.luau prepare
+        run: bash ci/run.sh release-cli prepare
       - name: Download selected build image
         if: steps.prepared.outputs.reused != 'true' && matrix.image != ''
         uses: actions/download-artifact@v8
@@ -388,20 +420,16 @@ jobs:
         with:
           version: ${{ matrix.build.cmake_version }}
       - name: Build selected target
-        uses: ./.github/actions/run-luau
-        with:
-          module: fabricator/workflow
+        run: bash ci/run.sh targets-build
         if: steps.prepared.outputs.reused != 'true'
         env:
           CI_SOURCE_DIR: ${{ steps.prepared.outputs.source_dir }}
-      - run: bash .github/integration/run.sh security/receipts/cli.luau execution
+      - run: bash ci/run.sh receipts execution
         if: steps.prepared.outputs.reused != 'true'
       - name: Package selected distribution
-        uses: ./.github/actions/run-luau
-        with:
-          module: fabricator/distribution/package
+        run: bash ci/run.sh distribution-package
         if: steps.prepared.outputs.reused != 'true'
-      - run: bash .github/integration/run.sh publication/releases/cli.luau verify build/artifacts
+      - run: bash ci/run.sh release-cli verify build/artifacts
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
@@ -427,9 +455,7 @@ jobs:
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
       - name: Generate repository content
-        uses: ./.github/actions/run-luau
-        with:
-          module: publication/repo/build
+        run: bash ci/run.sh repo-build
       - name: Archive publication tree preserving file modes
         run: tar -cf build/repository.tar -C build/repo .
       - uses: actions/upload-artifact@v7
@@ -452,7 +478,9 @@ jobs:
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
       - name: Generate documentation preview
-        uses: ./publication/pages
+        run: |
+          sudo apt-get update && sudo apt-get install --yes pandoc
+          bash ci/run.sh pages-build
       - uses: actions/upload-artifact@v7
         with:
           name: pages-preview
@@ -475,7 +503,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
@@ -495,7 +522,7 @@ jobs:
         run: |
           mkdir -p build/tmp/releases
           cp build/tmp/accepted/accepted-plan.json build/tmp/releases/plan.json
-      - run: bash .github/integration/run.sh publication/releases/build.luau
+      - run: bash ci/run.sh release-build
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v7
@@ -525,7 +552,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: release-plan
@@ -533,7 +559,7 @@ jobs:
       - name: Fetch tested objects without executing proposed controller code
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh security/receipts/cli.luau authorize
+        run: bash ci/run.sh receipts authorize
       - uses: actions/download-artifact@v8
         with:
           pattern: distribution-*
@@ -542,8 +568,8 @@ jobs:
         with:
           pattern: build-logs-*
           path: build/validation-logs
-      - run: bash .github/integration/run.sh security/receipts/cli.luau collect
-      - run: bash .github/integration/run.sh security/receipts/cli.luau report
+      - run: bash ci/run.sh receipts collect
+      - run: bash ci/run.sh receipts report
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v7
@@ -558,13 +584,13 @@ jobs:
           name: accepted-release-plan
           path: build/receipts/accepted-plan.json
           if-no-files-found: error
-      - run: bash .github/integration/run.sh security/receipts/cli.luau accepted-check
+      - run: bash ci/run.sh receipts accepted-check
         env:
           GH_TOKEN: ${{ github.token }}
 
   gate:
     # Keep this status-check name stable for existing source protection.
-    if: always() && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited'
+    if: ${{ always() && !startsWith(github.ref, 'refs/heads/refactor/') && github.event_name != 'schedule' && github.event.action != 'closed' && github.event.action != 'edited' }}
     needs: [validate, build, repository, pages, release, images, validation-receipt]
     runs-on: ubuntu-latest
     steps:
@@ -574,7 +600,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         if: needs.validate.result == 'success'
         with:
@@ -595,14 +620,12 @@ jobs:
             "pages":"${{ needs.validate.outputs.pages }}",
             "release":"${{ needs.validate.outputs.release }}",
             "images":"${{ needs.validate.outputs.images }}"}
-        uses: ./.github/actions/run-luau
-        with:
-          module: .github/integration/gate
+        run: bash ci/run.sh integration-gate
       - name: Verify accepted PR validation and report the exact PR head
         if: github.event_name == 'pull_request_target' && needs.validate.outputs.local_execution == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh security/receipts/cli.luau verify-pr
+        run: bash ci/run.sh receipts verify-pr
     permissions:
       contents: write
       actions: read
@@ -628,7 +651,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: repository
@@ -637,7 +659,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
-        run: bash publication/repo/publish.sh
+        run: bash ci/run.sh repo-publish
 
   publish-pages:
     env:
@@ -662,11 +684,10 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - name: Require hosted execution and source protection
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash .github/integration/run.sh security/access/require-publication.luau
+        run: bash ci/run.sh access-require-publication
       - uses: actions/download-artifact@v8
         with:
           name: pages-preview
@@ -701,7 +722,6 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-lune
       - uses: ./.github/actions/setup-github
-      - uses: ./.github/actions/setup-native
       - uses: actions/download-artifact@v8
         with:
           name: release
@@ -711,4 +731,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ matrix.version }}
         shell: bash
-        run: bash publication/releases/publish.sh
+        run: bash ci/run.sh release-publish

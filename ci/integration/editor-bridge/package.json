@@ -1,0 +1,23 @@
+{
+  "name": "local-actions-bridge",
+  "displayName": "Local Actions Command Bridge",
+  "description": "Invoke GitHub Local Actions without GUI automation.",
+  "publisher": "template-tools",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "main": "./extension.cjs",
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:.github/workflows/ci.yml"
+  ],
+  "extensionDependencies": [
+    "SanjulaGanepola.github-local-actions"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  }
+}

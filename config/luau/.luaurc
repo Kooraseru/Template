@@ -1,0 +1,12 @@
+{
+  "languageMode": "strict",
+  "lint": {
+    "*": true
+  },
+  "lintErrors": true,
+  "typeErrors": true,
+  "aliases": {
+    "testing": "../../ci/libraries/testing/test",
+    "lune": "./luau-lsp/lune/"
+  }
+}

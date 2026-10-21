@@ -1,0 +1,9 @@
+# Explicit explicit public versions. An empty list publishes no public release.
+# Replace this list with [[releases]] entries when selecting versions to publish.
+releases = []
+
+# [[releases]]
+# version = "0.1.0-pre.1"
+# commit = "<full 40-character source commit SHA>"
+# from = "beginning" # Optional; otherwise a full ancestor SHA for release notes.
+# notes = "ci/publication/releases/records/introduction.md" # Optional authored introduction.

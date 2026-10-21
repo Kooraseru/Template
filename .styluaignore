@@ -1,6 +1,0 @@
-# Generated output, analyzer declarations and read-only global guidance snapshots.
-/build/
-/out/
-**/node_modules/
-/.luau-lsp/
-/.kero/mnt/
