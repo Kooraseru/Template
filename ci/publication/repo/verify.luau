@@ -1,4 +1,4 @@
--- publication/repo/verify.luau
+-- ci/publication/repo/verify.luau
 --!strict
 
 local VerifyRepository = {}

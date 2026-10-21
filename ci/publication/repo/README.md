@@ -19,5 +19,5 @@ The Luau module is covered by the module policy, StyLua settings and strict LSP
 analysis. To generate locally without publishing:
 
 ```powershell
-bash .github/integration/run.sh publication/repo/build.luau
+bash ci/integration/run.sh ci/publication/repo/build.luau
 ```

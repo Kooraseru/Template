@@ -1,4 +1,4 @@
--- publication/repo/build.luau
+-- ci/publication/repo/build.luau
 --!strict
 
 local Repository = {}
@@ -21,7 +21,7 @@ export type Publication = {
 --# Constants
 
 local OUTPUT_ROOT = "build/repo"
-local TEMPLATE_ROOT = "publication/repo/templates"
+local TEMPLATE_ROOT = "ci/publication/repo/templates"
 local OPTIONAL_FILES = { "LICENSE", "CITATION.cff" }
 
 --# Helpers
