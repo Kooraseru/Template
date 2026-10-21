@@ -40,10 +40,7 @@ __pycache__/
 .env.*
 !.env.example
 
-# KERO guidance snapshots are repository data; only host runtime state is local.
-!/.kero/
-!/.kero/mnt/
-!/.kero/mnt/**
+# Local generated runtime state
 /build/runtime/
 
 # Optional consuming-project dependencies
@@ -51,3 +48,6 @@ node_modules/
 
 # Generated AI agent instructions
 /AGENTS.md
+
+# Generated configuration adapter for act (canonical config: config/docker/actrc)
+/.actrc

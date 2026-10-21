@@ -39,6 +39,9 @@ function ConfigureEditor.Run()
 	local existing = if Fs.isFile(path) then Serde.decode("json", Fs.readFile(path)) else {}
 	Fs.writeDir(".vscode")
 	Fs.writeFile(path, Serde.encode("json", ConfigureEditor.Merge(existing, defaults), true) .. "\n")
+	-- act reads .actrc from the workspace root, not an arbitrary config/ directory.
+	-- Generate a disposable local adapter from the tracked source of truth.
+	Fs.writeFile(".actrc", Fs.readFile("config/docker/actrc"))
 end
 
 return ConfigureEditor

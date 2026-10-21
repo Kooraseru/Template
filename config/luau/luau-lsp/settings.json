@@ -11,5 +11,6 @@
     "editor.insertSpaces": false,
     "editor.tabSize": 4
   },
-  "stylua.configPath": "config/luau/stylua/.stylua.toml"
+  "stylua.configPath": "config/luau/stylua/.stylua.toml",
+  "luau-lsp.server.baseLuaurc": "config/luau/.luaurc"
 }

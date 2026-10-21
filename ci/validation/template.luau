@@ -124,6 +124,7 @@ function Template.Check(read: Reader, files: { string }): { Finding }
 	check(".gitignore", function()
 		assert(read(".gitignore"):find("/build/", 1, true), "Ignore disposable /build/ output.")
 		assert(read(".gitignore"):find("/AGENTS.md", 1, true), "Ignore generated AGENTS.md.")
+		assert(read(".gitignore"):find("/.actrc", 1, true), "Ignore locally generated act config.")
 		for path in inventory do
 			assert(path:sub(1, 6) ~= "build/", "Remove tracked disposable build output: " .. path)
 		end

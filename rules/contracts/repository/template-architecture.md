@@ -46,6 +46,8 @@ No mandatory language folder, compiler smoke project, root Cargo manifest, Power
 
 ## Implementation boundaries
 
+The tracked act defaults live at `config/docker/actrc`; `bash ci/run.sh configure-editor` copies them to an ignored root `.actrc` because act only auto-discovers that conventional path.
+
 The template is language-agnostic. Toolchains are optional; preserve native tool
 configuration formats. Luau owns controller behavior. A small package-free Node helper provides ECMAScript-compatible number formatting and Ed25519 operations without Cargo; Node is a CI runtime dependency, not a mandated application language.
 

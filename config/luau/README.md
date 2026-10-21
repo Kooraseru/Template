@@ -13,4 +13,4 @@ Since these are not at the repository root, callers that run StyLua or Luau LSP 
 stylua --config-path config/luau/stylua/.stylua.toml --check ci
 ```
 
-The editor settings adapter sets `stylua.configPath`. Avoid adding root-level copies of these files; they would create a second authority for configuration.
+The editor settings adapter sets `stylua.configPath` and `luau-lsp.server.baseLuaurc` explicitly. Avoid adding root-level copies of these files; they would create a second authority for configuration.

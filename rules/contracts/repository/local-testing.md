@@ -44,7 +44,7 @@ the actual runner or container; host availability alone is insufficient.
 ## Command-only extension access
 
 With this repository open in a trusted VS Code workspace and GitHub Local Actions
-installed, install the local adapter once. Python 3, the `code` CLI, Lune, and
+installed, first run `bash ci/run.sh configure-editor` to generate ignored local `.vscode/settings.json` and `.actrc` adapters from `config/`, then install the editor bridge once. Python 3, the `code` CLI, Lune, and
 Bash must be available to the calling agent:
 
 
