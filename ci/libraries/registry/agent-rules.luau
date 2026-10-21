@@ -1,3 +1,4 @@
+-- ci/libraries/registry/agent-rules.luau
 --!strict
 -- Deterministic local AGENTS.md index; authoritative rules remain tracked.
 local Fs = require("@lune/fs")

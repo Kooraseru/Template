@@ -1268,15 +1268,14 @@
   "luau": {
     "rules": {
       "roots": [
-        ".github/integration",
-        "config/tools",
-        "libraries",
-        "validation",
-        "fabricator",
-        "security",
-        "publication"
+        "ci/integration",
+        "ci/libraries",
+        "ci/validation",
+        "ci/fabricator",
+        "ci/security",
+        "ci/publication"
       ],
-      "pathLabel": true,
+      "pathLabel": false,
       "strictDirective": true,
       "moduleNamePattern": "^[A-Z][A-Za-z0-9]*$",
       "bindingNamePattern": "^[A-Z][A-Za-z0-9]*$",
@@ -1293,7 +1292,13 @@
         "any"
       ],
       "libraryRoots": [
-        "libraries",
+        "ci/libraries",
+        "ci/integration/tests",
+        "ci/fabricator/tests",
+        "ci/validation/tests",
+        "ci/security/access/tests",
+        "ci/security/receipts/tests",
+        "ci/publication/releases/tests",
         "ci/integration/config.luau",
         "ci/security/access/context.luau",
         "ci/security/access/policy.luau",

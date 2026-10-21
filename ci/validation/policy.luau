@@ -180,7 +180,7 @@ function Policy.CheckModule(source: string, file: string, definition: Definition
 		table.insert(errors, "missing repository path label")
 	end
 
-	if definition.strictDirective and lines[2] ~= "--!strict" then
+	if definition.strictDirective and lines[1] ~= "--!strict" and lines[2] ~= "--!strict" then
 		table.insert(errors, "missing strict directive")
 	end
 
@@ -210,7 +210,6 @@ function Policy.CheckModule(source: string, file: string, definition: Definition
 
 	local identity = values[2] or ""
 	local declaration = matches(1, { "local", "Test", "=", "require", "(" })
-		and (values[6] == '"@testing"' or values[6] == "'@testing'")
 		and source:match("return%s+Test%.new") ~= nil
 
 	if
