@@ -10,7 +10,7 @@ local Fs = require("@lune/fs")
 
 --# Types
 
-type Input = { Targets: unknown, Select: { string }? }
+type Input = { Targets: unknown, Select: { string }?, CargoConfig: boolean? }
 
 --# Helpers
 
@@ -22,7 +22,7 @@ local function cargoConfig(): boolean
 	local target: Targets.Target = { id = "application", system = "cargo", path = path }
 	local plain = Targets.Commands(target)[1]
 	assert(plain[1] == "cargo" and plain[2] == "build", "Cargo must not require a configuration file")
-	Fs.writeFile(filename, "[build]\\n")
+	Fs.writeFile(filename, "[build]\n")
 	local configured = Targets.Commands(target)[1]
 	Fs.removeFile(filename)
 	assert(configured[1] == "cargo" and configured[2] == "--config" and configured[3] == filename, "Cargo configuration not forwarded explicitly")
@@ -31,6 +31,7 @@ local function cargoConfig(): boolean
 end
 
 local function validate(input: Input): boolean
+	if input.CargoConfig then return cargoConfig() end
 	return (
 		pcall(function()
 			local targets = Targets.Validate(input.Targets)
@@ -46,6 +47,7 @@ local definition: Test.Definition<Input, boolean> = {
 	Execute = validate,
 	Cases = {
 		{ Name = "No mandatory application language", Input = { Targets = {} }, Expected = true },
+		{ Name = "Optional Cargo config is passed explicitly", Input = { Targets = {}, CargoConfig = true }, Expected = true },
 		{
 			Name = "Cargo source",
 			Input = { Targets = { { id = "app", system = "cargo", path = "src/custom" } } },
@@ -91,10 +93,4 @@ local definition: Test.Definition<Input, boolean> = {
 	},
 }
 
-local suite = Test.new(definition)
-local original = suite.Run
-function suite:Run(onReport)
-	cargoConfig()
-	return original(self, onReport)
-end
-return suite
+return Test.new(definition)
