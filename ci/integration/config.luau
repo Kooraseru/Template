@@ -1,4 +1,4 @@
--- .github/integration/config.luau
+-- ci/integration/config.luau
 --!strict
 
 local Control = {}
@@ -8,8 +8,8 @@ local Control = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Inputs = require("../../libraries/bootstrap/inputs")
-local Rules = require("../../libraries/registry/rules")
+local Inputs = require("../libraries/bootstrap/inputs")
+local Rules = require("../libraries/registry/rules")
 
 --# Types
 
@@ -66,10 +66,10 @@ function Control.Apply(raw: unknown): unknown
 	local targetChoice = selected.build_targets or "Configured"
 	local compiler = selected.compiler or "Any"
 	local architecture = selected.architecture or "Any"
-	local targetDocument = Rules.Entries(Serde.decode("json", Inputs.Read("fabricator/targets.json")))
+	local targetDocument = Rules.Entries(Serde.decode("json", Inputs.Read("ci/fabricator/targets.json")))
 	local targets = Rules.Array(targetDocument.targets) :: { Target }
 	local imageDocument =
-		Rules.Entries(Serde.decode("json", Inputs.Read("fabricator/distribution/images/catalogue.json")))
+		Rules.Entries(Serde.decode("json", Inputs.Read("ci/fabricator/distribution/images/catalogue.json")))
 	local images = Rules.Array(imageDocument.images) :: { { name: string } }
 	local selecting = targetChoice ~= "Configured" or compiler ~= "Any" or architecture ~= "Any"
 

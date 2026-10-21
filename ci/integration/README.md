@@ -24,7 +24,7 @@ selection text inputs, and no receipt JSON or PR-number field.
 
 `ruleset.json.controls` defines the form contract. Workflow validation verifies all fourteen
 controls against the YAML. The build-target dropdown additionally includes the
-32 entries from `fabricator/targets.json`.
+32 entries from `ci/fabricator/targets.json`.
 
 ## Stages and operations
 
@@ -75,7 +75,7 @@ are applied in memory, including when planning pinned release commits. Target,
 compiler and architecture filters intersect. Empty intersections and missing
 required image definitions fail before building. Configured images automatically
 include dependencies when explicitly selecting catalogue build targets; Skip is
-invalid if selected builds require images. Public releases use explicit version/commit entries in `publication/releases/versions.toml`.
+invalid if selected builds require images. Public releases use explicit version/commit entries in `ci/publication/releases/versions.toml`.
 An empty list selects no public release. Version/source overrides must be paired;
 the selected source must belong to source history. The two public types are derived
 from SemVer, not persistent identities. Published versions support replacement; changed
@@ -124,7 +124,7 @@ the shared Luau module runner; no JavaScript interoperability bridge is installe
 Administrators can refresh locally using an existing GitHub CLI login:
 
 ```powershell
-bash .github/integration/run.sh .github/integration/refresh-prs.luau
+bash ci/integration/run.sh ci/integration/refresh-prs.luau
 git add .github/workflows/ci.yml
 git commit -m "Refresh CI pull request choices"
 ```
@@ -141,7 +141,7 @@ https://docs.github.com/en/actions/how-tos/monitor-workflows/use-the-visualizati
 
 The CI orchestrator calls infrastructure modules through `run-luau` and retains
 generic setup adapters in `.github/actions/`. Documentation setup and generation
-are colocated in `publication/pages/action.yml`. Publication invokes its owning
+are colocated in `ci/publication/pages/action.yml`. Publication invokes its owning
 shell entry points directly. Job dependencies, permissions, matrices and artifact
 transfers remain visible in `ci.yml`; `gate` keeps its required check identity.
 The independent `template.yml` workflow performs optional upstream conformance,

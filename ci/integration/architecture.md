@@ -43,19 +43,19 @@ All old action paths below are relative to `.github/actions/`.
 
 | Previous action | Classification | Result and implementation |
 | --- | --- | --- |
-| `run-luau/action.yml` | Generic execution adapter | Retained; calls `.github/integration/run.sh` |
+| `run-luau/action.yml` | Generic execution adapter | Retained; calls `ci/integration/run.sh` |
 | `setup-lune/action.yml` | Generic environment utility | Retained; verified runtime installation |
 | `setup-github/action.yml` | Generic environment utility | Retained; GitHub CLI installation |
 | `setup-native/action.yml` | Reusable bootstrap operation | Retained; resolves toolchain, installs Rust and builds native helpers |
 | `setup-rust/action.yml` | Generic environment utility | Retained; native Rust setup |
 | `setup-cmake/action.yml` | Generic environment utility | Retained; pinned CMake setup |
-| `validate/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `validation/run` |
-| `build/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `fabricator/workflow` |
-| `package/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `fabricator/distribution/package` |
-| `build-repo/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `publication/repo/build` |
-| `gate/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `.github/integration/gate` |
-| `build-pages/action.yml` | Domain adapter | Replaced by `publication/pages/action.yml`, owning the existing Pandoc installation and generation steps |
-| `publish/action.yml` | Redundant domain dispatcher | Removed; existing named workflow steps directly invoke `publication/repo/publish.sh` and `publication/releases/publish.sh` |
+| `validate/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `ci/validation/run` |
+| `build/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `ci/fabricator/workflow` |
+| `package/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `ci/fabricator/distribution/package` |
+| `build-repo/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `ci/publication/repo/build` |
+| `gate/action.yml` | Redundant forwarding wrapper | Removed; workflow uses `run-luau` with `ci/integration/gate` |
+| `build-pages/action.yml` | Domain adapter | Replaced by `ci/publication/pages/action.yml`, owning the existing Pandoc installation and generation steps |
+| `publish/action.yml` | Redundant domain dispatcher | Removed; existing named workflow steps directly invoke `ci/publication/repo/publish.sh` and `ci/publication/releases/publish.sh` |
 
 All seven removed or replaced wrappers had no declared outputs. The forwarding
 wrappers had no inputs; the removed publication dispatcher accepted only `output`
@@ -68,10 +68,10 @@ The retained interfaces and their dependency chains are:
 | `run-luau` | Required `module` | Bash, installed Lune, integration runner; used by workflow, Pages and native setup |
 | `setup-lune` | None | Runner platform, checksum-pinned downloads, archive tools; used by workflow jobs |
 | `setup-github` | None | Existing `gh` or Linux apt/sudo; used by workflow jobs |
-| `setup-native` | None | Native configuration resolution, `setup-rust`, `run-luau`, `libraries/bootstrap/native`; used by trusted helper consumers in workflow |
+| `setup-native` | None | Native configuration resolution, `setup-rust`, `run-luau`, `ci/libraries/bootstrap/native`; used by trusted helper consumers in workflow |
 | `setup-rust` | Required `toolchain` | `dtolnay/rust-toolchain`; used by workflow targets and native setup |
 | `setup-cmake` | Required `version` | `actions/setup-python` and pip; used by configured native CMake targets |
-| `publication/pages` | None | Existing apt/sudo Pandoc installation, Lune and `run-luau`; used by documentation job |
+| `ci/publication/pages` | None | Existing apt/sudo Pandoc installation, Lune and `run-luau`; used by documentation job |
 
 None declares action outputs. Native setup deliberately resolves its private
 `definition` step outputs through a direct shell invocation before Rust setup;
@@ -95,10 +95,10 @@ generic action. The obsolete setup-node ordering rule is removed.
     setup-native/action.yml
     setup-rust/action.yml
   integration/                 # Existing GitHub and editor adapters remain
-fabricator/
+ci/fabricator/
   workflow.luau
   distribution/package.luau
-publication/
+ci/publication/
   pages/
     action.yml
     build.luau
@@ -112,15 +112,15 @@ publication/
     build.luau
     publish.sh
     ...
-validation/
+ci/validation/
   run.luau
   workflows.luau
   gate.luau
   tests/...
-security/
+ci/security/
   access/...
   receipts/...
-libraries/...
+ci/libraries/...
 ```
 
 This shows affected interfaces, not a replacement inventory of unchanged files.
@@ -134,7 +134,7 @@ GitHub manual form. Editor configuration, the extension bridge and local-actions
 client integrate the local editor. These responsibilities remain in integration.
 
 The integration gate aggregates GitHub job outcomes, controls and trusted evidence;
-`validation/gate.luau` validates rule data. They serve distinct interfaces. Receipt
+`ci/validation/gate.luau` validates rule data. They serve distinct interfaces. Receipt
 verification remains in security, and publication shell entry points retain their
 hosted-context and source-protection enforcement. Removing a wrapper does not
 remove any authorization check or expose publication credentials to build jobs.

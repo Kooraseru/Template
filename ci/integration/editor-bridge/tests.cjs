@@ -31,7 +31,7 @@ async function main() {
       setInterval: callback => { tick = callback; }, clearInterval() {} };
     vm.runInNewContext(await fs.readFile(path.join(__dirname, "extension.cjs"), "utf8"), context);
     await context.module.exports.activate({ subscriptions, globalStorageUri: { fsPath: path.join(root, "storage/bridge") } });
-    const mailbox = path.join(root, ".kero/.runtime/local-actions");
+    const mailbox = path.join(root, "build/runtime/local-actions");
     const session = JSON.parse(await fs.readFile(path.join(mailbox, "session.json"), "utf8"));
     async function request(fields) {
       const id = (++count).toString(16).padStart(32, "0");

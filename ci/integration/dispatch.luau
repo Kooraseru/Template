@@ -1,4 +1,4 @@
--- .github/integration/dispatch.luau
+-- ci/integration/dispatch.luau
 --!strict
 
 local Dispatch = {}
@@ -8,8 +8,8 @@ local Dispatch = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Request = require("./request")
-local GitHub = require("../../libraries/bootstrap/github")
-local Outputs = require("../../libraries/bootstrap/outputs")
+local GitHub = require("../libraries/bootstrap/github")
+local Outputs = require("../libraries/bootstrap/outputs")
 
 --# Functions
 

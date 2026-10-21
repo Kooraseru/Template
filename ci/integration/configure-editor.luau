@@ -7,7 +7,7 @@ local ConfigureEditor = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../libraries/registry/rules")
 
 --# Functions
 
@@ -35,7 +35,7 @@ end
 
 function ConfigureEditor.Run()
 	local path = ".vscode/settings.json"
-	local defaults = Serde.decode("json", Fs.readFile(".luau-lsp/settings.json"))
+	local defaults = Serde.decode("json", Fs.readFile("config/luau/luau-lsp/settings.json"))
 	local existing = if Fs.isFile(path) then Serde.decode("json", Fs.readFile(path)) else {}
 	Fs.writeDir(".vscode")
 	Fs.writeFile(path, Serde.encode("json", ConfigureEditor.Merge(existing, defaults), true) .. "\n")

@@ -43,7 +43,7 @@ async function activate(context) {
 
   for (const folder of folders) {
     if (!await fs.stat(path.join(folder.uri.fsPath, ".github/workflows/ci.yml")).catch(() => null)) continue;
-    const root = path.join(folder.uri.fsPath, ".kero/.runtime/local-actions");
+    const root = path.join(folder.uri.fsPath, "build/runtime/local-actions");
     await fs.mkdir(root, { recursive: true });
     const state = { folder, root, token: crypto.randomBytes(32).toString("hex"), seen: new Set(), busy: false, startingUntil: 0 };
     states.push(state);

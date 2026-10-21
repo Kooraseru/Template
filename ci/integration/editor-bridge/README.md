@@ -1,7 +1,7 @@
 # Editor-host adapter
 
 This optional VS Code extension supplies the command-only access described in
-[local testing](../../../.kero/data/contracts/repository/local-testing.md).
+[local testing](../../../rules/contracts/repository/local-testing.md).
 It runs only in VS Code's existing extension host. Its package manifest is required
 by VS Code; no npm dependencies, standalone Node installation, or JavaScript CI
 controller are introduced.
