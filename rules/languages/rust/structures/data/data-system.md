@@ -27,3 +27,5 @@ enum Platform {
 - Avoid storing cached runtime handles in otherwise declarative configuration merely for convenience.
 
 Data is not a "dumb" lesser form of OOP; it is often the correct boundary for format, configuration, and state snapshots.
+
+[Example data record](examples/build_target.rs) illustrates the structure without adding a mandatory application or CI smoke test.

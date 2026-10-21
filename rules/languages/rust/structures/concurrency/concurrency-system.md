@@ -13,3 +13,5 @@ Choose the simplest useful ownership model:
 Avoid creating a global scheduler, shared registry, or blanket `Arc<Mutex<_>>` graph just because a Rust framework supports it. Define cancellation, shutdown, and failure propagation before spawning background tasks.
 
 The language-wide guard-first convention applies to task admission and early cancellation. Do not return early while accidentally leaving unmanaged tasks or locks.
+
+[Example scoped workers](examples/scoped_workers.rs) illustrates the structure without adding a mandatory application or CI smoke test.

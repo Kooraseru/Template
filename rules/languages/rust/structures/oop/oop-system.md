@@ -27,3 +27,5 @@ impl AudioSession {
 Methods express legitimate changes to owned state. There is no reason to make every utility function a method or every record an object. `Drop` can release owned resources; fallible teardown needs explicit APIs because `Drop::drop` cannot report an ordinary `Result`.
 
 Interfaces and shared behavior are modeled with [traits](traits.md) and composition, not forced inheritance hierarchies.
+
+[Example owned object](examples/session.rs) illustrates the structure without adding a mandatory application or CI smoke test.

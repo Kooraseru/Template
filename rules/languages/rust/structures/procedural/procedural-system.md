@@ -24,3 +24,5 @@ fn publish(request: &Request, client: &Client) -> Result<(), Error> {
 - Define the public operation at one coherent boundary.
 
 When a service has independently constructed instances and owned resources, consult [objects](../oop/objects.md).
+
+[Example procedural operation](examples/install_file.rs) illustrates the structure without adding a mandatory application or CI smoke test.

@@ -18,3 +18,5 @@ fn clamp_opacity(value: f32) -> f32 {
 - Avoid creating generic combinators before two real callers require the abstraction.
 
 If the operation owns a database connection, manages retries, or coordinates multiple effects, use a procedural service instead. If it owns independently constructed state, consider OOP-like objects.
+
+[Example functional module](examples/enabled_ids.rs) illustrates the structure without adding a mandatory application or CI smoke test.
