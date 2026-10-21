@@ -5,6 +5,7 @@ local Targets = {}
 
 --# Modules
 
+local Fs = require("@lune/fs")
 local Shape = require("../libraries/registry/shape")
 local Inputs = require("../libraries/bootstrap/inputs")
 
@@ -76,7 +77,16 @@ function Targets.Commands(target: Target): { { string } }
 	Targets.Validate({ target })
 
 	if target.system == "cargo" then
-		return { { "cargo", "build", "--locked", "--release", "--manifest-path", target.path .. "/Cargo.toml" } }
+		local options = { "cargo" }
+		local configuration = target.path .. "/config.toml"
+		if Fs.isFile(configuration) then
+			table.insert(options, "--config")
+			table.insert(options, configuration)
+		end
+		for _, argument in { "build", "--locked", "--release", "--manifest-path", target.path .. "/Cargo.toml" } do
+			table.insert(options, argument)
+		end
+		return { options }
 	end
 
 	local directory = "build/targets/" .. target.id

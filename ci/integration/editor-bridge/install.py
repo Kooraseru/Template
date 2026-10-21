@@ -13,7 +13,7 @@ output.parent.mkdir(parents=True, exist_ok=True)
 manifest = json.loads((source / "package.json").read_text(encoding="utf-8"))
 xml = f'''<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
-<Metadata><Identity Language="en-US" Id="local-actions-bridge" Version="{manifest['version']}" Publisher="kero-tools"/>
+<Metadata><Identity Language="en-US" Id="local-actions-bridge" Version="{manifest['version']}" Publisher="template-tools"/>
 <DisplayName>Local Actions Command Bridge</DisplayName><Description xml:space="preserve">Command-only local workflow access.</Description>
 <Tags>local-actions</Tags><Categories>Other</Categories><GalleryFlags>Public</GalleryFlags>
 <Properties><Property Id="Microsoft.VisualStudio.Code.Engine" Value="^1.93.0"/></Properties></Metadata>

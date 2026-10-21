@@ -309,7 +309,7 @@ function Publish.Selected(version: string)
 			"stale release run: source advanced"
 		)
 		local contract =
-			assert(api.Request("/contents/publication/releases/versions.toml?ref=" .. D.Text(source, "sha")))
+			assert(api.Request("/contents/ci/publication/releases/versions.toml?ref=" .. D.Text(source, "sha")))
 		assert(
 			Serde.hash("sha256", Base64.Decode(D.Text(contract, "content"):gsub("%s", "")))
 				== D.Get(publication, "contract_hash"),

@@ -36,6 +36,8 @@ else
     if op == "validate" then subject = require("./validation/run")
     elseif op == "template-check" then subject = require("./validation/template")
     elseif op == "integration-refresh-prs" then subject = require("./integration/refresh-prs")
+    elseif op == "local-actions" then subject = require("./integration/local-actions")
+    elseif op == "configure-editor" then subject = require("./integration/configure-editor")
     elseif op == "integration-dispatch" then subject = require("./integration/dispatch")
     elseif op == "integration-gate" then subject = require("./integration/gate")
     elseif op == "access-resolve" then subject = require("./security/access/resolve")
