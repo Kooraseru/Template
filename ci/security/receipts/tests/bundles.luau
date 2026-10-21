@@ -1,7 +1,7 @@
--- security/receipts/tests/bundles.luau
+-- ci/security/receipts/tests/bundles.luau
 --!strict
 
-local Test = require("@testing")
+local Test = require("../../../libraries/testing/test")
 
 --# Modules
 
@@ -109,7 +109,7 @@ local function reuse(): boolean
 	local archiveBytes = Fs.readFile(root .. "/bundle.tar.gz")
 	receipt = D.Set(receipt, "bundle_sha256", Serde.hash("sha256", archiveBytes))
 	Collection.VerifyBundle(root .. "/bundle", receipt)
-	local keys = D.Required(D.Required(D.Read("security/receipts/ruleset.json"), "cases"), "test_key")
+	local keys = D.Required(D.Required(D.Read("ci/security/receipts/ruleset.json"), "cases"), "test_key")
 	local envelope = Authentication.Sign(receipt, "admin-key", D.Text(keys, "private_key"))
 	local envelopeBytes = assert(C.Encode(envelope))
 	local enrollment = C.Object({

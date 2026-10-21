@@ -42,8 +42,8 @@
     "archive_asset": "bundle.tar.gz",
     "max_archive_bytes": 2000000000,
     "contract_paths": [
-      "security/receipts/ruleset.json",
-      "security/receipts/keys.json"
+      "ci/security/receipts/ruleset.json",
+      "ci/security/receipts/keys.json"
     ]
   },
   "cases": {

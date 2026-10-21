@@ -1,4 +1,4 @@
--- security/receipts/verification.luau
+-- ci/security/receipts/verification.luau
 --!strict
 
 local Verification = {}
@@ -71,7 +71,7 @@ end
 --# Functions
 
 function Verification.Policy(): Policy
-	local raw = Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile("security/receipts/ruleset.json"))).rules)
+	local raw = Rules.Entries(Rules.Entries(Serde.decode("json", Fs.readFile("ci/security/receipts/ruleset.json"))).rules)
 	assert(type(raw.retention_days) == "number", "invalid receipt retention policy")
 	local runners = {}
 

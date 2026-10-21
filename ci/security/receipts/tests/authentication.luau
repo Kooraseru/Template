@@ -1,4 +1,4 @@
--- security/receipts/tests/authentication.luau
+-- ci/security/receipts/tests/authentication.luau
 --!strict
 
 local AuthenticationTests = {}
@@ -31,7 +31,7 @@ end
 --# Functions
 
 function AuthenticationTests.Run()
-	local document = Json.Fields(Canonical.Decode(Fs.readFile("security/receipts/ruleset.json")))
+	local document = Json.Fields(Canonical.Decode(Fs.readFile("ci/security/receipts/ruleset.json")))
 	local cases = Json.Fields(document.cases)
 	local keys = Json.Fields(cases.test_key)
 	local now = Datetime.now().unixTimestampMillis
@@ -193,7 +193,7 @@ function AuthenticationTests.Run()
 	end
 
 	local vectors =
-		Json.Fields(Json.Fields(Canonical.Decode(Fs.readFile("libraries/bootstrap/ruleset.json"))).authentication)
+		Json.Fields(Json.Fields(Canonical.Decode(Fs.readFile("ci/libraries/bootstrap/ruleset.json"))).authentication)
 
 	for _, raw in Json.Array(vectors.vectors) do
 		local vector = Json.Fields(raw)

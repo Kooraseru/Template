@@ -1,4 +1,4 @@
--- security/receipts/identity.luau
+-- ci/security/receipts/identity.luau
 --!strict
 
 local Identity = {}
