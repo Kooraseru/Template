@@ -1,4 +1,4 @@
--- validation/tests/canonical.luau
+-- ci/validation/tests/canonical.luau
 --!strict
 
 local CanonicalTests = {}
@@ -81,7 +81,7 @@ end
 --# Functions
 
 function CanonicalTests.Run()
-	local document = Rules.Entries(Serde.decode("json", Fs.readFile("libraries/bootstrap/ruleset.json")))
+	local document = Rules.Entries(Serde.decode("json", Fs.readFile("ci/libraries/bootstrap/ruleset.json")))
 	local definition = Rules.Entries(document.canonical)
 
 	for _, raw in Rules.Array(definition.cases) do

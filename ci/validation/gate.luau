@@ -1,4 +1,4 @@
--- validation/gate.luau
+-- ci/validation/gate.luau
 --!strict
 
 local Gate = {}
@@ -22,7 +22,7 @@ function Gate.Run()
 		results = Serde.decode("json", results),
 		enabled = Serde.decode("json", enabled),
 	}
-	local policy = Rules.Read("validation/ruleset.json", "gate.rules")
+	local policy = Rules.Read("ci/validation/ruleset.json", "gate.rules")
 
 	Rules.Validate(context, policy)
 end

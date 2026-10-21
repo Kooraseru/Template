@@ -1,4 +1,4 @@
--- validation/plugins.luau
+-- ci/validation/plugins.luau
 --!strict
 
 local Plugins = {}

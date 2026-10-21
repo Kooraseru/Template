@@ -12,7 +12,7 @@
         "paths": [
           "ci/pipeline.luau",
           ".github/pipeline.luau",
-          ".github/integration/run.sh"
+          "ci/integration/run.sh"
         ]
       },
       {

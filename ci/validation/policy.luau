@@ -1,4 +1,4 @@
--- validation/policy.luau
+-- ci/validation/policy.luau
 --!strict
 
 local Policy = {}
@@ -167,7 +167,7 @@ end
 
 function Policy.Read(): Definition
 	-- The checked-in ruleset is the configuration boundary; its cases exercise this vocabulary.
-	local document = Rules.Entries(Serde.decode("json", Fs.readFile("validation/ruleset.json")))
+	local document = Rules.Entries(Serde.decode("json", Fs.readFile("ci/validation/ruleset.json")))
 
 	return Rules.Entries(document.luau).rules :: Definition
 end

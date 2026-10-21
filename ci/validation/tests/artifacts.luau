@@ -1,4 +1,4 @@
--- validation/tests/artifacts.luau
+-- ci/validation/tests/artifacts.luau
 --!strict
 
 local ArtifactTests = {}
@@ -42,7 +42,7 @@ end
 --# Functions
 
 function ArtifactTests.Run()
-	local definitions = Cases.Read("validation/ruleset.json", "artifacts.cases")
+	local definitions = Cases.Read("ci/validation/ruleset.json", "artifacts.cases")
 	local root = definitions.root
 
 	local success, failure = pcall(function()

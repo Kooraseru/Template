@@ -1,4 +1,4 @@
--- validation/repository.luau
+-- ci/validation/repository.luau
 --!strict
 
 local Repository = {}
@@ -70,7 +70,7 @@ end
 
 function Repository.Run()
 	local config = Config.Read()
-	local definitions = Rules.Read("validation/ruleset.json", "repository")
+	local definitions = Rules.Read("ci/validation/ruleset.json", "repository")
 	local checks = definitions.checks
 
 	assert(checks ~= nil, "missing repository checks")

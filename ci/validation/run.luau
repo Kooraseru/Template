@@ -1,4 +1,4 @@
--- validation/run.luau
+-- ci/validation/run.luau
 --!strict
 
 local Validate = {}
@@ -9,8 +9,8 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Datetime = require("@lune/datetime")
-local Test = require("@testing")
-local Request = require("../.github/integration/request")
+local Test = require("../libraries/testing/test")
+local Request = require("../integration/request")
 local Rules = require("../libraries/registry/rules")
 local Policy = require("./policy")
 local Repository = require("./repository")
@@ -23,12 +23,12 @@ local GateTests = require("./tests/gate")
 local WorkflowValidation = require("./workflows")
 local AccessTests = require("../security/access/tests/policy")
 local PublicationTests = require("../security/access/tests/publication")
-local ControlTests = require("../.github/integration/tests/config")
-local SourceApprovalTests = require("../.github/integration/tests/source-approval")
-local SourcePromotionTests = require("../.github/integration/tests/source-promotion")
+local ControlTests = require("../integration/tests/config")
+local SourceApprovalTests = require("../integration/tests/source-approval")
+local SourcePromotionTests = require("../integration/tests/source-promotion")
 local PolicyTests = require("./tests/policy")
-local ModuleTests = require("../.github/integration/tests/modules")
-local RequestTests = require("../.github/integration/tests/request")
+local ModuleTests = require("../integration/tests/modules")
+local RequestTests = require("../integration/tests/request")
 local CanonicalTests = require("./tests/canonical")
 local ReceiptAuthenticationTests = require("../security/receipts/tests/authentication")
 local TestingTests = require("./tests/testing")
@@ -80,55 +80,55 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 		{
 			name = "Configuration",
 			checks = {
-				{ path = "validation/tests/documents.luau", Run = suiteCheck(DocumentTests) },
-				{ path = "validation/tests/template.luau", Run = suiteCheck(TemplateTests) },
-				{ path = "fabricator/tests/project.luau", Run = suiteCheck(ProjectTests) },
-				{ path = "fabricator/tests/coverage.luau", Run = suiteCheck(CoverageTests) },
-				{ path = "validation/tests/activation.luau", Run = suiteCheck(ActivationTests) },
+				{ path = "ci/validation/tests/documents.luau", Run = suiteCheck(DocumentTests) },
+				{ path = "ci/validation/tests/template.luau", Run = suiteCheck(TemplateTests) },
+				{ path = "ci/fabricator/tests/project.luau", Run = suiteCheck(ProjectTests) },
+				{ path = "ci/fabricator/tests/coverage.luau", Run = suiteCheck(CoverageTests) },
+				{ path = "ci/validation/tests/activation.luau", Run = suiteCheck(ActivationTests) },
 				{
-					path = "validation/tests/testing.luau",
+					path = "ci/validation/tests/testing.luau",
 					Run = suiteCheck(TestingTests),
 				},
 				{
-					path = "validation/tests/plugins.luau",
+					path = "ci/validation/tests/plugins.luau",
 					Run = suiteCheck(PluginTests),
 				},
 				{
-					path = "validation/tests/workshop.luau",
+					path = "ci/validation/tests/workshop.luau",
 					Run = suiteCheck(WorkshopTests),
 				},
 				{
-					path = "fabricator/tests/targets.luau",
+					path = "ci/fabricator/tests/targets.luau",
 					Run = suiteCheck(TargetTests),
 				},
 				{
-					path = "fabricator/tests/discovery.luau",
+					path = "ci/fabricator/tests/discovery.luau",
 					Run = suiteCheck(DiscoveryTests),
 				},
 				{
-					path = "validation/tests/providers.luau",
+					path = "ci/validation/tests/providers.luau",
 					Run = suiteCheck(ProviderTests),
 				},
-				{ path = "validation/policy.luau", Run = Policy.Run },
-				{ path = "validation/tests/policy.luau", Run = PolicyTests.Run },
-				{ path = "validation/tests/canonical.luau", Run = CanonicalTests.Run },
-				{ path = "validation/repository.luau", Run = Repository.Run },
-				{ path = "publication/releases/validate.luau", Run = ReleaseValidation.Run },
+				{ path = "ci/validation/policy.luau", Run = Policy.Run },
+				{ path = "ci/validation/tests/policy.luau", Run = PolicyTests.Run },
+				{ path = "ci/validation/tests/canonical.luau", Run = CanonicalTests.Run },
+				{ path = "ci/validation/repository.luau", Run = Repository.Run },
+				{ path = "ci/publication/releases/validate.luau", Run = ReleaseValidation.Run },
 				{
-					path = "validation/tests/config.luau",
+					path = "ci/validation/tests/config.luau",
 					Run = suiteCheck(ConfigTests),
 				},
 				{
-					path = "validation/tests/catalogue.luau",
+					path = "ci/validation/tests/catalogue.luau",
 					Run = suiteCheck(CatalogueTests),
 				},
-				{ path = "validation/tests/artifacts.luau", Run = ArtifactTests.Run },
+				{ path = "ci/validation/tests/artifacts.luau", Run = ArtifactTests.Run },
 				{
-					path = "validation/tests/rules.luau",
+					path = "ci/validation/tests/rules.luau",
 					Run = suiteCheck(RuleTests),
 				},
 				{
-					path = "validation/tests/gate.luau",
+					path = "ci/validation/tests/gate.luau",
 					Run = suiteCheck(GateTests),
 				},
 			},
@@ -136,28 +136,28 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 		{
 			name = "Workflow rules",
 			checks = {
-				{ path = "validation/workflows.luau", Run = WorkflowValidation.Run },
-				{ path = "validation/tests/workflows.luau", Run = suiteCheck(WorkflowTests) },
+				{ path = "ci/validation/workflows.luau", Run = WorkflowValidation.Run },
+				{ path = "ci/validation/tests/workflows.luau", Run = suiteCheck(WorkflowTests) },
 			},
 		},
 		{
 			name = "Access policy",
 			checks = {
-				{ path = "security/access/tests/policy.luau", Run = AccessTests.Run },
-				{ path = "security/access/tests/publication.luau", Run = PublicationTests.Run },
-				{ path = ".github/integration/tests/config.luau", Run = ControlTests.Run },
-				{ path = ".github/integration/tests/source-approval.luau", Run = SourceApprovalTests.Run },
-				{ path = ".github/integration/tests/source-promotion.luau", Run = suiteCheck(SourcePromotionTests) },
-				{ path = ".github/integration/tests/request.luau", Run = RequestTests.Run },
-				{ path = ".github/integration/tests/modules.luau", Run = ModuleTests.Run },
+				{ path = "ci/security/access/tests/policy.luau", Run = AccessTests.Run },
+				{ path = "ci/security/access/tests/publication.luau", Run = PublicationTests.Run },
+				{ path = "ci/integration/tests/config.luau", Run = ControlTests.Run },
+				{ path = "ci/integration/tests/source-approval.luau", Run = SourceApprovalTests.Run },
+				{ path = "ci/integration/tests/source-promotion.luau", Run = suiteCheck(SourcePromotionTests) },
+				{ path = "ci/integration/tests/request.luau", Run = RequestTests.Run },
+				{ path = "ci/integration/tests/modules.luau", Run = ModuleTests.Run },
 			},
 		},
 		{
 			name = "Receipts",
 			checks = {
-				{ path = "security/receipts/tests/authentication.luau", Run = ReceiptAuthenticationTests.Run },
+				{ path = "ci/security/receipts/tests/authentication.luau", Run = ReceiptAuthenticationTests.Run },
 				{
-					path = "security/receipts/tests",
+					path = "ci/security/receipts/tests",
 					Run = function()
 						ReceiptBundleTests:Run(function(report)
 							table.insert(suiteReports, report)
@@ -170,7 +170,7 @@ function Validate.Run(onStage: ((string, boolean) -> ())?)
 			name = "Release tooling",
 			checks = {
 				{
-					path = "publication/releases/tests",
+					path = "ci/publication/releases/tests",
 					Run = function()
 						VersionTests:Run(function(report)
 							table.insert(suiteReports, report)

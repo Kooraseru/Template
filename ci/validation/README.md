@@ -2,12 +2,12 @@
 
 `run.luau` owns validation stage execution and evidence reporting. The single
 `.github/workflows/ci.yml` workflow owns job orchestration. Run checks locally with
-`bash .github/integration/run.sh validation/run.luau`.
+`bash ci/integration/run.sh ci/validation/run.luau`.
 
 Repository/configuration checks, workflow controls, access policies, canonical
 fingerprint bytes, receipt authentication, and release tooling are validated
 before publication. Tests being migrated to the shared typed contract return
-`Test.new(...)`; their execution and comparisons belong to `libraries/testing/`.
+`Test.new(...)`; their execution and comparisons belong to `ci/libraries/testing/`.
 Policies and operational catalogues are data, not boilerplate manifests required
 for ordinary source modules. Existing JSON fixture readers supply test data; they do not establish compatibility with retired formats.
 
@@ -57,12 +57,12 @@ changing historical releases, tags, or authenticated receipt bytes.
 configuration validators and Luau policy. It reports architecture drift without
 executing downstream code. Its hosted adapter is `.github/workflows/template.yml`,
 independent of CI and removable without altering publication gates. See the
-[conformance contract](../.kero/data/contracts/repository/template-conformance.md).
+[conformance contract](../rules/contracts/repository/template-conformance.md).
 
 For a local checker assessment from this trusted Template checkout:
 
 ```sh
-bash .github/integration/run.sh validation/template.luau /path/to/subject UPSTREAM_COMMIT_SHA
+bash ci/integration/run.sh ci/validation/template.luau /path/to/subject UPSTREAM_COMMIT_SHA
 ```
 
 This is a module check, not an extension workflow run. For workflow execution use

@@ -1,4 +1,4 @@
--- validation/template.luau
+-- ci/validation/template.luau
 --!strict
 
 local Template = {}
@@ -40,7 +40,7 @@ end
 
 function Template.Check(read: Reader, files: { string }): { Finding }
 	local contract =
-		Rules.Entries(Rules.Property(Serde.decode("json", Fs.readFile("validation/ruleset.json")), "template"))
+		Rules.Entries(Rules.Property(Serde.decode("json", Fs.readFile("ci/validation/ruleset.json")), "template"))
 	local inventory: { [string]: boolean } = {}
 	local findings: { Finding } = {}
 
@@ -87,7 +87,7 @@ function Template.Check(read: Reader, files: { string }): { Finding }
 		local path = tostring(document.path)
 		check(path, function()
 			local data = Serde.decode(tostring(document.format) :: "yaml", read(path))
-			local definitions = Rules.Read("validation/ruleset.json", tostring(document.rules))
+			local definitions = Rules.Read("ci/validation/ruleset.json", tostring(document.rules))
 			Rules.Validate(data, definitions)
 			Workflows.CheckBoundaries(data)
 			Workflows.CheckActions(data, assert(definitions.actions), function(actionPath)
