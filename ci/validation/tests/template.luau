@@ -1,4 +1,4 @@
--- validation/tests/template.luau
+-- ci/validation/tests/template.luau
 --!strict
 
 local Test = require("@testing")
@@ -51,7 +51,7 @@ local definition: Test.Definition<Input, boolean> = {
 			Name = "Recursive local actions are drift",
 			Input = {
 				Replace = {
-					[".github/actions/run-luau/action.yml"] = "runs:\n  using: composite\n  steps:\n    - uses: ./.github/actions/run-luau\n",
+					[".github/actions/setup-lune/action.yml"] = "runs:\n  using: composite\n  steps:\n    - uses: ./.github/actions/setup-lune\n",
 				},
 			},
 			Expected = false,
@@ -68,7 +68,7 @@ local definition: Test.Definition<Input, boolean> = {
 			Expected = false,
 		},
 
-		{ Name = "Missing infrastructure is drift", Input = { Remove = "security/receipts" }, Expected = false },
+		{ Name = "Missing infrastructure is drift", Input = { Remove = "ci/security/receipts" }, Expected = false },
 		{
 			Name = "Missing CI orchestrator is drift",
 			Input = { Remove = ".github/workflows/ci.yml" },
@@ -81,7 +81,7 @@ local definition: Test.Definition<Input, boolean> = {
 		},
 		{
 			Name = "Copied downstream rules cannot override upstream rules",
-			Input = { Replace = { ["validation/ruleset.json"] = "{}" } },
+			Input = { Replace = { ["ci/validation/ruleset.json"] = "{}" } },
 			Expected = true,
 		},
 		{
@@ -117,7 +117,7 @@ local definition: Test.Definition<Input, boolean> = {
 		{
 			Name = "Lua infrastructure must use a returned module",
 			Input = {
-				Replace = { ["fabricator/workflow.luau"] = "-- fabricator/workflow.luau\n--!strict\nlocal value = 1\n" },
+				Replace = { ["ci/fabricator/workflow.luau"] = "-- ci/fabricator/workflow.luau\n--!strict\nlocal value = 1\n" },
 			},
 			Expected = false,
 		},
@@ -125,7 +125,7 @@ local definition: Test.Definition<Input, boolean> = {
 			Name = "Downstream modules are inspected without execution",
 			Input = {
 				Replace = {
-					["fabricator/workflow.luau"] = "-- fabricator/workflow.luau\n--!strict\n\nlocal Workflow = {}\n\nfunction Workflow.Run()\n    error('Downstream code must never execute during conformance')\nend\n\nreturn Workflow\n",
+					["ci/fabricator/workflow.luau"] = "-- ci/fabricator/workflow.luau\n--!strict\n\nlocal Workflow = {}\n\nfunction Workflow.Run()\n    error('Downstream code must never execute during conformance')\nend\n\nreturn Workflow\n",
 				},
 			},
 			Expected = true,

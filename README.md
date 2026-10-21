@@ -5,9 +5,12 @@ pull requests belong on `source`; `main` contains generated publication output.
 The template does not assume a particular application, organization, or language.
 
 For the agreed boundaries and publication rules, read
-[the template architecture](.kero/data/contracts/repository/template-architecture.md).
+[the template architecture](rules/contracts/repository/template-architecture.md).
 
 ## Running CI locally
+
+Run `bash ci/run.sh validate` for repository checks or `bash ci/run.sh rules sync` to regenerate ignored `AGENTS.md`. The public CI interface is `ci/run.sh` -> `ci/main.luau`; the GitHub workflow invokes that interface from independent permission-scoped jobs.
+
 
 Use [GitHub Local Actions for VS Code](https://marketplace.visualstudio.com/items?itemName=SanjulaGanepola.github-local-actions)
 to run `.github/workflows/ci.yml` locally through `act`. Install `act` and Docker
@@ -16,7 +19,7 @@ extension's Workflows view. Configure event payloads, runners, inputs, and artif
 options through the extension as needed.
 
 The same workflow defines local and hosted CI. Its operations belong to the
-infrastructure directories below. `fabricator/workflow.luau` executes a selected
+infrastructure directories below. `ci/fabricator/workflow.luau` executes a selected
 build stage; `.github/workflows/ci.yml` owns job orchestration.
 Local runs are artifact-only. They must not publish remotely.
 Native platform jobs still require verification on their appropriate GitHub
@@ -26,22 +29,22 @@ runners; sharing a workflow does not guarantee identical host environments.
 
 Open Actions, select CI, and choose Run workflow. The twelve dropdowns select
 operations, PRs, validation suites, build targets, output generation, cache behavior
-and gate overrides. Two optional paired inputs select a SemVer version and source SHA. See [the CI control panel](.github/integration/README.md) for details.
+and gate overrides. Two optional paired inputs select a SemVer version and source SHA. See [the CI control panel](ci/integration/README.md) for details.
 
 ## Repository responsibilities
 
 - `.github/workflows/ci.yml`: triggers, jobs, dependencies, permissions, and publication gates.
-- `.github/actions/`: reusable operation steps.
-- `.github/integration/`: GitHub requests, manual controls, approvals, and stage adapters.
+- `.github/actions/`: reusable environment setup steps.
+- `ci/integration/`: GitHub requests, manual controls, approvals, and stage adapters.
 - `config/`: project configuration and tool settings.
-- `libraries/`: reusable bootstrap utilities, development registry, and typed testing.
-- `validation/`: repository, policy, and declared-contract validation.
-- `fabricator/`: target execution, images, toolchains, and distribution packaging.
-- `security/`: publication access and trusted build receipts.
-- `publication/`: release, generated repository, and documentation outputs.
+- `ci/libraries/`: reusable bootstrap utilities, development registry, and typed testing.
+- `ci/validation/`: repository, policy, and declared-contract validation.
+- `ci/fabricator/`: target execution, images, toolchains, and distribution packaging.
+- `ci/security/`: publication access and trusted build receipts.
+- `ci/publication/`: release, generated repository, and documentation outputs.
 - `src/`: application-defined APIs, implementation, plugins, Workshop content, and assets when used.
 - `.kero/`: development-tool configuration and state.
-- `.kero/data/`: repository contracts, knowledge, and decisions.
+- `rules/`: repository contracts, knowledge, and decisions.
 - `build/`: disposable generated output, ignored by Git.
 
 Toolchains are optional capabilities. A consumer enables the toolchains and
@@ -52,8 +55,8 @@ validated artifacts after all required checks pass.
 ## Declarative checks
 
 Policies and operational catalogues use JSON or TOML. The shared
-[testing library](libraries/testing/README.md) supplies typed Luau declarations,
-execution, comparisons, and reporting. See [validation](validation/README.md).
+[testing library](ci/libraries/testing/README.md) supplies typed Luau declarations,
+execution, comparisons, and reporting. See [validation](ci/validation/README.md).
 
 ## Configuring a consuming repository
 
@@ -65,9 +68,9 @@ a command needs shell syntax. Place all build output under `build/`.
 Rust and CMake require explicit versions when enabled.
 
 The catalogue offers 24 Linux images and 32 compiler profiles; they are opt-in. Edit
-`build.targets` to select named entries from `fabricator/targets.json`, and select
+`build.targets` to select named entries from `ci/fabricator/targets.json`, and select
 their required images through `images.names`. The validation job checks those
-references before building. See [the image catalogue](fabricator/distribution/images/README.md) for
+references before building. See [the image catalogue](ci/fabricator/distribution/images/README.md) for
 distributions and profiles. Windows and macOS each have x86_64 and ARM64 targets.
 
 Each target compiles a small toolchain fixture before running project commands.
@@ -87,12 +90,12 @@ Application source targets use separate `[[targets]]` entries with explicit `id`
 to build all declared targets, or select their identifiers explicitly. A repository
 with no application targets needs no language folders. See [project configuration](config/README.md).
 
-Edit publication templates under `publication/repo/templates/`. Select commit-based
-explicit public versions and full source SHAs in `publication/releases/versions.toml`;
+Edit publication templates under `ci/publication/repo/templates/`. Select commit-based
+explicit public versions and full source SHAs in `ci/publication/releases/versions.toml`;
 the initial empty list publishes no public version. See
-[versioned releases and source protection](publication/releases/README.md).
-Image Dockerfiles belong under `fabricator/distribution/images/`, with image choices in its catalogue.
-Pages uses Markdown templates under `publication/pages/templates/`.
+[versioned releases and source protection](ci/publication/releases/README.md).
+Image Dockerfiles belong under `ci/fabricator/distribution/images/`, with image choices in its catalogue.
+Pages uses Markdown templates under `ci/publication/pages/templates/`.
 
 Publication uses the current repository's automatically supplied `GITHUB_TOKEN`;
 no PAT, signing key, organization app, or stored secret is required.

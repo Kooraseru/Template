@@ -11,7 +11,8 @@
         "operation": "absent_files",
         "paths": [
           "ci/pipeline.luau",
-          ".github/pipeline.luau"
+          ".github/pipeline.luau",
+          ".github/integration/run.sh"
         ]
       },
       {
@@ -327,11 +328,11 @@
       "paths": [
         {
           "source": "images",
-          "template": "fabricator/distribution/images/{recipe}"
+          "template": "ci/fabricator/distribution/images/{recipe}"
         },
         {
           "source": "images",
-          "template": "fabricator/distribution/images/toolchains/{profile}/Dockerfile"
+          "template": "ci/fabricator/distribution/images/toolchains/{profile}/Dockerfile"
         }
       ],
       "collections": [
@@ -1172,7 +1173,7 @@
         ]
       },
       "controls": {
-        "source": ".github/integration/ruleset.json",
+        "source": "ci/integration/ruleset.json",
         "path": "on.workflow_dispatch.inputs",
         "default_type": "choice",
         "section": "controls"
@@ -1293,116 +1294,116 @@
       ],
       "libraryRoots": [
         "libraries",
-        ".github/integration/config.luau",
-        "security/access/context.luau",
-        "security/access/policy.luau",
-        "fabricator/execute.luau",
-        ".github/integration/request.luau",
-        ".github/integration/pending-receipt.luau",
-        ".github/integration/source-approval.luau",
-        "publication/releases/versions.luau",
-        "security/receipts/identity.luau",
-        "publication/releases/plan.luau",
-        "security/receipts/verification.luau",
-        "security/receipts/authentication.luau",
-        "fabricator/targets.luau",
-        "fabricator/project.luau",
-        "fabricator/coverage.luau",
-        "validation/plugins.luau",
-        "validation/workshop.luau",
-        "publication/releases/client.luau",
-        "publication/releases/distributions.luau",
-        "publication/releases/history.luau",
-        "publication/releases/notes.luau",
-        "publication/releases/render.luau",
-        "publication/releases/tests/fixture.luau",
-        "security/receipts/collection.luau",
-        "security/receipts/hosted.luau"
+        "ci/integration/config.luau",
+        "ci/security/access/context.luau",
+        "ci/security/access/policy.luau",
+        "ci/fabricator/execute.luau",
+        "ci/integration/request.luau",
+        "ci/integration/pending-receipt.luau",
+        "ci/integration/source-approval.luau",
+        "ci/publication/releases/versions.luau",
+        "ci/security/receipts/identity.luau",
+        "ci/publication/releases/plan.luau",
+        "ci/security/receipts/verification.luau",
+        "ci/security/receipts/authentication.luau",
+        "ci/fabricator/targets.luau",
+        "ci/fabricator/project.luau",
+        "ci/fabricator/coverage.luau",
+        "ci/validation/plugins.luau",
+        "ci/validation/workshop.luau",
+        "ci/publication/releases/client.luau",
+        "ci/publication/releases/distributions.luau",
+        "ci/publication/releases/history.luau",
+        "ci/publication/releases/notes.luau",
+        "ci/publication/releases/render.luau",
+        "ci/publication/releases/tests/fixture.luau",
+        "ci/security/receipts/collection.luau",
+        "ci/security/receipts/hosted.luau"
       ]
     },
     "cases": [
       {
         "name": "returned table module",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
         "valid": true
       },
       {
         "name": "missing returned module",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\n\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\n\n",
         "valid": false
       },
       {
         "name": "bare executable script",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\nprint(\"passed\")\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\nprint(\"passed\")\n",
         "valid": false
       },
       {
         "name": "missing public Run",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Check()\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Check()\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "public camelCase function",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.run()\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.run()\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "lowercase required binding",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nlocal files = require(\"@lune/fs\")\n\nfunction Example.Run()\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nlocal files = require(\"@lune/fs\")\n\nfunction Example.Run()\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "module logging",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n print(\"done\")\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n print(\"done\")\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "cast to any",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n local value = {} :: any\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n local value = {} :: any\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "parenthesized cast to any",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n local value = {} :: (any)\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n local value = {} :: (any)\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "comments and strings are data",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\n-- print(\"done\") and value :: any\n--[=[ function Example.fake() print() ]=]\nfunction Example.Run()\n local text = [=[print(\"done\") :: any]=]\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\n-- print(\"done\") and value :: any\n--[=[ function Example.fake() print() ]=]\nfunction Example.Run()\n local text = [=[print(\"done\") :: any]=]\nend\n\nreturn Example\n",
         "valid": true
       },
       {
         "name": "private helper naming",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nlocal function PrivateHelper() end\nfunction Example.Run()\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nlocal function PrivateHelper() end\nfunction Example.Run()\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "interpolated logging",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n local text = `value {print(\"done\")}`\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\n local text = `value {print(\"done\")}`\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "wrong path label",
-        "file": "validation/example.luau",
+        "file": "ci/validation/example.luau",
         "source": "-- other.luau\n--!strict\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
         "valid": false
       },
       {
         "name": "missing strict directive",
-        "file": "validation/example.luau",
-        "source": "-- validation/example.luau\n\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
+        "file": "ci/validation/example.luau",
+        "source": "-- ci/validation/example.luau\n\n\nlocal Example = {}\n\nfunction Example.Run()\nend\n\nreturn Example\n",
         "valid": false
       }
     ]
@@ -1410,17 +1411,22 @@
   "template": {
     "required": [
       ".github/workflows/ci.yml",
+      "ci/run.sh",
+      "ci/main.luau",
       "config/project.toml",
-      "libraries/bootstrap",
-      "libraries/registry",
-      "libraries/testing",
-      "validation",
-      "fabricator",
-      "security/access",
-      "security/receipts",
-      "publication/repo",
-      "publication/pages",
-      "publication/releases",
+      "rules/README.md",
+      "rules/general.md",
+      "rules/languages/rust/README.md",
+      "ci/libraries/bootstrap",
+      "ci/libraries/registry",
+      "ci/libraries/testing",
+      "ci/validation",
+      "ci/fabricator",
+      "ci/security/access",
+      "ci/security/receipts",
+      "ci/publication/repo",
+      "ci/publication/pages",
+      "ci/publication/releases",
       "src",
       ".gitignore"
     ],
@@ -1432,22 +1438,18 @@
       }
     ],
     "module_roots": [
-      ".github/integration/",
-      "config/tools/",
-      "libraries/",
-      "validation/",
-      "fabricator/",
-      "security/",
-      "publication/"
+      "ci/integration/",
+      "ci/libraries/",
+      "ci/validation/",
+      "ci/fabricator/",
+      "ci/security/",
+      "ci/publication/"
     ],
     "root_directories": [
       "config",
-      "libraries",
-      "validation",
+      "rules",
       "src",
-      "fabricator",
-      "security",
-      "publication"
+      "ci"
     ]
   }
 }

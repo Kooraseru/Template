@@ -6,7 +6,7 @@
   "lintErrors": true,
   "typeErrors": true,
   "aliases": {
-    "testing": "./libraries/testing/test",
-    "lune": "./.luau-lsp/lune/"
+    "testing": "../../ci/libraries/testing/test",
+    "lune": "./luau-lsp/lune/"
   }
 }

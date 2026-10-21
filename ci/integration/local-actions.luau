@@ -1,4 +1,4 @@
--- .github/integration/local-actions.luau
+-- ci/integration/local-actions.luau
 --!strict
 
 local LocalActions = {}
@@ -17,7 +17,7 @@ local Stdio = require("@lune/stdio")
 function LocalActions.Request(operation: string, workflow: string?): string
 
 	assert(operation == "status" or operation == "start", "expected status or start")
-	local root = ".kero/.runtime/local-actions/"
+	local root = "build/runtime/local-actions/"
 	assert(Fs.isFile(root .. "session.json"), "Local Actions bridge is not active in this VS Code workspace")
 	local session = Serde.decode("json", Fs.readFile(root .. "session.json")) :: { token: string }
 	local id = Serde.hash("sha256", Datetime.now():toIsoDate() .. tostring(math.random())):sub(1, 32)

@@ -42,7 +42,7 @@ names = [
 # Run target probes and project build commands, then package outputs.
 [build]
 runner = "ubuntu-latest"
-# Compiler targets are opt-in; see fabricator/targets.json for all 32 profiles.
+# Compiler targets are opt-in; see ci/fabricator/targets.json for all 32 profiles.
 
 # Optional:
 # targets = ["alpine-gcc-x64", "windows-msvc-x64", "macos-clang-arm64"]

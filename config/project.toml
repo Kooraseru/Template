@@ -11,7 +11,7 @@
 [repository]
 enabled = true
 publish = true
-include = ["src"]
+include = ["src", "rules"]
 
 
 # Documentation
@@ -25,7 +25,7 @@ publish = true
 
 
 # Releases
-# Generate replaceable Release and Pre-Release versions from publication/releases/versions.toml.
+# Generate replaceable Release and Pre-Release versions from ci/publication/releases/versions.toml.
 # Each public version selects a full source SHA; an empty list publishes none.
 [release]
 enabled = true

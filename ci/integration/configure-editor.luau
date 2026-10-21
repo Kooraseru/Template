@@ -1,4 +1,4 @@
--- .github/integration/configure-editor.luau
+-- ci/integration/configure-editor.luau
 --!strict
 
 local ConfigureEditor = {}
