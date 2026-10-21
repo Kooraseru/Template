@@ -1,4 +1,4 @@
--- libraries/bootstrap/documents.luau
+-- ci/libraries/bootstrap/documents.luau
 --!strict
 
 local Documents = {}

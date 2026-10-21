@@ -1,4 +1,4 @@
--- libraries/bootstrap/json.luau
+-- ci/libraries/bootstrap/json.luau
 --!strict
 
 local Json = {}

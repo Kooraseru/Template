@@ -1,4 +1,4 @@
--- libraries/bootstrap/inputs.luau
+-- ci/libraries/bootstrap/inputs.luau
 --!strict
 
 local Inputs = {}

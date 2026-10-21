@@ -1,4 +1,4 @@
--- libraries/bootstrap/artifacts.luau
+-- ci/libraries/bootstrap/artifacts.luau
 --!strict
 
 local Artifacts = {}
@@ -8,7 +8,7 @@ local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local Config = require("../registry/config")
 local Rules = require("../registry/rules")
-local definition = Rules.Read("fabricator/distribution/ruleset.json", "manifest.rules")
+local definition = Rules.Read("ci/fabricator/distribution/ruleset.json", "manifest.rules")
 --# Functions
 
 --# Functions

@@ -1,4 +1,4 @@
--- libraries/bootstrap/base64.luau
+-- ci/libraries/bootstrap/base64.luau
 --!strict
 
 local Base64 = {}

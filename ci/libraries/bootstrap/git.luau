@@ -1,4 +1,4 @@
--- libraries/bootstrap/git.luau
+-- ci/libraries/bootstrap/git.luau
 --!strict
 
 local Git = {}

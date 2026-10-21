@@ -1,4 +1,4 @@
--- libraries/bootstrap/commands.luau
+-- ci/libraries/bootstrap/commands.luau
 --!strict
 
 local Commands = {}

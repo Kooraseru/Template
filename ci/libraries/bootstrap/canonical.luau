@@ -1,4 +1,4 @@
--- libraries/bootstrap/canonical.luau
+-- ci/libraries/bootstrap/canonical.luau
 --!strict
 
 local Canonical = {}

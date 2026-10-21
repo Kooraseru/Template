@@ -1,4 +1,4 @@
--- libraries/bootstrap/bytes.luau
+-- ci/libraries/bootstrap/bytes.luau
 --!strict
 
 local Bytes = {}

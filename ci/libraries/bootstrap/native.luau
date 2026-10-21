@@ -1,4 +1,4 @@
--- libraries/bootstrap/native.luau
+-- ci/libraries/bootstrap/native.luau
 --!strict
 
 local Native = {}

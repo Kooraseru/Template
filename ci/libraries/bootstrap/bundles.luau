@@ -1,4 +1,4 @@
--- libraries/bootstrap/bundles.luau
+-- ci/libraries/bootstrap/bundles.luau
 --!strict
 
 local Bundles = {}
