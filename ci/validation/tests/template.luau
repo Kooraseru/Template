@@ -79,6 +79,8 @@ local definition: Test.Definition<Input, boolean> = {
 			Input = { Remove = ".github/workflows/template.yml" },
 			Expected = true,
 		},
+		{ Name = "PowerShell CI wrapper is drift", Input = { Replace = { ["ci/validate.ps1"] = "Write-Host 'bypass'" } }, Expected = false },
+		{ Name = "Generated agent instructions must stay ignored", Input = { Replace = { [".gitignore"] = "/build/\\n" } }, Expected = false },
 		{
 			Name = "Copied downstream rules cannot override upstream rules",
 			Input = { Replace = { ["ci/validation/ruleset.json"] = "{}" } },

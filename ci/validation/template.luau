@@ -102,8 +102,28 @@ function Template.Check(read: Reader, files: { string }): { Finding }
 		Config.Validate(Project.Combine(repository, source))
 	end)
 
+	check("ci/run.sh", function()
+		local entry = read("ci/run.sh")
+		assert(entry:find("lune run ci/main.luau", 1, true), "Public Bash must invoke the Luau dispatcher.")
+	end)
+
+	check(".github/workflows/ci.yml", function()
+		local script = read(".github/workflows/ci.yml")
+		assert(script:find("bash ci/run.sh", 1, true), "CI must invoke the single command interface.")
+		for _, old in { ".github/integration/run.sh", ".github/actions/run-luau", ".github/actions/setup-native" } do
+			assert(not script:find(old, 1, true), "Retired CI wrapper was invoked: " .. old)
+		end
+	end)
+
+	for path in inventory do
+		if (path:sub(1, 3) == "ci/" or path:sub(1, 8) == ".github/") and path:sub(-4) == ".ps1" then
+			table.insert(findings, { Path = path, Message = "Use the Bash CI entry point rather than PowerShell wrappers." })
+		end
+	end
+
 	check(".gitignore", function()
 		assert(read(".gitignore"):find("/build/", 1, true), "Ignore disposable /build/ output.")
+		assert(read(".gitignore"):find("/AGENTS.md", 1, true), "Ignore generated AGENTS.md.")
 		for path in inventory do
 			assert(path:sub(1, 6) ~= "build/", "Remove tracked disposable build output: " .. path)
 		end
