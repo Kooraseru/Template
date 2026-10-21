@@ -1,4 +1,4 @@
--- publication/releases/build.luau
+-- ci/publication/releases/build.luau
 --!strict
 
 local ReleaseBuild = {}

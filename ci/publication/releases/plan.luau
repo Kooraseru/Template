@@ -1,4 +1,4 @@
--- publication/releases/plan.luau
+-- ci/publication/releases/plan.luau
 --!strict
 
 local Plan = {}
@@ -15,7 +15,7 @@ local GitHub = require("../../libraries/bootstrap/github")
 local Base64 = require("../../libraries/bootstrap/base64")
 local Identity = require("../../security/receipts/identity")
 local Versions = require("./versions")
-local Request = require("../../.github/integration/request")
+local Request = require("../../integration/request")
 
 --# Helpers
 

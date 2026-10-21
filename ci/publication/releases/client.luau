@@ -1,4 +1,4 @@
--- publication/releases/client.luau
+-- ci/publication/releases/client.luau
 --!strict
 
 local Client = {}

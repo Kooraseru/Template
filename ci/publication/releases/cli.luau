@@ -1,4 +1,4 @@
--- publication/releases/cli.luau
+-- ci/publication/releases/cli.luau
 --!strict
 
 local Releases = {}

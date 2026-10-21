@@ -1,4 +1,4 @@
--- publication/releases/distributions.luau
+-- ci/publication/releases/distributions.luau
 --!strict
 
 local Distributions = {}

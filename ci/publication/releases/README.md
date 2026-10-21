@@ -25,7 +25,7 @@ Replace the empty list with entries such as:
 version = "1.3.0-pre.1"
 commit = "<full 40-character source commit SHA>"
 from = "beginning"
-# notes = "publication/releases/records/introduction.md"
+# notes = "ci/publication/releases/records/introduction.md"
 ```
 
 Each commit must belong to source history. Optional `from` defaults to `beginning`;
@@ -86,8 +86,8 @@ Zero required approvals permits a sole admin to merge their own passing PR.
 Admin CLI setup (no token stored in the repository):
 
 ```powershell
-jq '.protection.source_checks' publication/releases/ruleset.json | gh api --method POST repos/OWNER/REPO/rulesets --input -
-jq '.protection.source_admins' publication/releases/ruleset.json | gh api --method POST repos/OWNER/REPO/rulesets --input -
+jq '.protection.source_checks' ci/publication/releases/ruleset.json | gh api --method POST repos/OWNER/REPO/rulesets --input -
+jq '.protection.source_admins' ci/publication/releases/ruleset.json | gh api --method POST repos/OWNER/REPO/rulesets --input -
 ```
 
 Official publication requires these protections. Build and PR checks need no
@@ -98,7 +98,7 @@ restrictions remain authoritative.
 Reference: https://docs.github.com/en/rest/repos/rules
 
 GitHub hides bypass actors from ordinary workflow tokens. After setting up the
-rulesets, a repository admin runs `bash .github/integration/run.sh publication/releases/cli.luau attest-protection`
+rulesets, a repository admin runs `bash ci/integration/run.sh ci/publication/releases/cli.luau attest-protection`
 using their existing GitHub CLI login. This enrolls a non-secret
 `CI_SOURCE_PROTECTION` repository variable. Publication compares the complete
 admin-verified snapshot against current ruleset IDs, visible contents, and update

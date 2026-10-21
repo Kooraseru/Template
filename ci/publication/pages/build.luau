@@ -1,4 +1,4 @@
--- publication/pages/build.luau
+-- ci/publication/pages/build.luau
 --!strict
 
 local Pages = {}
@@ -44,7 +44,7 @@ function Pages.Run()
 
 	assert(config.pages.enabled, "Pages generation is disabled")
 	Files.Reset("build/pages")
-	render("publication/pages/templates", "build/pages", config.pages.title)
+	render("ci/publication/pages/templates", "build/pages", config.pages.title)
 	assert(Fs.isFile("build/pages/index.html"), "Pages requires an index page")
 end
 

@@ -1,4 +1,4 @@
--- publication/releases/history.luau
+-- ci/publication/releases/history.luau
 --!strict
 
 local History = {}
@@ -40,7 +40,7 @@ function History.Read(selection: C.Value, repository: string?, repoURL: string?)
 	local commits: { C.Value } = {}
 	local identities: { string } = {}
 	local trailers: { [number]: boolean } = {}
-	local rules = D.Required(D.Read("publication/releases/ruleset.json"), "rules")
+	local rules = D.Required(D.Read("ci/publication/releases/ruleset.json"), "rules")
 	for sha in Git.Text({ "rev-list", "--topo-order", range }, cwd):gmatch("[^\n]+") do
 		local data = Git.Text({ "show", "-s", "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%B", sha }, cwd)
 			:split("\0")

@@ -1,4 +1,4 @@
--- publication/releases/notes.luau
+-- ci/publication/releases/notes.luau
 --!strict
 
 local Notes = {}
@@ -84,7 +84,7 @@ function Notes.Build(selection: C.Value, data: History.Data, repoURL: string, ap
 		)
 	if #direct > 0 then
 		local changes: { string } = {}
-		local limit = D.Number(D.Required(D.Read("publication/releases/ruleset.json"), "rules"), "body_commit_limit")
+		local limit = D.Number(D.Required(D.Read("ci/publication/releases/ruleset.json"), "rules"), "body_commit_limit")
 		for index, commit in direct do
 			if index <= limit then
 				table.insert(
