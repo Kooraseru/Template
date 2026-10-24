@@ -36,6 +36,7 @@ else
     if op == "validate" then subject = require("./validation")
     elseif op == "preflight" then subject = require("./preflight")
     elseif op == "template-check" then subject = require("./validation/template")
+    elseif op == "github" then subject = require("./integration/github")
     elseif op == "integration-refresh-prs" then subject = require("./integration/refresh-prs")
     elseif op == "local-actions" then subject = require("./integration/local-actions")
     elseif op == "configure-editor" then subject = require("./integration/configure-editor")

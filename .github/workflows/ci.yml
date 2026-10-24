@@ -213,6 +213,11 @@ jobs:
       - name: Analyze all saved Luau sources
         shell: bash
         run: bash ci/run.sh preflight run
+      - name: Validate declared GitHub integrations
+        shell: bash
+        run: |
+          bash ci/run.sh github labels validate
+          bash ci/run.sh github projects validate
   refresh-prs:
     name: Maintenance / Pull request choices
     if: github.ref == 'refs/heads/source' && github.event_name != 'workflow_dispatch' && vars.CI_WORKFLOW_SYNC_ENABLED == 'true'
