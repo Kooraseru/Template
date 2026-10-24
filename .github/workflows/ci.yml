@@ -338,7 +338,7 @@ jobs:
       - name: Cache / Restore image archive
         id: image-cache
         if: inputs.cache_policy != 'Rebuild images and outputs'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: build/images/${{ matrix.name }}
           key: ci-image-${{ matrix.artifact }}
@@ -352,7 +352,7 @@ jobs:
         run: bash ci/run.sh images-build "$IMAGE_NAME"
       - name: Cache / Store image archive
         if: steps.image-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: build/images/${{ matrix.name }}
           key: ci-image-${{ matrix.artifact }}
