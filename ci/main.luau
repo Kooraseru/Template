@@ -34,6 +34,7 @@ elseif op == "release-publish" then
 else
     local subject
     if op == "validate" then subject = require("./validation")
+    elseif op == "preflight" then subject = require("./preflight")
     elseif op == "template-check" then subject = require("./validation/template")
     elseif op == "integration-refresh-prs" then subject = require("./integration/refresh-prs")
     elseif op == "local-actions" then subject = require("./integration/local-actions")

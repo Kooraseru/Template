@@ -8,6 +8,8 @@ The repository has one public CI command interface:
 
 ```bash
 bash ci/run.sh validate
+bash ci/run.sh preflight list
+bash ci/run.sh preflight run
 bash ci/run.sh rules sync
 bash ci/run.sh rules check
 bash ci/run.sh configure-editor
@@ -15,7 +17,7 @@ bash ci/run.sh local-actions status
 bash ci/run.sh native-compat
 ```
 
-`ci/run.sh` launches `ci/main.luau`, which explicitly dispatches supported operations to domain modules. These do not grant publication authority. GitHub Actions invokes the same interface from jobs with separate permission and evidence boundaries. A local `validate` verifies repository contracts; a hosted run provides platform and publication-specific evidence. No PowerShell wrappers or mandatory application compiler are needed for ordinary validation.
+`ci/run.sh` launches `ci/main.luau`, which explicitly dispatches supported operations to domain modules. These do not grant publication authority. GitHub Actions invokes the same interface from jobs with separate permission and evidence boundaries. A local `validate` verifies repository contracts; `preflight` inspects saved Luau source and reports missing tooling as unavailable; a hosted run provides platform and publication-specific evidence. No PowerShell wrappers or mandatory application compiler are needed for ordinary validation.
 
 The command-line GitHub Local Actions editor bridge and its requirements are described in [local testing](rules/contracts/repository/local-testing.md). Use its VS Code integration to get extension-owned local workflow History; ordinary Bash validation does not create that History.
 
