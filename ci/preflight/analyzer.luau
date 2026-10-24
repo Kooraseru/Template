@@ -37,8 +37,10 @@ local function parseDiagnostics(output: string, fatal: boolean): { Finding }
         local path, row, column, category, message =
             line:match("^(.+)%((%d+),(%d+)%):%s*([^:]+):%s*(.*)$")
         if path and row and column and category and message then
+            local severity: "error" | "warning" =
+                if fatal or category == "TypeError" or category == "SyntaxError" then "error" else "warning"
             table.insert(findings, {
-                severity = if fatal or category == "TypeError" or category == "SyntaxError" then "error" else "warning",
+                severity = severity,
                 path = path:gsub("\\", "/"),
                 line = tonumber(row),
                 column = tonumber(column),
@@ -56,7 +58,9 @@ function Analyzer.Run(): Outcome
     end
 
     local program = Process.env.CI_LUAU_ANALYZER or "luau-lsp"
-    local available, probe = pcall(Process.exec, program, { "--version" })
+    local available, probe = pcall(function()
+        return Process.exec(program, { "--version" })
+    end)
     if not available or not probe.ok then
         return unavailable(
             "Luau analyzer unavailable; install luau-lsp or set CI_LUAU_ANALYZER to its executable",
@@ -64,31 +68,55 @@ function Analyzer.Run(): Outcome
         )
     end
 
-    local arguments = {
-        "analyze",
-        "--platform=standard",
-        "--flag:LuauSolverV2=true",
-        "--base-luaurc=" .. Process.cwd:gsub("[/\\]+$", "") .. "/config/luau/.luaurc",
-        "--settings=config/luau/luau-lsp/settings.json",
+    -- Every saved source is checked in its owning language environment.
+    -- The rule examples intentionally use Roblox globals; CI itself uses Lune.
+    local realms: { { platform: string, files: { string } } } = {
+        { platform = "standard", files = {} },
+        { platform = "roblox", files = {} },
     }
     for _, path in snapshot.files do
-        table.insert(arguments, path)
+        local realm = if path:match("^rules/languages/luau/structures/.+/examples/") then realms[2] else realms[1]
+        table.insert(realm.files, path)
     end
 
-    local completed, execution = pcall(Process.exec, program, arguments)
-    if not completed then
-        return unavailable("Luau analysis could not execute: " .. tostring(execution), #snapshot.files)
-    end
-    local findings = parseDiagnostics(execution.stdout .. "\n" .. execution.stderr, not execution.ok)
-    if not execution.ok and #findings == 0 then
-        table.insert(findings, {
-            severity = "error",
-            message = "Luau analysis failed: " .. execution.stderr .. execution.stdout,
-        })
+    local findings: { Finding } = {}
+    local failed = false
+    for _, realm in realms do
+        if #realm.files == 0 then
+            continue
+        end
+        local arguments = {
+            "analyze",
+            "--platform=" .. realm.platform,
+            "--flag:LuauSolverV2=true",
+            "--base-luaurc=" .. Process.cwd:gsub("[/\\\\]+$", "") .. "/config/luau/.luaurc",
+            "--settings=config/luau/luau-lsp/settings.json",
+        }
+        for _, path in realm.files do
+            table.insert(arguments, path)
+        end
+        local completed, execution = pcall(function()
+            return Process.exec(program, arguments)
+        end)
+        if not completed then
+            return unavailable("Luau analysis could not execute: " .. tostring(execution), #snapshot.files)
+        end
+        for _, finding in parseDiagnostics(execution.stdout .. "\\n" .. execution.stderr, not execution.ok) do
+            table.insert(findings, finding)
+        end
+        if not execution.ok then
+            failed = true
+            if #parseDiagnostics(execution.stdout .. "\\n" .. execution.stderr, true) == 0 then
+                table.insert(findings, {
+                    severity = "error",
+                    message = "Luau " .. realm.platform .. " analysis failed: " .. execution.stderr .. execution.stdout,
+                })
+            end
+        end
     end
     return {
         id = "luau.analysis",
-        status = if execution.ok then "passed" else "failed",
+        status = if failed then "failed" else "passed",
         findings = findings,
         source_count = #snapshot.files,
     }

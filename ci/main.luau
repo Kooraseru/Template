@@ -61,9 +61,15 @@ else
     local function stage(name: string, opening: boolean)
         Stdio.write(if opening then "::group::Validate / " .. name .. "\n" else "::endgroup::\n")
     end
-    if subject.Cases then
-        subject:Run()
+    if op == "validate" then
+        require("./validation").Run(stage)
     else
-        if op == "validate" then subject.Run(stage) else subject.Run(forwarded) end
+        -- Resolve one shared shape at the dispatch boundary, not an impossible
+        -- union of unrelated application-specific function signatures.
+        local module: unknown = subject
+        if type(module) ~= "table" then error("operation module must be a table") end
+        local run: unknown = (module :: { [string]: unknown }).Run
+        if type(run) ~= "function" then error("operation module is missing Run") end
+        (run :: ({ string }) -> ())(forwarded)
     end
 end

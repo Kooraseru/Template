@@ -13,9 +13,11 @@ export type Snapshot = {
 }
 
 function Inventory.Read(): Snapshot
-    local ok, execution = pcall(Process.exec, "git", {
-        "ls-files", "-co", "--exclude-standard", "--deduplicate", "-z", "--", "*.luau",
-    })
+    local ok, execution = pcall(function()
+        return Process.exec("git", {
+            "ls-files", "-co", "--exclude-standard", "--deduplicate", "-z", "--", "*.luau",
+        })
+    end)
     if not ok then
         return { files = {}, error = "cannot inspect repository inventory: " .. tostring(execution) }
     end
