@@ -1,25 +1,25 @@
 # Project configuration
 
 `project.toml` controls repository, Pages, and release publication.
-`src/build.toml` owns application targets, compiler requirements, environment
+`source/build.toml` owns application targets, compiler requirements, environment
 selections, commands, and package contents. Native dependencies and lockfiles
 stay alongside their source manifests. The template does not require application source or a
 specific language. `source` is authored; `main` is generated after authorization.
 
 ## Source-owned build configuration
 
-The following declarations belong in `src/build.toml`:
+The following declarations belong in `source/build.toml`:
 
 ```toml
 [[targets]]
 id = "application"
 system = "cargo"
-path = "src/cargo"
+path = "source/cargo"
 
 [[targets]]
 id = "native-library"
 system = "cmake"
-path = "src/cpp/native-library"
+path = "source/cpp/native-library"
 ```
 
 Target identifiers are unique and safe as output directory names. Paths are

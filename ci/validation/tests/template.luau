@@ -59,7 +59,7 @@ local definition: Test.Definition<Input, boolean> = {
 
 		{
 			Name = "Additional language source is permitted",
-			Input = { Replace = { ["src/go/main.go"] = "package main" } },
+			Input = { Replace = { ["source/go/main.go"] = "package main" } },
 			Expected = true,
 		},
 		{
@@ -93,12 +93,12 @@ local definition: Test.Definition<Input, boolean> = {
 		},
 		{
 			Name = "Application may select its own build commands",
-			Input = { Replace = { ["src/build.toml"] = "[build]\ncommands = [['my-builder', 'compile']]\n" } },
+			Input = { Replace = { ["source/build.toml"] = "[build]\ncommands = [['my-builder', 'compile']]\n" } },
 			Expected = true,
 		},
 		{
 			Name = "Malformed application build shape is drift",
-			Input = { Replace = { ["src/build.toml"] = "build = 42\n" } },
+			Input = { Replace = { ["source/build.toml"] = "build = 42\n" } },
 			Expected = false,
 		},
 		{

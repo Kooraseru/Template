@@ -34,7 +34,7 @@ The command-line GitHub Local Actions editor bridge and its requirements are des
 | `ci/security/` | Publication authorization and signed build receipts |
 | `ci/publication/` | Generated repository, documentation, and release publication |
 | `config/` | Project publication and explicitly located developer-tool settings |
-| `src/` | Optional application code and `build.toml` |
+| `source/` | Optional application code and `build.toml` |
 | `rules/` | Tracked Markdown instructions, language guidance, and repository contracts |
 | `build/` | Generated outputs and runtime state, Git-ignored |
 
@@ -42,12 +42,12 @@ The command-line GitHub Local Actions editor bridge and its requirements are des
 
 ## Application builds
 
-`config/project.toml` owns repository, Pages, and release publication toggles. `src/build.toml` owns application targets and compiler requirements. It may contain zero targets.
+`config/project.toml` owns repository, Pages, and release publication toggles. `source/build.toml` owns application targets and compiler requirements. It may contain zero targets.
 
-For an optional Rust application, keep all Cargo metadata under `src/cargo/`:
+For an optional Rust application, keep all Cargo metadata under `source/cargo/`:
 
 ```text
-src/
+source/
 ├── build.toml
 ├── cargo/
 │   ├── Cargo.toml

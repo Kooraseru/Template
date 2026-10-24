@@ -34,7 +34,7 @@ archives, inspect application-specific formats, load active content, or implemen
 rollback or decoder isolation. Those remain application/runtime responsibilities.
 
 No VRM/VRMA identifiers or application-specific payloads are built into the template.
-Applications own their contracts under `src/api/plugin/` and `src/api/workshop/`
+Applications own their contracts under `source/api/plugin/` and `source/api/workshop/`
 when needed; no empty API or language folders are required here.
 
 ## Luau policy

@@ -30,11 +30,11 @@ function Project.Read(): Shape.Object
 	local source: string?
 
 	if Inputs.ref == "" then
-		if Fs.isFile("src/build.toml") then
-			source = Fs.readFile("src/build.toml")
+		if Fs.isFile("source/build.toml") then
+			source = Fs.readFile("source/build.toml")
 		end
 	else
-		source = Inputs.Read("src/build.toml")
+		source = Inputs.Read("source/build.toml")
 	end
 
 	return Project.Combine(repository, if source then Serde.decode("toml", source) else {})

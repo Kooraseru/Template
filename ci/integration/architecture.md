@@ -27,6 +27,6 @@ Removed execution wrappers (`run-luau`, `setup-native`, `publication/pages/actio
 
 ## Code ownership
 
-`ci/integration/` owns GitHub APIs and controls; `ci/libraries/` owns reusable pure and host-facing modules; `ci/validation/` owns tests and repository shape; `ci/fabricator/` owns explicitly selected application builds; `ci/security/` owns authorization and receipts; `ci/publication/` owns publishing. Application `src/` declarations must never grant publication authority.
+`ci/integration/` owns GitHub APIs and controls; `ci/libraries/` owns reusable pure and host-facing modules; `ci/validation/` owns tests and repository shape; `ci/fabricator/` owns explicitly selected application builds; `ci/security/` owns authorization and receipts; `ci/publication/` owns publishing. Application `source/` declarations must never grant publication authority.
 
 See the tracked [repository architecture contract](../../rules/contracts/repository/template-architecture.md) for the normative boundary.

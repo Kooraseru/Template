@@ -63,7 +63,7 @@ function Template.Check(read: Reader, files: { string }): { Finding }
 			reported[root] = true
 			table.insert(findings, {
 				Path = root,
-				Message = "Place authored code and dependencies under src/, or infrastructure under its owning template subsystem.",
+				Message = "Place authored code and dependencies under source/, or infrastructure under its owning template subsystem.",
 			})
 		end
 	end
@@ -98,7 +98,7 @@ function Template.Check(read: Reader, files: { string }): { Finding }
 
 	check("config/project.toml", function()
 		local repository = Serde.decode("toml", read("config/project.toml"))
-		local source = if inventory["src/build.toml"] then Serde.decode("toml", read("src/build.toml")) else {}
+		local source = if inventory["source/build.toml"] then Serde.decode("toml", read("source/build.toml")) else {}
 		Config.Validate(Project.Combine(repository, source))
 	end)
 

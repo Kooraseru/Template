@@ -1432,7 +1432,7 @@
       "ci/publication/repo",
       "ci/publication/pages",
       "ci/publication/releases",
-      "src",
+      "source",
       ".gitignore"
     ],
     "documents": [
@@ -1453,7 +1453,7 @@
     "root_directories": [
       "config",
       "rules",
-      "src",
+      "source",
       "ci"
     ]
   }

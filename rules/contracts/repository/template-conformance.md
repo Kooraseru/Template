@@ -25,7 +25,7 @@ Check tracked infrastructure responsibilities, required CI stages and publicatio
 boundaries, referenced local actions, module structure, source ownership of build
 settings, repository ownership of publication settings and disposable build output.
 Authored directories belong to the existing architecture. Hidden tooling metadata
-is permitted. Application source under `src/`, its language, dependencies, native
+is permitted. Application source under `source/`, its language, dependencies, native
 manifests and configured commands may differ between projects.
 
 The checker reads the downstream checkout as data. It never requires downstream

@@ -1,0 +1,16 @@
+# Source-owned application build declarations.
+# This template has no application, compiler profile, or buildable host by default.
+# Declare only implementations actually present under source/.
+[images]
+enabled = false
+names = []
+
+[build]
+runner = "ubuntu-latest"
+
+# When an application is added, select real projects and environments here.
+# Build manifests and lockfiles remain beside the implementation.
+# [[targets]]
+# id = "application"
+# system = "cargo"
+# path = "source/cargo"

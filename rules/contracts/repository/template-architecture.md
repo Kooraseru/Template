@@ -37,10 +37,10 @@ Template conformance is owned by [the conformance contract](template-conformance
 - `ci/publication/`: generated repository, Pages, and releases
 - `config/`: repository and developer-tool configuration
 - `rules/`: tracked Markdown guidance; ignored `AGENTS.md` is generated locally
-- `src/`: optional application implementation and `build.toml`
+- `source/`: optional application implementation and `build.toml`
 - `build/`: disposable Git-ignored output and local bridge state
 
-`src/build.toml` controls application compilation, selected environments, and package paths. A Rust consumer places its entire optional Cargo manifest/lockfile/config under `src/cargo/`. The fabricator uses explicit paths. `config/project.toml` controls publication. Source declarations cannot grant signing or publishing authority.
+`source/build.toml` controls application compilation, selected environments, and package paths. A Rust consumer places its entire optional Cargo manifest/lockfile/config under `source/cargo/`. The fabricator uses explicit paths. `config/project.toml` controls publication. Source declarations cannot grant signing or publishing authority.
 
 No mandatory language folder, compiler smoke project, root Cargo manifest, PowerShell entry points, or second AI rule runtime.
 

@@ -11,7 +11,7 @@
 [repository]
 enabled = true
 publish = true
-include = ["src", "rules"]
+include = ["source", "rules"]
 
 
 # Documentation
@@ -32,4 +32,4 @@ enabled = true
 publish = true
 
 
-# Application build and environment selections live in src/build.toml.
+# Application build and environment selections live in source/build.toml.
