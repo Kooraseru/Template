@@ -5,9 +5,9 @@ local Client = {}
 
 --# Modules
 
-local Commands = require("../../libraries/bootstrap/commands")
-local Canonical = require("../../libraries/bootstrap/canonical")
-local Json = require("../../libraries/bootstrap/json")
+local Commands = require("../../utilities/commands")
+local Canonical = require("../../utilities/canonical")
+local Json = require("../../utilities/json")
 local Task = require("@lune/task")
 
 --# Types

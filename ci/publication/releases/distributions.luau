@@ -7,10 +7,10 @@ local Distributions = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local D = require("../../libraries/bootstrap/documents")
-local C = require("../../libraries/bootstrap/canonical")
-local Json = require("../../libraries/bootstrap/json")
-local Bundles = require("../../libraries/bootstrap/bundles")
+local D = require("../../utilities/documents")
+local C = require("../../utilities/canonical")
+local Json = require("../../utilities/json")
+local Bundles = require("../../utilities/bundles")
 
 --# Functions
 

@@ -8,10 +8,10 @@ local RefreshPRs = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local GitHub = require("../libraries/bootstrap/github")
+local GitHub = require("../utilities/github")
 local Request = require("./request")
-local Rules = require("../libraries/registry/rules")
-local Base64 = require("../libraries/bootstrap/base64")
+local Rules = require("../validation/rules")
+local Base64 = require("../utilities/base64")
 
 --# Types
 

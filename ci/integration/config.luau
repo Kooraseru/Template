@@ -8,8 +8,8 @@ local Control = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Inputs = require("../libraries/bootstrap/inputs")
-local Rules = require("../libraries/registry/rules")
+local Inputs = require("../utilities/inputs")
+local Rules = require("../validation/rules")
 
 --# Types
 

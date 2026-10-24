@@ -5,10 +5,10 @@ local Notes = {}
 
 --# Modules
 
-local Json = require("../../libraries/bootstrap/json")
+local Json = require("../../utilities/json")
 local Fs = require("@lune/fs")
-local C = require("../../libraries/bootstrap/canonical")
-local D = require("../../libraries/bootstrap/documents")
+local C = require("../../utilities/canonical")
+local D = require("../../utilities/documents")
 local History = require("./history")
 local Client = require("./client")
 

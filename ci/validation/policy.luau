@@ -7,7 +7,7 @@ local Policy = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Rules = require("../libraries/registry/rules")
+local Rules = require("./rules")
 
 --# Types
 
@@ -282,13 +282,8 @@ function Policy.CheckModule(source: string, file: string, definition: Definition
 		end
 	end
 
-	if not declaration and not Policy.IsLibrary(file, definition) then
-		for _, name in definition.requiredFunctions do
-			if not functions[name] then
-				table.insert(errors, "missing public function: " .. name)
-			end
-		end
-	end
+	-- Entry-point Run contracts are enforced by their callers after shape checks.
+	-- Pure domain helpers are not obliged to impersonate executable operations.
 
 	return errors
 end

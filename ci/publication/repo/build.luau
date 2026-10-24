@@ -8,8 +8,8 @@ local Repository = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Config = require("../../libraries/registry/config")
-local Files = require("../../libraries/bootstrap/files")
+local Config = require("../../fabricator/config")
+local Files = require("../../utilities/files")
 
 --# Types
 

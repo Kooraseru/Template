@@ -7,8 +7,8 @@ local Pages = {}
 
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
-local Files = require("../../libraries/bootstrap/files")
-local Config = require("../../libraries/registry/config")
+local Files = require("../../utilities/files")
+local Config = require("../../fabricator/config")
 
 --# Helpers
 

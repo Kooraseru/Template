@@ -7,7 +7,7 @@ local Definitions = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Shape = require("../../libraries/registry/shape")
+local Shape = require("../../utilities/shape")
 
 --# Types
 

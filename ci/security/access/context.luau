@@ -8,7 +8,7 @@ local Context = {}
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local Policy = require("./policy")
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../../validation/rules")
 local Publication = require("../../integration/publication")
 
 --# Functions

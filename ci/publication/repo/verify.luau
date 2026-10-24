@@ -8,7 +8,7 @@ local VerifyRepository = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../../validation/rules")
 
 --# Functions
 

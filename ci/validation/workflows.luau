@@ -7,7 +7,7 @@ local Workflows = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Rules = require("../libraries/registry/rules")
+local Rules = require("./rules")
 
 --# Types
 

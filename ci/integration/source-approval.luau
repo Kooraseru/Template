@@ -9,8 +9,8 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Request = require("./request")
-local GitHub = require("../libraries/bootstrap/github")
-local Rules = require("../libraries/registry/rules")
+local GitHub = require("../utilities/github")
+local Rules = require("../validation/rules")
 
 --# Types
 

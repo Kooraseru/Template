@@ -1269,7 +1269,7 @@
     "rules": {
       "roots": [
         "ci/integration",
-        "ci/libraries",
+        "ci/utilities",
         "ci/validation",
         "ci/fabricator",
         "ci/security",
@@ -1292,7 +1292,7 @@
         "any"
       ],
       "libraryRoots": [
-        "ci/libraries",
+        "ci/utilities",
         "ci/integration/tests",
         "ci/fabricator/tests",
         "ci/validation/tests",
@@ -1420,9 +1420,7 @@
       "ci/main.luau",
       "config/project.toml",
       "rules/general.md",
-      "ci/libraries/bootstrap",
-      "ci/libraries/registry",
-      "ci/libraries/testing",
+      "ci/utilities",
       "ci/validation",
       "ci/fabricator",
       "ci/security/access",
@@ -1442,7 +1440,7 @@
     ],
     "module_roots": [
       "ci/integration/",
-      "ci/libraries/",
+      "ci/utilities/",
       "ci/validation/",
       "ci/fabricator/",
       "ci/security/",

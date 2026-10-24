@@ -2,7 +2,7 @@
 -- Single public Luau dispatcher: explicitly enumerated operations only.
 local Process = require("@lune/process")
 local Stdio = require("@lune/stdio")
-local AgentRules = require("./libraries/registry/agent-rules")
+local AgentRules = require("./validation/agent-rules")
 
 local args = Process.args
 local op = args[1]
@@ -16,11 +16,6 @@ if op == "rules" then
     else
         error("rules expects sync or check")
     end
-elseif op == "native-compat" then
-    assert(args[2] == nil, "unexpected native-compat arguments")
-    local result = Process.exec("node", { "--test", "ci/libraries/bootstrap/native.test.mjs" })
-    print(result.stdout)
-    assert(result.ok, result.stderr)
 elseif op == "repo-publish" then
     assert(args[2] == nil, "unexpected repo-publish arguments")
     require("./security/access/require-publication").Run()

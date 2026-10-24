@@ -7,7 +7,7 @@ local Gate = {}
 
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Rules = require("../libraries/registry/rules")
+local Rules = require("./rules")
 
 --# Functions
 

@@ -7,9 +7,9 @@ local BuildExecutor = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local ConfigModule = require("../libraries/registry/config")
-local Catalogue = require("../libraries/registry/catalogue")
-local Files = require("../libraries/bootstrap/files")
+local ConfigModule = require("./config")
+local Catalogue = require("./catalogue")
+local Files = require("../utilities/files")
 local Targets = require("./targets")
 
 --# Functions

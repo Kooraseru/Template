@@ -5,9 +5,9 @@ local ReleaseBuild = {}
 
 --# Modules
 
-local Config = require("../../libraries/registry/config")
+local Config = require("../../fabricator/config")
 local Render = require("./render")
-local Documents = require("../../libraries/bootstrap/documents")
+local Documents = require("../../utilities/documents")
 
 --# Functions
 

@@ -9,12 +9,12 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Stdio = require("@lune/stdio")
-local Rules = require("../libraries/registry/rules")
+local Rules = require("./rules")
 local Policy = require("./policy")
 local Workflows = require("./workflows")
 local Project = require("../fabricator/project")
-local Config = require("../libraries/registry/config")
-local Canonical = require("../libraries/bootstrap/canonical")
+local Config = require("../fabricator/config")
+local Canonical = require("../utilities/canonical")
 
 --# Types
 

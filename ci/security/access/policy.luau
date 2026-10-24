@@ -5,7 +5,7 @@ local Policy = {}
 
 --# Modules
 
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../../validation/rules")
 local definition = Rules.Read("ci/security/access/ruleset.json", "publication.rules")
 
 --# Types

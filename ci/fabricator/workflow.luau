@@ -6,8 +6,8 @@ local Build = {}
 --# Modules
 
 local Process = require("@lune/process")
-local Config = require("../libraries/registry/config")
-local Catalogue = require("../libraries/registry/catalogue")
+local Config = require("./config")
+local Catalogue = require("./catalogue")
 local Serde = require("@lune/serde")
 local BuildExecutor = require("./execute")
 local Targets = require("./targets")

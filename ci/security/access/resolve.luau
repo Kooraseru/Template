@@ -7,8 +7,8 @@ local ResolveAccess = {}
 
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Configuration = require("../../libraries/registry/config")
-local Outputs = require("../../libraries/bootstrap/outputs")
+local Configuration = require("../../fabricator/config")
+local Outputs = require("../../utilities/outputs")
 local Context = require("./context")
 local Policy = require("./policy")
 local Receipts = require("../receipts/cli")

@@ -5,14 +5,14 @@ local History = {}
 
 --# Modules
 
-local Json = require("../../libraries/bootstrap/json")
+local Json = require("../../utilities/json")
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Regex = require("@lune/regex")
-local C = require("../../libraries/bootstrap/canonical")
-local D = require("../../libraries/bootstrap/documents")
-local Git = require("../../libraries/bootstrap/git")
-local Commands = require("../../libraries/bootstrap/commands")
+local C = require("../../utilities/canonical")
+local D = require("../../utilities/documents")
+local Git = require("../../utilities/git")
+local Commands = require("../../utilities/commands")
 
 --# Types
 

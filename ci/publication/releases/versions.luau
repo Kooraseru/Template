@@ -6,8 +6,8 @@ local Versions = {}
 --# Modules
 
 local Process = require("@lune/process")
-local Rules = require("../../libraries/registry/rules")
-local Config = require("../../libraries/registry/config")
+local Rules = require("../../validation/rules")
+local Config = require("../../fabricator/config")
 local Request = require("../../integration/request")
 
 --# Types

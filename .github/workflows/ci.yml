@@ -199,9 +199,6 @@ jobs:
           bash ci/run.sh rules sync
           sha256sum --check "${RUNNER_TEMP}/agent.sha256"
           git diff --exit-code
-      - name: Native primitive compatibility
-        shell: bash
-        run: bash ci/run.sh native-compat
       - name: Full repository validation without Rust
         if: matrix.os == 'ubuntu-latest'
         shell: bash

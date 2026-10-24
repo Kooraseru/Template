@@ -7,7 +7,7 @@ local PendingReceipt = {}
 
 local Process = require("@lune/process")
 local Request = require("./request")
-local Rules = require("../libraries/registry/rules")
+local Rules = require("../validation/rules")
 
 --# Functions
 

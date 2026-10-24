@@ -5,7 +5,7 @@ local Plugins = {}
 
 --# Modules
 
-local Shape = require("../libraries/registry/shape")
+local Shape = require("../utilities/shape")
 
 --# Types
 

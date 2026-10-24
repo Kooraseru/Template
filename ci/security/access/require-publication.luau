@@ -8,7 +8,7 @@ local RequirePublication = {}
 local Process = require("@lune/process")
 local Context = require("./context")
 local Policy = require("./policy")
-local Rules = require("../../libraries/registry/rules")
+local Rules = require("../../validation/rules")
 local Protection = require("../../publication/releases/protection")
 
 --# Functions

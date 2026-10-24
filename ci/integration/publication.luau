@@ -7,7 +7,7 @@ local Publication = {}
 
 local Process = require("@lune/process")
 local Request = require("./request")
-local GitHub = require("../libraries/bootstrap/github")
+local GitHub = require("../utilities/github")
 
 --# Functions
 

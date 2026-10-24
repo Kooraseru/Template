@@ -5,9 +5,9 @@ local Identity = {}
 
 --# Modules
 
-local Git = require("../../libraries/bootstrap/git")
-local Config = require("../../libraries/registry/config")
-local Canonical = require("../../libraries/bootstrap/canonical")
+local Git = require("../../utilities/git")
+local Config = require("../../fabricator/config")
+local Canonical = require("../../utilities/canonical")
 local Serde = require("@lune/serde")
 
 --# Types

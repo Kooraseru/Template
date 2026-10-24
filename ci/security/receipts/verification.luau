@@ -8,10 +8,10 @@ local Verification = {}
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local Datetime = require("@lune/datetime")
-local Rules = require("../../libraries/registry/rules")
-local Canonical = require("../../libraries/bootstrap/canonical")
-local Json = require("../../libraries/bootstrap/json")
-local Config = require("../../libraries/registry/config")
+local Rules = require("../../validation/rules")
+local Canonical = require("../../utilities/canonical")
+local Json = require("../../utilities/json")
+local Config = require("../../fabricator/config")
 
 --# Types
 

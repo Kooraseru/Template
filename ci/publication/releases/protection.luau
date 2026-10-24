@@ -5,9 +5,9 @@ local Protection = {}
 
 --# Modules
 
-local D = require("../../libraries/bootstrap/documents")
-local C = require("../../libraries/bootstrap/canonical")
-local Json = require("../../libraries/bootstrap/json")
+local D = require("../../utilities/documents")
+local C = require("../../utilities/canonical")
+local Json = require("../../utilities/json")
 local Process = require("@lune/process")
 local Datetime = require("@lune/datetime")
 local Client = require("./client")

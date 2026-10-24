@@ -8,7 +8,7 @@ local ValidateReleases = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Inputs = require("../../libraries/bootstrap/inputs")
+local Inputs = require("../../utilities/inputs")
 local Versions = require("./versions")
 
 --# Functions

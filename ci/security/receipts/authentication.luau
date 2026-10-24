@@ -5,10 +5,10 @@ local Authentication = {}
 
 --# Modules
 
-local Canonical = require("../../libraries/bootstrap/canonical")
-local Json = require("../../libraries/bootstrap/json")
-local Native = require("../../libraries/bootstrap/native")
-local Base64 = require("../../libraries/bootstrap/base64")
+local Canonical = require("../../utilities/canonical")
+local Json = require("../../utilities/json")
+local Native = require("../../utilities/native")
+local Base64 = require("../../utilities/base64")
 local Verification = require("./verification")
 
 --# Types

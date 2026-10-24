@@ -6,8 +6,8 @@ local Targets = {}
 --# Modules
 
 local Fs = require("@lune/fs")
-local Shape = require("../libraries/registry/shape")
-local Inputs = require("../libraries/bootstrap/inputs")
+local Shape = require("../utilities/shape")
+local Inputs = require("../utilities/inputs")
 
 --# Types
 

@@ -5,8 +5,8 @@ local Client = {}
 
 --# Modules
 
-local GitHub = require("../../libraries/bootstrap/github")
-local Shape = require("../../libraries/registry/shape")
+local GitHub = require("../../utilities/github")
+local Shape = require("../../utilities/shape")
 
 export type Record = Shape.Object
 

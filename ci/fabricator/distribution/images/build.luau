@@ -8,8 +8,8 @@ local Images = {}
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
-local Config = require("../../../libraries/registry/config")
-local Catalogue = require("../../../libraries/registry/catalogue")
+local Config = require("../../config")
+local Catalogue = require("../../catalogue")
 
 --# Types
 

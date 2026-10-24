@@ -7,8 +7,8 @@ local Project = {}
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Inputs = require("../libraries/bootstrap/inputs")
-local Shape = require("../libraries/registry/shape")
+local Inputs = require("../utilities/inputs")
+local Shape = require("../utilities/shape")
 
 --# Functions
 
