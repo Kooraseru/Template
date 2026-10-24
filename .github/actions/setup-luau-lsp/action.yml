@@ -34,13 +34,21 @@ runs:
           --output "$destination/$archive"
         echo "$checksum  $destination/$archive" | sha256sum -c
         unzip -q -o "$destination/$archive" -d "$destination"
+        # Roblox documentation examples use the definitions from this exact release.
+        curl --fail --location --retry 3 \
+          "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/0382dc76ca9b73df3c8e7c9cd85a8dd493cbd0ae/scripts/globalTypes.d.luau" \
+          --output "$destination/roblox-types.d.luau"
+        test "$(git hash-object "$destination/roblox-types.d.luau")" = "20c2e4d47e9dc591a646538ded6ac417b220cb78"
+
         if [[ "$RUNNER_OS" == Windows ]]; then
           program="$(find "$destination" -type f -name 'luau-lsp.exe' -print -quit)"
           test -n "$program"
           echo "CI_LUAU_ANALYZER=$(cygpath -w "$program")" >> "$GITHUB_ENV"
+          echo "CI_LUAU_ROBLOX_DEFINITIONS=$(cygpath -w "$destination/roblox-types.d.luau")" >> "$GITHUB_ENV"
         else
           program="$(find "$destination" -type f -name 'luau-lsp' -print -quit)"
           test -n "$program"
           chmod +x "$program"
           echo "CI_LUAU_ANALYZER=$program" >> "$GITHUB_ENV"
+          echo "CI_LUAU_ROBLOX_DEFINITIONS=$destination/roblox-types.d.luau" >> "$GITHUB_ENV"
         fi

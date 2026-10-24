@@ -94,6 +94,13 @@ function Analyzer.Run(): Outcome
             -- The CLI platform selects the correct built-in global definitions.
 
         }
+        if realm.platform == "roblox" then
+            local definitions = Process.env.CI_LUAU_ROBLOX_DEFINITIONS
+            if not definitions then
+                return unavailable("Roblox definitions unavailable; set CI_LUAU_ROBLOX_DEFINITIONS", #snapshot.files)
+            end
+            table.insert(arguments, "--definitions=" .. definitions)
+        end
         for _, path in realm.files do
             table.insert(arguments, path)
         end
