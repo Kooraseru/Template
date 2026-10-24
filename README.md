@@ -1,66 +1,45 @@
-# Repository template contributor source
+# Template source
 
-The `source` branch is authored; `main` is generated publication output. This repository template is application-language agnostic. Optional toolchains and application dependencies belong to each consuming project.
+`source` is the authored branch. `main` is generated publication output.
+This repository supplies the CI controller; it has no application or host
+implementation by default.
 
-## Entry points
+## Commands
 
-The repository has one public CI command interface:
+Run from the repository root with Lune installed:
 
 ```bash
-bash ci/run.sh validate
+bash ci/run.sh rules check
+bash ci/run.sh rules sync
 bash ci/run.sh preflight list
 bash ci/run.sh preflight run
-bash ci/run.sh rules sync
-bash ci/run.sh rules check
-bash ci/run.sh configure-editor
-bash ci/run.sh local-actions status
-bash ci/run.sh native-compat
+bash ci/run.sh validate
+bash ci/run.sh github labels validate
+bash ci/run.sh github projects validate
 ```
 
-`ci/run.sh` launches `ci/main.luau`, which explicitly dispatches supported operations to domain modules. These do not grant publication authority. GitHub Actions invokes the same interface from jobs with separate permission and evidence boundaries. A local `validate` verifies repository contracts; `preflight` inspects saved Luau source and reports missing tooling as unavailable; a hosted run provides platform and publication-specific evidence. No PowerShell wrappers or mandatory application compiler are needed for ordinary validation.
-
-The command-line GitHub Local Actions editor bridge and its requirements are described in [local testing](rules/contracts/repository/local-testing.md). Use its VS Code integration to get extension-owned local workflow History; ordinary Bash validation does not create that History.
-
-## Repository ownership
-
-| Location | Responsibility |
-| --- | --- |
-| `.github/workflows/ci.yml` | Job orchestration, privileges, evidence transfers, and publication gates |
-| `.github/actions/` | Reusable environment setup, not competing CI entry points |
-| `ci/integration/` | Hosted GitHub controls and optional editor bridge |
-| `ci/fabricator/` | Opt-in compilation targets, distribution packaging, and container images |
-| `ci/libraries/` | Shared Luau utilities, data contracts, and test framework |
-| `ci/validation/` | Template and repository conformance, policy, and tests |
-| `ci/security/` | Publication authorization and signed build receipts |
-| `ci/publication/` | Generated repository, documentation, and release publication |
-| `config/` | Project publication and explicitly located developer-tool settings |
-| `source/` | Optional application code and `build.toml` |
-| `rules/` | Tracked Markdown instructions, language guidance, and repository contracts |
-| `build/` | Generated outputs and runtime state, Git-ignored |
-
-`AGENTS.md` is generated locally from the tracked rules by `bash ci/run.sh rules sync`; it is **not committed**. No KERO runtime is required.
+`preflight` inspects saved Luau files without running them. Its current
+language-analysis frontend checks syntax and types on Linux and Windows when
+the pinned analyzer is installed; branch-by-branch previous-state tracing is
+still being developed. A missing analyzer is reported as unavailable, not
+as success.
 
 ## Application builds
 
-`config/project.toml` owns repository, Pages, and release publication toggles. `source/build.toml` owns application targets and compiler requirements. It may contain zero targets.
+Put application implementations and native manifests under `source/`.
+The source-owned `source/build.toml` selects real build targets, environments
+and packaging paths. Build execution goes through `bash ci/run.sh targets-build`
+in the appropriately configured CI job – it is not a standalone host
+emulator.
 
-For an optional Rust application, keep all Cargo metadata under `source/cargo/`:
+Host implementations belong at `source/hosts/<platform>/`, with actual
+build code and matching architecture targets. Do not declare a host or target
+just to fill a matrix. The template ships zero buildable hosts.
 
-```text
-source/
-├── build.toml
-├── cargo/
-│   ├── Cargo.toml
-│   ├── Cargo.lock
-│   └── config.toml
-└── app/
-    └── main.rs
-```
+GitHub labels and Projects are optional folder-discovered declarations.
+`validate` is offline. `plan` and `apply` require an authenticated
+local `gh` session; hosted Actions cannot mutate them. Approval of a
+workflow does not elevate its token permissions.
 
-The fabricator passes the explicit manifest path and optional Cargo `--config` path. No root manifest, mandatory Rust toolchain, or language smoke project exists. Toolchain version and container probes apply only to explicitly selected build environments.
-
-## Security and publication
-
-`source` is the pull request and development branch. `main` is generated only from authorized, validated artifacts. PR or local runs cannot publish; an administrative workflow selection cannot override GitHub permissions. The native primitive compatibility layer uses Node's built-in crypto and ECMAScript number formatting, without Cargo or npm dependencies.
-
-For exact boundaries, read [template architecture](rules/contracts/repository/template-architecture.md), [source updates](rules/contracts/repository/source-updates.md), [build receipts](rules/contracts/repository/build-receipts.md), and [release publication](rules/contracts/repository/releases.md). The [CI architecture](ci/integration/architecture.md) describes job ownership and migration decisions.
+Signing, authorization, artifacts and publication remain CI responsibilities.
+No secrets or personal tokens are required merely to validate this template.

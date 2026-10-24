@@ -84,7 +84,7 @@ that the source still matches the workspace file before calling that command.
 It does not spawn act itself.
 
 The local act executable still needs the artifact-protocol support documented in
-`fabricator/distribution/images/act/README.md`. `.actrc` reuses installed runner
+`ci/fabricator/distribution/images/act/Dockerfile`. `.actrc` reuses installed runner
 images rather than forcing every run to pull; an absent required image still needs
 a working registry connection. Never classify a failed pull as a successful build.
 

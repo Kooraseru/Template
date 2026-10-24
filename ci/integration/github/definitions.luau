@@ -50,7 +50,9 @@ local function slug(value: string): string
 end
 
 local function folders(path: string): { string }
-	assert(Fs.isDir(path), "missing configuration directory: " .. path)
+	if not Fs.isDir(path) then
+		return {}
+	end
 	local result = {}
 	for _, name in Fs.readDir(path) do
 		if Fs.isDir(path .. "/" .. name) then
@@ -64,7 +66,9 @@ local function folders(path: string): { string }
 end
 
 local function tomls(path: string): { string }
-	assert(Fs.isDir(path), "missing configuration directory: " .. path)
+	if not Fs.isDir(path) then
+		return {}
+	end
 	local result = {}
 	for _, name in Fs.readDir(path) do
 		if name ~= "README.md" then

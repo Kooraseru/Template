@@ -1,5 +1,5 @@
 # CI configuration
-# See config/README.md for available options and defaults.
+# See the root README for source-owned build commands and entry points.
 # Local act runs never publish artifacts, regardless of publish settings.
 #
 # Optional settings are omitted unless explicitly configured.

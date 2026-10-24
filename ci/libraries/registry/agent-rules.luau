@@ -6,15 +6,14 @@ local AgentRules = {}
 local Fs = require("@lune/fs")
 
 local required = {
-    "rules/README.md",
     "rules/general.md",
     "rules/architecture.md",
     "rules/workflows/implementation.md",
     "rules/workflows/review.md",
-    "rules/languages/luau/README.md",
+    "rules/languages/luau/luau-system.md",
     "rules/languages/luau/files/module-roots.md",
     "rules/languages/luau/language/control-flow.md",
-    "rules/languages/rust/README.md",
+    "rules/languages/rust/rust-system.md",
     "rules/languages/rust/rust-system.md",
     "rules/languages/rust/files/manifests.md",
     "rules/languages/rust/files/modules.md",
@@ -35,8 +34,8 @@ local function output(): string
         "Consult `rules/workflows/review.md` when reviewing changes.",
         "",
         "Language-specific guidance:",
-        "- Luau: `rules/languages/luau/README.md`, its control-flow rule, and module-root guidance",
-        "- Rust: `rules/languages/rust/README.md`, `language/writing.md`, `language/comments.md`, and its chosen structure",
+        "- Luau: `rules/languages/luau/luau-system.md`, its control-flow rule, and module-root guidance",
+        "- Rust: `rules/languages/rust/rust-system.md`, `language/writing.md`, `language/comments.md`, and its chosen structure",
         "",
         "Read applicable tracked contracts under `rules/contracts/` when migrated.",
         "The `rules/` Markdown documents are authoritative. Do not use KERO.",
