@@ -90,7 +90,9 @@ function Analyzer.Run(): Outcome
             "--platform=" .. realm.platform,
             "--flag:LuauSolverV2=true",
             "--base-luaurc=" .. Process.cwd:gsub("[/\\\\]+$", "") .. "/config/luau/.luaurc",
-            "--settings=config/luau/luau-lsp/settings.json",
+            -- Do not apply Lune-only editor settings to Roblox documentation examples.
+            -- The CLI platform selects the correct built-in global definitions.
+
         }
         for _, path in realm.files do
             table.insert(arguments, path)
@@ -107,10 +109,11 @@ function Analyzer.Run(): Outcome
         if not execution.ok then
             failed = true
             if #parseDiagnostics(execution.stdout .. "\\n" .. execution.stderr, true) == 0 then
-                table.insert(findings, {
+                local issue: Finding = {
                     severity = "error",
                     message = "Luau " .. realm.platform .. " analysis failed: " .. execution.stderr .. execution.stdout,
-                })
+                }
+                table.insert(findings, issue)
             end
         end
     end
