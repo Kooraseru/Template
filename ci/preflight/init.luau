@@ -7,7 +7,7 @@ local Preflight = {}
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Stdio = require("@lune/stdio")
-local Analyzer = require("./analyzer")
+local Analyzer = require("@self/analyzer")
 
 function Preflight.Run(args: { string })
     if #args == 1 and args[1] == "list" then
