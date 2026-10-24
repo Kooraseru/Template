@@ -1,0 +1,46 @@
+name: Set up Luau analysis
+description: Install a checksum-verified Luau language analyzer for preflight.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        case "$RUNNER_OS/$(uname -m)" in
+          Linux/x86_64)
+            archive=luau-lsp-linux-x86_64.zip
+            checksum=1a2ea1ae4f98f8946cefd970a4b54853e11ab4775e6932faa7f60cf920346567
+            ;;
+          Linux/aarch64|Linux/arm64)
+            archive=luau-lsp-linux-arm64.zip
+            checksum=6062345b95124ca937b8c324b74bc3fddb1d6919ba133c58f8b17945ce1acbc2
+            ;;
+          Windows/*)
+            archive=luau-lsp-win64.zip
+            checksum=64225b9738102a30de6ee09fb28e5a3827edc402ecf2a6364af570312468159f
+            ;;
+          *)
+            echo "::error::Luau analyzer is not packaged for this runner."
+            exit 1
+            ;;
+        esac
+        destination="$RUNNER_TEMP/luau-lsp"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          destination="$(cygpath -u "$RUNNER_TEMP")/luau-lsp"
+        fi
+        mkdir -p "$destination"
+        curl --fail --location --retry 3 \
+          "https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.70.1/$archive" \
+          --output "$destination/$archive"
+        echo "$checksum  $destination/$archive" | sha256sum -c
+        unzip -q -o "$destination/$archive" -d "$destination"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          program="$(find "$destination" -type f -name 'luau-lsp.exe' -print -quit)"
+          test -n "$program"
+          echo "CI_LUAU_ANALYZER=$(cygpath -w "$program")" >> "$GITHUB_ENV"
+        else
+          program="$(find "$destination" -type f -name 'luau-lsp' -print -quit)"
+          test -n "$program"
+          chmod +x "$program"
+          echo "CI_LUAU_ANALYZER=$program" >> "$GITHUB_ENV"
+        fi

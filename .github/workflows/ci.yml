@@ -206,9 +206,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: bash ci/run.sh validate
+      - uses: ./.github/actions/setup-luau-lsp
       - name: Discover v2 Luau preflight
         shell: bash
         run: bash ci/run.sh preflight list
+      - name: Analyze all saved Luau sources
+        shell: bash
+        run: bash ci/run.sh preflight run
   refresh-prs:
     name: Maintenance / Pull request choices
     if: github.ref == 'refs/heads/source' && github.event_name != 'workflow_dispatch' && vars.CI_WORKFLOW_SYNC_ENABLED == 'true'
