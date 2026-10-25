@@ -17,7 +17,7 @@ jobs:
       has_work: ${{ steps.plan.outputs.has_work }}
       has_privileged: ${{ steps.plan.outputs.has_privileged }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
@@ -30,7 +30,7 @@ jobs:
           CI_EVENT: ${{ github.event_name }}
         shell: bash
         run: python ci/bootstrap/main.py plan --event "$CI_EVENT" --output "$RUNNER_TEMP/plan.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ci-plan
           path: ${{ runner.temp }}/plan.json
@@ -46,14 +46,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - uses: ./.github/actions/setup-lune
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ci-plan
           path: ci-artifacts/plan
@@ -62,7 +62,7 @@ jobs:
         env:
           CI_GROUP: ${{ matrix.group }}
         run: python ci/bootstrap/main.py run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary read --results ci-artifacts/results
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ci-result-${{ matrix.group }}
@@ -80,14 +80,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - uses: ./.github/actions/setup-lune
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ci-plan
           path: ci-artifacts/plan
@@ -96,7 +96,7 @@ jobs:
         env:
           CI_GROUP: ${{ matrix.group }}
         run: python ci/bootstrap/main.py run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary privileged --results ci-artifacts/results
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ci-result-${{ matrix.group }}
@@ -110,18 +110,18 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: ${{ needs.plan.result == 'success' }}
         with:
           name: ci-plan
           path: ci-artifacts/plan
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: ${{ needs.plan.outputs.has_work == 'true' || needs.plan.outputs.has_privileged == 'true' }}
         with:
           pattern: ci-result-*
