@@ -13,21 +13,31 @@ local function split(path: string): { string }
     return parts
 end
 
+-- Reuse a compiled segment pattern across a glob walk instead of rebuilding
+-- the same Lua expression for every matching file or directory.
+local expressions: { [string]: string } = {}
+
 local function matchSegment(name: string, pattern: string): boolean
-    local expression = "^"
-    for index = 1, #pattern do
-        local character = pattern:sub(index, index)
-        if character == "*" then
-            expression ..= ".*"
-        elseif character == "?" then
-            expression ..= "."
-        elseif ("^$()%.[]+-"):find(character, 1, true) then
-            expression ..= "%" .. character
-        else
-            expression ..= character
+    local expression = expressions[pattern]
+    if not expression then
+        local fragments = { "^" }
+        for index = 1, #pattern do
+            local character = pattern:sub(index, index)
+            if character == "*" then
+                table.insert(fragments, ".*")
+            elseif character == "?" then
+                table.insert(fragments, ".")
+            elseif ("^$()%.[]+-"):find(character, 1, true) then
+                table.insert(fragments, "%" .. character)
+            else
+                table.insert(fragments, character)
+            end
         end
+        table.insert(fragments, "$")
+        expression = table.concat(fragments)
+        expressions[pattern] = expression
     end
-    return name:match(expression .. "$") ~= nil
+    return name:match(expression) ~= nil
 end
 
 local function matches(path: { string }, pattern: { string }, position: number, index: number): boolean
@@ -103,8 +113,6 @@ function Glob.Find(pattern: string, root: string?): { string }
     table.sort(results)
     return results
 end
-
-
 
 -- Two declared output globs must not be able to claim the same path.
 -- Both * / ? inside segments and ** spanning segments are considered.

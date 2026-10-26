@@ -9,113 +9,16 @@ permissions:
   contents: read
 
 jobs:
-  plan:
+  bootstrap:
+    name: Starting bootstrap
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.plan.outputs.matrix }}
-      privileged_matrix: ${{ steps.plan.outputs.privileged_matrix }}
-      has_work: ${{ steps.plan.outputs.has_work }}
-      has_privileged: ${{ steps.plan.outputs.has_privileged }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-lune
-      - name: Discover, validate, and plan
-        id: plan
+      - name: Start bootstrap
+        shell: bash
         env:
           CI_EVENT: ${{ github.event_name }}
-        shell: bash
-        run: lune run ci/bootstrap/main.luau plan --event "$CI_EVENT" --output "$RUNNER_TEMP/plan.json"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: ci-plan
-          path: ${{ runner.temp }}/plan.json
-          if-no-files-found: error
-
-  work:
-    needs: plan
-    if: ${{ needs.plan.outputs.has_work == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    runs-on: ${{ matrix.runner }}
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-lune
-      - uses: actions/download-artifact@v8
-        with:
-          name: ci-plan
-          path: ci-artifacts/plan
-      - name: Execute discovered group
-        shell: bash
-        env:
-          CI_GROUP: ${{ matrix.group }}
-        run: lune run ci/bootstrap/main.luau run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary read --results ci-artifacts/results
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: ci-result-${{ matrix.group }}
-          path: ci-artifacts/results
-          if-no-files-found: error
-
-  privileged:
-    needs: [plan, work]
-    if: ${{ always() && needs.plan.result == 'success' && needs.plan.outputs.has_privileged == 'true' && ((needs.plan.outputs.has_work == 'true' && needs.work.result == 'success') || (needs.plan.outputs.has_work == 'false' && needs.work.result == 'skipped')) && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/source' && vars.CI_PRIVILEGED_READY == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.privileged_matrix) }}
-    runs-on: ${{ matrix.runner }}
-    environment: ci-privileged
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-lune
-      - uses: actions/download-artifact@v8
-        with:
-          name: ci-plan
-          path: ci-artifacts/plan
-      - name: Execute approved group
-        shell: bash
-        env:
-          CI_GROUP: ${{ matrix.group }}
-        run: lune run ci/bootstrap/main.luau run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary privileged --results ci-artifacts/results
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: ci-result-${{ matrix.group }}
-          path: ci-artifacts/results
-          if-no-files-found: error
-
-  reconcile:
-    needs: [plan, work, privileged]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-lune
-      - uses: actions/download-artifact@v8
-        if: ${{ needs.plan.result == 'success' }}
-        with:
-          name: ci-plan
-          path: ci-artifacts/plan
-      - uses: actions/download-artifact@v8
-        if: ${{ needs.plan.outputs.has_work == 'true' || needs.plan.outputs.has_privileged == 'true' }}
-        with:
-          pattern: ci-result-*
-          merge-multiple: true
-          path: ci-artifacts/results
-      - name: Require complete execution evidence
-        shell: bash
-        run: lune run ci/bootstrap/main.luau reconcile --plan ci-artifacts/plan/plan.json --results ci-artifacts/results
+        run: lune run ci/bootstrap/init.luau

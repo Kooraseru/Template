@@ -1,343 +1,220 @@
 -- ci/bootstrap/planning.luau
 --!strict
 
+local Component = require("./component")
 local Glob = require("./glob")
+local Process = require("@lune/process")
 
 local Planning = {}
 
--- Hosted runner classes are an adapter, not a hardcoded component inventory.
-local HOSTED = {
-    ["linux/x64"] = "ubuntu-latest",
-    ["linux/arm64"] = "ubuntu-24.04-arm",
-    ["windows/x64"] = "windows-latest",
-    ["windows/arm64"] = "windows-11-arm",
-    ["macos/arm64"] = "macos-15",
-    ["macos/x64"] = "macos-15-intel",
+-- A single GitHub job has one OS, CPU architecture, and permission boundary.
+-- A component must not pretend that selecting its runtime provisions a runner.
+local ARCHITECTURES = {
+	x86_64 = "x64",
+	aarch64 = "arm64",
 }
-local MATRIX_LIMIT = 256
-local EVENTS = { push = true, pull_request = true, workflow_dispatch = true }
+local RESERVED_OUTPUTS = {
+	"ci/bootstrap/**",
+	".github/workflows/**",
+	".git/**",
+}
 
 local function fail(message: string): never
-    error(message, 0)
+	error(message, 0)
 end
 
-local function sortedKeys(map): { string }
-    local keys = {}
-    for key in map do
-        table.insert(keys, key)
-    end
-    table.sort(keys)
-    return keys
+local function names(dictionary): { string }
+	local result = {}
+	for name in dictionary do
+		table.insert(result, name)
+	end
+	table.sort(result)
+	return result
 end
 
-local function contains(items: { string }, value: string): boolean
-    return table.find(items, value) ~= nil
+-- Sort once per discovery: consumers and providers remain deterministic even
+-- when filesystem enumeration order differs across operating systems.
+local function orderByDependencies(active, dependencies): { string }
+	local degree = {}
+	local successors = {}
+	for identity in active do
+		degree[identity] = 0
+		successors[identity] = {}
+	end
+
+	for identity, required in dependencies do
+		for dependency in required do
+			degree[identity] += 1
+			table.insert(successors[dependency], identity)
+		end
+	end
+
+	local queue = {}
+	for identity, count in degree do
+		if count == 0 then
+			table.insert(queue, identity)
+		end
+	end
+	table.sort(queue)
+
+	local ordered = {}
+	while #queue > 0 do
+		local identity = table.remove(queue, 1)
+		table.insert(ordered, identity)
+		for _, successor in successors[identity] do
+			degree[successor] -= 1
+			if degree[successor] == 0 then
+				table.insert(queue, successor)
+			end
+		end
+		table.sort(queue)
+	end
+
+	if #ordered ~= #names(active) then
+		local involved = {}
+		for identity, count in degree do
+			if count > 0 then
+				table.insert(involved, identity)
+			end
+		end
+		table.sort(involved)
+		fail(`dependency cycle involving: {table.concat(involved, ", ")}`)
+	end
+	return ordered
 end
 
-local function shape(component): string
-    return `{component.runtime.os}/{component.runtime.architecture}/{table.concat(component.runtime.labels, ",")}/{component.boundary}`
+-- Glob output ownership is checked before any code runs. Exact-path checks
+-- would miss collisions such as build/*.bin with build/out.bin.
+local function resolveOutputs(active)
+	local ownership = {}
+	for _, identity in names(active) do
+		for _, output in active[identity].outputs do
+			for _, reserved in RESERVED_OUTPUTS do
+				if Glob.Overlaps(output, reserved) then
+					fail(`{identity}: output glob intersects protected source path {reserved}`)
+				end
+			end
+			for _, owner in ownership do
+				if Glob.Overlaps(output, owner.path) then
+					fail(`output collision: {owner.identity} ({owner.path}) and {identity} ({output})`)
+				end
+			end
+			table.insert(ownership, { identity = identity, path = output })
+		end
+	end
 end
 
-local function orderedIds(active, dependencies): { string }
-    local incoming = {}
-    local outgoing = {}
-    for identity in active do
-        incoming[identity] = 0
-        outgoing[identity] = {}
-    end
-    for identity, needs in dependencies do
-        for needed in needs do
-            incoming[identity] += 1
-            table.insert(outgoing[needed], identity)
-        end
-    end
-    local ready = {}
-    for identity, count in incoming do
-        if count == 0 then
-            table.insert(ready, identity)
-        end
-    end
-    table.sort(ready)
-    local order = {}
-    while #ready > 0 do
-        local identity = table.remove(ready, 1)
-        table.insert(order, identity)
-        for _, successor in outgoing[identity] do
-            incoming[successor] -= 1
-            if incoming[successor] == 0 then
-                table.insert(ready, successor)
-            end
-        end
-        table.sort(ready)
-    end
-    if #order ~= #sortedKeys(active) then
-        local remaining = {}
-        for identity, count in incoming do
-            if count > 0 then
-                table.insert(remaining, identity)
-            end
-        end
-        table.sort(remaining)
-        fail(`dependency cycle: {table.concat(remaining, ", ")}`)
-    end
-    return order
+local function requireRunner(component)
+	local runtime = component.runtime
+	local architecture = ARCHITECTURES[Process.arch]
+	if runtime.os ~= Process.os or runtime.architecture ~= architecture or #runtime.labels > 0 then
+		fail(`{component.identity}: requires {component:RunnerShape()}, but the single bootstrap job runs on {Process.os}/{architecture or Process.arch} with no custom runner labels`)
+	end
+	if component.boundary ~= "read" then
+		-- Permissions cannot be elevated by a component inside a running job.
+		fail(`{component.identity}: privileged execution requires a separately authorized GitHub job, which this single-job workflow does not provide`)
+	end
 end
 
-function Planning.Resolve(components, event: string)
-    if not EVENTS[event] then
-        fail(`unsupported event: {event}`)
-    end
-    local active = {}
-    for _, component in components do
-        if component.enabled then
-            active[component.identity] = component
-        end
-    end
-    local providers = {}
-    for _, identity in sortedKeys(active) do
-        for _, capability in active[identity].provides do
-            if providers[capability] then
-                fail(`duplicate provider for {capability}: {providers[capability]} and {identity}`)
-            end
-            providers[capability] = identity
-        end
-    end
-    local dependencies = {}
-    local produced = {}
-    for _, identity in sortedKeys(active) do
-        local component = active[identity]
-        for _, output in component.outputs do
-            if Glob.Overlaps(output, "ci-artifacts/plan/**") or Glob.Overlaps(output, "ci-artifacts/results/**") then
-                fail(`{identity}: output glob overlaps reserved CI execution evidence: {output}`)
-            end
-            for _, owner in produced do
-                if Glob.Overlaps(output, owner.path) then
-                    fail(`output glob collision between {owner.identity} ({owner.path}) and {identity} ({output})`)
-                end
-            end
-            table.insert(produced, { path = output, identity = identity })
-        end
-        local needs = {}
-        for _, requirement in component.requires do
-            local provider = providers[requirement]
-            if not provider then
-                fail(`{identity}: missing required capability {requirement}`)
-            end
-            needs[provider] = true
-        end
-        dependencies[identity] = needs
-    end
-    local order = orderedIds(active, dependencies)
-    local selected = {}
-    for _, identity in order do
-        if contains(active[identity].events, event) then
-            selected[identity] = true
-        end
-    end
-    for identity in selected do
-        for required in dependencies[identity] do
-            if not selected[required] then
-                fail(`{identity}: required provider {required} does not apply to {event}`)
-            end
-        end
-    end
-    local validators = {}
-    local workers = {}
-    for identity in selected do
-        local validation = false
-        for _, capability in active[identity].provides do
-            if capability:sub(1, 11) == "validation." then
-                validation = true
-            end
-        end
-        if validation then
-            validators[identity] = true
-        else
-            workers[identity] = true
-        end
-    end
-    if next(workers) and not validators[providers["validation.preflight"]] then
-        fail("nonempty CI requires a discovered, enabled, event-applicable validation.preflight provider")
-    end
-    for identity in validators do
-        local component = active[identity]
-        if shape(component) ~= "linux/x64//read" then
-            fail(`{identity}: planning-time validators must use linux/x64, no labels, read boundary`)
-        end
-        for needed in dependencies[identity] do
-            if not validators[needed] then
-                fail(`{identity}: planning validator depends on non-validation task {needed}`)
-            end
-        end
-    end
+function Planning.Resolve(components: { Component.Component }, event: string)
+	local supportedEvents = { push = true, pull_request = true, workflow_dispatch = true }
+	if not supportedEvents[event] then
+		fail(`unsupported GitHub event: {event}`)
+	end
 
-    local parent = {}
-    for identity in workers do
-        parent[identity] = identity
-    end
-    local function find(identity: string): string
-        if parent[identity] ~= identity then
-            parent[identity] = find(parent[identity])
-        end
-        return parent[identity]
-    end
-    for identity in workers do
-        for needed in dependencies[identity] do
-            if workers[needed] then
-                if shape(active[identity]) ~= shape(active[needed]) then
-                    fail(`unsupported cross-runner or boundary dependency: {needed} -> {identity}`)
-                end
-                parent[find(identity)] = find(needed)
-            end
-        end
-    end
+	local active = {}
+	for _, component in components do
+		if component.enabled then
+			active[component.identity] = component
+		end
+	end
 
-    local groupsByRoot = {}
-    for _, identity in order do
-        if not workers[identity] then
-            continue
-        end
-        local root = find(identity)
-        if not groupsByRoot[root] then
-            local component = active[identity]
-            groupsByRoot[root] = {
-                runtime = component.runtime,
-                boundary = component.boundary,
-                tasks = {},
-            }
-        end
-        local needs = {}
-        for needed in dependencies[identity] do
-            if workers[needed] then
-                table.insert(needs, needed)
-            end
-        end
-        table.sort(needs)
-        table.insert(groupsByRoot[root].tasks, {
-            identity = identity,
-            entry = active[identity].entry,
-            outputs = active[identity].outputs,
-            needs = needs,
-        })
-    end
-    local groups = {}
-    for _, group in groupsByRoot do
-        table.insert(groups, group)
-    end
-    table.sort(groups, function(a, b)
-        return a.tasks[1].identity < b.tasks[1].identity
-    end)
+	local providers = {}
+	for _, identity in names(active) do
+		for _, capability in active[identity].provides do
+			if providers[capability] then
+				fail(`duplicate provider for {capability}: {providers[capability]} and {identity}`)
+			end
+			providers[capability] = identity
+		end
+	end
 
-    local validations = {}
-    for _, identity in order do
-        if validators[identity] then
-            local needs = {}
-            for needed in dependencies[identity] do
-                table.insert(needs, needed)
-            end
-            table.sort(needs)
-            table.insert(validations, {
-                identity = identity,
-                entry = active[identity].entry,
-                outputs = active[identity].outputs,
-                needs = needs,
-            })
-        end
-    end
-    return validations, groups
-end
+	local dependencies = {}
+	for _, identity in names(active) do
+		local dependenciesForComponent = {}
+		for _, capability in active[identity].requires do
+			local provider = providers[capability]
+			if not provider then
+				fail(`{identity}: missing required capability {capability}`)
+			end
+			dependenciesForComponent[provider] = true
+		end
+		dependencies[identity] = dependenciesForComponent
+	end
 
-function Planning.Project(groups, event: string)
-    local projected = {}
-    for _, group in groups do
-        local runtime = group.runtime
-        local runner = HOSTED[`{runtime.os}/{runtime.architecture}`]
-        if #runtime.labels > 0 or not runner then
-            fail(`no approved hosted runner for {runtime.os}/{runtime.architecture} with labels`)
-        end
-        if group.boundary == "privileged" and event ~= "workflow_dispatch" then
-            fail("privileged work requires workflow_dispatch")
-        end
-        table.insert(projected, {
-            runtime = runtime,
-            boundary = group.boundary,
-            runner = runner,
-            tasks = group.tasks,
-        })
-    end
-    if #projected > MATRIX_LIMIT then
-        local shapes = {}
-        for _, group in projected do
-            local key = `{group.runner}/{group.boundary}`
-            if not shapes[key] then
-                shapes[key] = {}
-            end
-            table.insert(shapes[key], group)
-        end
-        local keys = sortedKeys(shapes)
-        if #keys > MATRIX_LIMIT then
-            fail(`too many incompatible runner shapes: {#keys}`)
-        end
-        local quota = {}
-        for _, key in keys do
-            quota[key] = 1
-        end
-        for _ = #keys + 1, MATRIX_LIMIT do
-            local chosen = nil
-            local remaining = 0
-            for _, key in keys do
-                local delta = #shapes[key] - quota[key]
-                if delta > remaining then
-                    chosen = key
-                    remaining = delta
-                end
-            end
-            if not chosen then
-                break
-            end
-            quota[chosen] += 1
-        end
-        local combined = {}
-        for _, key in keys do
-            local buckets = {}
-            for _ = 1, quota[key] do
-                local group = shapes[key][1]
-                table.insert(buckets, {
-                    runtime = group.runtime,
-                    boundary = group.boundary,
-                    runner = group.runner,
-                    tasks = {},
-                })
-            end
-            for index, group in shapes[key] do
-                local bucket = buckets[(index - 1) % #buckets + 1]
-                for _, task in group.tasks do
-                    table.insert(bucket.tasks, task)
-                end
-            end
-            for _, bucket in buckets do
-                table.insert(combined, bucket)
-            end
-        end
-        projected = combined
-    end
-    table.sort(projected, function(a, b)
-        return a.tasks[1].identity < b.tasks[1].identity
-    end)
-    for index, group in projected do
-        group.id = string.format("group-%03d", index - 1)
-    end
-    return projected
-end
+	resolveOutputs(active)
+	local ordered = orderByDependencies(active, dependencies)
+	local selected = {}
+	for _, identity in ordered do
+		if active[identity]:SupportsEvent(event) then
+			selected[identity] = true
+		end
+	end
+	for identity in selected do
+		for required in dependencies[identity] do
+			if not selected[required] then
+				fail(`{identity}: required provider {required} is not available for {event}`)
+			end
+		end
+	end
 
-function Planning.Matrix(groups, boundary: string)
-    local include = {}
-    for _, group in groups do
-        if group.boundary == boundary then
-            table.insert(include, { group = group.id, runner = group.runner })
-        end
-    end
-    return { include = include }
+	local validators = {}
+	local workers = {}
+	for identity in selected do
+		local component = active[identity]
+		requireRunner(component)
+		if component:IsValidator() then
+			validators[identity] = true
+		else
+			workers[identity] = true
+		end
+	end
+
+	if next(workers) and not validators[providers["validation.preflight"]] then
+		fail("nonempty CI requires a discovered, enabled validation.preflight provider for this event")
+	end
+
+	-- Planning-stage validators cannot depend on code that runs only after
+	-- validation. Work tasks may depend on validators because that phase is first.
+	for identity in validators do
+		for required in dependencies[identity] do
+			if not validators[required] then
+				fail(`{identity}: validator depends on a worker {required}`)
+			end
+		end
+	end
+
+	local validationTasks = {}
+	local workTasks = {}
+	for _, identity in ordered do
+		if not selected[identity] then
+			continue
+		end
+		local required = {}
+		for provider in dependencies[identity] do
+			table.insert(required, provider)
+		end
+		table.sort(required)
+
+		local task = active[identity]:ToTask(required)
+		if validators[identity] then
+			table.insert(validationTasks, task)
+		else
+			table.insert(workTasks, task)
+		end
+	end
+
+	return validationTasks, workTasks
 end
 
 return Planning

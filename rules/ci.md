@@ -1,14 +1,16 @@
 # CI rules
 
-## Boundaries
+## One workflow, one entry point
 
-Keep one workflow at `.github/workflows/ci.yml`. GitHub Actions supplies static runner stages and permission boundaries; **Luau/Lune** owns component discovery, contract inspection, scheduling, invocation, and reconciliation in `ci/bootstrap/`. The bootloader is trusted coordination, not a catalogue of application tasks. Do not use Python in CI, including tests. Do not introduce smoke-test scaffolding; verify actual discovery and execution behavior instead.
+The only workflow is `.github/workflows/ci.yml`. Its **single job** is named `Starting bootstrap`; it checks out the repository, installs pinned Lune through the existing composite setup action, then invokes `ci/bootstrap/init.luau`. The workflow must not maintain stages, matrices, component lists, or plans of work. All component-specific orchestration stays in the bootloader.
 
-Discover actual tasks exclusively from `ci/components/` using the patterns in [discovery](discovery.md). Do not create hypothetical components, fixtures in the tracked component directory, or placeholder preflight implementations just to produce a green run. Preflight belongs to the same discoverable component system, not a hardcoded workflow task.
+Bootstrap owns discovery, static validation, dependency ordering, execution, and reporting. Discover actual work using [the owning glob shapes](discovery.md) under `ci/components/`; never add hypothetical components or manually maintained dispatch tables. Preflight is a discoverable component, not a hardcoded workflow stage.
 
-## Contracts
+**GitHub limitation:** a running job cannot materialize new native GitHub Actions jobs or switch runners or permissions within the same run. The single-job bootstrap may invoke compatible work as child processes on its actual runner; it must **reject** incompatible OS/architecture/runner-label requirements and privileged work with actionable errors, not skip or pretend to execute them. Reintroducing native multi-runner or privileged execution would require an explicitly approved GitHub-workflow architecture change.
 
-Before execution, inspect a **leading `ci-contract` TOML comment** in each matched Luau component, without requiring or evaluating it. This is source-local metadata, not a separate manifest. The recognized fields are `provides`, `requires`, `inputs`, `outputs`, `events`, `runtime`, `boundary`, and `enabled`. All top-level values must appear before a `[runtime]` table header. For example:
+## Component contracts
+
+Contracts live in a leading static `ci-contract` TOML comment on each component's `.luau` entry. The trusted discoverer reads but never requires implementation code to inspect it. All top-level fields precede the `[runtime]` table:
 
 ```luau
 -- ci/components/example.luau
@@ -25,24 +27,22 @@ architecture = "x64"
 end-ci-contract]]
 
 return function(context)
-    print(context.event)
+	print(context.event)
 end
 ```
 
-Validate field types, identifiers, known runtime shapes, permissions, ambiguous names, dependency cycles, missing and duplicate providers, and conflicting output ownership. `inputs` and `outputs` use repository-relative glob patterns; never treat an input match as permission to import or execute it.
+The `Component` object owns the contract shape and its validation. `identity` and `entry` derive from the filesystem and may not be supplied by TOML. Supported keys are the constructor's validated fields, with nested `runtime` exposing `os`, `architecture`, and optional `labels`. Fields describe capability requirements, not permission grants. Keep contract compatibility versionless and reject unknown structures instead of inferring behavior.
 
-A contract declares capabilities, not an index of known platforms. `runtime.os` and `runtime.architecture` describe the execution environment required by that discovered task. Any failure to prove a trust boundary or runner relationship should produce a diagnostic instead of silently skipping work.
+The bootloader rejects malformed candidates, duplicate identities/providers, missing requirements, cycles, unsupported events, and conflicting output globs before executing discovered work. The `inputs` and `outputs` declarations are repo-relative glob patterns, not an instruction to execute matched files. The preflight component will eventually own input-sensitive static analysis; do not invent that implementation merely to populate the template.
 
-## Planning and execution
+## Execution and security
 
-Validation capabilities run during planning on a fixed read-only runner. Non-validation tasks require a discovered and applicable `validation.preflight` provider. Plan only the selected event and dependency closure. Keep dependent worker tasks in the same runner/boundary execution group, ordered by dependencies; reject unsupported cross-runner or cross-permission dependencies explicitly.
+Planning-time validators execute first, on the actual runner, and cannot depend on worker components. Worker execution requires an enabled and event-applicable discovered `validation.preflight` provider. All selected components must fit the actual runner and read-only workflow permissions.
 
-The planner projects discovered groups into a GitHub matrix, respecting the 256-entry limit by batching only compatible independent groups. A missing group result, blocked task, incomplete output, or failed stage is a CI failure, not a hidden skip. A green empty-template run proves only the bootloader path; real components require their own runtime verification.
+Once contracts and the dependency graph are validated, each component implementation runs in its own Lune child process. Its declared outputs must exist before it counts as passed; blocked/failed work results in a failed bootstrap. The bootstrap reports actual outcomes to the Actions job log and step summary. Do not bypass code provenance or give downloaded or discovered metadata higher trust than the checkout.
 
-Privileged work is separately gated by a manually dispatched trusted source branch, required environment approval, and explicit GitHub permissions. Do not self-grant permissions in a component contract or bypass provenance checks. Source checkout and downloaded plans must agree before tasks run. Keep credentials, generated artifacts, and local CI state out of Git.
+## Source formats and verification
 
-## Verification without test infrastructure
+Repository-owned CI uses **YAML, TOML, and Luau**. Python and Node.js are not CI implementation languages; GitHub's built-in actions may use their own runtime. Minimal shell commands to install and invoke Lune are permitted. Do not create smoke tests, test scripts, artificial components, or a `tests/` tree.
 
-Do not create test files, test directories, fixtures, synthetic components, dry-run tasks, or smoke tests. The bootloader performs static contract validation as part of real CI planning, and the workflow itself provides execution evidence when actual application components are present.
-
-Inspect real workflow results and report what they establish. An empty-template run only confirms planning and reconciliation of an empty graph; it does not establish worker or platform execution coverage. Do not bypass missing evidence or add artificial work simply to make jobs appear exercised.
+Use the real workflow's output as evidence. A completed empty-template run demonstrates only its discovery/bootstrapping path; it does not validate real component execution or other platforms. Document uncovered runtime/permission cases without inventing or skipping work.
