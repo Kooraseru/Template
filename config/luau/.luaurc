@@ -1,0 +1,13 @@
+{
+  "languageMode": "strict",
+  "lint": {
+    "*": true
+  },
+  "lintErrors": true,
+  "typeErrors": true,
+  "aliases": {
+    "ci": "../../ci",
+    "workspace": "../..",
+    "lune": "./luau-lsp/lune/"
+  }
+}

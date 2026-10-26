@@ -6,7 +6,7 @@ local Fs = require("@lune/fs")
 local Glob = {}
 
 local function split(path: string): { string }
-    local parts = {}
+	local parts: { string } = {}
     for part in path:gmatch("[^/]+") do
         table.insert(parts, part)
     end
@@ -20,7 +20,7 @@ local expressions: { [string]: string } = {}
 local function matchSegment(name: string, pattern: string): boolean
     local expression = expressions[pattern]
     if not expression then
-        local fragments = { "^" }
+		local fragments: { string } = { "^" }
         for index = 1, #pattern do
             local character = pattern:sub(index, index)
             if character == "*" then
@@ -71,7 +71,7 @@ function Glob.Find(pattern: string, root: string?): { string }
         end
     end
 
-    local prefix = {}
+	local prefix: { string } = {}
     for _, part in parts do
         if part:find("*", 1, true) or part:find("?", 1, true) then
             break
@@ -80,11 +80,11 @@ function Glob.Find(pattern: string, root: string?): { string }
     end
 
     local base = root or "."
-    local results = {}
+	local results: { string } = {}
     local start = table.concat(prefix, "/")
-    local maxDepth = if table.find(parts, "**") then nil else #parts
+	local maxDepth: number? = if table.find(parts, "**") then nil else #parts
 
-    local function visit(relative: string)
+	local function visit(relative: string)
         local absolute = if relative == "" then base else `{base}/{relative}`
         local metadata = Fs.metadata(absolute)
         if metadata.kind == "symlink" then
@@ -117,7 +117,7 @@ end
 -- Two declared output globs must not be able to claim the same path.
 -- Both * / ? inside segments and ** spanning segments are considered.
 local function segmentOverlaps(left: string, right: string): boolean
-    local visited: { [string]: boolean } = {}
+	local visited: { [string]: boolean } = {}
     local function visit(i: number, j: number): boolean
         local key = `{i}:{j}`
         if visited[key] then
@@ -144,8 +144,8 @@ local function segmentOverlaps(left: string, right: string): boolean
 end
 
 function Glob.Overlaps(left: string, right: string): boolean
-    local one = split(left)
-    local two = split(right)
+	local one = split(left)
+	local two = split(right)
     local visited: { [string]: boolean } = {}
     local function visit(i: number, j: number): boolean
         local key = `{i}:{j}`

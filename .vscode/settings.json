@@ -1,0 +1,16 @@
+{
+  "githubLocalActions.actCommand": "build/tools/act/act.exe",
+  "luau-lsp.fflags.enableNewSolver": true,
+  "luau-lsp.platform.type": "standard",
+  "luau-lsp.analyzeLuaFiles": false,
+  "luau-lsp.sourcemap.enabled": false,
+  "luau-lsp.sourcemap.autogenerate": false,
+  "luau-lsp.server.baseLuaurc": "config/luau/.luaurc",
+  "[luau]": {
+    "editor.defaultFormatter": "JohnnyMorganz.stylua",
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  "stylua.targetReleaseVersion": "v2.6.0"
+}

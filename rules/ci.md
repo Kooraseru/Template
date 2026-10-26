@@ -2,44 +2,118 @@
 
 ## One workflow, one entry point
 
-The only workflow is `.github/workflows/ci.yml`. Its **single job** is named `Starting bootstrap`; it checks out the repository, installs pinned Lune through the existing composite setup action, then invokes `ci/bootstrap/init.luau`. The workflow must not maintain stages, matrices, component lists, or plans of work. All component-specific orchestration stays in the bootloader.
+`.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
+invokes the `ci/main.luau` launcher. The workflow does not maintain component
+lists, dependency plans, matrices, or build logic. The bootstrap discovers
+components from `ci/components/`, reads their static contracts, orders them by
+declared capability dependencies, invokes them, and reports their outcomes.
 
-Bootstrap owns discovery, static validation, dependency ordering, execution, and reporting. Discover actual work using [the owning glob shapes](discovery.md) under `ci/components/`; never add hypothetical components or manually maintained dispatch tables. Preflight is a discoverable component, not a hardcoded workflow stage.
+The template currently has one CI component: `ci/components/build/`. Every
+component is a directory with `init.luau` as its public head. Keep implementation
+modules beside the head and private unless the component explicitly exposes a
+child extension point. Do not create root-level component `.luau` files.
 
-**GitHub limitation:** a running job cannot materialize new native GitHub Actions jobs or switch runners or permissions within the same run. The single-job bootstrap invokes its CI components on the actual runner; it must **reject** privileged work requiring unavailable permissions. Host-specific builds requiring other runners cannot be represented as native jobs in this single-job workflow and must not be reported as executed. Reintroducing native multi-runner or privileged execution would require an explicitly approved GitHub-workflow architecture change.
+`config/luau/.luaurc` defines `@ci` as the `ci/` root and `@workspace` as the
+repository root. The Luau language server loads it through the workspace's
+`baseLuaurc` setting. Lune resolves runtime `.luaurc` files by walking upward
+from each script, so CI modules use file-relative imports unless a root config
+is deliberately introduced. Use `@self` for private siblings within a
+component package.
 
-## Component contracts
+## Component class contract
 
-Contracts live in a leading static `ci-contract` TOML comment on each component's `.luau` entry. The trusted discoverer reads but never requires implementation code to inspect it. All top-level fields precede the `[runtime]` table:
+Each `init.luau` defines and returns a pure `Component` class. Its typed static
+`Component.Contract` field declares capabilities, requirements, input and
+output globs, supported events, execution boundary, and enabled state. The
+directory name supplies identity. The bootstrap loads class definitions,
+validates `Component.Contract`, and plans dependencies without constructing
+component instances.
+
+The class exposes `Component.new()` and instance methods such as
+`Component.Run(self, context)`. The constructor initializes owned collaborators
+and all instance fields. Private classes and helpers live in sibling modules.
+The invoker checks the exported class shape, constructs one instance per child
+process, then calls its `Run` method.
 
 ```luau
--- ci/components/example.luau
---!strict
---[[ci-contract
-provides = ["example.ready"]
-requires = []
-inputs = ["source/**/*.luau"]
-outputs = []
+local Builder = require("@self/Builder")
 
-end-ci-contract]]
+local Component = {}
+Component.__index = Component
 
-return function(context)
-	print(context.event)
+type ComponentContract = {
+	provides: { string },
+	requires: { string },
+	inputs: { string },
+	outputs: { string },
+	events: { string },
+	boundary: string,
+	enabled: boolean,
+}
+
+local contract: ComponentContract = {
+	provides = { "build.completed" },
+	requires = {},
+	inputs = { "source/main.c", "source/hosts/*/init.luau" },
+	outputs = { "build/*.exe" },
+	events = { "push", "pull_request", "workflow_dispatch" },
+	boundary = "read",
+	enabled = true,
+}
+Component.Contract = contract
+
+type ComponentFields = { builder: Builder.Builder }
+export type Component = setmetatable<ComponentFields, typeof(Component)>
+
+function Component.new(): Component
+	local fields: ComponentFields = { builder = Builder.new() }
+	return setmetatable(fields, Component)
 end
+
+function Component.Run(self: Component, context: { event: string }): ()
+	self.builder:Run(context)
+end
+
+return Component
 ```
 
-The `Component` object owns the contract shape and its validation. `identity` and `entry` derive from the filesystem and may not be supplied by TOML. Supported keys are the constructor's validated fields. **Host implementations and their OS/architecture identities belong exclusively to `source/hosts/`**. CI must not maintain a platform inventory or duplicate host identity in component contracts. Components can select source files through input globs. Fields describe capabilities, not permission grants. Keep contract compatibility versionless and reject unknown structures instead of inferring behavior.
+The `provides` and `requires` fields express capability dependencies, not
+permission grants. A component must not declare privileged work unless the
+workflow architecture separately authorizes it. Host implementations and
+platform identities belong under `source/hosts/`; the build component discovers
+them there instead of repeating their names.
 
-The bootloader rejects malformed candidates, duplicate identities/providers, missing requirements, cycles, unsupported events, and conflicting output globs before executing discovered work. The `inputs` and `outputs` declarations are repo-relative glob patterns, not an instruction to execute matched files. The preflight component will eventually own input-sensitive static analysis; do not invent that implementation merely to populate the template.
+## Bootstrap module and execution
 
-## Execution and security
+`ci/bootstrap/init.luau` is a ModuleScript-style class module. It only defines
+`Bootstrap.new()`, `Bootstrap.Run(self)`, and returns `Bootstrap`. The launcher
+owns process startup, environment checks, and error-to-exit handling. Bootstrap
+delegates discovery, planning, execution, and reporting to collaborator classes.
+Keep Markdown summaries and other authored text in text files such as
+`ci/bootstrap/summary.md`; reporter classes supply runtime values and write the
+rendered artifact.
 
-Planning-time validators execute first, on the actual runner, and cannot depend on worker components. Worker execution requires an enabled and event-applicable discovered `validation.preflight` provider. All selected components must respect read-only workflow permissions. The CI runner is not an inventory of supported application hosts.
+Component class modules must be side-effect-free at module scope because the
+bootstrap requires each class to inspect its typed static contract. Constructors
+and `Run` methods remain untouched until the planned task starts in its own
+process. Reject malformed contracts, duplicate identities or providers, missing
+capabilities, dependency cycles, unsupported events, conflicting output globs,
+and unsafe filesystem entries. Components run in one dependency-ordered list
+after planning succeeds.
 
-Once contracts and the dependency graph are validated, each component implementation runs in its own Lune child process. Its declared outputs must exist before it counts as passed; blocked/failed work results in a failed bootstrap. The bootstrap reports actual outcomes to the Actions job log and step summary. Do not bypass code provenance or give downloaded or discovered metadata higher trust than the checkout.
+Each implementation runs in a fresh Lune child process so module cache and
+global state do not leak across components. Declared outputs must exist before
+a component counts as passed. Failed or blocked dependencies fail the run.
+Discovered code must come from the checked-out repository; do not execute
+downloaded or otherwise untrusted components.
 
 ## Source formats and verification
 
-Repository-owned CI uses **YAML, TOML, and Luau**. Python and Node.js are not CI implementation languages; GitHub's built-in actions may use their own runtime. Minimal shell commands to install and invoke Lune are permitted. Do not create smoke tests, test scripts, artificial components, or a `tests/` tree.
+Repository-owned CI uses YAML, TOML, and Luau. Python and Node.js are not CI
+implementation languages. Minimal shell commands to install and invoke Lune
+are permitted. Do not add smoke-test projects, artificial components, test
+scripts, or a `tests/` tree to the template.
 
-Use the real workflow's output as evidence. A completed empty-template run demonstrates only its discovery/bootstrapping path; it does not validate real component execution or other platforms. Document uncovered runtime/permission cases without inventing or skipping work.
+Use real workflow output as evidence. A completed empty-template run proves
+only its discovery and bootstrap path; do not claim coverage for components or
+platforms that did not execute.

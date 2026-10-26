@@ -1,0 +1,205 @@
+-- ci/bootstrap/contract.luau
+--!strict
+
+-- Validated metadata for a discovered component class.
+
+local Contract = {}
+Contract.__index = Contract
+
+--# Types
+
+type ContractFields = {
+	identity: string,
+	entry: string,
+	provides: { string },
+	requires: { string },
+	inputs: { string },
+	outputs: { string },
+	events: { string },
+	boundary: string,
+	enabled: boolean,
+}
+
+export type Contract = setmetatable<ContractFields, typeof(Contract)>
+
+export type Task = {
+	identity: string,
+	entry: string,
+	outputs: { string },
+	needs: { string },
+}
+
+--# Constants
+
+local EVENTS: { [string]: boolean } = { push = true, pull_request = true, workflow_dispatch = true }
+
+--# Helpers
+
+local function invalid(entry: string, reason: string): never
+	error(`{entry}: {reason}`, 0)
+end
+
+local function strings(entry: string, field: string, value: unknown, pattern: string?): { string }
+	if type(value) ~= "table" then
+		invalid(entry, `{field} must be an array`)
+	end
+
+	local items: { string } = {}
+	local seen: { [string]: boolean } = {}
+	local count = 0
+	local maxIndex = 0
+	for index, item in value do
+		if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
+			invalid(entry, `{field} must be an array`)
+		end
+		if type(item) ~= "string" or item == "" then
+			invalid(entry, `{field} must contain only nonempty strings`)
+		end
+		count += 1
+		maxIndex = math.max(maxIndex, index)
+		if seen[item] then
+			invalid(entry, `duplicate {field}: {item}`)
+		end
+		if pattern and not item:match(pattern) then
+			invalid(entry, `invalid {field}: {item}`)
+		end
+		seen[item] = true
+		items[index] = item
+	end
+	if count ~= maxIndex then
+		invalid(entry, `{field} must be a contiguous array`)
+	end
+	return items
+end
+
+local function paths(entry: string, field: string, value: unknown): { string }
+	local items = strings(entry, field, value)
+	for _, path in items do
+		if path:sub(1, 1) == "/" or path:find("\\", 1, true) or path:find(":", 1, true)
+			or path:find("//", 1, true) or path:sub(-1) == "/" then
+			invalid(entry, `unsafe {field} glob: {path}`)
+		end
+		for segment in path:gmatch("[^/]+") do
+			if segment == "." or segment == ".." then
+				invalid(entry, `unsafe {field} glob: {path}`)
+			end
+		end
+	end
+	return items
+end
+
+--# Constructor
+
+-- This constructor owns the validated shape exposed by component classes.
+function Contract.new(identity: string, entry: string, source: unknown): Contract
+	if type(source) ~= "table" then
+		invalid(entry, "Component.Contract must be a table")
+	end
+	local raw: { [string]: unknown } = {}
+	for field, value in source do
+		if type(field) ~= "string" then
+			invalid(entry, "contract keys must be strings")
+		end
+		raw[field] = value
+	end
+	if identity == "init" or not identity:match("^[%a%d][%w_-]*$") then
+		invalid(entry, `invalid component identity: {identity}`)
+	end
+
+	local provides = strings(entry, "provides", raw.provides, "^[a-z][a-z0-9_.:-]*$")
+	if #provides == 0 then
+		invalid(entry, "provides must not be empty")
+	end
+
+	local eventSource = raw.events
+	if eventSource == nil then
+		eventSource = { "push", "pull_request", "workflow_dispatch" }
+	end
+	local events = strings(entry, "events", eventSource)
+	if #events == 0 then
+		invalid(entry, "events must not be empty")
+	end
+	for _, event in events do
+		if not EVENTS[event] then
+			invalid(entry, `unsupported event: {event}`)
+		end
+	end
+
+	local boundary = raw.boundary
+	if boundary == nil then
+		boundary = "read"
+	end
+	if type(boundary) ~= "string" then
+		invalid(entry, "boundary must be read or privileged")
+	end
+	if boundary ~= "read" and boundary ~= "privileged" then
+		invalid(entry, "boundary must be read or privileged")
+	end
+
+	local enabled = raw.enabled
+	if enabled == nil then
+		enabled = true
+	elseif type(enabled) ~= "boolean" then
+		invalid(entry, "enabled must be boolean")
+	end
+
+	local requirements = raw.requires
+	if requirements == nil then
+		requirements = {}
+	end
+	local inputPatterns = raw.inputs
+	if inputPatterns == nil then
+		inputPatterns = {}
+	end
+	local outputPatterns = raw.outputs
+	if outputPatterns == nil then
+		outputPatterns = {}
+	end
+
+	local fields: ContractFields = {
+		identity = identity,
+		entry = entry,
+		provides = provides,
+		requires = strings(entry, "requires", requirements, "^[a-z][a-z0-9_.:-]*$"),
+		inputs = paths(entry, "inputs", inputPatterns),
+		outputs = paths(entry, "outputs", outputPatterns),
+		events = events,
+		boundary = boundary,
+		enabled = enabled,
+	}
+	local allowedFields: { [string]: boolean } = {
+		provides = true,
+		requires = true,
+		inputs = true,
+		outputs = true,
+		events = true,
+		boundary = true,
+		enabled = true,
+	}
+	for field in raw do
+		if not allowedFields[field] then
+			invalid(entry, `unknown or reserved contract field: {field}`)
+		end
+	end
+
+	return setmetatable(fields, Contract)
+end
+
+--# Methods
+
+function Contract.SupportsEvent(self: Contract, event: string): boolean
+	return table.find(self.events, event) ~= nil
+end
+
+-- Convert a validated instance to the minimum serializable execution record.
+-- Method tables and other local state never cross the artifact boundary.
+function Contract.ToTask(self: Contract, needs: { string }): Task
+	return {
+		identity = self.identity,
+		entry = self.entry,
+		outputs = self.outputs,
+		needs = needs,
+	}
+end
+
+return Contract
