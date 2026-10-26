@@ -3,16 +3,11 @@
 
 local Component = require("./component")
 local Glob = require("./glob")
-local Process = require("@lune/process")
 
 local Planning = {}
 
--- A single GitHub job has one OS, CPU architecture, and permission boundary.
--- A component must not pretend that selecting its runtime provisions a runner.
-local ARCHITECTURES = {
-	x86_64 = "x64",
-	aarch64 = "arm64",
-}
+-- Source hosts are discovered by their owning source/hosts extension point.
+-- Bootstrap does not define or enumerate supported platforms.
 local RESERVED_OUTPUTS = {
 	"ci/bootstrap/**",
 	".github/workflows/**",
@@ -104,15 +99,9 @@ local function resolveOutputs(active)
 	end
 end
 
-local function requireRunner(component)
-	local runtime = component.runtime
-	local architecture = ARCHITECTURES[Process.arch]
-	if runtime.os ~= Process.os or runtime.architecture ~= architecture or #runtime.labels > 0 then
-		fail(`{component.identity}: requires {component:RunnerShape()}, but the single bootstrap job runs on {Process.os}/{architecture or Process.arch} with no custom runner labels`)
-	end
+local function requireBoundary(component)
 	if component.boundary ~= "read" then
-		-- Permissions cannot be elevated by a component inside a running job.
-		fail(`{component.identity}: privileged execution requires a separately authorized GitHub job, which this single-job workflow does not provide`)
+		fail(`{component.identity}: privileged execution requires a separately authorized GitHub job`)
 	end
 end
 
@@ -172,7 +161,7 @@ function Planning.Resolve(components: { Component.Component }, event: string)
 	local workers = {}
 	for identity in selected do
 		local component = active[identity]
-		requireRunner(component)
+		requireBoundary(component)
 		if component:IsValidator() then
 			validators[identity] = true
 		else
