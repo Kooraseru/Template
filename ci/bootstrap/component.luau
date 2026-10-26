@@ -9,12 +9,6 @@ Component.__index = Component
 
 --# Types
 
-type Runtime = {
-	os: string,
-	architecture: string,
-	labels: { string },
-}
-
 type ComponentFields = {
 	identity: string,
 	entry: string,
@@ -23,7 +17,6 @@ type ComponentFields = {
 	inputs: { string },
 	outputs: { string },
 	events: { string },
-	runtime: Runtime,
 	boundary: string,
 	enabled: boolean,
 }
@@ -40,8 +33,6 @@ export type Task = {
 --# Constants
 
 local EVENTS = { push = true, pull_request = true, workflow_dispatch = true }
-local OPERATING_SYSTEMS = { linux = true, windows = true, macos = true }
-local ARCHITECTURES = { x64 = true, arm64 = true }
 local VALIDATION_PREFIX = "validation."
 
 --# Helpers
@@ -88,31 +79,6 @@ local function paths(entry: string, field: string, value: unknown): { string }
 		end
 	end
 	return items
-end
-
-local function executionRuntime(entry: string, value: unknown): Runtime
-	if type(value) ~= "table" then
-		invalid(entry, "runtime must declare os and architecture")
-	end
-	local raw = value :: { [string]: unknown }
-	if type(raw.os) ~= "string" or not OPERATING_SYSTEMS[raw.os] then
-		invalid(entry, "unsupported runtime.os")
-	end
-	if type(raw.architecture) ~= "string" or not ARCHITECTURES[raw.architecture] then
-		invalid(entry, "unsupported runtime.architecture")
-	end
-
-	local fields: Runtime = {
-		os = raw.os,
-		architecture = raw.architecture,
-		labels = strings(entry, "runtime.labels", raw.labels or {}, "^[a-z][a-z0-9_.:-]*$"),
-	}
-	for field in raw do
-		if rawget(fields, field) == nil then
-			invalid(entry, `unknown runtime field: {field}`)
-		end
-	end
-	return fields
 end
 
 --# Constructor
@@ -163,7 +129,6 @@ function Component.new(identity: string, entry: string, source: unknown): Compon
 		inputs = paths(entry, "inputs", raw.inputs or {}),
 		outputs = paths(entry, "outputs", raw.outputs or {}),
 		events = events,
-		runtime = executionRuntime(entry, raw.runtime),
 		boundary = boundary,
 		enabled = enabled,
 	}
@@ -190,11 +155,6 @@ function Component.IsValidator(self: Component): boolean
 		end
 	end
 	return false
-end
-
-function Component.RunnerShape(self: Component): string
-	local runtime = self.runtime
-	return `{runtime.os}/{runtime.architecture}/{table.concat(runtime.labels, ",")}/{self.boundary}`
 end
 
 -- Convert a validated instance to the minimum serializable execution record.
