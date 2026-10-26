@@ -7,10 +7,10 @@
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 
-local Component = require("./component")
-local Contracts = require("./contracts")
-local Planning = require("./planning")
-local Glob = require("./glob")
+local Component = require("@self/component")
+local Contracts = require("@self/contracts")
+local Planning = require("@self/planning")
+local Glob = require("@self/glob")
 
 type Task = Component.Task
 
