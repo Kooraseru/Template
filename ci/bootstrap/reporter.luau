@@ -41,7 +41,7 @@ function Reporter.Report(self: Reporter, outcomes: { [string]: string }, selecte
 	local destination = Process.env.GITHUB_STEP_SUMMARY
 	if destination then
 		local current = if Fs.isFile(destination) then Fs.readFile(destination) else ""
-		Fs.writeFile(destination, current .. text)
+		Fs.writeFile(destination, `{current}{text}`)
 	end
 end
 

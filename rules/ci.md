@@ -3,7 +3,7 @@
 ## One workflow, one entry point
 
 `.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
-invokes the `ci/main.luau` launcher. The workflow does not maintain component
+invokes the executable `ci/entry.luau` launcher. The workflow does not maintain component
 lists, dependency plans, matrices, or build logic. The bootstrap discovers
 components from `ci/components/`, reads their static contracts, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.
@@ -18,7 +18,9 @@ repository root. The Luau language server loads it through the workspace's
 `baseLuaurc` setting. Lune resolves runtime `.luaurc` files by walking upward
 from each script, so CI modules use file-relative imports unless a root config
 is deliberately introduced. Use `@self` for private siblings within a
-component package.
+component package. For dynamic module discovery, keep fixed path prefixes in
+named `const` bindings and interpolate only the discovered identity. Lune API
+definitions come from the pinned runtime's `lune setup` output.
 
 ## Component class contract
 
@@ -106,6 +108,15 @@ global state do not leak across components. Declared outputs must exist before
 a component counts as passed. Failed or blocked dependencies fail the run.
 Discovered code must come from the checked-out repository; do not execute
 downloaded or otherwise untrusted components.
+
+## Preflight reachability
+
+`ci/preflight/` analyzes the plan produced by the existing component discovery
+and planner. It does not define per-component validators or repeat component
+contracts. The same analyzer runs before CI execution and through the live VS Code
+task, which publishes file diagnostics to the Problems panel. A module reference
+that cannot be resolved is an error; dynamic behavior the analyzer cannot prove is
+reported as unknown and does not claim runtime success.
 
 ## Source formats and verification
 

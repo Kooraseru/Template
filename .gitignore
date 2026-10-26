@@ -1,0 +1,8 @@
+# Ignore local Codex state while keeping repository hooks and settings tracked.
+.codex/*
+!.codex/config.toml
+!.codex/hooks/
+!.codex/hooks/**
+
+# CI and local build outputs.
+/build/

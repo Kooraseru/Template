@@ -24,7 +24,7 @@ Assert only when absolutely necessary; do not throw asserts across general contr
 
 The design eliminates unexpected breakpoints through strict-as-possible static guarantees and preflight checks:
 
-- **Confine to `pcall` logic:** Only use `assert` within protected execution contexts (`pcall`) where errors are caught, handled, or formatted into structured reports.
+- **Confine to protected calls:** Only use `assert` within `pcall` or `xpcall` boundaries where errors are caught, handled, or formatted into structured reports. Prefer `xpcall` when its error handler adds useful context or normalization.
 - **No scattershot breakpoints:** Unhandled asserts dirty module flow and abort execution prematurely. Do not use `assert` as a shortcut for control flow.
 - **Prefer guards and explicit returns:** When an invariant or input is absent outside a protected boundary, handle it with an early guard clause, explicit error return, or typed fallback.
 

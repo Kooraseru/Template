@@ -4,10 +4,21 @@ This document owns type-safety constraints and allowed uncertainty boundaries.
 
 ## Main Rule
 
-A type cast (`::`) is cheating when it is used to make a value fit a type the
-program has not established. Do not use casts to silence errors, skip
-validation, force a metatable instance shape, or change a value's apparent
-type. The same rule applies to `any`: do not introduce or propagate `any` to
+Type assertions using `::` are prohibited. They override the type system's
+knowledge instead of describing or proving the value's shape. Do not use them
+to silence errors, skip validation, or force a metatable instance shape.
+
+Type annotations using `:` are allowed and encouraged. An annotation gives a
+value, parameter, field, or return value an explicit type for the type checker
+to verify. For example, `local reporter: Reporter` is a type hint; it does not
+convert the value. Use annotations to make intended shapes clear, then fix any
+errors by establishing that shape in code.
+
+Prefer `const` for local bindings that are assigned once. `const` prevents
+rebinding the name; it does not freeze a table's contents. Use `table.freeze`
+when the value itself must also be immutable.
+
+The same prohibition applies to `any`: do not introduce or propagate `any` to
 avoid describing and checking the real shape.
 
 When a type error appears, resolve it in this order:
@@ -21,7 +32,7 @@ When a type error appears, resolve it in this order:
 7. Use a typed adapter or a validated constructor at the boundary where
    uncertainty actually enters.
 
-Never use a cast or `any`, including at constructors, deserialization
+Never use `::` or `any`, including at constructors, deserialization
 boundaries, or engine APIs. Model incomplete construction with fields-first
 initialization, validate raw inputs before creating typed domain values, and
 adapt external APIs with explicit structural types and checked functions.

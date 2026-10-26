@@ -28,7 +28,7 @@ local function matchSegment(name: string, pattern: string): boolean
             elseif character == "?" then
                 table.insert(fragments, ".")
             elseif ("^$()%.[]+-"):find(character, 1, true) then
-                table.insert(fragments, "%" .. character)
+				table.insert(fragments, `%{character}`)
             else
                 table.insert(fragments, character)
             end

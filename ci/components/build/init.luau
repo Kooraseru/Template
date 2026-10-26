@@ -1,7 +1,7 @@
 -- ci/components/build/init.luau
 --!strict
 
-local HostBuilder = require("@self/HostBuilder")
+local HostBuilder = require("@self/hostBuilder")
 
 local Component = {}
 Component.__index = Component
@@ -19,7 +19,11 @@ type ComponentContract = {
 local contract: ComponentContract = {
 	provides = { "build.completed" },
 	requires = {},
-	inputs = { "source/main.c", "source/hosts/*/init.luau" },
+	inputs = {
+		"source/main.c",
+		"source/hosts/*/Dockerfile",
+		"source/hosts/*/init.luau",
+	},
 	outputs = { "build/*.exe" },
 	events = { "push", "pull_request", "workflow_dispatch" },
 	boundary = "read",

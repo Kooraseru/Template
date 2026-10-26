@@ -16,7 +16,7 @@ end
 
 -- Source hosts are discovered by their owning source/hosts extension point.
 -- Bootstrap does not define or enumerate supported platforms.
-local RESERVED_OUTPUTS: { string } = {
+const RESERVED_OUTPUTS: { string } = {
 	"ci/bootstrap/**",
 	".github/workflows/**",
 	".git/**",
@@ -62,7 +62,11 @@ local function orderByDependencies(active: { [string]: Contract.Contract }, depe
 
 	local ordered: { string } = {}
 	while #queue > 0 do
-		local identity = table.remove(queue, 1)
+		local identity = queue[1]
+		if not identity then
+			break
+		end
+		table.remove(queue, 1)
 		table.insert(ordered, identity)
 		for _, successor in successors[identity] do
 			degree[successor] -= 1

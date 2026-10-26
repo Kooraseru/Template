@@ -1,0 +1,64 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Preflight: analyze workspace",
+			"type": "shell",
+			"command": "bash",
+			"args": ["ci/preflight/watch.sh", "--once"],
+			"problemMatcher": {
+				"owner": "preflight",
+				"applyTo": "allDocuments",
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):(\\d+): (error|warning|info): (.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"endColumn": 4,
+					"severity": 5,
+					"message": 6
+				}
+			},
+			"presentation": {
+				"reveal": "silent",
+				"panel": "dedicated",
+				"clear": false
+			}
+		},
+		{
+			"label": "Preflight: live execution reachability",
+			"type": "shell",
+			"command": "bash",
+			"args": ["ci/preflight/watch.sh"],
+			"isBackground": true,
+			"runOptions": {
+				"runOn": "folderOpen"
+			},
+			"problemMatcher": {
+				"owner": "preflight",
+				"applyTo": "allDocuments",
+				"fileLocation": ["relative", "${workspaceFolder}"],
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):(\\d+): (error|warning|info): (.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"endColumn": 4,
+					"severity": 5,
+					"message": 6
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^::preflight-start::$",
+					"endsPattern": "^::preflight-end::$"
+				}
+			},
+			"presentation": {
+				"reveal": "silent",
+				"panel": "dedicated",
+				"clear": false
+			}
+		}
+	]
+}

@@ -1,8 +1,10 @@
 {
-  "githubLocalActions.actCommand": "build/tools/act/act.exe",
+  "githubLocalActions.actCommand": "act --pull=false",
+  "task.allowAutomaticTasks": "on",
   "luau-lsp.fflags.enableNewSolver": true,
   "luau-lsp.platform.type": "standard",
   "luau-lsp.analyzeLuaFiles": false,
+  "luau-lsp.diagnostics.workspace": true,
   "luau-lsp.sourcemap.enabled": false,
   "luau-lsp.sourcemap.autogenerate": false,
   "luau-lsp.server.baseLuaurc": "config/luau/.luaurc",

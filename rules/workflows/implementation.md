@@ -6,3 +6,13 @@
 4. Run relevant static checks, preflight, and supported integration or platform execution, according to the change.
 5. Preserve security, provenance, and publication gates.
 6. Record deferred migrations explicitly. Do not report an unfinished refactor, skipped branch, or unavailable platform as verified.
+
+On Windows, prefer the configured MSYS2 Bash for repository commands and local
+hooks. Use PowerShell only when a Windows-specific operation requires it.
+
+## Editor configuration changes
+
+VS Code and language-server settings may not take effect until the user
+restarts VS Code. Batch related editor configuration changes into one reviewed
+edit, avoid repeated setting changes while waiting for diagnostics, and do not
+claim a setting is active until the language server has reloaded.

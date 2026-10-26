@@ -24,10 +24,14 @@ export type Contract = setmetatable<ContractFields, typeof(Contract)>
 
 export type Task = {
 	identity: string,
+	invoker: string,
 	entry: string,
+	inputs: { string },
 	outputs: { string },
 	needs: { string },
 }
+
+const TASK_INVOKER = "ci/bootstrap/invoke.luau"
 
 --# Constants
 
@@ -41,7 +45,7 @@ end
 
 local function strings(entry: string, field: string, value: unknown, pattern: string?): { string }
 	if type(value) ~= "table" then
-		invalid(entry, `{field} must be an array`)
+		return invalid(entry, `{field} must be an array`)
 	end
 
 	local items: { string } = {}
@@ -50,24 +54,24 @@ local function strings(entry: string, field: string, value: unknown, pattern: st
 	local maxIndex = 0
 	for index, item in value do
 		if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
-			invalid(entry, `{field} must be an array`)
+			return invalid(entry, `{field} must be an array`)
 		end
 		if type(item) ~= "string" or item == "" then
-			invalid(entry, `{field} must contain only nonempty strings`)
+			return invalid(entry, `{field} must contain only nonempty strings`)
 		end
 		count += 1
 		maxIndex = math.max(maxIndex, index)
 		if seen[item] then
-			invalid(entry, `duplicate {field}: {item}`)
+			return invalid(entry, `duplicate {field}: {item}`)
 		end
 		if pattern and not item:match(pattern) then
-			invalid(entry, `invalid {field}: {item}`)
+			return invalid(entry, `invalid {field}: {item}`)
 		end
 		seen[item] = true
 		items[index] = item
 	end
 	if count ~= maxIndex then
-		invalid(entry, `{field} must be a contiguous array`)
+		return invalid(entry, `{field} must be a contiguous array`)
 	end
 	return items
 end
@@ -93,12 +97,12 @@ end
 -- This constructor owns the validated shape exposed by component classes.
 function Contract.new(identity: string, entry: string, source: unknown): Contract
 	if type(source) ~= "table" then
-		invalid(entry, "Component.Contract must be a table")
+		return invalid(entry, "Component.Contract must be a table")
 	end
 	local raw: { [string]: unknown } = {}
 	for field, value in source do
 		if type(field) ~= "string" then
-			invalid(entry, "contract keys must be strings")
+			return invalid(entry, "contract keys must be strings")
 		end
 		raw[field] = value
 	end
@@ -126,21 +130,26 @@ function Contract.new(identity: string, entry: string, source: unknown): Contrac
 	end
 
 	local boundary = raw.boundary
+	local boundaryValue: string
 	if boundary == nil then
-		boundary = "read"
-	end
-	if type(boundary) ~= "string" then
-		invalid(entry, "boundary must be read or privileged")
-	end
-	if boundary ~= "read" and boundary ~= "privileged" then
-		invalid(entry, "boundary must be read or privileged")
+		boundaryValue = "read"
+	elseif type(boundary) == "string" then
+		if boundary ~= "read" and boundary ~= "privileged" then
+			return invalid(entry, "boundary must be read or privileged")
+		end
+		boundaryValue = boundary
+	else
+		return invalid(entry, "boundary must be read or privileged")
 	end
 
 	local enabled = raw.enabled
+	local enabledValue: boolean
 	if enabled == nil then
-		enabled = true
-	elseif type(enabled) ~= "boolean" then
-		invalid(entry, "enabled must be boolean")
+		enabledValue = true
+	elseif type(enabled) == "boolean" then
+		enabledValue = enabled
+	else
+		return invalid(entry, "enabled must be boolean")
 	end
 
 	local requirements = raw.requires
@@ -164,8 +173,8 @@ function Contract.new(identity: string, entry: string, source: unknown): Contrac
 		inputs = paths(entry, "inputs", inputPatterns),
 		outputs = paths(entry, "outputs", outputPatterns),
 		events = events,
-		boundary = boundary,
-		enabled = enabled,
+		boundary = boundaryValue,
+		enabled = enabledValue,
 	}
 	local allowedFields: { [string]: boolean } = {
 		provides = true,
@@ -196,7 +205,9 @@ end
 function Contract.ToTask(self: Contract, needs: { string }): Task
 	return {
 		identity = self.identity,
+		invoker = TASK_INVOKER,
 		entry = self.entry,
+		inputs = self.inputs,
 		outputs = self.outputs,
 		needs = needs,
 	}

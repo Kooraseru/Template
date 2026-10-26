@@ -4,6 +4,8 @@
 local Fs = require("@lune/fs")
 local Glob = require("../../bootstrap/glob")
 
+const HOST_MODULE_PREFIX = "../../../"
+
 local HostBuilder = {}
 HostBuilder.__index = HostBuilder
 
@@ -25,12 +27,16 @@ function HostBuilder.Run(self: HostBuilder): ()
 	end
 
 	for _, entry in entries do
-		local modulePath = "../../../" .. entry:gsub("/init%.luau$", "")
-		local host = require(modulePath)
+		local modulePath = `{HOST_MODULE_PREFIX}{entry:gsub("/init%.luau$", "")}`
+		local loaded, host = xpcall(require, tostring, modulePath)
+		if not loaded then
+			error(`{entry}: unable to load host module: {host}`, 0)
+		end
 		if type(host) ~= "function" then
 			error(`{entry}: host module must return a callable function`, 0)
 		end
-		host()
+		local buildHost: () -> () = host
+		buildHost()
 		print(`Built host from {entry}`)
 	end
 end

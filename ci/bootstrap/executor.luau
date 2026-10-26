@@ -38,25 +38,23 @@ function Executor.MissingOutputs(self: Executor, outputs: { string }): { string 
 end
 
 function Executor.Invoke(self: Executor, task: Contract.Task, event: string): boolean
-	local ok, result = pcall(Process.exec, Process.env.CI_LUNE or "lune", {
+	local options: Process.ExecOptions = {
+		cwd = Process.cwd,
+		stdio = "inherit",
+	}
+	local ok, result = xpcall(Process.exec, tostring, Process.env.CI_LUNE or "lune", {
 		"run",
-		"ci/bootstrap/invoke.luau",
+		task.invoker,
 		task.entry,
 		event,
-	}, { cwd = Process.cwd })
+	}, options)
 
 	if not ok then
-		warn(`::error::{task.identity}: unable to start Lune: {result}`)
+		print(`::error::{task.identity}: unable to start Lune: {result}`)
 		return false
 	end
-	if result.stdout ~= "" then
-		print(result.stdout)
-	end
-	if result.stderr ~= "" then
-		warn(result.stderr)
-	end
 	if not result.ok then
-		warn(`::error::{task.identity}: exited with status {result.code}`)
+		print(`::error::{task.identity}: exited with status {result.code}`)
 	end
 	return result.ok
 end
@@ -76,12 +74,12 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		local outcome: string
 		if #blockedBy > 0 then
 			outcome = "blocked"
-			warn(`::error::{task.identity}: blocked by {table.concat(blockedBy, ", ")}`)
+			print(`::error::{task.identity}: blocked by {table.concat(blockedBy, ", ")}`)
 		else
 			local executed = self:Invoke(task, event)
 			local missing = if executed then self:MissingOutputs(task.outputs) else {}
 			if #missing > 0 then
-				warn(`::error::{task.identity}: missing declared outputs {table.concat(missing, ", ")}`)
+				print(`::error::{task.identity}: missing declared outputs {table.concat(missing, ", ")}`)
 			end
 			outcome = if executed and #missing == 0 then "passed" else "failed"
 		end

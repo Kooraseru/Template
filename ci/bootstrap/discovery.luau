@@ -7,6 +7,8 @@ local Process = require("@lune/process")
 local Contract = require("./contract")
 local Glob = require("./glob")
 
+const COMPONENTS_MODULE_PREFIX = "../components"
+
 local Discovery = {}
 Discovery.__index = Discovery
 
@@ -75,7 +77,11 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		end
 		identities[folded] = path
 
-		local definition = require(`../components/{identity}`)
+		local modulePath = `{COMPONENTS_MODULE_PREFIX}/{identity}`
+		local loaded, definition = xpcall(require, tostring, modulePath)
+		if not loaded then
+			error(`{entry}: unable to load component module: {definition}`, 0)
+		end
 		if type(definition) ~= "table" or type(definition.new) ~= "function" then
 			error(`{entry}: component module must expose Component.new`, 0)
 		end

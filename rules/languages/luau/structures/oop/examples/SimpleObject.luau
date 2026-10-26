@@ -4,13 +4,17 @@
 local Widget = {}
 Widget.__index = Widget
 
+type Root = {
+	Destroy: (self: Root) -> (),
+}
+
 type WidgetFields = {
-	Root: Frame,
+	Root: Root,
 }
 
 export type Widget = setmetatable<WidgetFields, typeof(Widget)>
 
-function Widget.new(root: Frame): Widget
+function Widget.new(root: Root): Widget
 	local fields: WidgetFields = {
 		Root = root,
 	}

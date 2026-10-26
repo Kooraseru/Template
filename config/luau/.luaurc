@@ -8,6 +8,6 @@
   "aliases": {
     "ci": "../../ci",
     "workspace": "../..",
-    "lune": "./luau-lsp/lune/"
+    "lune": "~/.lune/.typedefs/0.11.1/"
   }
 }

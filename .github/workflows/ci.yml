@@ -21,4 +21,4 @@ jobs:
         shell: bash
         env:
           CI_EVENT: ${{ github.event_name }}
-        run: lune run ci/main.luau
+        run: lune run ci/entry.luau

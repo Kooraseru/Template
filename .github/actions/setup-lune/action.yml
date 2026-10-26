@@ -1,5 +1,5 @@
 name: Set up Lune
-description: Install checksum-verified Lune 0.10.5 for Luau CI components.
+description: Install checksum-verified Lune 0.11.1 for Luau CI components.
 runs:
   using: composite
   steps:
@@ -13,18 +13,18 @@ runs:
           esac
         fi
         case "$RUNNER_OS/$RUNNER_ARCH" in
-          Linux/X64) platform=linux-x86_64; checksum=1fb5dee6a1afa1d300092805c6e660fe06144d29dd68c45cf6956f040667f791 ;;
-          Linux/ARM64) platform=linux-aarch64; checksum=176e1272d41ba3d9ea30087b528048a4a97e3d74cfa0eaa5d35d9e0d4122caa6 ;;
-          macOS/X64) platform=macos-x86_64; checksum=f4b43cfd495994b7ef783ac2bb0aa24f1f940f3804b28018121bb3cc2171c1a7 ;;
-          macOS/ARM64) platform=macos-aarch64; checksum=bdb94f47bc1d3af3e3fe796cfce9c7f406042d4aada9cc41a1c53836f3e3b411 ;;
-          Windows/X64) platform=windows-x86_64; checksum=ad0305f5cc6d7ff20996644b40bf7de0de613812f431ca241456e16f9fc89cda ;;
-          Windows/ARM64) platform=windows-aarch64; checksum=b98bc49ded9183951c1d01b428872cd8ce518f200b48824ea3b31e3d7dec28ae ;;
+          Linux/X64) platform=linux-x86_64; checksum=39859282ce677fce19e6eb45c37596a90a25c324c95b4e7e02d428b6cae294a1 ;;
+          Linux/ARM64) platform=linux-aarch64; checksum=f8d7d63384fad5edfaf5423b0ff1a1dbca9c44ec43beaa35c234b20a584aea66 ;;
+          macOS/X64) platform=macos-x86_64; checksum=d083047e08a40bd73dbb1ae8af929536497c0d57021c0ead0f9c8571f228a5fa ;;
+          macOS/ARM64) platform=macos-aarch64; checksum=0592c9b37c06f208f7d90e5d750e76101b9ba6191cd693ef34667f4f1f1063d4 ;;
+          Windows/X64) platform=windows-x86_64; checksum=83f1dc29d9e35c494907521f2ca6561f6c204fdf6f1b06525d2e9fdd1e6b4301 ;;
+          Windows/ARM64) platform=windows-aarch64; checksum=1b1394ca2ba4990ecde440cf787ff46f9c52b2c4318a39fa3373fc56b71e7d8a ;;
           *) echo "Unsupported Lune runner: $RUNNER_OS/$RUNNER_ARCH" >&2; exit 1 ;;
         esac
         destination="$RUNNER_TEMP/lune"
         if [[ "$RUNNER_OS" == Windows ]]; then destination="$(cygpath -u "$destination")"; fi
         mkdir -p "$destination"
-        curl --fail --location --retry 3 "https://github.com/lune-org/lune/releases/download/v0.10.5/lune-0.10.5-$platform.zip" --output "$destination/lune.zip"
+        curl --fail --location --retry 3 "https://github.com/lune-org/lune/releases/download/v0.11.1/lune-0.11.1-$platform.zip" --output "$destination/lune.zip"
         if [[ "$RUNNER_OS" != macOS ]] && command -v sha256sum >/dev/null; then
           echo "$checksum  $destination/lune.zip" | sha256sum -c
         else

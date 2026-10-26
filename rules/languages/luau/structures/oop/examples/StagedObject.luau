@@ -4,17 +4,25 @@
 local Widget = {}
 Widget.__index = Widget
 
+type Root = {
+	Destroy: (self: Root) -> (),
+}
+
+type Connection = {
+	Disconnect: (self: Connection) -> (),
+}
+
 type WidgetFields = {
-	Root: Frame,
-	Connections: { RBXScriptConnection },
+	Root: Root,
+	Connections: { Connection },
 }
 
 export type Widget = setmetatable<WidgetFields, typeof(Widget)>
 
-function Widget.new(): Widget
+function Widget.new(root: Root, connections: { Connection }): Widget
 	local fields: WidgetFields = {
-		Root = Instance.new("Frame"),
-		Connections = {},
+		Root = root,
+		Connections = connections,
 	}
 	return setmetatable(fields, Widget)
 end
