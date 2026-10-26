@@ -1,6 +1,8 @@
 -- ci/bootstrap/planning.luau
 --!strict
 
+local Glob = require("./glob")
+
 local Planning = {}
 
 -- Hosted runner classes are an adapter, not a hardcoded component inventory.
@@ -105,10 +107,15 @@ function Planning.Resolve(components, event: string)
     for _, identity in sortedKeys(active) do
         local component = active[identity]
         for _, output in component.outputs do
-            if produced[output] then
-                fail(`output collision at {output}: {produced[output]} and {identity}`)
+            if Glob.Overlaps(output, "ci-artifacts/plan/**") or Glob.Overlaps(output, "ci-artifacts/results/**") then
+                fail(`{identity}: output glob overlaps reserved CI execution evidence: {output}`)
             end
-            produced[output] = identity
+            for _, owner in produced do
+                if Glob.Overlaps(output, owner.path) then
+                    fail(`output glob collision between {owner.identity} ({owner.path}) and {identity} ({output})`)
+                end
+            end
+            table.insert(produced, { path = output, identity = identity })
         end
         local needs = {}
         for _, requirement in component.requires do

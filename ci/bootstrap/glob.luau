@@ -104,4 +104,64 @@ function Glob.Find(pattern: string, root: string?): { string }
     return results
 end
 
+
+
+-- Two declared output globs must not be able to claim the same path.
+-- Both * / ? inside segments and ** spanning segments are considered.
+local function segmentOverlaps(left: string, right: string): boolean
+    local visited: { [string]: boolean } = {}
+    local function visit(i: number, j: number): boolean
+        local key = `{i}:{j}`
+        if visited[key] then
+            return false
+        end
+        visited[key] = true
+        if i > #left and j > #right then
+            return true
+        end
+        local a = if i <= #left then left:sub(i, i) else nil
+        local b = if j <= #right then right:sub(j, j) else nil
+        if a == "*" and visit(i + 1, j) then
+            return true
+        end
+        if b == "*" and visit(i, j + 1) then
+            return true
+        end
+        if a and b and (a == "*" or b == "*" or a == "?" or b == "?" or a == b) then
+            return visit(if a == "*" then i else i + 1, if b == "*" then j else j + 1)
+        end
+        return false
+    end
+    return visit(1, 1)
+end
+
+function Glob.Overlaps(left: string, right: string): boolean
+    local one = split(left)
+    local two = split(right)
+    local visited: { [string]: boolean } = {}
+    local function visit(i: number, j: number): boolean
+        local key = `{i}:{j}`
+        if visited[key] then
+            return false
+        end
+        visited[key] = true
+        if i > #one and j > #two then
+            return true
+        end
+        local a = one[i]
+        local b = two[j]
+        if a == "**" and visit(i + 1, j) then
+            return true
+        end
+        if b == "**" and visit(i, j + 1) then
+            return true
+        end
+        if a and b and (a == "**" or b == "**" or segmentOverlaps(a, b)) then
+            return visit(if a == "**" then i else i + 1, if b == "**" then j else j + 1)
+        end
+        return false
+    end
+    return visit(1, 1)
+end
+
 return Glob

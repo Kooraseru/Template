@@ -41,6 +41,8 @@ The planner projects discovered groups into a GitHub matrix, respecting the 256-
 
 Privileged work is separately gated by a manually dispatched trusted source branch, required environment approval, and explicit GitHub permissions. Do not self-grant permissions in a component contract or bypass provenance checks. Source checkout and downloaded plans must agree before tasks run. Keep credentials, generated artifacts, and local CI state out of Git.
 
-## Validation before promotion
+## Verification without test infrastructure
 
-Validate the actual Luau bootloader and the live GitHub workflow. Verify static rejection cases and real dynamically discovered worker execution before calling the implementation fully validated. Report what was actually run, what was skipped, and any unavailable platform or permission coverage. Do not commit smoke-test scripts as substitutes for real components.
+Do not create test files, test directories, fixtures, synthetic components, dry-run tasks, or smoke tests. The bootloader performs static contract validation as part of real CI planning, and the workflow itself provides execution evidence when actual application components are present.
+
+Inspect real workflow results and report what they establish. An empty-template run only confirms planning and reconciliation of an empty graph; it does not establish worker or platform execution coverage. Do not bypass missing evidence or add artificial work simply to make jobs appear exercised.
