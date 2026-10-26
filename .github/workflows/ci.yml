@@ -20,16 +20,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - uses: ./.github/actions/setup-lune
       - name: Discover, validate, and plan
         id: plan
         env:
           CI_EVENT: ${{ github.event_name }}
         shell: bash
-        run: python ci/bootstrap/main.py plan --event "$CI_EVENT" --output "$RUNNER_TEMP/plan.json"
+        run: lune run ci/bootstrap/main.luau plan --event "$CI_EVENT" --output "$RUNNER_TEMP/plan.json"
       - uses: actions/upload-artifact@v7
         with:
           name: ci-plan
@@ -49,9 +46,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - uses: ./.github/actions/setup-lune
       - uses: actions/download-artifact@v8
         with:
@@ -61,7 +55,7 @@ jobs:
         shell: bash
         env:
           CI_GROUP: ${{ matrix.group }}
-        run: python ci/bootstrap/main.py run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary read --results ci-artifacts/results
+        run: lune run ci/bootstrap/main.luau run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary read --results ci-artifacts/results
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -83,9 +77,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - uses: ./.github/actions/setup-lune
       - uses: actions/download-artifact@v8
         with:
@@ -95,7 +86,7 @@ jobs:
         shell: bash
         env:
           CI_GROUP: ${{ matrix.group }}
-        run: python ci/bootstrap/main.py run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary privileged --results ci-artifacts/results
+        run: lune run ci/bootstrap/main.luau run --plan ci-artifacts/plan/plan.json --group "$CI_GROUP" --boundary privileged --results ci-artifacts/results
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -113,9 +104,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
+      - uses: ./.github/actions/setup-lune
       - uses: actions/download-artifact@v8
         if: ${{ needs.plan.result == 'success' }}
         with:
@@ -129,4 +118,4 @@ jobs:
           path: ci-artifacts/results
       - name: Require complete execution evidence
         shell: bash
-        run: python ci/bootstrap/main.py reconcile --plan ci-artifacts/plan/plan.json --results ci-artifacts/results
+        run: lune run ci/bootstrap/main.luau reconcile --plan ci-artifacts/plan/plan.json --results ci-artifacts/results

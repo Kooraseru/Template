@@ -17,7 +17,7 @@ The trusted glob adapter may use Lune's filesystem API internally to expand patt
 
 Prefer `name.luau` for one cohesive module. Promote to `name/init.luau` only when the directory has meaningful internal implementation and the head owns a public contract, coordination, validation, or lifecycle. Do not create forwarding-only `init.luau` files.
 
-Each Luau file uses a path comment and `--!strict`; follow global naming, control-flow, types, and module shape rules. Use Lune for host-side Luau tasks. Do not introduce Python, JavaScript, or shell scripting as a replacement CI coordinator.
+Each Luau file uses a path comment and `--!strict`; follow global naming, control-flow, types, and module shape rules. Use Lune for host-side Luau tasks. Do not introduce Python, JavaScript, or shell scripting as a replacement CI coordinator. Native GitHub Actions infrastructure and minimal YAML shell command invocation are permitted; Node.js should not be an application-level dependency.
 
 ## No inferred inventory
 
