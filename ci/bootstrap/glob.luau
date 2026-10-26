@@ -21,7 +21,7 @@ local function matchSegment(name: string, pattern: string): boolean
             expression ..= ".*"
         elseif character == "?" then
             expression ..= "."
-        elseif character:match("[% ^%$%(%)%%%.%[%]%+%-]":gsub(" ", "")) then
+        elseif ("^$()%.[]+-"):find(character, 1, true) then
             expression ..= "%" .. character
         else
             expression ..= character
