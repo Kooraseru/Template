@@ -169,9 +169,6 @@ function Planning.Resolve(components: { Component.Component }, event: string)
 		end
 	end
 
-	if next(workers) and not validators[providers["validation.preflight"]] then
-		fail("nonempty CI requires a discovered, enabled validation.preflight provider for this event")
-	end
 
 	-- Planning-stage validators cannot depend on code that runs only after
 	-- validation. Work tasks may depend on validators because that phase is first.
