@@ -6,34 +6,7 @@ local HostBuilder = require("@self/hostBuilder")
 local Component = {}
 Component.__index = Component
 
-type ComponentContract = {
-	provides: { string },
-	requires: { string },
-	inputs: { string },
-	outputs: { string },
-	events: { string },
-	boundary: string,
-	enabled: boolean,
-}
-
-local contract: ComponentContract = {
-	provides = { "build.completed" },
-	requires = {},
-	inputs = {
-		"source/main.c",
-		"source/hosts/*/Dockerfile",
-		"source/hosts/*/init.luau",
-	},
-	outputs = { "build/*.exe" },
-	events = { "push", "pull_request", "workflow_dispatch" },
-	boundary = "read",
-	enabled = true,
-}
-Component.Contract = contract
-
-type ComponentFields = {
-	hostBuilder: HostBuilder.HostBuilder,
-}
+type ComponentFields = { hostBuilder: HostBuilder.HostBuilder }
 
 export type Component = setmetatable<ComponentFields, typeof(Component)>
 

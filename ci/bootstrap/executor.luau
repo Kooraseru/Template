@@ -38,11 +38,16 @@ function Executor.MissingOutputs(self: Executor, outputs: { string }): { string 
 end
 
 function Executor.Invoke(self: Executor, task: Contract.Task, event: string): boolean
+	local luneExecutable = Process.env.CI_LUNE
+	if not luneExecutable then
+		print("::error::CI_LUNE is unset; start CI with bash ci/toolchain/lune.sh run ci/entry.luau")
+		return false
+	end
 	local options: Process.ExecOptions = {
 		cwd = Process.cwd,
 		stdio = "inherit",
 	}
-	local ok, result = xpcall(Process.exec, tostring, Process.env.CI_LUNE or "lune", {
+	local ok, result = xpcall(Process.exec, tostring, luneExecutable, {
 		"run",
 		task.invoker,
 		task.entry,

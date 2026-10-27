@@ -3,7 +3,7 @@ matcher = "^(apply_patch|Write|Edit)$"
 
 [[hooks.PostToolUse.hooks]]
 type = "command"
-command = "bash .codex/hooks/validate-luau.sh"
-command_windows = "C:\\msys64\\usr\\bin\\bash.exe .codex/hooks/validate-luau.sh"
+command = "bash .codex/hooks/runPreflight.sh"
+command_windows = "C:\\msys64\\usr\\bin\\bash.exe .codex/hooks/runPreflight.sh"
 timeout = 120
-statusMessage = "Checking Luau diagnostics and repository rules"
+statusMessage = "Running CI Preflight"

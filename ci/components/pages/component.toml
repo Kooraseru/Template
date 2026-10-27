@@ -1,0 +1,7 @@
+provides = ["pages.generated"]
+requires = []
+inputs = ["docs/**"]
+outputs = ["build/pages/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"
+enabled = true

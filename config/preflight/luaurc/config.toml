@@ -1,0 +1,4 @@
+provider = "luaurc"
+enabled = true
+file = ".luaurc"
+requiredAliases = ["ci", "workspace", "lune"]

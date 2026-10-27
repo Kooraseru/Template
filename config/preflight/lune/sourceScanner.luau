@@ -1,4 +1,4 @@
--- ci/preflight/SourceScanner.luau
+-- config/preflight/lune/sourceScanner.luau
 --!strict
 
 -- Extract module links and literal discovery globs without executing source.

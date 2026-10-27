@@ -3,11 +3,10 @@
 
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
+local Serde = require("@lune/serde")
 
 local Contract = require("./contract")
 local Glob = require("./glob")
-
-const COMPONENTS_MODULE_PREFIX = "../components"
 
 local Discovery = {}
 Discovery.__index = Discovery
@@ -64,8 +63,12 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 
 		local identity = name
 		local entry = `{path}/init.luau`
-		if not Fs.isFile(entry) or Fs.metadata(entry).kind == "symlink" then
+		if not Fs.isFile(entry) or Fs.metadata(entry).kind ~= "file" then
 			error(`{path}: component directory requires a regular init.luau`, 0)
+		end
+		local contractFile = `{path}/component.toml`
+		if not Fs.isFile(contractFile) or Fs.metadata(contractFile).kind ~= "file" then
+			error(`{path}: component directory requires a regular component.toml`, 0)
 		end
 		if not identity:match("^[%w_-]+$") then
 			error(`{path}: invalid component directory name`, 0)
@@ -77,16 +80,13 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		end
 		identities[folded] = path
 
-		local modulePath = `{COMPONENTS_MODULE_PREFIX}/{identity}`
-		local loaded, definition = xpcall(require, tostring, modulePath)
+		local loaded, source = xpcall(function(): unknown
+			return Serde.decode("toml", Fs.readFile(contractFile))
+		end, tostring)
 		if not loaded then
-			error(`{entry}: unable to load component module: {definition}`, 0)
+			error(`{contractFile}: unable to parse component manifest: {source}`, 0)
 		end
-		if type(definition) ~= "table" or type(definition.new) ~= "function" then
-			error(`{entry}: component module must expose Component.new`, 0)
-		end
-		local source = definition.Contract
-		table.insert(components, Contract.new(identity, entry, source))
+		table.insert(components, Contract.new(identity, entry, contractFile, source))
 	end
 	return components
 end

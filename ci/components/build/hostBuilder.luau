@@ -2,7 +2,7 @@
 --!strict
 
 local Fs = require("@lune/fs")
-local Glob = require("../../bootstrap/glob")
+local Glob = require("@ci/bootstrap/glob")
 
 const HOST_MODULE_PREFIX = "../../../"
 

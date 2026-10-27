@@ -17,12 +17,12 @@ if variant == "--" then
 	variant = Process.args[2]
 end
 if not variant or not EXECUTABLES[variant] then
-	error("usage: lune run ci/run.luau --windows-amd|--windows-arm64|--windows-intel", 0)
+	error("usage: bash ci/toolchain/lune.sh run ci/run.luau --windows-amd|--windows-arm64|--windows-intel", 0)
 end
 
 local executable = EXECUTABLES[variant]
 if not Fs.isFile(executable) then
-	error(`missing {executable}; build first with CI_EVENT=workflow_dispatch lune run ci/entry.luau`, 0)
+	error(`missing {executable}; build first with CI_EVENT=workflow_dispatch bash ci/toolchain/lune.sh run ci/entry.luau`, 0)
 end
 
 local options: Process.ExecOptions = {

@@ -13,5 +13,5 @@
     "editor.tabSize": 4
   },
   "stylua.configPath": "config/luau/stylua/.stylua.toml",
-  "luau-lsp.server.baseLuaurc": "config/luau/.luaurc"
+  "luau-lsp.server.baseLuaurc": ".luaurc"
 }

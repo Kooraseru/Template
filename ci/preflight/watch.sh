@@ -5,34 +5,51 @@ set -uo pipefail
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
-find_lune() {
-	local repository_lune="$root/build/tools/lune/0.11.1/lune.exe"
-	if [[ -f $repository_lune ]]; then
-		printf '%s\n' "$repository_lune"
-		return
-	fi
-	if command -v lune >/dev/null 2>&1; then
-		command -v lune
-		return
-	fi
-	if command -v where.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
-		local windows_lune
-		windows_lune="$(where.exe lune.exe 2>/dev/null | tr -d '\r' | head -n 1)"
-		if [[ -n $windows_lune ]]; then
-			wslpath -u "$windows_lune"
-			return
-		fi
-	fi
-}
+if [[ -n ${USERPROFILE:-} ]]; then
+	HOME=$USERPROFILE
+	export HOME
+fi
 
-lune_command="$(find_lune)"
+# Preserve paths supplied by the VS Code extension across nested MSYS2 Bash processes.
+export PREFLIGHT_LUAU_LSP PREFLIGHT_STYLUA_PATH PREFLIGHT_VSCODE_GLOBAL_STORAGE
 
 run_preflight() {
-	if [[ -z $lune_command ]]; then
-		printf '%s\n' 'ci/entry.luau:1:1:2: error: Lune was not found on PATH'
-		return 127
+	local output
+	local status
+	output="$(CI_EVENT=workflow_dispatch; export CI_EVENT; source ci/toolchain/lune.sh run ci/entry.luau --preflight-only 2>&1)"
+	status=$?
+
+	if ((status == 0)); then
+		if [[ -n $output ]]; then
+			printf '%s\n' "$output"
+		fi
+		return 0
 	fi
-	"$lune_command" run ci/entry.luau --preflight-only
+
+	local diagnostic_count
+	diagnostic_count="$(printf '%s\n' "$output" | grep -Ec '^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): ' || true)"
+	if ((diagnostic_count > 0)); then
+		printf '%s\n' "$output" | grep -E '^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): '
+		return "$status"
+	fi
+
+	local runtime_version
+	runtime_version="$(bash ci/toolchain/lune.sh --version 2>/dev/null | head -n 1)"
+	local syntax_location
+	syntax_location="$(printf '%s\n' "$output" | sed -nE 's#^syntax error: .*\\template\\([^:]+):([0-9]+):.*#\1 \2#p' | head -n 1)"
+	if [[ -n $syntax_location ]]; then
+		local source_path line_number
+		read -r source_path line_number <<<"$syntax_location"
+		source_path="${source_path//\\//}"
+		printf '%s.luau:%s:1:2: error: Preflight could not parse this file with %s. Use the repository-pinned Lune 0.11.1 runtime.\n' \
+			"$source_path" "$line_number" "$runtime_version"
+	else
+		local first_error
+		first_error="$(printf '%s\n' "$output" | grep -m 1 -E '^(syntax error:|::error::|Error:|error:)' || true)"
+		first_error="${first_error:-Preflight exited before producing diagnostics}"
+		printf 'ci/entry.luau:1:1:2: error: Preflight failed with %s: %s\n' "$runtime_version" "$first_error"
+	fi
+	return "$status"
 }
 
 if [[ ${1:-} == "--once" ]]; then
@@ -49,7 +66,8 @@ snapshot() {
 
 previous=""
 while true; do
-	current="$(snapshot)"
+	runtime_path="$(bash ci/toolchain/lune.sh --print-path 2>/dev/null || true)"
+	current="$(snapshot):$runtime_path"
 	if [[ $current != "$previous" ]]; then
 		printf '%s\n' '::preflight-start::'
 		run_preflight || true

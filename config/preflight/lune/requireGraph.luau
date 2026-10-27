@@ -1,12 +1,12 @@
--- ci/preflight/Analyzer.luau
+-- config/preflight/lune/requireGraph.luau
 --!strict
 
 -- Trace source imports from the CI entry and generated component plan.
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 
-local Contract = require("../bootstrap/contract")
-local Glob = require("../bootstrap/glob")
+local Contract = require("@ci/bootstrap/contract")
+local Glob = require("@ci/bootstrap/glob")
 local Graph = require("./graph")
 local SourceScanner = require("./sourceScanner")
 
@@ -76,7 +76,7 @@ local function contractValueLocation(path: string, field: string, value: string)
 	local source = Fs.readFile(path):gsub("\r\n", "\n")
 	for line in (source .. "\n"):gmatch("(.-)\n") do
 		lineNumber += 1
-		if not inField and line:match("^%s*" .. field .. "%s*=%s*{") then
+		if not inField and line:match("^%s*" .. field .. "%s*=%s*%[") then
 			inField = true
 		end
 		if inField then
@@ -86,7 +86,7 @@ local function contractValueLocation(path: string, field: string, value: string)
 				local column = literalStart + 1
 				return lineNumber, column, column + #value
 			end
-			if line:find("}", 1, true) then
+			if line:find("]", 1, true) then
 				inField = false
 			end
 		end
@@ -102,12 +102,12 @@ local function candidates(path: string): { string }
 end
 
 function Analyzer.new(): Analyzer
-	local configuration = Serde.decode("json", Fs.readFile("config/luau/.luaurc"))
+	local configuration = Serde.decode("json", Fs.readFile(".luaurc"))
 	local aliases: { [string]: string } = {}
 	if type(configuration) == "table" and type(configuration.aliases) == "table" then
 		for name, value in configuration.aliases do
 			if type(name) == "string" and type(value) == "string" and value:sub(1, 1) ~= "~" then
-				local path = normalized(`config/luau/{value}`)
+				local path = normalized(if value == "." then "" else value)
 				if path then
 					aliases[name] = path
 				end
@@ -188,21 +188,32 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 		graph:AddEdge("ci/bootstrap/executor.luau", task.invoker, "planned invocation")
 		graph:AddEdge(task.invoker, task.entry, "planned component entry")
 		for _, inputPattern in task.inputs do
-			local line, column, endColumn = contractValueLocation(task.entry, "inputs", inputPattern)
+			local line, column, endColumn = contractValueLocation(task.contractFile, "inputs", inputPattern)
 			line = line or 1
 			column = column or 1
 			local ok, matches = xpcall(Glob.Find, tostring, inputPattern)
 			if not ok then
-				report(task.entry, line, column, "error", `invalid input glob {inputPattern}: {matches}`, endColumn)
+				report(task.contractFile, line, column, "error", `invalid input glob {inputPattern}: {matches}`, endColumn)
 			elseif #matches == 0 then
-				report(task.entry, line, column, "error", `declared input glob matches no files: {inputPattern}`, endColumn)
+				report(task.contractFile, line, column, "error", `declared input glob matches no files: {inputPattern}`, endColumn)
 			else
+				local fileMatches = 0
 				for _, path in matches do
-					if Fs.metadata(path).kind ~= "file" then
-						report(task.entry, line, column, "error", `declared input is not a regular file: {path}`, endColumn)
-					elseif path:match("%.luau$") or path:match("%.lua$") then
+					local metadata = Fs.metadata(path)
+					if metadata.kind == "dir" then
+						continue
+					end
+					if metadata.kind ~= "file" then
+						report(task.contractFile, line, column, "error", `declared input is not a regular file: {path}`, endColumn)
+						continue
+					end
+					fileMatches += 1
+					if path:match("%.luau$") or path:match("%.lua$") then
 						declaredScripts[path] = task.identity
 					end
+				end
+				if fileMatches == 0 then
+					report(task.contractFile, line, column, "error", `declared input glob matches no files: {inputPattern}`, endColumn)
 				end
 			end
 		end
@@ -221,8 +232,15 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 	end
 	local cursor = 1
 	while cursor <= #pending do
-		local path = pending[cursor]
+		local pendingPath = pending[cursor]
 		cursor += 1
+		if not pendingPath then
+			continue
+		end
+		local path = normalized(pendingPath)
+		if not path then
+			continue
+		end
 		if expanded[path] or not Fs.isFile(path) then
 			continue
 		end

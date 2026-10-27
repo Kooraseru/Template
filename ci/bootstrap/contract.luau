@@ -11,6 +11,7 @@ Contract.__index = Contract
 type ContractFields = {
 	identity: string,
 	entry: string,
+	contractFile: string,
 	provides: { string },
 	requires: { string },
 	inputs: { string },
@@ -26,6 +27,7 @@ export type Task = {
 	identity: string,
 	invoker: string,
 	entry: string,
+	contractFile: string,
 	inputs: { string },
 	outputs: { string },
 	needs: { string },
@@ -94,38 +96,38 @@ end
 
 --# Constructor
 
--- This constructor owns the validated shape exposed by component classes.
-function Contract.new(identity: string, entry: string, source: unknown): Contract
+-- This constructor validates decoded TOML before its values reach planning.
+function Contract.new(identity: string, entry: string, contractFile: string, source: unknown): Contract
 	if type(source) ~= "table" then
-		return invalid(entry, "Component.Contract must be a table")
+		return invalid(contractFile, "component manifest must contain a table")
 	end
 	local raw: { [string]: unknown } = {}
 	for field, value in source do
 		if type(field) ~= "string" then
-			return invalid(entry, "contract keys must be strings")
+			return invalid(contractFile, "manifest keys must be strings")
 		end
 		raw[field] = value
 	end
 	if identity == "init" or not identity:match("^[%a%d][%w_-]*$") then
-		invalid(entry, `invalid component identity: {identity}`)
+		invalid(contractFile, `invalid component identity: {identity}`)
 	end
 
-	local provides = strings(entry, "provides", raw.provides, "^[a-z][a-z0-9_.:-]*$")
+	local provides = strings(contractFile, "provides", raw.provides, "^[a-z][a-z0-9_.:-]*$")
 	if #provides == 0 then
-		invalid(entry, "provides must not be empty")
+		invalid(contractFile, "provides must not be empty")
 	end
 
 	local eventSource = raw.events
 	if eventSource == nil then
 		eventSource = { "push", "pull_request", "workflow_dispatch" }
 	end
-	local events = strings(entry, "events", eventSource)
+	local events = strings(contractFile, "events", eventSource)
 	if #events == 0 then
-		invalid(entry, "events must not be empty")
+		invalid(contractFile, "events must not be empty")
 	end
 	for _, event in events do
 		if not EVENTS[event] then
-			invalid(entry, `unsupported event: {event}`)
+			invalid(contractFile, `unsupported event: {event}`)
 		end
 	end
 
@@ -135,11 +137,11 @@ function Contract.new(identity: string, entry: string, source: unknown): Contrac
 		boundaryValue = "read"
 	elseif type(boundary) == "string" then
 		if boundary ~= "read" and boundary ~= "privileged" then
-			return invalid(entry, "boundary must be read or privileged")
+			return invalid(contractFile, "boundary must be read or privileged")
 		end
 		boundaryValue = boundary
 	else
-		return invalid(entry, "boundary must be read or privileged")
+		return invalid(contractFile, "boundary must be read or privileged")
 	end
 
 	local enabled = raw.enabled
@@ -149,7 +151,7 @@ function Contract.new(identity: string, entry: string, source: unknown): Contrac
 	elseif type(enabled) == "boolean" then
 		enabledValue = enabled
 	else
-		return invalid(entry, "enabled must be boolean")
+		return invalid(contractFile, "enabled must be boolean")
 	end
 
 	local requirements = raw.requires
@@ -168,10 +170,11 @@ function Contract.new(identity: string, entry: string, source: unknown): Contrac
 	local fields: ContractFields = {
 		identity = identity,
 		entry = entry,
+		contractFile = contractFile,
 		provides = provides,
-		requires = strings(entry, "requires", requirements, "^[a-z][a-z0-9_.:-]*$"),
-		inputs = paths(entry, "inputs", inputPatterns),
-		outputs = paths(entry, "outputs", outputPatterns),
+		requires = strings(contractFile, "requires", requirements, "^[a-z][a-z0-9_.:-]*$"),
+		inputs = paths(contractFile, "inputs", inputPatterns),
+		outputs = paths(contractFile, "outputs", outputPatterns),
 		events = events,
 		boundary = boundaryValue,
 		enabled = enabledValue,
@@ -187,7 +190,7 @@ function Contract.new(identity: string, entry: string, source: unknown): Contrac
 	}
 	for field in raw do
 		if not allowedFields[field] then
-			invalid(entry, `unknown or reserved contract field: {field}`)
+			invalid(contractFile, `unknown or reserved contract field: {field}`)
 		end
 	end
 
@@ -207,6 +210,7 @@ function Contract.ToTask(self: Contract, needs: { string }): Task
 		identity = self.identity,
 		invoker = TASK_INVOKER,
 		entry = self.entry,
+		contractFile = self.contractFile,
 		inputs = self.inputs,
 		outputs = self.outputs,
 		needs = needs,
