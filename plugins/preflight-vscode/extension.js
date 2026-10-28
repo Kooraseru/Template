@@ -8,7 +8,7 @@ const vscode = require("vscode");
 const OWNER = "preflight";
 const DEBOUNCE_MS = 500;
 const PROVIDER_EXTENSIONS = ["JohnnyMorganz.luau-lsp", "JohnnyMorganz.stylua"];
-const DIAGNOSTIC_PATTERN = /^(.*):(\d+):(\d+):(\d+): (error|warning|info): (.*)$/;
+const DIAGNOSTIC_PATTERN = /^(.*):(\d+):(\d+):(\d+)(?::(\d+))?: (error|warning|info): ([^:]+): (.*)$/;
 
 /** Return true when a workspace folder exposes this repository's Preflight interface. */
 function isPreflightWorkspace(folder) {
@@ -78,7 +78,7 @@ function parseDiagnostic(line, root) {
 		return undefined;
 	}
 
-	const [, reportedPath, lineText, columnText, endColumnText, severityText, message] = match;
+	const [, reportedPath, lineText, columnText, endColumnText, endLineText, severityText, sourceText, message] = match;
 	const lineNumber = Number(lineText);
 	const column = Number(columnText);
 	const endColumn = Number(endColumnText);
@@ -93,9 +93,17 @@ function parseDiagnostic(line, root) {
 		info: vscode.DiagnosticSeverity.Information,
 	}[severityText];
 	const start = new vscode.Position(lineNumber - 1, column - 1);
-	const finish = new vscode.Position(lineNumber - 1, Math.max(column, endColumn) - 1);
+	const finish = endLineText
+		? new vscode.Position(Math.max(lineNumber, Number(endLineText)), 0)
+		: new vscode.Position(lineNumber - 1, Math.max(column, endColumn) - 1);
 	const diagnostic = new vscode.Diagnostic(new vscode.Range(start, finish), message, severity);
-	diagnostic.source = OWNER;
+	diagnostic.source = {
+		preflight: "Preflight",
+		luauLsp: "Luau LSP",
+		stylua: "StyLua",
+		luaurc: "luaurc",
+		lune: "Lune",
+	}[sourceText] || sourceText;
 	return { uri: vscode.Uri.file(filePath), diagnostic };
 }
 

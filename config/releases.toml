@@ -1,0 +1,9 @@
+# Explicit release selections. An empty array stages no public release records.
+# Each selection uses a full source commit SHA; optional notes remain authored files.
+releases = []
+
+# [[releases]]
+# version = "0.1.0-pre.1"
+# commit = "<full 40-character source commit SHA>"
+# from = "beginning"
+# notes = "introduction.md"

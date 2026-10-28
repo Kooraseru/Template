@@ -12,6 +12,8 @@ export type Diagnostic = {
 	endColumn: number,
 	severity: "error" | "warning" | "info",
 	message: string,
+	source: string?,
+	endLine: number?,
 }
 
 export type Task = BootstrapContract.Task

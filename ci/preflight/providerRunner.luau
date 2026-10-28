@@ -33,7 +33,11 @@ function ProviderRunner.Run(
 	local providerEntries = Glob.Find("config/preflight/*/init.luau")
 	local diagnostics: { Contracts.Diagnostic } = {}
 	if #providerEntries ~= #packages then
-		appendDiagnostic(diagnostics, "config/preflight", "configured provider entries do not match discovered provider packages")
+		appendDiagnostic(
+			diagnostics,
+			"config/preflight",
+			"configured provider entries do not match discovered provider packages"
+		)
 	end
 	for _, package in packages do
 		if not package.enabled then
@@ -57,13 +61,18 @@ function ProviderRunner.Run(
 			local provider = providerClass.new(package)
 			local result = provider:Analyze(context)
 			for _, diagnostic in result.diagnostics do
+				diagnostic.source = package.provider
 				table.insert(diagnostics, diagnostic)
 			end
 			return true
 		end, tostring)
 
 		if not ok then
-			appendDiagnostic(diagnostics, `{package.directory}/init.luau`, `{package.provider} provider failed: {failure}`)
+			appendDiagnostic(
+				diagnostics,
+				`{package.directory}/init.luau`,
+				`{package.provider} provider failed: {failure}`
+			)
 		end
 	end
 	return diagnostics

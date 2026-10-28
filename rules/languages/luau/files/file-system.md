@@ -11,6 +11,18 @@ contextual style, not automatic inconsistency.
 
 Use the path label and `--!strict` at the top of every Luau source file.
 
+Use `--` for a single-line comment. Use Luau's long-comment form for comments
+that span multiple lines:
+
+```luau
+--[[
+Explain the intent, invariant, or constraint here.
+]]
+```
+
+Keep required path labels and Luau directives such as `--!strict` as
+single-line headers; they are metadata, not explanatory comments.
+
 Use role headers only when they improve scanning. A tiny file does not need decorative structure.
 
 Preferred phase order:

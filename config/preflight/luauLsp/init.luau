@@ -14,7 +14,12 @@ type ToolResult = { ok: boolean, code: number, stdout: string, stderr: string }
 
 export type LuauLspProvider = setmetatable<Fields, typeof(LuauLspProvider)>
 
-local function diagnostic(configuration: Contracts.ProviderPackage, path: string, message: string, severity: "error" | "warning" | "info"): Contracts.Diagnostic
+local function diagnostic(
+	configuration: Contracts.ProviderPackage,
+	path: string,
+	message: string,
+	severity: "error" | "warning" | "info"
+): Contracts.Diagnostic
 	return {
 		path = path,
 		line = 1,
@@ -93,9 +98,8 @@ local function patterns(configuration: Contracts.ProviderPackage): ({ string }?,
 end
 
 local function parseDiagnostic(line: string): Contracts.Diagnostic?
-	local path, lineNumber, column, _, endColumn, code, message = line:match(
-		"^(.-):(%d+)%.(%d+)%-(%d+)%.(%d+):%s*([^:]+):%s*(.*)$"
-	)
+	local path, lineNumber, column, _, endColumn, code, message =
+		line:match("^(.-):(%d+)%.(%d+)%-(%d+)%.(%d+):%s*([^:]+):%s*(.*)$")
 	if not path or not lineNumber or not column or not endColumn or not code or not message then
 		return nil
 	end
@@ -126,7 +130,12 @@ function LuauLspProvider.Analyze(self: LuauLspProvider, _context: Contracts.Cont
 	if not executable then
 		return {
 			diagnostics = {
-				diagnostic(configuration, configuration.configPath, "luau-lsp analyzer executable was not found", "warning"),
+				diagnostic(
+					configuration,
+					configuration.configPath,
+					"luau-lsp analyzer executable was not found",
+					"warning"
+				),
 			},
 		}
 	end
@@ -150,14 +159,24 @@ function LuauLspProvider.Analyze(self: LuauLspProvider, _context: Contracts.Cont
 	if type(settings) ~= "string" or type(luaurc) ~= "string" or type(platform) ~= "string" then
 		return {
 			diagnostics = {
-				diagnostic(configuration, configuration.configPath, "settings, luaurc, and platform must be strings", "error"),
+				diagnostic(
+					configuration,
+					configuration.configPath,
+					"settings, luaurc, and platform must be strings",
+					"error"
+				),
 			},
 		}
 	end
 	if not Fs.isFile(settings) or not Fs.isFile(luaurc) then
 		return {
 			diagnostics = {
-				diagnostic(configuration, configuration.configPath, "configured Luau LSP settings or luaurc file is missing", "error"),
+				diagnostic(
+					configuration,
+					configuration.configPath,
+					"configured Luau LSP settings or luaurc file is missing",
+					"error"
+				),
 			},
 		}
 	end
@@ -198,7 +217,15 @@ function LuauLspProvider.Analyze(self: LuauLspProvider, _context: Contracts.Cont
 	end
 	if not result.ok and #diagnostics == 0 then
 		local detail = output:match("[^\r\n]+") or `exit status {result.code}`
-		table.insert(diagnostics, diagnostic(configuration, configuration.configPath, `luau-lsp returned no parseable diagnostics: {detail}`, "error"))
+		table.insert(
+			diagnostics,
+			diagnostic(
+				configuration,
+				configuration.configPath,
+				`luau-lsp returned no parseable diagnostics: {detail}`,
+				"error"
+			)
+		)
 	end
 	return { diagnostics = diagnostics }
 end

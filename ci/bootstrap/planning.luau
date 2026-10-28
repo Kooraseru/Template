@@ -14,8 +14,10 @@ function Planner.new(): Planner
 	return setmetatable(fields, Planner)
 end
 
--- Source hosts are discovered by their owning source/hosts extension point.
--- Bootstrap does not define or enumerate supported platforms.
+--[[
+Source hosts are discovered by their owning source/hosts extension point.
+Bootstrap does not define or enumerate supported platforms.
+]]
 const RESERVED_OUTPUTS: { string } = {
 	"ci/bootstrap/**",
 	".github/workflows/**",
@@ -35,9 +37,14 @@ local function names<T>(dictionary: { [string]: T }): { string }
 	return result
 end
 
--- Sort once per discovery: consumers and providers remain deterministic even
--- when filesystem enumeration order differs across operating systems.
-local function orderByDependencies(active: { [string]: Contract.Contract }, dependencies: { [string]: { [string]: boolean } }): { string }
+--[[
+Sort once per discovery: consumers and providers remain deterministic even
+when filesystem enumeration order differs across operating systems.
+]]
+local function orderByDependencies(
+	active: { [string]: Contract.Contract },
+	dependencies: { [string]: { [string]: boolean } }
+): { string }
 	local degree: { [string]: number } = {}
 	local successors: { [string]: { string } } = {}
 	for identity in active do
@@ -90,8 +97,10 @@ local function orderByDependencies(active: { [string]: Contract.Contract }, depe
 	return ordered
 end
 
--- Glob output ownership is checked before any code runs. Exact-path checks
--- would miss collisions such as build/*.bin with build/out.bin.
+--[[
+Glob output ownership is checked before any code runs. Exact-path checks
+would miss collisions such as build/*.bin with build/out.bin.
+]]
 local function resolveOutputs(active: { [string]: Contract.Contract }): ()
 	local ownership: { { identity: string, path: string } } = {}
 	for _, identity in names(active) do

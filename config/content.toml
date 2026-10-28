@@ -1,0 +1,5 @@
+# Text templates use {{tag:name}} tokens from this table. Unknown tags fail the build.
+[tags]
+project_name = "Project"
+project_description = "Describe this project."
+development_branch = "source"

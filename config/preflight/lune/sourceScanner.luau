@@ -17,6 +17,7 @@ export type Link = {
 export type Scan = {
 	links: { Link },
 	globs: { string },
+	runtimeCommands: { { line: number, column: number, command: string? } },
 }
 
 export type SourceScanner = setmetatable<{}, typeof(SourceScanner)>
@@ -35,7 +36,7 @@ end
 
 local function quotedValue(line: string, index: number): (string?, number)
 	local quote = line:sub(index, index)
-	if quote ~= "\"" and quote ~= "'" then
+	if quote ~= '"' and quote ~= "'" then
 		return nil, index
 	end
 
@@ -119,7 +120,7 @@ local function removeComments(line: string, longCommentEnd: string?): (string, s
 			elseif character == quote then
 				quote = nil
 			end
-		elseif character == "\"" or character == "'" or character == "`" then
+		elseif character == '"' or character == "'" or character == "`" then
 			quote = character
 		elseif character == "-" and line:sub(index, index + 1) == "--" then
 			local equals = line:match("%[(=*)%[", index + 2)
@@ -143,6 +144,7 @@ end
 function SourceScanner.Scan(self: SourceScanner, source: string): Scan
 	local links: { Link } = {}
 	local globs: { string } = {}
+	local runtimeCommands: { { line: number, column: number, command: string? } } = {}
 	local lineNumber = 0
 	local longCommentEnd: string? = nil
 	local normalized = source:gsub("\r\n", "\n")
@@ -151,6 +153,18 @@ function SourceScanner.Scan(self: SourceScanner, source: string): Scan
 		lineNumber += 1
 		local line: string
 		line, longCommentEnd = removeComments(rawLine, longCommentEnd)
+		local runtimeCursor = 1
+		while true do
+			local callStart, callEnd = findCodeCall(line, "Process%s*%.%s*exec%s*%(", runtimeCursor)
+			if not callStart or not callEnd then
+				break
+			end
+			local argument = skipSpace(line, callEnd + 1)
+			local command = quotedValue(line, argument)
+			table.insert(runtimeCommands, { line = lineNumber, column = callStart, command = command })
+			runtimeCursor = callEnd + 1
+		end
+
 		local cursor = 1
 		while true do
 			local startPosition, endPosition = findCodeCall(line, "xpcall%s*%(%s*require%s*,", cursor)
@@ -198,7 +212,7 @@ function SourceScanner.Scan(self: SourceScanner, source: string): Scan
 			cursor = endPosition + 1
 		end
 	end
-	return { links = links, globs = globs }
+	return { links = links, globs = globs, runtimeCommands = runtimeCommands }
 end
 
 function SourceScanner.Read(self: SourceScanner, path: string): Scan

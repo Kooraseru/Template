@@ -22,7 +22,10 @@ end
 
 local executable = EXECUTABLES[variant]
 if not Fs.isFile(executable) then
-	error(`missing {executable}; build first with CI_EVENT=workflow_dispatch bash ci/toolchain/lune.sh run ci/entry.luau`, 0)
+	error(
+		`missing {executable}; build first with CI_EVENT=workflow_dispatch bash ci/toolchain/lune.sh run ci/entry.luau`,
+		0
+	)
 end
 
 local options: Process.ExecOptions = {

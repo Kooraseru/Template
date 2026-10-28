@@ -17,10 +17,10 @@ type ComponentClass = {
 local entry = Process.args[1]
 local event = Process.args[2]
 if not entry or not entry:match("^ci/components/[%w_-]+/init%.luau$") then
-    error("invalid CI component entry", 0)
+	error("invalid CI component entry", 0)
 end
 if event ~= "push" and event ~= "pull_request" and event ~= "workflow_dispatch" then
-    error("invalid CI event", 0)
+	error("invalid CI event", 0)
 end
 
 local identity = entry:match("^ci/components/([%w_-]+)/init%.luau$")

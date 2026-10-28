@@ -44,7 +44,11 @@ function ProviderDiscovery.Discover(self: ProviderDiscovery): ({ Contracts.Provi
 	for line in tracked.stdout:gmatch("[^\r\n]+") do
 		local mode, path = line:match("^(%d+)%s+[%da-fA-F]+%s+%d+\t(.+)$")
 		if mode == "120000" or mode == "160000" then
-			appendDiagnostic(diagnostics, path or "config/preflight", "provider packages cannot contain symlinks or gitlinks")
+			appendDiagnostic(
+				diagnostics,
+				path or "config/preflight",
+				"provider packages cannot contain symlinks or gitlinks"
+			)
 		end
 	end
 

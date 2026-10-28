@@ -18,9 +18,11 @@ function Discovery.new(): Discovery
 	return setmetatable(fields, Discovery)
 end
 
--- Lune's filesystem metadata follows symlinks on supported releases. The
--- checked-out Git tree supplies the authoritative type of tracked entries;
--- reject links before walking a discovered extension point.
+--[[
+Lune's filesystem metadata follows symlinks on supported releases. The
+checked-out Git tree supplies the authoritative type of tracked entries;
+reject links before walking a discovered extension point.
+]]
 function Discovery.RejectLinkedEntries(self: Discovery): ()
 	local result = Process.exec("git", { "ls-files", "--stage", "--", "ci/components" })
 	if not result.ok then
@@ -37,8 +39,10 @@ function Discovery.RejectLinkedEntries(self: Discovery): ()
 	end
 end
 
--- Components are package directories that export a class and static Contract
--- field. Their identities come from their owning directories.
+--[[
+Components are package directories that export a class and static Contract
+field. Their identities come from their owning directories.
+]]
 function Discovery.Discover(self: Discovery): { Contract.Contract }
 	if not Fs.isDir("ci/components") then
 		error("missing ci/components extension point", 0)

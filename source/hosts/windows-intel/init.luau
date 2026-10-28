@@ -20,24 +20,29 @@ end
 return function()
 	runDocker({
 		"build",
-		"--progress",
-		"plain",
 		"--file",
 		"source/hosts/windows-intel/Dockerfile",
 		"--tag",
 		IMAGE,
 		".",
 	})
-	local created = Process.exec("docker", { "create", IMAGE, COMPILER,
+	local created = Process.exec("docker", {
+		"create",
+		IMAGE,
+		COMPILER,
 		"-O2",
-		"-DHOST_MESSAGE=\"Windows 11 x86-64 Intel\"",
+		'-DHOST_MESSAGE="Windows 11 x86-64 Intel"',
 		"source/main.c",
 		"-o",
 		"/tmp/windows-intel.exe",
 	})
-	if not created.ok then error(`Docker container creation failed with status {created.code}`, 0) end
+	if not created.ok then
+		error(`Docker container creation failed with status {created.code}`, 0)
+	end
 	local containerId = created.stdout:match("%S+")
-	if not containerId then error("Docker did not return the Intel build container ID", 0) end
+	if not containerId then
+		error("Docker did not return the Intel build container ID", 0)
+	end
 	runDocker({ "start", "--attach", containerId })
 	runDocker({ "cp", `{containerId}:/tmp/windows-intel.exe`, OUTPUT })
 	runDocker({ "rm", containerId })

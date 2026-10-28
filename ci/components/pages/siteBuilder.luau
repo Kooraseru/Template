@@ -1,15 +1,15 @@
 -- ci/components/pages/siteBuilder.luau
 --!strict
 
--- Assemble the docs tree into the static site artifact consumed by publication.
 local Fs = require("@lune/fs")
 
 local Glob = require("@ci/bootstrap/glob")
 local MarkdownRenderer = require("./markdownRenderer")
 local StaticAssetCopier = require("./staticAssetCopier")
 
-const DOCUMENTATION_ROOT = "docs"
-const OUTPUT_ROOT = "build/pages"
+const DOCUMENTATION_ROOT = "content/docs"
+const LOCALE_ROOT = "content/locales"
+const OUTPUT_ROOT = "build/repo/pages"
 
 local SiteBuilder = {}
 SiteBuilder.__index = SiteBuilder
@@ -33,12 +33,57 @@ local function ensureDirectory(path: string): ()
 	end
 end
 
-local function outputPath(sourcePath: string): string
-	local relativePath = sourcePath:gsub(`^{DOCUMENTATION_ROOT}/`, "")
+local function outputPath(sourcePath: string, sourceRoot: string, outputRoot: string): string
+	local relativePath = sourcePath:gsub(`^{sourceRoot}/`, "")
 	if relativePath:match("%.md$") then
-		return `{OUTPUT_ROOT}/{relativePath:gsub("%.md$", ".html")}`
+		return `{outputRoot}/{relativePath:gsub("%.md$", ".html")}`
 	end
-	return `{OUTPUT_ROOT}/{relativePath}`
+	return `{outputRoot}/{relativePath}`
+end
+
+local function renderTree(self: SiteBuilder, sourceRoot: string, outputRoot: string): ()
+	ensureDirectory(outputRoot)
+	for _, source in Glob.Find(`{sourceRoot}/**`) do
+		if source == sourceRoot then
+			continue
+		end
+		local destination = outputPath(source, sourceRoot, outputRoot)
+		local metadata = Fs.metadata(source)
+		if metadata.kind == "dir" then
+			ensureDirectory(destination)
+		elseif metadata.kind == "file" then
+			local parent = destination:match("^(.*)/[^/]+$")
+			if parent then
+				ensureDirectory(parent)
+			end
+			if source:match("%.md$") then
+				self.markdownRenderer:Render(source, destination)
+			else
+				self.staticAssetCopier:Copy(source, destination)
+			end
+		else
+			error(`unsupported documentation entry: {source}`, 0)
+		end
+	end
+end
+
+local function discoverLocales(): { string }
+	local found: { [string]: boolean } = {}
+	for _, path in Glob.Find(`{LOCALE_ROOT}/*/docs/**`) do
+		local locale = path:match(`^{LOCALE_ROOT}/([^/]+)/docs/`)
+		if locale then
+			if not locale:match("^[%a][%w%-]*$") then
+				error(`invalid content locale name: {locale}`, 0)
+			end
+			found[locale] = true
+		end
+	end
+	local locales: { string } = {}
+	for locale in found do
+		table.insert(locales, locale)
+	end
+	table.sort(locales)
+	return locales
 end
 
 function SiteBuilder.new(): SiteBuilder
@@ -65,33 +110,20 @@ function SiteBuilder.Run(self: SiteBuilder): ()
 	elseif outputMetadata.exists then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
+	ensureDirectory("build")
+	ensureDirectory("build/repo")
 	ensureDirectory(OUTPUT_ROOT)
 
-	for _, source in Glob.Find(`{DOCUMENTATION_ROOT}/**`) do
-		if source == DOCUMENTATION_ROOT then
-			continue
-		end
-		local metadata = Fs.metadata(source)
-		if metadata.kind == "dir" then
-			ensureDirectory(outputPath(source))
-		elseif metadata.kind == "file" then
-			local destination = outputPath(source)
-			local parent = destination:match("^(.*)/[^/]+$")
-			if parent then
-				ensureDirectory(parent)
-			end
-			if source:match("%.md$") then
-				self.markdownRenderer:Render(source, destination)
-			else
-				self.staticAssetCopier:Copy(source, destination)
-			end
-		else
-			error(`unsupported documentation entry: {source}`, 0)
-		end
+	renderTree(self, DOCUMENTATION_ROOT, OUTPUT_ROOT)
+	for _, locale in discoverLocales() do
+		local localeOutput = `{OUTPUT_ROOT}/{locale}`
+		local translatedRoot = `{LOCALE_ROOT}/{locale}/docs`
+		renderTree(self, DOCUMENTATION_ROOT, localeOutput)
+		renderTree(self, translatedRoot, localeOutput)
 	end
 
 	if not Fs.isFile(`{OUTPUT_ROOT}/index.html`) then
-		error("Pages build did not produce build/pages/index.html", 0)
+		error(`Pages build did not produce {OUTPUT_ROOT}/index.html`, 0)
 	end
 	print(`Built documentation from {DOCUMENTATION_ROOT} into {OUTPUT_ROOT}`)
 end

@@ -1,7 +1,7 @@
 provides = ["pages.generated"]
 requires = []
-inputs = ["docs/**"]
-outputs = ["build/pages/**"]
+inputs = ["config/content.toml", "content/**"]
+outputs = ["build/repo/pages/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"
 enabled = true

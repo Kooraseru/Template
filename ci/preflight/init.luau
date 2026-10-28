@@ -71,9 +71,11 @@ function Preflight.Run(self: Preflight, event: string): Result
 	sortDiagnostics(diagnostics)
 	local passed = true
 	for _, diagnostic in diagnostics do
-		print(
-			`{diagnostic.path}:{diagnostic.line}:{diagnostic.column}:{diagnostic.endColumn}: {diagnostic.severity}: {diagnostic.message}`
-		)
+		local location = `{diagnostic.path}:{diagnostic.line}:{diagnostic.column}:{diagnostic.endColumn}`
+		if diagnostic.endLine then
+			location = `{location}:{diagnostic.endLine}`
+		end
+		print(`{location}: {diagnostic.severity}: {diagnostic.source or "preflight"}: {diagnostic.message}`)
 		if diagnostic.severity == "error" then
 			passed = false
 		end

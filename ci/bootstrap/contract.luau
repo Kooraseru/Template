@@ -81,8 +81,13 @@ end
 local function paths(entry: string, field: string, value: unknown): { string }
 	local items = strings(entry, field, value)
 	for _, path in items do
-		if path:sub(1, 1) == "/" or path:find("\\", 1, true) or path:find(":", 1, true)
-			or path:find("//", 1, true) or path:sub(-1) == "/" then
+		if
+			path:sub(1, 1) == "/"
+			or path:find("\\", 1, true)
+			or path:find(":", 1, true)
+			or path:find("//", 1, true)
+			or path:sub(-1) == "/"
+		then
 			invalid(entry, `unsafe {field} glob: {path}`)
 		end
 		for segment in path:gmatch("[^/]+") do
@@ -203,8 +208,10 @@ function Contract.SupportsEvent(self: Contract, event: string): boolean
 	return table.find(self.events, event) ~= nil
 end
 
--- Convert a validated instance to the minimum serializable execution record.
--- Method tables and other local state never cross the artifact boundary.
+--[[
+Convert a validated instance to the minimum serializable execution record.
+Method tables and other local state never cross the artifact boundary.
+]]
 function Contract.ToTask(self: Contract, needs: { string }): Task
 	return {
 		identity = self.identity,

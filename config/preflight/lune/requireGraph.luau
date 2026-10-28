@@ -7,20 +7,14 @@ local Serde = require("@lune/serde")
 
 local Contract = require("@ci/bootstrap/contract")
 local Glob = require("@ci/bootstrap/glob")
+local Contracts = require("@ci/preflight/contracts")
 local Graph = require("./graph")
 local SourceScanner = require("./sourceScanner")
 
 local Analyzer = {}
 Analyzer.__index = Analyzer
 
-export type Diagnostic = {
-	path: string,
-	line: number,
-	column: number,
-	endColumn: number,
-	severity: "error" | "warning" | "info",
-	message: string,
-}
+export type Diagnostic = Contracts.Diagnostic
 
 export type Result = {
 	diagnostics: { Diagnostic },
@@ -80,8 +74,7 @@ local function contractValueLocation(path: string, field: string, value: string)
 			inField = true
 		end
 		if inField then
-			local literalStart = line:find('"' .. value .. '"', 1, true)
-				or line:find("'" .. value .. "'", 1, true)
+			local literalStart = line:find('"' .. value .. '"', 1, true) or line:find("'" .. value .. "'", 1, true)
 			if literalStart then
 				local column = literalStart + 1
 				return lineNumber, column, column + #value
@@ -168,7 +161,12 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 		endColumn: number?
 	)
 		for _, existing in diagnostics do
-			if existing.path == path and existing.line == line and existing.column == column and existing.message == message then
+			if
+				existing.path == path
+				and existing.line == line
+				and existing.column == column
+				and existing.message == message
+			then
 				return
 			end
 		end
@@ -193,9 +191,23 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 			column = column or 1
 			local ok, matches = xpcall(Glob.Find, tostring, inputPattern)
 			if not ok then
-				report(task.contractFile, line, column, "error", `invalid input glob {inputPattern}: {matches}`, endColumn)
+				report(
+					task.contractFile,
+					line,
+					column,
+					"error",
+					`invalid input glob {inputPattern}: {matches}`,
+					endColumn
+				)
 			elseif #matches == 0 then
-				report(task.contractFile, line, column, "error", `declared input glob matches no files: {inputPattern}`, endColumn)
+				report(
+					task.contractFile,
+					line,
+					column,
+					"error",
+					`declared input glob matches no files: {inputPattern}`,
+					endColumn
+				)
 			else
 				local fileMatches = 0
 				for _, path in matches do
@@ -204,7 +216,14 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 						continue
 					end
 					if metadata.kind ~= "file" then
-						report(task.contractFile, line, column, "error", `declared input is not a regular file: {path}`, endColumn)
+						report(
+							task.contractFile,
+							line,
+							column,
+							"error",
+							`declared input is not a regular file: {path}`,
+							endColumn
+						)
 						continue
 					end
 					fileMatches += 1
@@ -213,7 +232,14 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 					end
 				end
 				if fileMatches == 0 then
-					report(task.contractFile, line, column, "error", `declared input glob matches no files: {inputPattern}`, endColumn)
+					report(
+						task.contractFile,
+						line,
+						column,
+						"error",
+						`declared input glob matches no files: {inputPattern}`,
+						endColumn
+					)
 				end
 			end
 		end
@@ -246,6 +272,22 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 		end
 		expanded[path] = true
 		local scan = self.scanner:Read(path)
+		if path:match("^source/") or path:match("^ci/components/") then
+			local foundCommands: { [string]: boolean } = {}
+			for _, call in scan.runtimeCommands do
+				local command = call.command or "dynamic executable"
+				if not foundCommands[command] then
+					foundCommands[command] = true
+					report(
+						path,
+						call.line,
+						call.column,
+						"info",
+						`external command '{command}' is reachable; its availability and result depend on runtime conditions`
+					)
+				end
+			end
+		end
 		for _, link in scan.links do
 			if link.path then
 				local resolved = self:ResolveModule(path, link.path)
@@ -262,7 +304,13 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 				if not globOk then
 					report(path, link.line, link.column, "error", `dynamic discovery glob is invalid: {matches}`)
 				elseif #matches == 0 then
-					report(path, link.line, link.column, "error", `dynamic require has no discovered modules: {scan.globs[1]}`)
+					report(
+						path,
+						link.line,
+						link.column,
+						"error",
+						`dynamic require has no discovered modules: {scan.globs[1]}`
+					)
 				else
 					local discoveredModules = 0
 					for _, match in matches do
@@ -274,7 +322,13 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 						end
 					end
 					if discoveredModules == 0 then
-						report(path, link.line, link.column, "error", `dynamic require discovered no module files: {scan.globs[1]}`)
+						report(
+							path,
+							link.line,
+							link.column,
+							"error",
+							`dynamic require discovered no module files: {scan.globs[1]}`
+						)
 					end
 				end
 			elseif path == "ci/bootstrap/invoke.luau" then
@@ -313,7 +367,13 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 	end
 	for path, identity in declaredScripts do
 		if not reachable[path] then
-			report(path, 1, 1, "info", `{identity}: declared Luau input is not reachable through the planned module graph`)
+			report(
+				path,
+				1,
+				1,
+				"info",
+				`{identity}: declared Luau input is not reachable through the planned module graph`
+			)
 		end
 	end
 	for _, diagnostic in diagnostics do

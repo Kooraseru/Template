@@ -5,21 +5,30 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Contracts = require("@ci/preflight/contracts")
 local WorkspaceFiles = require("@ci/preflight/workspaceFiles")
+local Serde = require("@lune/serde")
 
 local StyluaProvider = {}
 StyluaProvider.__index = StyluaProvider
 
 type Fields = { configuration: Contracts.ProviderPackage }
 type ToolResult = { ok: boolean, code: number, stdout: string, stderr: string }
+type DiffMismatch = { expected_start_line: number, expected_end_line: number }
+type DiffFile = { file: string, mismatches: { DiffMismatch }? }
 
 export type StyluaProvider = setmetatable<Fields, typeof(StyluaProvider)>
 
-local function diagnostic(path: string, message: string, severity: "error" | "warning" | "info"): Contracts.Diagnostic
+local function diagnostic(
+	path: string,
+	line: number,
+	endLine: number,
+	message: string,
+	severity: "error" | "warning" | "info"
+): Contracts.Diagnostic
 	return {
 		path = path,
-		line = 1,
+		line = line,
 		column = 1,
-		endColumn = 2,
+		endColumn = endLine + 1,
 		severity = severity,
 		message = message,
 	}
@@ -57,8 +66,11 @@ local function locateBinary(): string?
 
 	local storageRoot = Process.env.PREFLIGHT_VSCODE_GLOBAL_STORAGE
 	local profile = Process.env.USERPROFILE or Process.env.HOME
-	local extensionRoot = if storageRoot then `{storageRoot:gsub("\\", "/")}/johnnymorganz.stylua`
-		else if profile then `{profile:gsub("\\", "/")}/AppData/Roaming/Code/User/globalStorage/johnnymorganz.stylua` else nil
+	local extensionRoot = if storageRoot
+		then `{storageRoot:gsub("\\", "/")}/johnnymorganz.stylua`
+		else if profile
+			then `{profile:gsub("\\", "/")}/AppData/Roaming/Code/User/globalStorage/johnnymorganz.stylua`
+			else nil
 	if extensionRoot then
 		if Fs.isDir(extensionRoot) then
 			local pending: { string } = { extensionRoot }
@@ -109,7 +121,13 @@ function StyluaProvider.Analyze(self: StyluaProvider, _context: Contracts.Contex
 	if not executable then
 		return {
 			diagnostics = {
-				diagnostic(configuration.configPath, "StyLua executable was not found; formatting check was skipped", "warning"),
+				diagnostic(
+					configuration.configPath,
+					1,
+					2,
+					"StyLua executable was not found; formatting check was skipped",
+					"warning"
+				),
 			},
 		}
 	end
@@ -118,7 +136,7 @@ function StyluaProvider.Analyze(self: StyluaProvider, _context: Contracts.Contex
 	if not patterns then
 		return {
 			diagnostics = {
-				diagnostic(configuration.configPath, patternError or "invalid input globs", "error"),
+				diagnostic(configuration.configPath, 1, 2, patternError or "invalid input globs", "error"),
 			},
 		}
 	end
@@ -131,12 +149,12 @@ function StyluaProvider.Analyze(self: StyluaProvider, _context: Contracts.Contex
 	if type(styleConfig) ~= "string" or not Fs.isFile(styleConfig) then
 		return {
 			diagnostics = {
-				diagnostic(configuration.configPath, "configured StyLua settings file is missing", "error"),
+				diagnostic(configuration.configPath, 1, 2, "configured StyLua settings file is missing", "error"),
 			},
 		}
 	end
 
-	local arguments: { string } = { "--check", "--config-path", styleConfig }
+	local arguments: { string } = { "--check", "--config-path", styleConfig, "--output-format", "Json" }
 	for _, file in files do
 		table.insert(arguments, file)
 	end
@@ -145,7 +163,9 @@ function StyluaProvider.Analyze(self: StyluaProvider, _context: Contracts.Contex
 		return { ok = process.ok, code = process.code, stdout = process.stdout, stderr = process.stderr }
 	end, tostring)
 	if not ran then
-		return { diagnostics = { diagnostic(configuration.configPath, `StyLua failed to start: {result}`, "error") } }
+		return {
+			diagnostics = { diagnostic(configuration.configPath, 1, 2, `StyLua failed to start: {result}`, "error") },
+		}
 	end
 	if result.ok then
 		return { diagnostics = {} }
@@ -153,17 +173,35 @@ function StyluaProvider.Analyze(self: StyluaProvider, _context: Contracts.Contex
 
 	local diagnostics: { Contracts.Diagnostic } = {}
 	local output = `{result.stdout}\n{result.stderr}`
-	for line in output:gmatch("[^\r\n]+") do
-		local path = line:match("^[Ww]ould reformat:%s*(.+)$")
-			or line:match("^[Nn]ot formatted:%s*(.+)$")
-			or line:match("^[Dd]iff in (.+):$")
-		if path then
-			table.insert(diagnostics, diagnostic(normalizedPath(path), "file needs StyLua formatting", "error"))
+	local decoded, report = xpcall(function(): DiffFile
+		return Serde.decode("json", result.stdout) :: DiffFile
+	end, tostring)
+	if decoded and type(report.mismatches) == "table" then
+		local sourcePath = normalizedPath(report.file)
+		for _, mismatch in report.mismatches or {} do
+			local firstLine = mismatch.expected_start_line
+			local lastLine = mismatch.expected_end_line
+			local startLine = math.max(1, firstLine + 1)
+			local finishLine = math.max(startLine, lastLine)
+			local message =
+				`StyLua formatting differs on lines {startLine}-{finishLine}; inspect this range for the configured style difference`
+			local entry = diagnostic(sourcePath, startLine, finishLine, message, "warning")
+			entry.endLine = finishLine
+			table.insert(diagnostics, entry)
 		end
 	end
 	if #diagnostics == 0 then
 		local detail = output:match("[^\r\n]+") or `exit status {result.code}`
-		table.insert(diagnostics, diagnostic(configuration.configPath, `StyLua check failed without a file diagnostic: {detail}`, "error"))
+		table.insert(
+			diagnostics,
+			diagnostic(
+				configuration.configPath,
+				1,
+				2,
+				`StyLua check failed without a structured diff: {detail}`,
+				"error"
+			)
+		)
 	end
 	return { diagnostics = diagnostics }
 end

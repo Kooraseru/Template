@@ -1,8 +1,10 @@
 -- structures/ecs: System.luau
 --!strict
 
--- Sketch only. Final ECS shape should come from real ECS source.
--- Shows the boundary: a system iterates matching entities and applies behavior.
+--[[
+Sketch only. Final ECS shape should come from real ECS source.
+Shows the boundary: a system iterates matching entities and applies behavior.
+]]
 
 type Entity = number
 type Position = {
