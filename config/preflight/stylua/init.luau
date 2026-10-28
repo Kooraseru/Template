@@ -44,6 +44,45 @@ local function normalizedPath(path: string): string
 	return normalized
 end
 
+local function changedLines(unifiedDiff: string): { { number } }
+	local ranges: { { number } } = {}
+	local oldLine = 1
+	local index = 1
+	local lines = string.split(unifiedDiff, "\n")
+	while index <= #lines do
+		local line = lines[index]
+		local startLine, oldCount = line:match("^@@ %-(%d+),?(%d*) %+")
+		if startLine then
+			oldLine = tonumber(startLine) or 1
+			local count = if oldCount == "" then 1 else tonumber(oldCount) or 0
+			local hunkEnd = oldLine + count
+			index += 1
+			while index <= #lines and not lines[index]:match("^@@ ") do
+				local diffLine = lines[index]
+				if diffLine:sub(1, 1) == "-" and diffLine:sub(1, 3) ~= "---" then
+					local current = ranges[#ranges]
+					if current and oldLine <= current[2] + 1 then
+						current[2] = oldLine
+					else
+						table.insert(ranges, { oldLine, oldLine })
+					end
+					oldLine += 1
+				elseif diffLine:sub(1, 1) == " " then
+					oldLine += 1
+				end
+				index += 1
+			end
+			if oldLine == hunkEnd and count == 0 then
+				local anchor = math.max(1, oldLine - 1)
+				table.insert(ranges, { anchor, anchor })
+			end
+		else
+			index += 1
+		end
+	end
+	return ranges
+end
+
 local function locateBinary(): string?
 	local configured = Process.env.PREFLIGHT_STYLUA_PATH
 	if configured and Fs.isFile(configured) then
@@ -154,54 +193,74 @@ function StyluaProvider.Analyze(self: StyluaProvider, _context: Contracts.Contex
 		}
 	end
 
-	local arguments: { string } = { "--check", "--config-path", styleConfig, "--output-format", "Json" }
-	for _, file in files do
-		table.insert(arguments, file)
-	end
-	local ran, result = xpcall(function(): ToolResult
-		local process = Process.exec(executable, arguments, { cwd = Process.cwd })
-		return { ok = process.ok, code = process.code, stdout = process.stdout, stderr = process.stderr }
-	end, tostring)
-	if not ran then
-		return {
-			diagnostics = { diagnostic(configuration.configPath, 1, 2, `StyLua failed to start: {result}`, "error") },
-		}
-	end
-	if result.ok then
-		return { diagnostics = {} }
-	end
-
 	local diagnostics: { Contracts.Diagnostic } = {}
-	local output = `{result.stdout}\n{result.stderr}`
-	local decoded, report = xpcall(function(): DiffFile
-		return Serde.decode("json", result.stdout) :: DiffFile
-	end, tostring)
-	if decoded and type(report.mismatches) == "table" then
+	for _, file in files do
+		local arguments: { string } = {
+			"--check",
+			"--config-path",
+			styleConfig,
+			"--output-format",
+			"Json",
+			file,
+		}
+		local ran, result = xpcall(function(): ToolResult
+			local process = Process.exec(executable, arguments, { cwd = Process.cwd })
+			return { ok = process.ok, code = process.code, stdout = process.stdout, stderr = process.stderr }
+		end, tostring)
+		if not ran then
+			table.insert(
+				diagnostics,
+				diagnostic(configuration.configPath, 1, 2, `StyLua failed to start: {result}`, "error")
+			)
+			continue
+		end
+		if result.ok then
+			continue
+		end
+
+		local decoded, report = xpcall(function(): DiffFile
+			return Serde.decode("json", result.stdout) :: DiffFile
+		end, tostring)
+		if not decoded or type(report.mismatches) ~= "table" or #report.mismatches == 0 then
+			local detail = (`{result.stdout}\n{result.stderr}`):match("[^\r\n]+") or `exit status {result.code}`
+			table.insert(
+				diagnostics,
+				diagnostic(configuration.configPath, 1, 2, `StyLua check failed for {file}: {detail}`, "error")
+			)
+			continue
+		end
+
+		local unifiedArguments: { string } = {
+			"--check",
+			"--config-path",
+			styleConfig,
+			"--output-format",
+			"Unified",
+			file,
+		}
+		local diffResult = Process.exec(executable, unifiedArguments, { cwd = Process.cwd })
+		local diff = (`{diffResult.stdout}\n{diffResult.stderr}`)
+			:gsub("\r", "")
+			:gsub("^%-%-%- old\n%+%+%+ new\n?", "")
+			:gsub("\n+$", "")
+		if diff == "" then
+			diff = "StyLua reported formatting differences but did not provide a unified diff."
+		end
 		local sourcePath = normalizedPath(report.file)
-		for _, mismatch in report.mismatches or {} do
-			local firstLine = mismatch.expected_start_line
-			local lastLine = mismatch.expected_end_line
-			local startLine = math.max(1, firstLine + 1)
-			local finishLine = math.max(startLine, lastLine)
-			local message =
-				`StyLua formatting differs on lines {startLine}-{finishLine}; inspect this range for the configured style difference`
-			local entry = diagnostic(sourcePath, startLine, finishLine, message, "warning")
-			entry.endLine = finishLine
+		local message = `StyLua formatting differs. Use the explicit Quick Fix to format this file:\n{diff}`
+		local ranges = changedLines(diff)
+		if #ranges == 0 then
+			for _, mismatch in report.mismatches do
+				table.insert(ranges, { mismatch.expected_start_line + 1, mismatch.expected_end_line })
+			end
+		end
+		for _, range in ranges do
+			local firstLine = math.max(1, range[1])
+			local lastLine = math.max(firstLine, range[2])
+			local entry = diagnostic(sourcePath, firstLine, 2, message, "warning")
+			entry.endLine = lastLine
 			table.insert(diagnostics, entry)
 		end
-	end
-	if #diagnostics == 0 then
-		local detail = output:match("[^\r\n]+") or `exit status {result.code}`
-		table.insert(
-			diagnostics,
-			diagnostic(
-				configuration.configPath,
-				1,
-				2,
-				`StyLua check failed without a structured diff: {detail}`,
-				"error"
-			)
-		)
 	end
 	return { diagnostics = diagnostics }
 end

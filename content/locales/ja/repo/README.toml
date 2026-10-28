@@ -1,0 +1,8 @@
+[tags]
+project_name = "プロジェクト"
+project_description = "プロジェクトの説明を記入してください。"
+development_branch = "source"
+generated_branch_start = ""
+generated_branch_middle = " ブランチには生成されたリポジトリが含まれます。ソースファイルや公開内容を変更するには "
+generated_branch_end = " ブランチに切り替えてください。"
+readme_edit_instruction = "このテンプレートは content/repo/README.md で編集してください。"

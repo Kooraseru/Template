@@ -1,4 +1,3 @@
-# Contributing
+# {{tag:contributing_title}}
 
-Submit pull requests against `{{tag:development_branch}}`. Run CI locally with
-GitHub Local Actions or `act`. Edit generated files through their source content.
+{{tag:contributing_start}}{{tag:development_branch}}{{tag:contributing_middle}}

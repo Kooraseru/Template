@@ -8,7 +8,6 @@ local MarkdownRenderer = require("./markdownRenderer")
 local StaticAssetCopier = require("./staticAssetCopier")
 
 const DOCUMENTATION_ROOT = "content/docs"
-const LOCALE_ROOT = "content/locales"
 const OUTPUT_ROOT = "build/repo/pages"
 
 local SiteBuilder = {}
@@ -67,28 +66,9 @@ local function renderTree(self: SiteBuilder, sourceRoot: string, outputRoot: str
 	end
 end
 
-local function discoverLocales(): { string }
-	local found: { [string]: boolean } = {}
-	for _, path in Glob.Find(`{LOCALE_ROOT}/*/docs/**`) do
-		local locale = path:match(`^{LOCALE_ROOT}/([^/]+)/docs/`)
-		if locale then
-			if not locale:match("^[%a][%w%-]*$") then
-				error(`invalid content locale name: {locale}`, 0)
-			end
-			found[locale] = true
-		end
-	end
-	local locales: { string } = {}
-	for locale in found do
-		table.insert(locales, locale)
-	end
-	table.sort(locales)
-	return locales
-end
-
 function SiteBuilder.new(): SiteBuilder
 	local fields: SiteBuilderFields = {
-		markdownRenderer = MarkdownRenderer.new(),
+		markdownRenderer = MarkdownRenderer.new("en"),
 		staticAssetCopier = StaticAssetCopier.new(),
 	}
 	return setmetatable(fields, SiteBuilder)
@@ -101,6 +81,8 @@ function SiteBuilder.Run(self: SiteBuilder): ()
 	if not Fs.isFile(`{DOCUMENTATION_ROOT}/index.md`) then
 		error(`documentation requires {DOCUMENTATION_ROOT}/index.md`, 0)
 	end
+	local TagRenderer = require("@ci/content/tagRenderer")
+	TagRenderer.Validate({ DOCUMENTATION_ROOT, "content/repo" })
 
 	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
 	if outputMetadata.kind == "symlink" then
@@ -115,12 +97,6 @@ function SiteBuilder.Run(self: SiteBuilder): ()
 	ensureDirectory(OUTPUT_ROOT)
 
 	renderTree(self, DOCUMENTATION_ROOT, OUTPUT_ROOT)
-	for _, locale in discoverLocales() do
-		local localeOutput = `{OUTPUT_ROOT}/{locale}`
-		local translatedRoot = `{LOCALE_ROOT}/{locale}/docs`
-		renderTree(self, DOCUMENTATION_ROOT, localeOutput)
-		renderTree(self, translatedRoot, localeOutput)
-	end
 
 	if not Fs.isFile(`{OUTPUT_ROOT}/index.html`) then
 		error(`Pages build did not produce {OUTPUT_ROOT}/index.html`, 0)

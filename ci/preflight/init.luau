@@ -6,6 +6,7 @@ local Contracts = require("@self/contracts")
 local PlanBuilder = require("@self/planBuilder")
 local ProviderDiscovery = require("@self/providerDiscovery")
 local ProviderRunner = require("@self/providerRunner")
+local Serde = require("@lune/serde")
 
 local Preflight = {}
 Preflight.__index = Preflight
@@ -71,11 +72,7 @@ function Preflight.Run(self: Preflight, event: string): Result
 	sortDiagnostics(diagnostics)
 	local passed = true
 	for _, diagnostic in diagnostics do
-		local location = `{diagnostic.path}:{diagnostic.line}:{diagnostic.column}:{diagnostic.endColumn}`
-		if diagnostic.endLine then
-			location = `{location}:{diagnostic.endLine}`
-		end
-		print(`{location}: {diagnostic.severity}: {diagnostic.source or "preflight"}: {diagnostic.message}`)
+		print(`::diagnostic::{Serde.encode("json", diagnostic)}`)
 		if diagnostic.severity == "error" then
 			passed = false
 		end

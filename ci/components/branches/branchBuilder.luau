@@ -117,11 +117,6 @@ local function overlayTemplates(
 	return copied
 end
 
-local function localeName(path: string): string?
-	local locale: string? = path:match(`^{LOCALE_ROOT}/([^/]+)/repo/`)
-	return locale
-end
-
 function BranchBuilder.new(): BranchBuilder
 	return setmetatable({}, BranchBuilder)
 end
@@ -134,6 +129,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	if type(configuration) ~= "table" or type(configuration.branches) ~= "table" then
 		error(`{CONFIG_PATH}: expected a branches table`, 0)
 	end
+	TagRenderer.Validate({ CONTENT_ROOT, LOCALE_ROOT })
 
 	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
 	if outputMetadata.kind == "symlink" then
@@ -147,7 +143,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	ensureDirectory("build/repo")
 	ensureDirectory(OUTPUT_ROOT)
 
-	local tags = TagRenderer.new()
+	local tags = TagRenderer.new("en")
 	local branchCount = 0
 	for name, value in configuration.branches do
 		if type(name) ~= "string" or type(value) ~= "table" or type(value.source) ~= "table" then
@@ -159,27 +155,15 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 		local copied = copySource(value.source, branchRoot)
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, tags, name)
 
-		for _, source in Glob.Find(`{LOCALE_ROOT}/*/repo/**`) do
-			local locale = localeName(source)
-			if not locale then
-				continue
-			end
-			if not locale:match("^[%a][%w%-]*$") then
-				error(`invalid content locale name: {locale}`, 0)
-			end
-			local relativePath = source:match(`^{LOCALE_ROOT}/[^/]+/repo/(.+)$`)
-			if not relativePath then
-				continue
-			end
-			local metadata = Fs.metadata(source)
-			local localeRoot = `{branchRoot}/locales/{locale}`
-			if metadata.kind == "dir" then
-				ensureDirectory(`{localeRoot}/{relativePath}`)
-			elseif metadata.kind == "file" then
-				copyAuthoredFile(source, `{localeRoot}/{relativePath}`, tags, name)
+		for _, locale in TagRenderer.Locales(tags) do
+			local localeTags = TagRenderer.new(locale)
+			for _, source in Glob.Find(`{CONTENT_ROOT}/**`) do
+				if not source:match("%.md$") or Fs.metadata(source).kind ~= "file" then
+					continue
+				end
+				local relativePath = source:gsub(`^{CONTENT_ROOT}/`, "")
+				copyAuthoredFile(source, `{branchRoot}/locales/{locale}/{relativePath}`, localeTags, name)
 				copied += 1
-			else
-				error(`unsupported localized repository template entry: {source}`, 0)
 			end
 		end
 		if copied == 0 then

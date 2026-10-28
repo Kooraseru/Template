@@ -19,7 +19,7 @@ export type Diagnostic = Contracts.Diagnostic
 export type Result = {
 	diagnostics: { Diagnostic },
 	passed: boolean,
-	reachable: { [string]: string },
+	reachable: { [string]: { string } },
 }
 
 type Fields = {
@@ -158,7 +158,8 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 		column: number,
 		severity: "error" | "warning" | "info",
 		message: string,
-		endColumn: number?
+		endColumn: number?,
+		endLine: number?
 	)
 		for _, existing in diagnostics do
 			if
@@ -170,14 +171,44 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 				return
 			end
 		end
-		table.insert(diagnostics, {
+		local diagnostic: Diagnostic = {
 			path = path,
 			line = line,
 			column = column,
 			endColumn = endColumn or column + 1,
 			severity = severity,
 			message = message,
-		})
+			endLine = endLine,
+		}
+		table.insert(diagnostics, diagnostic)
+	end
+
+	local function traceInformation(trace: { string }): { Contracts.RelatedInformation }
+		local related: { Contracts.RelatedInformation } = {}
+		for index = 1, #trace - 1 do
+			local from = trace[index]
+			local target = trace[index + 1]
+			if not from or not target or not Fs.isFile(from) then
+				continue
+			end
+			local line = 1
+			local column = 1
+			for _, link in self.scanner:Read(from).links do
+				if link.path and self:ResolveModule(from, link.path) == target then
+					line = link.line
+					column = link.column
+					break
+				end
+			end
+			local targetLabel = target:gsub("%.luau$", ""):gsub("%.lua$", "")
+			table.insert(related, {
+				path = from,
+				line = line,
+				column = column,
+				message = `Calls {targetLabel}`,
+			})
+		end
+		return related
 	end
 
 	graph:AddNode("ci/entry.luau")
@@ -283,7 +314,9 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 						call.line,
 						call.column,
 						"info",
-						`external command '{command}' is reachable; its availability and result depend on runtime conditions`
+						`external command '{command}' is reachable; its availability and result depend on runtime conditions`,
+						call.endColumn,
+						call.endLine
 					)
 				end
 			end
@@ -379,7 +412,10 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 	for _, diagnostic in diagnostics do
 		local trace = reachable[diagnostic.path]
 		if trace then
-			diagnostic.message = `{diagnostic.message} (execution path: {trace})`
+			diagnostic.relatedInformation = traceInformation(trace)
+			if #trace > 1 then
+				diagnostic.message = `Static execution path: {diagnostic.message}`
+			end
 		end
 	end
 	table.sort(diagnostics, function(left: Diagnostic, right: Diagnostic): boolean

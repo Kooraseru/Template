@@ -14,6 +14,14 @@ export type Diagnostic = {
 	message: string,
 	source: string?,
 	endLine: number?,
+	relatedInformation: { RelatedInformation }?,
+}
+
+export type RelatedInformation = {
+	path: string,
+	line: number,
+	column: number,
+	message: string,
 }
 
 export type Task = BootstrapContract.Task

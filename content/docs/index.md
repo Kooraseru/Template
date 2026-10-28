@@ -1,10 +1,12 @@
 ---
-title: "{{tag:project_name}}"
+title: "{{tag:page_title}}"
 ---
 
 # {{tag:project_name}}
 
-This repository builds Windows binaries and publishes this documentation site
-from `content/docs/`. Add translations under `content/locales/<locale>/docs/`;
-translated files override the matching default-language files, and missing
-translations fall back to the default content.
+{{tag:landing_intro}}
+
+{{tag:landing_locale_organization}}
+
+{{tag:landing_fallback}}
+

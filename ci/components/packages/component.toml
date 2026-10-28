@@ -1,0 +1,7 @@
+provides = ["packages.generated"]
+requires = ["build.completed"]
+inputs = ["config/packages.toml"]
+outputs = ["build/repo/packages/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"
+enabled = true

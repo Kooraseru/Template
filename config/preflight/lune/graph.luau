@@ -32,12 +32,12 @@ function Graph.AddEdge(self: Graph, source: string, target: string, kind: string
 	table.insert(self.edges[source], { target = target, kind = kind })
 end
 
-function Graph.Reachable(self: Graph, roots: { string }): { [string]: string }
-	local paths: { [string]: string } = {}
+function Graph.Reachable(self: Graph, roots: { string }): { [string]: { string } }
+	local paths: { [string]: { string } } = {}
 	local queue: { string } = {}
 	for _, root in roots do
 		if not paths[root] then
-			paths[root] = root
+			paths[root] = { root }
 			table.insert(queue, root)
 		end
 	end
@@ -48,7 +48,12 @@ function Graph.Reachable(self: Graph, roots: { string }): { [string]: string }
 		cursor += 1
 		for _, edge in self.edges[source] or {} do
 			if not paths[edge.target] then
-				paths[edge.target] = `{paths[source]} -> {edge.target}`
+				local trace: { string } = {}
+				for _, path in paths[source] do
+					table.insert(trace, path)
+				end
+				table.insert(trace, edge.target)
+				paths[edge.target] = trace
 				table.insert(queue, edge.target)
 			end
 		end

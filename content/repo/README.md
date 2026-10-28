@@ -2,7 +2,6 @@
 
 {{tag:project_description}}
 
-The `{{tag:branch_name}}` branch contains the generated repository. Switch to
-`{{tag:development_branch}}` to change source files and publication content.
+{{tag:generated_branch_start}}{{tag:branch_name}}{{tag:generated_branch_middle}}{{tag:development_branch}}{{tag:generated_branch_end}}
 
-Edit this template in `content/repo/README.md`.
+{{tag:readme_edit_instruction}}

@@ -8,7 +8,7 @@
   "stylua.targetReleaseVersion": "v2.6.0",
   "[luau]": {
     "editor.defaultFormatter": "JohnnyMorganz.stylua",
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "editor.insertSpaces": false,
     "editor.tabSize": 4
   },

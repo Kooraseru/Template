@@ -1,6 +1,6 @@
 provides = ["branches.generated"]
 requires = []
-inputs = ["config/branches.toml", "config/content.toml", "source/**", "content/**"]
+inputs = ["config/branches.toml", "source/**", "content/**"]
 outputs = ["build/repo/branches/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

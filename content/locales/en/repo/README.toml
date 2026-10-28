@@ -1,0 +1,8 @@
+[tags]
+project_name = "Project"
+project_description = "Describe this project."
+development_branch = "source"
+generated_branch_start = "The "
+generated_branch_middle = " branch contains the generated repository. Switch to "
+generated_branch_end = " to change source files and publication content."
+readme_edit_instruction = "Edit this template in content/repo/README.md."

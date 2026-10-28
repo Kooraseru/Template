@@ -17,7 +17,7 @@ export type Link = {
 export type Scan = {
 	links: { Link },
 	globs: { string },
-	runtimeCommands: { { line: number, column: number, command: string? } },
+	runtimeCommands: { { line: number, column: number, endLine: number, endColumn: number, command: string? } },
 }
 
 export type SourceScanner = setmetatable<{}, typeof(SourceScanner)>
@@ -144,25 +144,71 @@ end
 function SourceScanner.Scan(self: SourceScanner, source: string): Scan
 	local links: { Link } = {}
 	local globs: { string } = {}
-	local runtimeCommands: { { line: number, column: number, command: string? } } = {}
+	local runtimeCommands: { { line: number, column: number, endLine: number, endColumn: number, command: string? } } =
+		{}
 	local lineNumber = 0
 	local longCommentEnd: string? = nil
 	local normalized = source:gsub("\r\n", "\n")
-	local lines = normalized .. "\n"
-	for rawLine in lines:gmatch("(.-)\n") do
+	local lines: { string } = {}
+	for rawLine in (normalized .. "\n"):gmatch("(.-)\n") do
 		lineNumber += 1
 		local line: string
 		line, longCommentEnd = removeComments(rawLine, longCommentEnd)
+		table.insert(lines, line)
+	end
+
+	local function findCallEnd(startLine: number, openingColumn: number): (number, number)
+		local depth = 0
+		local quote: string? = nil
+		local escaped = false
+		for currentLine = startLine, #lines do
+			local line = lines[currentLine]
+			local cursor = if currentLine == startLine then openingColumn else 1
+			while cursor <= #line do
+				local character = line:sub(cursor, cursor)
+				if quote then
+					if escaped then
+						escaped = false
+					elseif character == "\\" then
+						escaped = true
+					elseif character == quote then
+						quote = nil
+					end
+				elseif character == '"' or character == "'" or character == "`" then
+					quote = character
+				elseif character == "(" then
+					depth += 1
+				elseif character == ")" then
+					depth -= 1
+					if depth == 0 then
+						return currentLine, cursor + 1
+					end
+				end
+				cursor += 1
+			end
+		end
+		local lastLine = lines[#lines] or ""
+		return #lines, #lastLine + 1
+	end
+
+	for currentLine, line in lines do
 		local runtimeCursor = 1
 		while true do
-			local callStart, callEnd = findCodeCall(line, "Process%s*%.%s*exec%s*%(", runtimeCursor)
-			if not callStart or not callEnd then
+			local callStart, openingIndex = findCodeCall(line, "Process%s*%.%s*exec%s*%(", runtimeCursor)
+			if not callStart or not openingIndex then
 				break
 			end
-			local argument = skipSpace(line, callEnd + 1)
+			local endLine, endColumn = findCallEnd(currentLine, openingIndex)
+			local argument = skipSpace(line, openingIndex + 1)
 			local command = quotedValue(line, argument)
-			table.insert(runtimeCommands, { line = lineNumber, column = callStart, command = command })
-			runtimeCursor = callEnd + 1
+			table.insert(runtimeCommands, {
+				line = currentLine,
+				column = callStart,
+				endLine = endLine,
+				endColumn = endColumn,
+				command = command,
+			})
+			runtimeCursor = openingIndex + 1
 		end
 
 		local cursor = 1

@@ -1,0 +1,7 @@
+[tags]
+project_name = "Project"
+page_title = "Project"
+locale_name = "English"
+landing_intro = "This repository builds Windows binaries and publishes this documentation site from content/docs/. The files in that directory define the default locale."
+landing_locale_organization = "Locale-specific values live in content/locales/<locale>/docs/<page>.toml, organized to match the Markdown page they translate. The site publishes non-default locales under docs/<locale>/."
+landing_fallback = "When a locale has no value for a key, the default locale value is used."

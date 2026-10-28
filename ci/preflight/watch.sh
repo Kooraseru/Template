@@ -27,9 +27,9 @@ run_preflight() {
 	fi
 
 	local diagnostic_count
-	diagnostic_count="$(printf '%s\n' "$output" | grep -Ec '^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): ' || true)"
+	diagnostic_count="$(printf '%s\n' "$output" | grep -Ec '^::diagnostic::|^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): ' || true)"
 	if ((diagnostic_count > 0)); then
-		printf '%s\n' "$output" | grep -E '^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): '
+		printf '%s\n' "$output" | grep -E '^::diagnostic::|^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): '
 		return "$status"
 	fi
 
