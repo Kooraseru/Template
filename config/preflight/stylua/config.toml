@@ -1,4 +1,0 @@
-provider = "stylua"
-enabled = true
-inputs = ["**/*.luau"]
-settings = "config/luau/stylua/.stylua.toml"

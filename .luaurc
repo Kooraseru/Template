@@ -6,7 +6,7 @@
   "lintErrors": true,
   "typeErrors": true,
   "aliases": {
-    "ci": "./ci",
+    "ci": "./repo/ci",
     "workspace": ".",
     "lune": "~/.lune/.typedefs/0.11.1/"
   }

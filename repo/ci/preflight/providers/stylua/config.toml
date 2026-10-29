@@ -1,0 +1,4 @@
+provider = "stylua"
+enabled = true
+inputs = ["**/*.luau"]
+settings = "repo/config/luau/stylua/.stylua.toml"

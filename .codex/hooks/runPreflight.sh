@@ -28,7 +28,7 @@ emit_context() {
 }
 
 set +e
-preflight_output="$(CI_EVENT=workflow_dispatch bash ci/toolchain/lune.sh run ci/entry.luau --preflight-only 2>&1)"
+preflight_output="$(CI_EVENT=workflow_dispatch bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --preflight-only 2>&1)"
 preflight_status=$?
 set -e
 

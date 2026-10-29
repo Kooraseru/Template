@@ -6,10 +6,10 @@
 
 Every CI component is a package directory with a public `init.luau` head:
 
-- `ci/components/*/init.luau`
+- `repo/ci/components/*/init.luau`
 
 The directory name is the component identity. Files directly under
-`ci/components/` are invalid. Directory internals are private unless their
+`repo/ci/components/` are invalid. Directory internals are private unless their
 component explicitly declares another extension point. Invalid direct
 children are errors, not silently skipped, with the sole exception of the
 initial empty-tree `.gitkeep` marker. The template currently has one component,

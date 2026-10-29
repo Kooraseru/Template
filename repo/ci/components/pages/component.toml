@@ -1,0 +1,7 @@
+provides = ["pages.generated"]
+requires = []
+inputs = ["repo/content/**"]
+outputs = ["build/repo/pages/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"
+enabled = true

@@ -1,16 +1,35 @@
 # CI rules
 
+Repository support lives under `repo/`; see `repo/README.md` for ownership rules.
+Keep feature-specific settings beside their content or CI implementation.
+Shared settings live in `repo/config/`. Preflight provider implementations and
+their configuration are discovered together under `repo/ci/preflight/providers/`.
+
 ## One workflow, one entry point
 
 `.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
-invokes the executable `ci/entry.luau` launcher. The workflow does not maintain component
+invokes the executable `repo/ci/entry.luau` launcher. The workflow does not maintain component
 lists, dependency plans, matrices, or build logic. The bootstrap discovers
-components from `ci/components/`, reads their TOML manifests, orders them by
+components from `repo/ci/components/`, reads their TOML manifests, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.
 
+`repo/config/github.toml` owns GitHub repository paths, user-defined aliases,
+credential-name mappings, and optional branch bootstrap. `repo/ci/github/` may render
+the scheduler's validated tasks as native jobs and dependency links when an
+explicitly configured App/token can push workflow files. Generated workflows
+exist only on run branches. They are not an additional maintained component
+inventory. Without usable credentials the existing local scheduler runs the plan.
+Credentials are stored in GitHub; configuration contains secret/variable names
+only. Never embed actual tokens or private keys in code or TOML.
+
+CI setup belongs in `repo/ci/dependencies/`. Lune's pin, checksums, and bootstrap script
+are colocated under `repo/ci/dependencies/lune/`. Release deliverables are declared in
+`repo/content/releases/packages.toml`. Keep CI tooling/configuration out of application
+`source/` so source globs do not distribute the pipeline itself.
+
 The template has separate `build` and `pages` components. `build` compiles
-sources through discovered hosts. `pages` turns authored `docs/` content into
-the static site artifact under `build/pages/`. Keep these responsibilities in
+sources through discovered hosts. `pages` turns authored `repo/content/docs/` content into
+the static site artifact under `build/repo/pages/`. Keep these responsibilities in
 their respective component packages.
 
 Every component is a directory with `component.toml` for declarative metadata
@@ -19,7 +38,7 @@ the head and private unless the component explicitly exposes a child extension
 point. Name implementation files in camelCase. Do not create root-level
 component `.luau` files.
 
-`.luaurc` defines `@ci` as the `ci/` root and `@workspace` as the
+`.luaurc` defines `@ci` as the `repo/ci/` root and `@workspace` as the
 repository root. The Luau language server loads it through the workspace's
 `baseLuaurc` setting. Lune resolves runtime `.luaurc` files by walking upward
 from each script, so the root aliases are available to nested CI modules.
@@ -81,28 +100,30 @@ them there instead of repeating their names.
 
 The `pages` package keeps Markdown conversion in `markdownRenderer.luau`,
 static file copying in `staticAssetCopier.luau`, and output-tree assembly in
-`siteBuilder.luau`. These stages produce `build/pages/`; the hosting workflow
+`siteBuilder.luau`. These stages produce `build/repo/pages/`; the hosting workflow
 consumes that artifact separately. Do not put Pages rendering in the source
 build component.
 
 ## Bootstrap module and execution
 
-`ci/bootstrap/init.luau` is a ModuleScript-style class module. It only defines
+`repo/ci/bootstrap/init.luau` is a ModuleScript-style class module. It only defines
 `Bootstrap.new()`, `Bootstrap.Run(self)`, and returns `Bootstrap`. The launcher
 owns process startup, environment checks, and error-to-exit handling. Bootstrap
 delegates discovery, planning, execution, and reporting to collaborator classes.
 Keep Markdown summaries and other authored text in text files such as
-`ci/bootstrap/summary.md`; reporter classes supply runtime values and write the
+`repo/ci/bootstrap/summary.md`; reporter classes supply runtime values and write the
 rendered artifact.
 
 Discovery parses `component.toml` as data and does not execute component code.
 Component modules load only in their planned child process. Reject malformed
 manifests, duplicate identities or providers, missing capabilities, dependency
 cycles, unsupported events, conflicting output globs, and unsafe filesystem
-entries. Components run in one dependency-ordered list after planning succeeds.
+entries. Local execution runs components in one dependency-ordered list after
+planning succeeds. Optional native execution uses that same task plan and its
+dependency edges.
 
 Keep page rendering, static asset copying, site assembly, and external hosting
-as separate responsibilities. The `pages` component produces `build/pages/`;
+as separate responsibilities. The `pages` component produces `build/repo/pages/`;
 deploying that artifact requires a separately authorized publication workflow.
 
 Each implementation runs in a fresh Lune child process so module cache and
@@ -113,7 +134,7 @@ downloaded or otherwise untrusted components.
 
 ## Preflight reachability
 
-`ci/preflight/` analyzes the plan produced by the existing component discovery
+`repo/ci/preflight/` analyzes the plan produced by the existing component discovery
 and planner. It does not define per-component validators or repeat component
 contracts. The same analyzer runs before CI execution and through the live VS Code
 task, which publishes file diagnostics to the Problems panel. A module reference

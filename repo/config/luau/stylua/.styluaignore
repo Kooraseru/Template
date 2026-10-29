@@ -1,0 +1,5 @@
+# Paths ignored when running StyLua using repo/config/luau/stylua/.stylua.toml.
+/build/
+/out/
+**/node_modules/
+/repo/config/luau/luau-lsp/

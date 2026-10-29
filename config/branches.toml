@@ -1,5 +1,0 @@
-# Each named branch is built from source globs and overlaid with content/repo/.
-# Add stable, pre-release, or canary when the repository uses those branches.
-
-[branches.main]
-source = ["source/**"]

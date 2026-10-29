@@ -1,0 +1,13 @@
+# Bootstrap dependency metadata: install Lune before any Luau code can run.
+# This pins the runtime and verifies its download; project dependencies belong
+# to their own build/package system, not this file.
+[lune]
+version = "0.11.1"
+
+[lune.checksums]
+linux-x86_64 = "39859282ce677fce19e6eb45c37596a90a25c324c95b4e7e02d428b6cae294a1"
+linux-aarch64 = "f8d7d63384fad5edfaf5423b0ff1a1dbca9c44ec43beaa35c234b20a584aea66"
+macos-x86_64 = "d083047e08a40bd73dbb1ae8af929536497c0d57021c0ead0f9c8571f228a5fa"
+macos-aarch64 = "0592c9b37c06f208f7d90e5d750e76101b9ba6191cd693ef34667f4f1f1063d4"
+windows-x86_64 = "83f1dc29d9e35c494907521f2ca6561f6c204fdf6f1b06525d2e9fdd1e6b4301"
+windows-aarch64 = "1b1394ca2ba4990ecde440cf787ff46f9c52b2c4318a39fa3373fc56b71e7d8a"

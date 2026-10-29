@@ -1,0 +1,33 @@
+# GitHub decisions belong here. Repository paths are owner/repository.
+[github]
+repository = "Kooraseru/Template"
+
+[github.aliases]
+# Fill in the names used by your project. There are no implicit aliases.
+# Want to send something to your public repository? Fill in its GitHub path:
+# public_repo = "your-account/your-public-repository"
+# Consumers can look up public_repo instead of repeating that path in code.
+# shared_tools = "example-org/shared-tools"
+# organization = "example-org"
+
+[github.bootstrap]
+enabled = true
+branch_prefix = "repo/ci/run-"
+
+[github.credentials]
+# IMPORTANT: These values are NAMES of GitHub secrets/variables, NOT credentials.
+# Create the actual secret in GitHub Settings > Secrets and variables > Actions.
+# Never paste a token, password, or private key into this file or any script.
+# Example: bootstrap_token = "MY_BOOTSTRAP_TOKEN" means look up the GitHub
+# secret NAMED MY_BOOTSTRAP_TOKEN. Its actual value stays in GitHub Secrets.
+# Prefer an installed App. App ID can be a variable; keys and tokens are secrets.
+app_id = "CI_APP_ID"
+app_private_key = "CI_APP_PRIVATE_KEY"
+bootstrap_token = "CI_WORKFLOW_TOKEN"
+# release_token = "MY_RELEASE_SECRET"
+# organization_token = "MY_ORGANIZATION_SECRET"
+
+# Each named output branch is built from source globs and repo/content/root/.
+
+[branches.main]
+source = ["source/**"]

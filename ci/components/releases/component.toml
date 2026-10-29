@@ -1,7 +1,0 @@
-provides = ["releases.generated"]
-requires = []
-inputs = ["content/releases/releases.toml", "content/releases/records/**"]
-outputs = ["build/repo/releases/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"
-enabled = true
