@@ -16,9 +16,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve credential names
+        id: credentials
+        run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
       - name: Start bootstrap
         env:
           CI_EVENT: ${{ github.event_name }}
-          CI_GITHUB_SECRETS: ${{ toJSON(secrets) }}
-          CI_GITHUB_VARIABLES: ${{ toJSON(vars) }}
+          CI_GITHUB_APP_ID_SECRET: ${{ secrets[steps.credentials.outputs.app_id] }}
+          CI_GITHUB_APP_ID_VARIABLE: ${{ vars[steps.credentials.outputs.app_id] }}
+          CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
+          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
         run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau

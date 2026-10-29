@@ -46,12 +46,16 @@ The App ID may be a variable or a secret. Private keys and tokens must be secret
 Only the roles actually used by an operation are consumed; listing `release_token`
 does not enable release publishing.
 
-The entrypoint passes the run's available secrets and variables as JSON. Luau
-lists the available names and logs each configured role/name/availability, never values.
-This includes organization secrets and variables only when GitHub makes them
-available to this repository and run. It does not enumerate inaccessible account
-secrets. The complete JSON inventory is removed from the environment before
-component processes start. Generated execution jobs do not receive that inventory.
+The first Luau invocation exports configured credential names as step outputs.
+GitHub then looks up only the App ID, private key, and bootstrap token selected by
+those outputs. The next Luau invocation logs selected names and availability,
+never values. It clears their transport environment variables before component
+processes start. It does not receive a snapshot of all GitHub secrets or variables.
+Organization credentials are available only when GitHub grants this repository
+access to them. Other configured roles are listed as not requested by bootstrap.
+Enumerating every repository secret would require secret-administration access;
+bootstrap does not request that permission. Generated execution jobs receive no
+bootstrap credentials.
 
 ## Automatic selection and fallback
 

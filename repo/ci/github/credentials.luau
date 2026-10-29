@@ -2,7 +2,7 @@
 --!strict
 
 local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@lune/fs")
 local Configuration = require("./configuration")
 
 local Credentials = {}
@@ -11,41 +11,60 @@ Credentials.__index = Credentials
 type Fields = { secrets: { [string]: string }, variables: { [string]: string } }
 export type Credentials = setmetatable<Fields, typeof(Credentials)>
 
-local function values(encoded: string?, label: string): { [string]: string }
-	if not encoded or encoded == "" then
-		return {}
-	end
-	local ok, decoded = xpcall(function(): unknown
-		return Serde.decode("json", encoded)
-	end, function(): nil
-		return nil
-	end)
-	if not ok or type(decoded) ~= "table" then
-		error(`{label} must contain a JSON object`, 0)
-	end
-	local result: { [string]: string } = {}
-	for name, value in decoded do
-		if type(name) ~= "string" or not name:match("^[%a_][%w_]*$") or type(value) ~= "string" then
-			error(`{label} must contain string names and values`, 0)
-		end
-		if value ~= "" then
-			result[name:upper()] = value
-		end
-	end
-	return result
-end
+-- This is the native workflow transport contract, not a secret-name registry.
+-- Actual secret names are read exclusively from github.toml.
+const SECRET_ROLES: { [string]: string } = {
+	app_id = "CI_GITHUB_APP_ID_SECRET",
+	app_private_key = "CI_GITHUB_APP_PRIVATE_KEY",
+	bootstrap_token = "CI_GITHUB_BOOTSTRAP_TOKEN",
+}
 
 function Credentials.new(): Credentials
-	local secrets = Process.env.CI_GITHUB_SECRETS
-	local variables = Process.env.CI_GITHUB_VARIABLES
-	-- Discovered components must not inherit the complete secret inventory.
+	local supplied: { [string]: string } = {}
+	for role, environment in SECRET_ROLES do
+		local value = Process.env[environment]
+		Process.env[environment] = nil
+		if value and value ~= "" then
+			supplied[role] = value
+		end
+	end
+	local appIdVariable = Process.env.CI_GITHUB_APP_ID_VARIABLE
+	Process.env.CI_GITHUB_APP_ID_VARIABLE = nil
+	-- Never consume or forward legacy blanket credential snapshots.
 	Process.env.CI_GITHUB_SECRETS = nil
 	Process.env.CI_GITHUB_VARIABLES = nil
-	local fields: Fields = {
-		secrets = values(secrets, "CI_GITHUB_SECRETS"),
-		variables = values(variables, "CI_GITHUB_VARIABLES"),
-	}
+	local configuration = Configuration.new()
+	local fields: Fields = { secrets = {}, variables = {} }
+	for role, value in supplied do
+		local name = configuration.credentials[role]
+		if name then
+			fields.secrets[name:upper()] = value
+		end
+	end
+	local appIdName = configuration.credentials.app_id
+	if appIdName and appIdVariable and appIdVariable ~= "" then
+		fields.variables[appIdName:upper()] = appIdVariable
+	end
 	return setmetatable(fields, Credentials)
+end
+
+function Credentials.ExportNames(): ()
+	local destination = Process.env.GITHUB_OUTPUT
+	if not destination then
+		error("GITHUB_OUTPUT is required to resolve configured credential names", 0)
+	end
+	local configuration = Configuration.new()
+	local roles: { string } = {}
+	for role in configuration.credentials do
+		table.insert(roles, role)
+	end
+	table.sort(roles)
+	local lines: { string } = {}
+	for _, role in roles do
+		table.insert(lines, `{role}={configuration.credentials[role]}`)
+	end
+	local current = if Fs.isFile(destination) then Fs.readFile(destination) else ""
+	Fs.writeFile(destination, current .. "\n" .. table.concat(lines, "\n") .. "\n")
 end
 
 function Credentials.Get(
@@ -82,13 +101,18 @@ function Credentials.Describe(self: Credentials, configuration: Configuration.Co
 	end
 	table.sort(roles)
 	print("::group::GitHub credential availability (names only)")
-	print("Available secret names: " .. (if #secretNames > 0 then table.concat(secretNames, ", ") else "none"))
-	print("Available variable names: " .. (if #variableNames > 0 then table.concat(variableNames, ", ") else "none"))
+	print("Available selected secret names: " .. (if #secretNames > 0 then table.concat(secretNames, ", ") else "none"))
+	print(
+		"Available selected variable names: "
+			.. (if #variableNames > 0 then table.concat(variableNames, ", ") else "none")
+	)
 	for _, role in roles do
 		local name = configuration.credentials[role]
 		local location = if self.secrets[name:upper()]
 			then "secret available"
-			else if self.variables[name:upper()] then "variable available" else "not available to this run"
+			else if self.variables[name:upper()]
+				then "variable available"
+				else if not SECRET_ROLES[role] then "not requested by bootstrap" else "not available to this run"
 		print(`{role} -> {name}: {location}`)
 	end
 	print("Values are resolved from GitHub at runtime; TOML contains names, never credentials.")
