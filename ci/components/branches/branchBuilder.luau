@@ -8,7 +8,6 @@ local TagRenderer = require("@ci/content/tagRenderer")
 
 const CONFIG_PATH = "config/branches.toml"
 const CONTENT_ROOT = "content/repo"
-const LOCALE_ROOT = "content/locales"
 const OUTPUT_ROOT = "build/repo/branches"
 
 local BranchBuilder = {}
@@ -74,6 +73,39 @@ local function copySource(patterns: { string }, branchRoot: string): number
 	return copied
 end
 
+local function overlayTranslations(branchRoot: string, defaultLocale: string, branchName: string): number
+	local copied = 0
+	for _, source in Glob.Find(`{CONTENT_ROOT}/**`) do
+		if not source:match("%.md$") or Fs.metadata(source).kind ~= "file" then
+			continue
+		end
+		local relativePath = source:gsub(`^{CONTENT_ROOT}/`, "")
+		local translationStem = relativePath:gsub("%.md$", ".toml")
+		for _, locale in TagRenderer.Locales(nil) do
+			if locale == defaultLocale then
+				continue
+			end
+			local translation = `content/i18n/repo/{locale}/{translationStem}`
+			if not Fs.isFile(translation) then
+				continue
+			end
+			local destination = `{branchRoot}/docs/{locale}/{relativePath}`
+			local parent = destination:match("^(.*)/[^/]+$")
+			if parent then
+				ensureDirectory(parent)
+			end
+			local tags = TagRenderer.new(locale)
+			local overrides = { branch_name = branchName }
+			if relativePath == "README.md" then
+				overrides.language_navigation = TagRenderer.LanguageNavigation(relativePath, locale)
+			end
+			Fs.writeFile(destination, tags:Render(Fs.readFile(source), source, overrides))
+			copied += 1
+		end
+	end
+	return copied
+end
+
 local function copyAuthoredFile(
 	source: string,
 	destination: string,
@@ -85,7 +117,11 @@ local function copyAuthoredFile(
 		ensureDirectory(parent)
 	end
 	if source:match("%.md$") then
-		Fs.writeFile(destination, tags:Render(Fs.readFile(source), source, { branch_name = branchName }))
+		local overrides = { branch_name = branchName }
+		if source == `{CONTENT_ROOT}/README.md` then
+			overrides.language_navigation = TagRenderer.LanguageNavigation("README.md", TagRenderer.DefaultLocale())
+		end
+		Fs.writeFile(destination, tags:Render(Fs.readFile(source), source, overrides))
 	else
 		Fs.copy(source, destination)
 	end
@@ -129,7 +165,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	if type(configuration) ~= "table" or type(configuration.branches) ~= "table" then
 		error(`{CONFIG_PATH}: expected a branches table`, 0)
 	end
-	TagRenderer.Validate({ CONTENT_ROOT, LOCALE_ROOT })
+	TagRenderer.Validate({ CONTENT_ROOT, "content/docs" })
 
 	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
 	if outputMetadata.kind == "symlink" then
@@ -143,7 +179,8 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	ensureDirectory("build/repo")
 	ensureDirectory(OUTPUT_ROOT)
 
-	local tags = TagRenderer.new("en")
+	local defaultLocale = TagRenderer.DefaultLocale()
+	local tags = TagRenderer.new(defaultLocale)
 	local branchCount = 0
 	for name, value in configuration.branches do
 		if type(name) ~= "string" or type(value) ~= "table" or type(value.source) ~= "table" then
@@ -154,18 +191,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 		ensureDirectory(branchRoot)
 		local copied = copySource(value.source, branchRoot)
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, tags, name)
-
-		for _, locale in TagRenderer.Locales(tags) do
-			local localeTags = TagRenderer.new(locale)
-			for _, source in Glob.Find(`{CONTENT_ROOT}/**`) do
-				if not source:match("%.md$") or Fs.metadata(source).kind ~= "file" then
-					continue
-				end
-				local relativePath = source:gsub(`^{CONTENT_ROOT}/`, "")
-				copyAuthoredFile(source, `{branchRoot}/locales/{locale}/{relativePath}`, localeTags, name)
-				copied += 1
-			end
-		end
+		copied += overlayTranslations(branchRoot, defaultLocale, name)
 		if copied == 0 then
 			error(`branch {name} has no source files or templates`, 0)
 		end

@@ -5,7 +5,7 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 
-const CONFIG_PATH = "config/releases.toml"
+const CONFIG_PATH = "content/releases/releases.toml"
 const RECORD_ROOT = "content/releases/records"
 const OUTPUT_ROOT = "build/repo/releases"
 
@@ -15,6 +15,16 @@ type ReleaseRecord = {
 	channel: string,
 	commit: string,
 	from: string?,
+	notes: string?,
+}
+
+type ReleaseIndexEntry = {
+	version: string,
+	type: string,
+	channel: string,
+	commit: string,
+	from: string?,
+	range: { from: string, to: string }?,
 	notes: string?,
 }
 
@@ -105,13 +115,11 @@ local function validVersion(versionType: string, version: string, options: { [st
 end
 
 local function resolveReference(reference: string, label: string): string
-	if reference == "HEAD" then
-		local result = Process.exec("git", { "rev-parse", "HEAD" })
-		if not result.ok then
-			error(`{CONFIG_PATH}: unable to resolve {label} HEAD`, 0)
-		end
-		reference = result.stdout:gsub("%s+$", "")
+	local result = Process.exec("git", { "rev-parse", "--verify", reference .. "^{commit}" })
+	if not result.ok then
+		error(`{CONFIG_PATH}: unable to resolve {label} Git reference {reference}`, 0)
 	end
+	reference = result.stdout:gsub("%s+$", "")
 	requireCommit(reference, label)
 	return reference
 end
@@ -122,34 +130,26 @@ local function decodeRecords(): { ReleaseRecord }
 		error(`{CONFIG_PATH}: expected a [release] table`, 0)
 	end
 	local shared = configuration.release
-	local versionType = shared.type
-	local types = shared.types
-	if type(versionType) ~= "string" or type(types) ~= "table" or type(types[versionType]) ~= "table" then
-		error(`{CONFIG_PATH}: release.type must select a configured [release.types.<type>] table`, 0)
+	local formatSelection = shared.format
+	local format = if type(formatSelection) == "table" then formatSelection.type else nil
+	local formats = shared.formats
+	local channels = shared.channels
+	if type(format) ~= "string" or type(formats) ~= "table" or type(formats[format]) ~= "table" then
+		error(`{CONFIG_PATH}: release.format must select a configured [release.formats.<format>] table`, 0)
 	end
-	local options = types[versionType]
+	if type(channels) ~= "table" then
+		error(`{CONFIG_PATH}: configure release channels under [release.channels.<name>]`, 0)
+	end
+	local options = formats[format]
 	local entries = options.entries
 	if type(entries) ~= "table" then
-		error(`{CONFIG_PATH}: release type {versionType} requires an entries array`, 0)
+		error(`{CONFIG_PATH}: release format {format} requires an entries array`, 0)
 	end
 	local sharedSource = shared.source
-	if type(sharedSource) ~= "string" then
-		error(`{CONFIG_PATH}: release.source must be a commit SHA or HEAD`, 0)
+	if sharedSource ~= nil and type(sharedSource) ~= "string" then
+		error(`{CONFIG_PATH}: release.source must be a Git reference`, 0)
 	end
-	local sharedCommit = resolveReference(sharedSource, "release source")
-	local sharedFrom = shared.from
-	if sharedFrom ~= nil and type(sharedFrom) ~= "string" then
-		error(`{CONFIG_PATH}: release.from must be a full SHA or beginning`, 0)
-	end
-	local resolvedFrom = if sharedFrom == "beginning" or sharedFrom == nil
-		then sharedFrom
-		else resolveReference(sharedFrom, "release from")
-	if resolvedFrom and resolvedFrom ~= "beginning" then
-		local ancestry = Process.exec("git", { "merge-base", "--is-ancestor", resolvedFrom, sharedCommit })
-		if not ancestry.ok then
-			error(`{CONFIG_PATH}: release.from is not an ancestor of release.source`, 0)
-		end
-	end
+	sharedSource = sharedSource or "HEAD"
 	local sharedNotes = shared.notes
 	if sharedNotes ~= nil and (type(sharedNotes) ~= "string" or not sharedNotes:match("%.md$")) then
 		error(`{CONFIG_PATH}: release.notes must name a Markdown record`, 0)
@@ -160,6 +160,7 @@ local function decodeRecords(): { ReleaseRecord }
 
 	local records: { ReleaseRecord } = {}
 	local versions: { [string]: boolean } = {}
+	local previousCommit: string? = nil
 	for index, value in entries do
 		if type(index) ~= "number" or type(value) ~= "table" then
 			error(`{CONFIG_PATH}: release entries must be tables`, 0)
@@ -167,29 +168,50 @@ local function decodeRecords(): { ReleaseRecord }
 		local version = value.version
 		local channel = value.channel
 		local commit = value.source
-		if type(version) ~= "string" or not validVersion(versionType, version, options) then
-			error(`{CONFIG_PATH}: {versionType} release entry {index} has an invalid version`, 0)
+		if type(version) ~= "string" or not validVersion(format, version, options) then
+			error(`{CONFIG_PATH}: {format} release entry {index} has an invalid version`, 0)
 		end
-		if channel ~= "release" and channel ~= "prerelease" then
-			error(`{CONFIG_PATH}: release {version} channel must be release or prerelease`, 0)
+		if type(channel) ~= "string" or type(channels[channel]) ~= "table" then
+			error(`{CONFIG_PATH}: release {version} selects undeclared channel {tostring(channel)}`, 0)
 		end
 		if versions[version] then
 			error(`{CONFIG_PATH}: duplicate release version {version}`, 0)
 		end
 		local resolvedCommit = if commit == nil
-			then sharedCommit
+			then resolveReference(sharedSource, `release {version} source`)
 			else if type(commit) == "string"
 				then resolveReference(commit, `release {version} source`)
-				else error(`{CONFIG_PATH}: release {version} source must be a SHA or HEAD`, 0)
+				else error(`{CONFIG_PATH}: release {version} source must be a Git reference`, 0)
+		local rangeStart = if value.from ~= nil then value.from else channels[channel].from
+		local resolvedFrom: string? = nil
+		if rangeStart == "previous" then
+			resolvedFrom = previousCommit
+			if not resolvedFrom then
+				error(`{CONFIG_PATH}: release {version} uses from = previous but no earlier release is configured`, 0)
+			end
+		elseif rangeStart == "beginning" or rangeStart == nil then
+			resolvedFrom = nil
+		elseif type(rangeStart) == "string" then
+			resolvedFrom = resolveReference(rangeStart, `release {version} range start`)
+		else
+			error(`{CONFIG_PATH}: release {version} channel range must be a Git reference, previous, or beginning`, 0)
+		end
+		if resolvedFrom then
+			local ancestry = Process.exec("git", { "merge-base", "--is-ancestor", resolvedFrom, resolvedCommit })
+			if not ancestry.ok then
+				error(`{CONFIG_PATH}: release {version} range start is not an ancestor of its source commit`, 0)
+			end
+		end
 		versions[version] = true
 		table.insert(records, {
 			version = version,
-			type = versionType,
+			type = format,
 			channel = channel,
 			commit = resolvedCommit,
 			from = resolvedFrom,
 			notes = sharedNotes,
 		})
+		previousCommit = resolvedCommit
 	end
 	return records
 end
@@ -238,7 +260,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 	ensureDirectory("build/repo")
 	ensureDirectory(OUTPUT_ROOT)
 
-	local index: { { version: string, commit: string, from: string?, notes: string? } } = {}
+	local index: { ReleaseIndexEntry } = {}
 	for _, release in records do
 		local releaseDirectory = `{OUTPUT_ROOT}/{release.version}`
 		ensureDirectory(releaseDirectory)
@@ -258,6 +280,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 			channel = release.channel,
 			commit = release.commit,
 			from = release.from,
+			range = if release.from then { from = release.from, to = release.commit } else nil,
 			notes = notesOutput,
 		}
 		Fs.writeFile(`{releaseDirectory}/release.json`, Serde.encode("json", entry))

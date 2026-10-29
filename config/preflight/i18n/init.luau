@@ -30,7 +30,7 @@ function I18nProvider.Analyze(_self: I18nProvider, _context: Contracts.Context):
 		}
 		table.insert(diagnostics, diagnostic)
 	end
-	for _, missing in TagRenderer.FindMissing({ roots[1], roots[2], "content/locales" }) do
+	for _, missing in TagRenderer.FindMissing(roots) do
 		local diagnostic: Contracts.Diagnostic = {
 			path = missing.path,
 			line = missing.line,

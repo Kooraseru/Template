@@ -4,6 +4,7 @@
 local Fs = require("@lune/fs")
 
 local Glob = require("@ci/bootstrap/glob")
+local TagRenderer = require("@ci/content/tagRenderer")
 local MarkdownRenderer = require("./markdownRenderer")
 local StaticAssetCopier = require("./staticAssetCopier")
 
@@ -68,7 +69,7 @@ end
 
 function SiteBuilder.new(): SiteBuilder
 	local fields: SiteBuilderFields = {
-		markdownRenderer = MarkdownRenderer.new("en"),
+		markdownRenderer = MarkdownRenderer.new(TagRenderer.DefaultLocale()),
 		staticAssetCopier = StaticAssetCopier.new(),
 	}
 	return setmetatable(fields, SiteBuilder)
