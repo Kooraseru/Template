@@ -1,0 +1,40 @@
+{
+  "name": "preflight-diagnostics",
+  "displayName": "Preflight Diagnostics",
+  "description": "Publishes repository Preflight findings to the VS Code Problems panel.",
+  "version": "0.1.0",
+  "publisher": "kooraseru",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kooraseru/Template.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "main": "./extension.js",
+  "files": [
+    "extension.js"
+  ],
+  "extensionDependencies": [
+    "JohnnyMorganz.luau-lsp",
+    "JohnnyMorganz.stylua"
+  ],
+  "activationEvents": [
+    "workspaceContains:ci/preflight/init.luau"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "preflight.analyze",
+        "title": "Preflight: Analyze Workspace"
+      },
+      {
+        "command": "preflight.styluaFormatDocument",
+        "title": "Preflight: Format Current File with StyLua"
+      }
+    ]
+  }
+}

@@ -2,11 +2,11 @@
 
 Generated code, bindings, and build products must have one editable source and a reproducible generating operation.
 
-- Make generated files recognizable and document their origin.
+- Make generated files recognizable and identify their producing tool or source.
 - Do not hand-edit generated files; edit the schema or generator and regenerate.
-- Put transient compiler output under ignored `build/`, including an explicit `CARGO_TARGET_DIR`.
-- Treat generated FFI bindings as untrusted at runtime; type generation doesn't validate external pointers or lengths.
-- Keep `Cargo.lock` under `src/cargo/` for the application when present, not under a new repository-level Cargo scaffold.
+- Keep transient compiler output ignored. Use the project's chosen build directory or an explicit `CARGO_TARGET_DIR` when needed.
+- Treat generated FFI bindings as untrusted at runtime; type generation does not validate external pointers or lengths.
+- Keep the package lockfile and build definitions with their rightful package or application owner.
 - Avoid generated module trees with no useful source/owner relationship.
 
-Build declarations belong to `src/build.toml`. The repository does not need Rust source or a Cargo manifest merely because these rules exist.
+The location of application source and build declarations is project-specific.

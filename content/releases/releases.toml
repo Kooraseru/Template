@@ -1,0 +1,33 @@
+# Release records declare a target tag and the previous tag for GitHub notes.
+[release]
+source = "HEAD"
+notes = "10.1.2026.md"
+
+[release.channels.prerelease]
+prerelease = true
+
+[release.channels.release]
+prerelease = false
+
+# Choose the version format independently from release channels.
+[release.format]
+type = "semver"
+
+[release.formats.semver]
+# Advanced settings: prerelease_identifier = "pre", allow_build_metadata = false
+prerelease_identifier = "pre"
+allow_build_metadata = false
+
+[[release.formats.semver.entries]]
+version = "0.2.0-pre.1"
+channel = "prerelease"
+# Passed to GitHub as previous_tag_name for generated release notes.
+previous_tag = "0.1.0-pre.1"
+
+[[release.formats.semver.entries]]
+version = "0.2.0"
+channel = "release"
+previous_tag = "previous"
+
+# Other formats can be selected by setting release.format.type and defining
+# the corresponding [release.formats.<type>] table and entries.

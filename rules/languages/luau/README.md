@@ -1,7 +1,7 @@
 # Luau conventions
 
-Follow the established Luau language rules when migrated from the previous guidance; new rules here are regular Markdown, not KERO instructions.
+Use strict typing where the target runtime supports it and preserve the established file-shape conventions. Keep side effects at explicit executable or lifecycle boundaries. Avoid wrappers that only forward `require` calls.
 
-Use strict typing for repository Luau modules. Keep effects at the declared executable boundary. Prefer imports and exports that reflect actual module ownership; do not add a file solely to forward `require` calls.
+Choose a single `name.luau` module when one script is sufficient. When meaningful child modules warrant a directory, `name/init.luau` is the normal coordinating module head; it must not exist solely to echo child exports.
 
-See `files/module-roots.md` for `index.luau` versus `init.luau`.
+See [directory roots](files/module-roots.md), [file layout](files/file-system.md), [control flow](language/control-flow.md), and [strings](language/strings.md).

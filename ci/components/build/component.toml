@@ -1,0 +1,11 @@
+provides = ["build.completed"]
+requires = []
+inputs = [
+  "source/main.c",
+  "source/hosts/*/Dockerfile",
+  "source/hosts/*/init.luau",
+]
+outputs = ["build/*.exe"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"
+enabled = true

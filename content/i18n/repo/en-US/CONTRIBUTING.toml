@@ -1,0 +1,5 @@
+[tags]
+development_branch = "source"
+contributing_title = "Contributing"
+contributing_start = "Submit pull requests against "
+contributing_middle = ". Run CI locally with GitHub Local Actions or act. Edit generated files through their source content."

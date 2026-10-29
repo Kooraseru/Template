@@ -1,0 +1,6 @@
+[tags]
+project_name = "プロジェクト"
+page_title = "プロジェクト"
+landing_intro = "このリポジトリは Windows バイナリをビルドし、content/docs/ からドキュメントサイトを生成します。このディレクトリのファイルが既定の言語になります。"
+landing_locale_organization = "言語ごとの値は、対応する Markdown ページに合わせて content/i18n/docs/<locale>/<page>.toml に保存します。ページは一つだけ生成され、言語メニューから表示言語を切り替えます。"
+landing_fallback = "翻訳にキーがない場合は、既定の言語の値を使用します。"

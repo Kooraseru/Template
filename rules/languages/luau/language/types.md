@@ -4,7 +4,22 @@ This document owns type-safety constraints and allowed uncertainty boundaries.
 
 ## Main Rule
 
-A cast is not a type-safety fix. Treat casts as evidence that the type surface, loader shape, API boundary, or ownership model may be wrong.
+Type assertions using `::` are prohibited. They override the type system's
+knowledge instead of describing or proving the value's shape. Do not use them
+to silence errors, skip validation, or force a metatable instance shape.
+
+Type annotations using `:` are allowed and encouraged. An annotation gives a
+value, parameter, field, or return value an explicit type for the type checker
+to verify. For example, `local reporter: Reporter` is a type hint; it does not
+convert the value. Use annotations to make intended shapes clear, then fix any
+errors by establishing that shape in code.
+
+Prefer `const` for local bindings that are assigned once. `const` prevents
+rebinding the name; it does not freeze a table's contents. Use `table.freeze`
+when the value itself must also be immutable.
+
+The same prohibition applies to `any`: do not introduce or propagate `any` to
+avoid describing and checking the real shape.
 
 When a type error appears, resolve it in this order:
 
@@ -14,19 +29,13 @@ When a type error appears, resolve it in this order:
 4. Improve the caller's type.
 5. Add an explicit structural contract.
 6. Move validation to the actual boundary.
-7. Use a named boundary pattern only if the uncertainty truly belongs there.
+7. Use a typed adapter or a validated constructor at the boundary where
+   uncertainty actually enters.
 
-Never fix a type error by casting to `any`. "The analyzer does not understand this" means the design needs sharper types, not a shrug-cast.
-
-## Allowed Boundary Patterns
-
-Allowed boundary patterns are rare.
-
-Constructor-boundary casts are allowed only when staged metatable construction must pass incomplete `self` through helpers/callbacks typed as the final instance.
-
-Raw input quarantine casts are allowed only at external boundaries before validation.
-
-Engine/API boundary casts are allowed only when Luau cannot currently express the engine shape and the uncertainty is localized.
+Never use `::` or `any`, including at constructors, deserialization
+boundaries, or engine APIs. Model incomplete construction with fields-first
+initialization, validate raw inputs before creating typed domain values, and
+adapt external APIs with explicit structural types and checked functions.
 
 ## Lookup Types
 
@@ -66,5 +75,6 @@ For metatable-sensitive cases, consider `rawkeyof` and `rawget` when inherited `
 
 Use `unknown` for raw values that must be validated.
 
-Avoid `any`. If it appears necessary, first try a typed lookup surface, explicit
-structural contract, validated boundary, or API redesign. Do not export `any`.
+`any` is prohibited. Use `unknown` for untrusted values and narrow it with
+runtime checks before storing it in domain types. Do not hide `any` behind
+aliases, generic parameters, or casts.

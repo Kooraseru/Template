@@ -1,6 +1,15 @@
 -- structures/data: Tokens.luau
 --!strict
 
+type RGB = {
+	red: number,
+	green: number,
+	blue: number,
+}
+
+local text: RGB = { red = 235, green = 235, blue = 235 }
+local panel: RGB = { red = 24, green = 26, blue = 30 }
+
 return {
 	spacing = {
 		small = 4,
@@ -9,7 +18,7 @@ return {
 	},
 
 	color = {
-		text = Color3.fromRGB(235, 235, 235),
-		panel = Color3.fromRGB(24, 26, 30),
+		text = text,
+		panel = panel,
 	},
 }

@@ -1,7 +1,18 @@
 # Implementation workflow
 
-1. Identify the owner and contract of each changed behavior.
-2. Make the smallest cohesive change, without introducing a parallel command route.
-3. Run focused checks and the applicable GitHub Actions jobs.
-4. Preserve staged security and publication gates.
-5. Record deferred migrations explicitly; do not claim an unfinished refactor is complete.
+1. Identify the authoritative owner and contract of each behavior being changed.
+2. Make the smallest cohesive change without introducing a parallel command or policy route.
+3. Discover optional components from their owning directories and validate their shapes; do not update hardcoded inventories to make additions work.
+4. Run relevant static checks, preflight, and supported integration or platform execution, according to the change.
+5. Preserve security, provenance, and publication gates.
+6. Record deferred migrations explicitly. Do not report an unfinished refactor, skipped branch, or unavailable platform as verified.
+
+On Windows, prefer the configured MSYS2 Bash for repository commands and local
+hooks. Use PowerShell only when a Windows-specific operation requires it.
+
+## Editor configuration changes
+
+VS Code and language-server settings may not take effect until the user
+restarts VS Code. Batch related editor configuration changes into one reviewed
+edit, avoid repeated setting changes while waiting for diagnostics, and do not
+claim a setting is active until the language server has reloaded.

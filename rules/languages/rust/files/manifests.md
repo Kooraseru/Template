@@ -1,20 +1,10 @@
 # Rust manifests and configuration
 
-This template intentionally uses `src/cargo/` for application-owned Cargo metadata:
+Cargo metadata belongs to the package or workspace that owns it. There is no universal repository path for a `Cargo.toml`, `Cargo.lock`, or Cargo configuration.
 
-```text
-src/
-├── build.toml
-├── cargo/
-│   ├── Cargo.toml
-│   ├── Cargo.lock
-│   └── config.toml
-└── app/
-    └── main.rs
-```
-
-Use explicit manifest paths: `cargo --manifest-path src/cargo/Cargo.toml build`. Code outside the manifest directory requires explicit `[[bin]]` or `[lib]` paths such as `../app/main.rs`.
-
-`src/cargo/config.toml` is not automatically discovered as Cargo's usual `.cargo/config.toml`; the project fabricator must explicitly supply it with `--config src/cargo/config.toml`.
-
-No root `Cargo.toml`, `src/Cargo.toml`, or hidden `src/.cargo/` is required. The entire `src/cargo/` directory is optional for projects without Rust.
+- Use Cargo's normal conventions when the manifest is at the crate or workspace root.
+- If a repository deliberately stores the manifest elsewhere, invoke Cargo with an explicit `--manifest-path`.
+- When source files live outside the manifest's directory, use appropriate `[lib]` or `[[bin]]` paths.
+- `.cargo/config.toml` follows Cargo's directory lookup conventions. A custom file at another path is **not** automatically discovered; explicitly pass `--config` when needed.
+- Track a lockfile according to the consuming project's application/library policy, rather than inventing a second copy.
+- Projects without Rust do not need Cargo scaffolding or synthetic compiler examples.

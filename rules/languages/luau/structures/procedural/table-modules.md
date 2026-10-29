@@ -19,7 +19,7 @@ Usually absent:
 - fake private methods
 
 ```luau
--- src/app/Render/Text.luau
+-- source/app/Render/Text.luau
 --!strict
 
 local Text = {}

@@ -3,7 +3,7 @@
 Prefer a direct returned table when the module does not need setup:
 
 ```luau
--- src/app/Theme/Tokens.luau
+-- source/app/Theme/Tokens.luau
 --!strict
 
 return {
@@ -42,7 +42,7 @@ the data.
 Function values are allowed when they are part of the declared shape:
 
 ```luau
--- src/app/Theme/Scale.luau
+-- source/app/Theme/Scale.luau
 --!strict
 
 const base = 8

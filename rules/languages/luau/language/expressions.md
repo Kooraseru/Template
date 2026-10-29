@@ -24,3 +24,5 @@ end
 ## Guard-first decisions
 
 Apply [“if not, not if”](control-flow.md) when handling an absent or invalid precondition keeps the main path flat. Do not replace useful `if` branches with confusing negations or boolean expression puzzles merely for syntactic consistency.
+
+Use [backtick interpolation](strings.md) for strings combining text and values.

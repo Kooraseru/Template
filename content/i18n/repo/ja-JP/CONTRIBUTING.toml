@@ -1,0 +1,5 @@
+[tags]
+development_branch = "source"
+contributing_title = "コントリビューション"
+contributing_start = ""
+contributing_middle = " ブランチにプルリクエストを送ってください。GitHub Local Actions または act を使って CI をローカルで実行できます。生成ファイルではなく、元のコンテンツを編集してください。"

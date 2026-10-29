@@ -1,7 +1,8 @@
 # Review workflow
 
-- Identify new entry points, new dependencies, and changes in privilege boundaries.
-- Verify that every repository operation still has one command path.
-- Confirm that optional Rust or C++ application support is not a prerequisite for repository validation.
-- Check generated files and configuration discovery before approving path moves.
-- Separate successful test evidence from merely proposed changes.
+- Identify new entry points, dependencies, and changes in privilege boundaries.
+- Confirm that each operation has one authoritative owner and execution path.
+- Audit extensible parents for hardcoded child inventories and silent skipping of malformed candidates.
+- Check generated-file ownership, configuration discovery, and references before approving path moves.
+- Run the relevant available validation and execution checks. Do not require unrelated languages, fake targets, or unsupported hosts merely to complete a generic review.
+- Separate successful evidence from proposed changes and unverified assumptions.

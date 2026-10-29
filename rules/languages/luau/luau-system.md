@@ -13,6 +13,7 @@ luau/
     types.md
     functions.md
     expressions.md
+    strings.md
 
   files/
     file-system.md

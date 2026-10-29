@@ -33,8 +33,9 @@ function LoadingScreen.new(playerGui: PlayerGui): LoadingScreen
 end
 ```
 
-Use incremental `self` when setup is staged, conditional, cyclic, or
-callback/helper driven:
+For staged setup, create a complete typed fields record with optional fields or
+an explicit lifecycle state. Do not cast an empty table to the final object
+type.
 
 ```luau
 local Widget = {}
@@ -48,19 +49,16 @@ type WidgetFields = {
 export type Widget = setmetatable<WidgetFields, typeof(Widget)>
 
 function Widget.new(): Widget
-	local self = setmetatable({}, Widget) :: Widget
-
-	self.Root = Instance.new("Frame")
-	self.Connections = {}
-
-	return self
+	local fields: WidgetFields = {
+		Root = Instance.new("Frame"),
+		Connections = {},
+	}
+	return setmetatable(fields, Widget)
 end
 ```
 
-Use one constructor-boundary cast only when construction order genuinely needs it. Do not use call-site casts to compensate for constructor typing.
-
-Prefer fields-first construction when possible. Use empty-table incremental
-construction when the instance is built out step by step.
+Prefer fields-first construction. Represent values that become available later
+with optional fields or explicit lifecycle state.
 
 Do not inline a populated field table inside `setmetatable`. Use one of the
 established construction shapes.
@@ -76,16 +74,6 @@ local fields: WidgetFields = {
 local self = setmetatable(fields, Widget)
 ```
 
-Empty-table staged:
-
-```luau
-local self = setmetatable({}, Widget) :: Widget
-self.Root = Instance.new("Frame")
-self.Connections = {}
-```
-
-The empty-table staged form is less type-safe. Keep the cast at the constructor
-boundary and do not spread it to callers.
 
 ## Method Declarations
 

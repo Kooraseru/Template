@@ -3,7 +3,7 @@
 A module groups a meaningful public responsibility while hiding implementation details. It is not an excuse for an extra forwarding file.
 
 ```text
-src/
+source/
 └── app/
     ├── main.rs
     ├── render.rs
@@ -17,7 +17,7 @@ The `render.rs` file declares `mod layout;` and `mod textures;` if it owns those
 A directory-root `mod.rs` is also supported. Use it as a module boundary when it owns a genuine public contract; it should not exist solely to mirror a directory tree.
 
 - Keep implementation submodules private by default; choose `pub(crate)` and `pub` deliberately.
-- Favor one crate until packages have a real independent build/versioning boundary.
+- Favor one crate until packages have a real independent build/temp/versioning boundary.
 - Use `lib.rs` for reusable crate API and `main.rs` for executable startup when those conventional roles apply; custom paths must be declared in Cargo metadata.
 - Do not make every file a `struct` with one static method.
 - Don't let a module import its children solely to re-export identical names without an actual API benefit.

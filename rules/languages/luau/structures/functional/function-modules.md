@@ -18,7 +18,7 @@ Usually absent:
 - lifecycle headers
 
 ```luau
--- src/app/Clamp.luau
+-- source/app/Clamp.luau
 --!strict
 
 return function(value: number, minimum: number, maximum: number): number

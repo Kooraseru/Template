@@ -1,0 +1,6 @@
+provider = "luauLsp"
+enabled = true
+inputs = ["**/*.luau"]
+settings = "config/luau/luau-lsp/settings.json"
+luaurc = ".luaurc"
+platform = "standard"

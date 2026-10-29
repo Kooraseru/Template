@@ -1,0 +1,8 @@
+# The default locale supplies the top-level Markdown language.
+[locales]
+default = "en-US"
+supported = ["en-US", "ja-JP"]
+
+[locales.names]
+"en-US" = "English (United States)"
+"ja-JP" = "日本語 (日本)"

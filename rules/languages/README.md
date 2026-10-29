@@ -1,11 +1,9 @@
 # Language conventions
 
-These version-controlled Markdown files are the authoritative, directly readable language guidance for this template. They do not depend on a global mount, a runtime rule server, or synchronization credentials.
+These files are reusable language and module-writing conventions. Start with [the language system](language-system.md) and [comments](comments.md), then read only the rules relevant to the source language and module responsibility.
 
-Start with `language-system.md` and `comments.md`, then select the files for the actual language and module style being changed:
+- `luau/`: module roots, typing, file layout, and structure patterns.
+- `rust/`: modules, ownership, guard-first flow, documentation, and structure patterns.
+- `javascript/`, `html/`, `css/`: browser and presentation conventions when applicable.
 
-- `luau/`: Luau modules, directory roots, types, files, and structure patterns
-- `rust/`: optional application Rust code writing, guard-first flow, ownership, modules, and responsibility-based structures
-- `javascript/`, `html/`, `css/`: browser-facing conventions when applicable
-
-Language guidance does not make that language mandatory or trigger a compiler smoke test. A consuming project may have any application language, but repository CI infrastructure is owned by Luau.
+No language becomes mandatory merely because guidance for it exists. Build systems and runtime ownership remain project-specific.
