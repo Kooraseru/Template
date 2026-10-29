@@ -1,17 +1,15 @@
-# Release channels declare the commit range shown for releases.
+# Release records declare a target tag and the previous tag for GitHub notes.
 [release]
 source = "HEAD"
 notes = "10.1.2026.md"
 
 [release.channels.prerelease]
-# This channel's first range begins just before the existing prerelease tag.
-from = "0.1.0-pre.1^"
+prerelease = true
 
 [release.channels.release]
-# Later releases continue from the previous configured release commit.
-from = "previous"
+prerelease = false
 
-# Choose the version format independently from release channels and ranges.
+# Choose the version format independently from release channels.
 [release.format]
 type = "semver"
 
@@ -23,11 +21,13 @@ allow_build_metadata = false
 [[release.formats.semver.entries]]
 version = "0.2.0-pre.1"
 channel = "prerelease"
-source = "0.1.0-pre.1"
+# Passed to GitHub as previous_tag_name for generated release notes.
+previous_tag = "0.1.0-pre.1"
 
 [[release.formats.semver.entries]]
 version = "0.2.0"
 channel = "release"
+previous_tag = "previous"
 
 # Other formats can be selected by setting release.format.type and defining
 # the corresponding [release.formats.<type>] table and entries.

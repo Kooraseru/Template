@@ -11,20 +11,23 @@ const OUTPUT_ROOT = "build/repo/releases"
 
 type ReleaseRecord = {
 	version: string,
+	tag: string,
 	type: string,
 	channel: string,
+	prerelease: boolean,
 	commit: string,
-	from: string?,
+	previousTag: string?,
 	notes: string?,
 }
 
 type ReleaseIndexEntry = {
 	version: string,
+	tag: string,
 	type: string,
 	channel: string,
+	prerelease: boolean,
 	commit: string,
-	from: string?,
-	range: { from: string, to: string }?,
+	previousTag: string?,
 	notes: string?,
 }
 
@@ -160,16 +163,23 @@ local function decodeRecords(): { ReleaseRecord }
 
 	local records: { ReleaseRecord } = {}
 	local versions: { [string]: boolean } = {}
-	local previousCommit: string? = nil
 	for index, value in entries do
 		if type(index) ~= "number" or type(value) ~= "table" then
 			error(`{CONFIG_PATH}: release entries must be tables`, 0)
 		end
 		local version = value.version
+		local tag = value.tag or version
 		local channel = value.channel
 		local commit = value.source
 		if type(version) ~= "string" or not validVersion(format, version, options) then
 			error(`{CONFIG_PATH}: {format} release entry {index} has an invalid version`, 0)
+		end
+		if type(tag) ~= "string" or tag == "" then
+			error(`{CONFIG_PATH}: release {version} tag must be a nonempty string`, 0)
+		end
+		local validTag = Process.exec("git", { "check-ref-format", `refs/tags/{tag}` })
+		if not validTag.ok then
+			error(`{CONFIG_PATH}: release {version} has an invalid Git tag {tag}`, 0)
 		end
 		if type(channel) ~= "string" or type(channels[channel]) ~= "table" then
 			error(`{CONFIG_PATH}: release {version} selects undeclared channel {tostring(channel)}`, 0)
@@ -182,36 +192,40 @@ local function decodeRecords(): { ReleaseRecord }
 			else if type(commit) == "string"
 				then resolveReference(commit, `release {version} source`)
 				else error(`{CONFIG_PATH}: release {version} source must be a Git reference`, 0)
-		local rangeStart = if value.from ~= nil then value.from else channels[channel].from
-		local resolvedFrom: string? = nil
-		if rangeStart == "previous" then
-			resolvedFrom = previousCommit
-			if not resolvedFrom then
-				error(`{CONFIG_PATH}: release {version} uses from = previous but no earlier release is configured`, 0)
+		local notesStart = value.previous_tag
+		local previousTag: string? = nil
+		if notesStart == "previous" then
+			previousTag = if #records > 0 then records[#records].tag else nil
+			if not previousTag then
+				error(
+					`{CONFIG_PATH}: release {version} uses previous_tag = previous but no earlier release is configured`,
+					0
+				)
 			end
-		elseif rangeStart == "beginning" or rangeStart == nil then
-			resolvedFrom = nil
-		elseif type(rangeStart) == "string" then
-			resolvedFrom = resolveReference(rangeStart, `release {version} range start`)
-		else
-			error(`{CONFIG_PATH}: release {version} channel range must be a Git reference, previous, or beginning`, 0)
+		elseif notesStart ~= nil and notesStart ~= "beginning" then
+			if
+				type(notesStart) ~= "string"
+				or not Process.exec("git", { "check-ref-format", `refs/tags/{notesStart}` }).ok
+			then
+				error(`{CONFIG_PATH}: release {version} has an invalid previous_tag`, 0)
+			end
+			previousTag = notesStart
 		end
-		if resolvedFrom then
-			local ancestry = Process.exec("git", { "merge-base", "--is-ancestor", resolvedFrom, resolvedCommit })
-			if not ancestry.ok then
-				error(`{CONFIG_PATH}: release {version} range start is not an ancestor of its source commit`, 0)
-			end
+		local prerelease = channels[channel].prerelease
+		if prerelease ~= nil and type(prerelease) ~= "boolean" then
+			error(`{CONFIG_PATH}: channel {channel} prerelease must be a boolean`, 0)
 		end
 		versions[version] = true
 		table.insert(records, {
 			version = version,
+			tag = tag,
 			type = format,
 			channel = channel,
+			prerelease = prerelease == true,
 			commit = resolvedCommit,
-			from = resolvedFrom,
+			previousTag = previousTag,
 			notes = sharedNotes,
 		})
-		previousCommit = resolvedCommit
 	end
 	return records
 end
@@ -276,11 +290,12 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 		end
 		local entry = {
 			version = release.version,
+			tag = release.tag,
 			type = release.type,
 			channel = release.channel,
+			prerelease = release.prerelease,
 			commit = release.commit,
-			from = release.from,
-			range = if release.from then { from = release.from, to = release.commit } else nil,
+			previousTag = release.previousTag,
 			notes = notesOutput,
 		}
 		Fs.writeFile(`{releaseDirectory}/release.json`, Serde.encode("json", entry))
