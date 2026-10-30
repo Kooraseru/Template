@@ -151,3 +151,33 @@ Package configuration lives in `repo/content/packages/`, separate from Releases.
 See its README and `records/*/package.toml` folders. `packages.toml` owns only shared policy, including `packages.on_existing` (default `replace`). Registry integrations belong with publishing, never
 with the compiler or the generic staging provider. A configured but unavailable
 adapter fails explicitly rather than claiming that a package was published.
+
+
+## Contribution templates and labels
+
+- `ISSUE_TEMPLATE/*.yml`: bug, feature, and question forms discovered by GitHub.
+- `ISSUE_TEMPLATE/config.yml`: disables blank issues for ordinary contributors.
+- `pull_request_template.md`: default PR description; authors can edit it.
+- `labels.toml`: names, colors, and descriptions managed by the Luau CI pipeline.
+
+These files are authored here once, on the default `source` branch. They are not
+generated copies of templates stored elsewhere. Issue forms require appropriate
+fields, but templates are not a universal barrier against off-format submissions.
+
+GitHub reads the templates natively. It does **not** read `labels.toml` natively:
+`repo/ci/components/sync-labels/` discovers and validates those definitions and
+creates or updates labels on trusted source pushes using the run-provided token
+with `issues: write`. There are no supplied tokens, extra workflows, or external
+sync services. An already matching catalog reports skipped.
+
+Label synchronization preserves existing label IDs and issue associations. It
+does not delete unlisted labels, rename labels when a definition is removed, or
+modify existing issues/PRs. Forms must reference labels declared in `labels.toml`.
+Change a label definition here; do not maintain another list in CI code.
+
+To disable synchronization, set its component manifest's `enabled` to false.
+Labels then need to be created through GitHub settings or its API before forms
+can apply them. Org-level default labels apply to new repositories rather than
+continually updating existing ones.
+
+Labels classify issues/PRs. Git tags identify commits/releases and are separate.

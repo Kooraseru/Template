@@ -1,0 +1,7 @@
+provides = ["github.labels.synced"]
+requires = []
+inputs = [".github/labels.toml", ".github/ISSUE_TEMPLATE/*.yml"]
+outputs = []
+events = ["push"]
+boundary = "privileged"
+enabled = true

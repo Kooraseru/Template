@@ -1,0 +1,26 @@
+name: Help or question
+description: Ask about using, building, or configuring the project.
+title: "[Question] "
+labels: [question, needs triage]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Include relevant documentation, commands, and results.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+  - type: textarea
+    id: context
+    attributes:
+      label: Relevant environment and context

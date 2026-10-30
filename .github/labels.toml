@@ -1,0 +1,27 @@
+# Declarative repository labels. GitHub does NOT read this file natively.
+# The discovered Luau sync-labels component creates/updates these on source pushes.
+# Removing a definition does not delete the remote label or alter existing issues.
+[[labels]]
+name = "bug"
+color = "d73a4a"
+description = "Something is not working as intended."
+
+[[labels]]
+name = "enhancement"
+color = "a2eeef"
+description = "A proposed feature or improvement."
+
+[[labels]]
+name = "question"
+color = "d876e3"
+description = "Help or clarification is needed."
+
+[[labels]]
+name = "documentation"
+color = "0075ca"
+description = "Documentation improvements or corrections."
+
+[[labels]]
+name = "needs triage"
+color = "fbca04"
+description = "Awaiting initial review and classification."
