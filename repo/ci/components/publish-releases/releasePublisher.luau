@@ -18,7 +18,7 @@ function ReleasePublisher.Publish(
 	entry: { [string]: unknown },
 	policy: ConflictPolicy.Policy,
 	request: Request
-): ()
+): boolean
 	local tag = Publication.Text(entry.tag)
 	local commit = Publication.Text(entry.commit)
 	local encodedTag = Publication.Encode(tag)
@@ -38,7 +38,7 @@ function ReleasePublisher.Publish(
 	)
 	if decision == "skip" then
 		print(`Release/tag {tag} already exists; on_existing = skip`)
-		return
+		return false
 	end
 	local releaseId = existing.id
 	if releaseStatus == 200 and type(releaseId) ~= "number" then
@@ -100,6 +100,7 @@ function ReleasePublisher.Publish(
 	end
 	Publication.RequireSuccess(status, `Publish release {tag}; a tag update may already have succeeded`)
 	print(`Published release https://github.com/{repository}/releases/tag/{tag} (on_existing = {policy})`)
+	return true
 end
 
 return ReleasePublisher

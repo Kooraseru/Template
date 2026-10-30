@@ -84,7 +84,7 @@ function Publication.Begin(setting: string): string?
 	if enabled and enabled ~= "" and enabled ~= "true" and enabled ~= "false" then
 		error(`CI_PUBLISH_{setting} must be true, false, or unset`, 0)
 	end
-	if enabled == "false" or (setting ~= "PAGES" and enabled ~= "true") then
+	if enabled == "false" then
 		print(`Publication {setting}: disabled by GitHub variable CI_PUBLISH_{setting}`)
 		return nil
 	end

@@ -14,7 +14,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): ()
+function Component.Run(_self: Component, _context: { event: string }): string?
 	local index = Publication.Record(Serde.decode("json", Fs.readFile("build/repo/packages/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged packages")
 	print(`GitHub Packages existing-version policy: {policy}`)
@@ -31,13 +31,14 @@ function Component.Run(_self: Component, _context: { event: string }): ()
 		end
 		local repository = Publication.Begin("PACKAGES")
 		if not repository then
-			return
+			return "skipped"
 		end
 		error(
 			`Package {name}: GitHub Packages adapter for {Publication.Text(package.format)} is not installed; staging does not create a registry package`,
 			0
 		)
 	end
+	return "skipped"
 end
 
 return Component

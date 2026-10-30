@@ -7,20 +7,20 @@ local Publication = require("./publication")
 
 local PagesDeployment = {}
 
-function PagesDeployment.Prepare(): ()
+function PagesDeployment.Prepare(): boolean
 	Publication.Output("enabled", "false")
 	if Process.env.CI_DELEGATED == "true" then
 		print("Pages deployment belongs to the generated execution run")
-		return
+		return false
 	end
 	local repository = Publication.Begin("PAGES")
 	if not repository then
-		return
+		return false
 	end
 	local status, details = Publication.Request("GET", `repos/{repository}/pages`)
 	if status == 404 then
 		print("Pages publication skipped: enable Pages in repository Settings > Pages")
-		return
+		return false
 	end
 	Publication.RequireSuccess(status, "Read Pages configuration")
 	if details.build_type ~= "workflow" then
@@ -31,6 +31,7 @@ function PagesDeployment.Prepare(): ()
 	end
 	Publication.Output("path", "build/repo/pages")
 	Publication.Output("enabled", "true")
+	return true
 end
 
 return PagesDeployment

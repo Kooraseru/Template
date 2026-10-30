@@ -49,6 +49,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 		appendStep(steps, {
 			name = `Run {task.identity}`,
+			id = "component",
 			env = if task.boundary == "privileged"
 				then {
 					GH_TOKEN = "${{ github.token }}",
@@ -63,6 +64,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		if #task.outputs > 0 then
 			appendStep(steps, {
 				name = `Publish {task.identity} outputs`,
+				["if"] = "${{ steps.component.outputs.skipped != toJSON(true) }}",
 				uses = "actions/upload-artifact@v7",
 				with = {
 					name = `ci-{task.identity}`,
@@ -71,13 +73,22 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				},
 			})
 		end
-		local job: { [string]: unknown } = { name = task.identity, ["runs-on"] = "ubuntu-latest", steps = steps }
+		local job: { [string]: unknown } = {
+			name = task.identity,
+			["runs-on"] = "ubuntu-latest",
+			steps = steps,
+			outputs = {
+				outcome = "${{ steps.component.outputs.outcome }}",
+				skipped = "${{ steps.component.outputs.skipped }}",
+			},
+		}
 		if task.boundary == "privileged" then
 			job.permissions = { contents = "write" }
 		end
 		NativeJob.Configure(task.identity, task.boundary, steps, job)
 		if #needs > 0 then
 			job.needs = needs
+			job["if"] = "${{ success() && !contains(needs.*.outputs.skipped, toJSON(true)) }}"
 		end
 		local jobId = Workflow.JobId(task.identity)
 		jobs[jobId] = job

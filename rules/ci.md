@@ -169,3 +169,11 @@ remain separate from compilation and staging.
 Preflight may recognize a generated input from the declared outputs of a planned
 dependency before files exist. This is a projection of the scheduler's contract;
 execution must still check that the producer actually created its outputs.
+
+A component that performs no work returns `"skipped"` from `Run`; normal
+completion returns nil. The isolated invoker transports skip with its reserved
+exit code, and both scheduler summaries and native execution reports preserve
+that outcome. Skipped publication must not be labeled passed. Consumers of a
+skipped producer are blocked rather than reading nonexistent artifacts.
+Publication follows enabled manifests and configured records automatically;
+unset GitHub override variables are not an additional opt-in gate.

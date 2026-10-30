@@ -131,13 +131,13 @@ Set these **Actions variables** in GitHub Settings > Secrets and variables > Act
 
 | Variable | Behavior |
 | --- | --- |
-| `CI_PUBLISH_RELEASES=true` | Publish the records from `repo/content/releases/releases.toml`. Existing tags/releases follow `release.on_existing` (default `replace`). |
-| `CI_PUBLISH_BRANCHES=true` | Push generated branches from `repo/config/github.toml`, preserving output-branch history. The default source branch cannot be overwritten. |
-| `CI_PUBLISH_PACKAGES=true` | Enable configured GitHub Packages publication. A real registry-format adapter is required; none is currently installed. |
+| `CI_PUBLISH_RELEASES=false` | Disable publishing records from `repo/content/releases/releases.toml`. Existing tags/releases follow `release.on_existing` (default `replace`). |
+| `CI_PUBLISH_BRANCHES=false` | Disable pushing generated branches from `repo/config/github.toml`, preserving output-branch history. The default source branch cannot be overwritten. |
+| `CI_PUBLISH_PACKAGES=false` | Disable configured GitHub Packages publication. A real registry-format adapter is required; none is currently installed. |
 | `CI_PUBLISH_PAGES=false` | Disable Pages deployment. Otherwise deploy only when Pages is enabled with GitHub Actions as its source. |
 
-Releases, branches, and package publication are opt-in; unset switches do not
-publish them. Pages follows the repository's existing Pages setting. Sample
+Enabled component manifests and their content declarations drive automatic publication.
+Unset GitHub variables do not disable it; an explicit false is an optional override. Pages follows the repository's existing Pages setting. Sample
 package records without a format, version, and repository only test compilation/staging.
 They are never attached to Releases or converted into registry packages.
 

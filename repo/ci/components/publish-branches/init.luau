@@ -26,10 +26,10 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): ()
+function Component.Run(_self: Component, _context: { event: string }): string?
 	local repository = Publication.Begin("BRANCHES")
 	if not repository then
-		return
+		return "skipped"
 	end
 	local status, details = Publication.Request("GET", `repos/{repository}`)
 	Publication.RequireSuccess(status, "Read default branch")
@@ -103,6 +103,7 @@ function Component.Run(_self: Component, _context: { event: string }): ()
 		}, directory)
 		print(`Published branch https://github.com/{repository}/tree/{branch}`)
 	end
+	return nil
 end
 
 return Component

@@ -2,11 +2,12 @@
 --!strict
 
 local Process = require("@lune/process")
+local Outcome = require("./outcome")
 
 const COMPONENTS_MODULE_PREFIX = "@ci/components"
 
 type ComponentInstance = {
-	Run: (self: ComponentInstance, context: { event: string }) -> (),
+	Run: (self: ComponentInstance, context: { event: string }) -> unknown,
 }
 
 type ComponentClass = {
@@ -43,4 +44,7 @@ if type(instance) ~= "table" or type(instance.Run) ~= "function" then
 	error(`CI component constructor must return an instance with Run: {entry}`, 0)
 end
 
-instance:Run({ event = event })
+local outcome = Outcome.FromReturn(instance:Run({ event = event }))
+if outcome == "skipped" then
+	Process.exit(Outcome.skippedExitCode)
+end

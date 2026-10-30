@@ -11,8 +11,11 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): ()
-	PagesDeployment.Prepare()
+function Component.Run(_self: Component, _context: { event: string }): string?
+	if not PagesDeployment.Prepare() then
+		return "skipped"
+	end
+	return nil
 end
 
 return Component

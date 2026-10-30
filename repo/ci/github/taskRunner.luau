@@ -9,6 +9,7 @@ local Executor = require("@ci/bootstrap/executor")
 local Glob = require("@ci/bootstrap/glob")
 local Reporter = require("@ci/bootstrap/reporter")
 local Workflow = require("./workflow")
+local Publication = require("./publication")
 
 const ARTIFACT_ROOT = "build/github/artifacts"
 
@@ -106,7 +107,14 @@ function TaskRunner.Run(tasks: { Contract.Task }, event: string, identity: strin
 	end
 	local executor = Executor.new()
 	print(`::notice::Starting {identity}`)
-	if not executor:Invoke(selected, event) then
+	local outcome = executor:Invoke(selected, event)
+	if outcome == "skipped" then
+		Publication.Output("outcome", "skipped")
+		Publication.Output("skipped", "true")
+		print(`::notice::Skipped {identity}`)
+		return
+	end
+	if outcome == "failed" then
 		error(`component {identity} failed`, 0)
 	end
 	local missing = executor:MissingOutputs(selected.outputs)
@@ -116,6 +124,8 @@ function TaskRunner.Run(tasks: { Contract.Task }, event: string, identity: strin
 	if #selected.outputs > 0 then
 		bundle(selected)
 	end
+	Publication.Output("outcome", "passed")
+	Publication.Output("skipped", "false")
 	print(`::notice::Completed {identity}`)
 end
 
@@ -139,9 +149,12 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 	for _, task in tasks do
 		local value = results[Workflow.JobId(task.identity)]
 		local result = if type(value) == "table" and type(value.result) == "string" then value.result else "skipped"
-		outcomes[task.identity] = if result == "success"
-			then "passed"
-			else if result == "skipped" then "blocked" else result
+		local job: { [string]: unknown } = if type(value) == "table" then Publication.Record(value) else {}
+		local outputs = job.outputs
+		local skipped = type(outputs) == "table" and Publication.Record(outputs).outcome == "skipped"
+		outcomes[task.identity] = if result == "success" and skipped
+			then "skipped"
+			else if result == "success" then "passed" else if result == "skipped" then "blocked" else result
 		if result ~= "success" then
 			passed = false
 		end

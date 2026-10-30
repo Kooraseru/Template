@@ -6,6 +6,7 @@ local Process = require("@lune/process")
 local DateTime = require("@lune/datetime")
 local Glob = require("./glob")
 local Contract = require("./contract")
+local Outcome = require("./outcome")
 
 local Executor = {}
 Executor.__index = Executor
@@ -38,13 +39,13 @@ function Executor.MissingOutputs(self: Executor, outputs: { string }): { string 
 	return missing
 end
 
-function Executor.Invoke(self: Executor, task: Contract.Task, event: string): boolean
+function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Outcome.Value
 	local luneExecutable = Process.env.CI_LUNE
 	if not luneExecutable then
 		print(
 			"::error::CI_LUNE is unset; start CI with bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau"
 		)
-		return false
+		return "failed"
 	end
 	local options: Process.ExecOptions = {
 		cwd = Process.cwd,
@@ -60,12 +61,13 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): bo
 
 	if not ok then
 		print(`::error::{task.identity}: unable to start Lune: {result}`)
-		return false
+		return "failed"
 	end
-	if not result.ok then
+	local outcome = Outcome.FromExitCode(result.code)
+	if outcome == "failed" then
 		print(`::error::{task.identity}: exited with status {result.code}`)
 	end
-	return result.ok
+	return outcome
 end
 
 function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: string): Result
@@ -87,17 +89,17 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		else
 			print(`::notice::Starting {task.identity} at {DateTime.now():toRfc3339()}`)
 			local executed = self:Invoke(task, event)
-			local missing = if executed then self:MissingOutputs(task.outputs) else {}
+			local missing = if executed == "passed" then self:MissingOutputs(task.outputs) else {}
 			if #missing > 0 then
 				print(`::error::{task.identity}: missing declared outputs {table.concat(missing, ", ")}`)
 			end
-			outcome = if executed and #missing == 0 then "passed" else "failed"
+			outcome = if #missing > 0 then "failed" else executed
 		end
 		print(`::notice::{task.identity}: {outcome} at {DateTime.now():toRfc3339()}`)
 		print("::endgroup::")
 
 		outcomes[task.identity] = outcome
-		if outcome ~= "passed" then
+		if outcome == "failed" or outcome == "blocked" then
 			passed = false
 		end
 	end
