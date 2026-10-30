@@ -35,7 +35,7 @@ shared across repository features; it is not a collection of every TOML file.
 
 - `repo/content/i18n/config.toml` defines supported locales and their names.
 - `repo/content/releases/releases.toml` defines release records and commit/tag data.
-- `repo/content/packages/packages.toml` declares libraries/packages intended for GitHub Packages; fixtures only stage.
+- `repo/content/packages/packages.toml` owns shared GitHub Packages policy; `packages/records/*/` owns each package and its Markdown description.
 - `repo/ci/components/*/component.toml` declares a component's execution contract.
 - `repo/ci/preflight/providers/*/config.toml` configures an analyzer beside its code.
 - `repo/ci/dependencies/lune/config.toml` pins and verifies the runtime needed to

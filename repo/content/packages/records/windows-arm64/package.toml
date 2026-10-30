@@ -1,0 +1,3 @@
+# Compilation/staging fixture. No registry publication is configured.
+files = ["build/windows-arm64.exe"]
+

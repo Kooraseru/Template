@@ -25,7 +25,7 @@ if
 	and not pagesOptions
 then
 	error(
-		"expected --preflight-only, --component <identity>, --report, --credential-names, --cleanup-branch, or no arguments",
+		"expected --preflight-only, --component <identity>, --report, --credential-names, --cleanup-branch, --pages-options, or no arguments",
 		0
 	)
 end

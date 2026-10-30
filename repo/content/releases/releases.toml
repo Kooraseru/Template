@@ -1,5 +1,7 @@
 # Release records declare a target tag and the previous tag for GitHub notes.
 [release]
+# Existing tag/release policy: skip, fail, or replace.
+on_existing = "replace"
 source = "HEAD"
 notes = "10.1.2026.md"
 

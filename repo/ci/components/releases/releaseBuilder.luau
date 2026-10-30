@@ -4,6 +4,7 @@
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
+local ConflictPolicy = require("@ci/github/conflictPolicy")
 
 const CONFIG_PATH = "repo/content/releases/releases.toml"
 const RECORD_ROOT = "repo/content/releases/records"
@@ -127,7 +128,7 @@ local function resolveReference(reference: string, label: string): string
 	return reference
 end
 
-local function decodeRecords(): { ReleaseRecord }
+local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	local configuration = Serde.decode("toml", Fs.readFile(CONFIG_PATH))
 	if type(configuration) ~= "table" or type(configuration.release) ~= "table" then
 		error(`{CONFIG_PATH}: expected a [release] table`, 0)
@@ -227,7 +228,7 @@ local function decodeRecords(): { ReleaseRecord }
 			notes = sharedNotes,
 		})
 	end
-	return records
+	return records, ConflictPolicy.Parse(shared.on_existing, CONFIG_PATH)
 end
 
 requireCommit = function(commit: string, label: string): ()
@@ -261,7 +262,7 @@ function ReleaseBuilder.new(): ReleaseBuilder
 end
 
 function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
-	local records = decodeRecords()
+	local records, policy = decodeRecords()
 	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
 	if outputMetadata.kind == "symlink" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
@@ -302,7 +303,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 		table.insert(index, entry)
 	end
 
-	Fs.writeFile(`{OUTPUT_ROOT}/index.json`, Serde.encode("json", { releases = index }))
+	Fs.writeFile(`{OUTPUT_ROOT}/index.json`, Serde.encode("json", { onExisting = policy, releases = index }))
 	print(`Staged {#records} release records into {OUTPUT_ROOT}`)
 end
 

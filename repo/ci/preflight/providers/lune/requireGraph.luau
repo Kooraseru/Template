@@ -146,6 +146,38 @@ function Analyzer.ResolveModule(self: Analyzer, from: string, modulePath: string
 end
 
 function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
+	local indexed: { [string]: Contract.Task } = {}
+	for _, task in tasks do
+		indexed[task.identity] = task
+	end
+	local function generatedInput(task: Contract.Task, pattern: string, visited: { [string]: boolean }): boolean
+		for _, identity in task.needs do
+			if visited[identity] then
+				continue
+			end
+			visited[identity] = true
+			local provider = indexed[identity]
+			if not provider then
+				continue
+			end
+			for _, output in provider.outputs do
+				if output == pattern then
+					return true
+				end
+				if
+					not pattern:find("*", 1, true)
+					and not pattern:find("?", 1, true)
+					and Glob.Match(pattern, output)
+				then
+					return true
+				end
+			end
+			if generatedInput(provider, pattern, visited) then
+				return true
+			end
+		end
+		return false
+	end
 	local graph = Graph.new()
 	local diagnostics: { Diagnostic } = {}
 	local expanded: { [string]: boolean } = {}
@@ -220,6 +252,17 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 			local line, column, endColumn = contractValueLocation(task.contractFile, "inputs", inputPattern)
 			line = line or 1
 			column = column or 1
+			if generatedInput(task, inputPattern, {}) then
+				report(
+					task.contractFile,
+					line,
+					column,
+					"info",
+					`input {inputPattern} is supplied by a planned dependency; outputs are checked during execution`,
+					endColumn
+				)
+				continue
+			end
 			local ok, matches = xpcall(Glob.Find, tostring, inputPattern)
 			if not ok then
 				report(

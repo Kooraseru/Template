@@ -151,3 +151,21 @@ scripts, or a `tests/` tree to the template.
 Use real workflow output as evidence. A completed empty-template run proves
 only its discovery and bootstrap path; do not claim coverage for components or
 platforms that did not execute.
+
+## Package records and publication conflicts
+
+`repo/content/packages/packages.toml` owns shared GitHub Packages policy, not a
+package inventory. Discover direct folders under `repo/content/packages/records/`.
+Each folder owns `package.toml` and `README.md`; its name supplies identity.
+Malformed present records are errors. Compilation fixtures omit registry
+metadata and are never treated as registry-ready packages.
+
+Both `packages.on_existing` and `release.on_existing` accept `skip`, `fail`, and
+`replace`, defaulting to `replace`. Keep one shared policy contract. Publishers
+must enforce destination capabilities and protection rules, and must not silently
+fall back or delete/recreate an immutable publication. Package registry adapters
+remain separate from compilation and staging.
+
+Preflight may recognize a generated input from the declared outputs of a planned
+dependency before files exist. This is a projection of the scheduler's contract;
+execution must still check that the producer actually created its outputs.

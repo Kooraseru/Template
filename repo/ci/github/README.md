@@ -131,14 +131,14 @@ Set these **Actions variables** in GitHub Settings > Secrets and variables > Act
 
 | Variable | Behavior |
 | --- | --- |
-| `CI_PUBLISH_RELEASES=true` | Publish the records from `repo/content/releases/releases.toml`. Existing releases are preserved. |
+| `CI_PUBLISH_RELEASES=true` | Publish the records from `repo/content/releases/releases.toml`. Existing tags/releases follow `release.on_existing` (default `replace`). |
 | `CI_PUBLISH_BRANCHES=true` | Push generated branches from `repo/config/github.toml`, preserving output-branch history. The default source branch cannot be overwritten. |
 | `CI_PUBLISH_PACKAGES=true` | Enable configured GitHub Packages publication. A real registry-format adapter is required; none is currently installed. |
 | `CI_PUBLISH_PAGES=false` | Disable Pages deployment. Otherwise deploy only when Pages is enabled with GitHub Actions as its source. |
 
 Releases, branches, and package publication are opt-in; unset switches do not
 publish them. Pages follows the repository's existing Pages setting. Sample
-package entries without a format and repository only test compilation/staging.
+package records without a format, version, and repository only test compilation/staging.
 They are never attached to Releases or converted into registry packages.
 
 Pages uses GitHub's native upload/deployment actions because these are runner
@@ -148,6 +148,6 @@ execution jobs read the equivalent component-owned `github.toml` adapter from
 Environment protection rules are honored, never changed automatically.
 
 Package configuration lives in `repo/content/packages/`, separate from Releases.
-See its commented template. Registry integrations belong with publishing, never
+See its README and `records/*/package.toml` folders. `packages.toml` owns only shared policy, including `packages.on_existing` (default `replace`). Registry integrations belong with publishing, never
 with the compiler or the generic staging provider. A configured but unavailable
 adapter fails explicitly rather than claiming that a package was published.
