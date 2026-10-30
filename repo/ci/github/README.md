@@ -98,9 +98,14 @@ output checks. Declared outputs move between dependency jobs as validated tar
 artifacts, preserving repository-relative paths. GitHub displays job progress,
 timings, dependency failures, and logs. A final job reports the component outcomes.
 
-Run branches are retained for inspection. No credentials are embedded in the
-generated YAML or commits. The ordinary checkout token stays read-only. Existing
-privileged-component planning restrictions remain in force.
+An always-run final cleanup job deletes its own temporary branch using GitHub's
+automatic token. It has Contents write access; component jobs remain read-only.
+Cleanup checks the repository, namespace, current workflow ref, default branch,
+and original branch-head SHA before deleting anything. A branch that moved after
+the run started is left untouched. GitHub retains the run results and logs after
+branch deletion. Force-cancelling a workflow or a runner startup failure can
+prevent its cleanup job from executing. No credentials are embedded in generated
+YAML or commits. Existing privileged-component restrictions remain in force.
 
 Generated YAML saved under `build/github/` is not executable by itself. Without a
 permitted push and a repository ref, GitHub cannot turn it into native jobs. No

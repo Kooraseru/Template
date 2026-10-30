@@ -2,6 +2,7 @@
 --!strict
 
 local Fs = require("@lune/fs")
+local Net = require("@lune/net")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Contract = require("@ci/bootstrap/contract")
@@ -148,6 +149,76 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end
 	Fs.writeFile("build/github/launch.json", Serde.encode("json", { branch = branch, source = sha, url = url }))
 	return true
+end
+
+-- Cleanup is restricted to this generated run's unchanged branch. Its ordinary
+-- job token can delete a ref without needing the App's workflow-write access.
+function BranchRun.Cleanup(): ()
+	local token = Process.env.GH_TOKEN
+	Process.env.GH_TOKEN = nil
+	local branch = Process.env.CI_RUN_BRANCH
+	local ref = Process.env.GITHUB_REF
+	local eventSha = Process.env.GITHUB_SHA
+	local repository = Process.env.GITHUB_REPOSITORY
+	if Process.env.GITHUB_ACTIONS ~= "true" or Process.env.CI_GRAPH_RUN ~= "true" then
+		error("Branch cleanup is only available inside a generated CI run", 0)
+	end
+	if not token or token == "" or not branch or not repository or not eventSha then
+		error("Branch cleanup is missing its GitHub context or automatic token", 0)
+	end
+	local configuration = Configuration.new()
+	local suffix = branch:sub(#configuration.branchPrefix + 1)
+	if branch:sub(1, #configuration.branchPrefix) ~= configuration.branchPrefix or not suffix:match("^%d+%-%d+$") then
+		error("Refusing to delete a branch outside the configured CI run namespace", 0)
+	end
+	if ref ~= `refs/heads/{branch}` or #eventSha ~= 40 or not eventSha:match("^%x+$") then
+		error("Refusing cleanup outside this workflow's original branch and commit context", 0)
+	end
+	if configuration:ResolveRepository(configuration.repository):lower() ~= repository:lower() then
+		error("Refusing to delete a branch in another repository", 0)
+	end
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local headers = {
+		Authorization = "Bearer " .. token,
+		Accept = "application/vnd.github+json",
+		["User-Agent"] = "Luau-CI-bootstrap",
+	}
+	local repositoryResponse = Net.request({ url = `{api}/repos/{repository}`, headers = headers })
+	if not repositoryResponse.ok then
+		error(`Unable to check repository default branch: HTTP {repositoryResponse.statusCode}`, 0)
+	end
+	local metadata: unknown = Serde.decode("json", repositoryResponse.body)
+	if type(metadata) ~= "table" or type(metadata.default_branch) ~= "string" then
+		error("GitHub returned an invalid repository default branch", 0)
+	end
+	if branch == metadata.default_branch then
+		error("Refusing to delete the default branch", 0)
+	end
+	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+		return string.format("%%%02X", string.byte(character))
+	end)
+	local current = Net.request({ url = `{api}/repos/{repository}/git/ref/heads/{encoded}`, headers = headers })
+	if current.statusCode == 404 then
+		print("::notice::Temporary CI branch was already removed")
+		return
+	end
+	if not current.ok then
+		error(`Unable to inspect temporary CI branch: HTTP {current.statusCode}`, 0)
+	end
+	local decoded: unknown = Serde.decode("json", current.body)
+	if type(decoded) ~= "table" or type(decoded.object) ~= "table" then
+		error("GitHub returned an invalid branch reference", 0)
+	end
+	local target: unknown = decoded.object
+	if type(target) ~= "table" or type(target.sha) ~= "string" or target.sha ~= eventSha then
+		error("Temporary CI branch moved after this run started; leaving it untouched", 0)
+	end
+	local removed =
+		Net.request({ url = `{api}/repos/{repository}/git/refs/heads/{encoded}`, method = "DELETE", headers = headers })
+	if not removed.ok and removed.statusCode ~= 404 then
+		error(`Unable to remove temporary CI branch: HTTP {removed.statusCode}`, 0)
+	end
+	print(`::notice::Removed temporary CI branch {branch}`)
 end
 
 return BranchRun
