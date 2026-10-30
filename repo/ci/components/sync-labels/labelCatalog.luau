@@ -6,7 +6,7 @@ local Serde = require("@lune/serde")
 local Glob = require("@ci/bootstrap/glob")
 local Publication = require("@ci/github/publication")
 
-const CONFIG_PATH = ".github/labels.toml"
+const CONFIG_PATH = "repo/config/labels.toml"
 const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
 
 local LabelCatalog = {}

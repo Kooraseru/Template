@@ -188,7 +188,7 @@ the old asset. Missing configured outputs or mismatched build provenance fail.
 
 GitHub-native issue forms and PR templates are authored directly in `.github/`
 on the default branch. Do not duplicate them under repository content or add
-another workflow for them. `.github/labels.toml` owns the label definitions;
+another workflow for them. `repo/config/labels.toml` owns the label definitions;
 `sync-labels` validates form references and creates/updates labels using the
 built-in token with Issues write permission. It must preserve unrelated labels
 and existing issue/PR associations. Already matching label data reports skipped.
