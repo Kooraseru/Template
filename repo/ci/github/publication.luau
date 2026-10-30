@@ -45,11 +45,7 @@ function Publication.Text(value: unknown): string
 	return value
 end
 
-function Publication.Request(
-	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
-	path: string,
-	body: unknown?
-): (number, { [string]: unknown })
+local function response(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", path: string, body: unknown?)
 	local token = Process.env.GH_TOKEN
 	if not token or token == "" then
 		error("Publication requires the run-provided GITHUB_TOKEN with the declared write permissions", 0)
@@ -65,10 +61,51 @@ function Publication.Request(
 		},
 		body = if body ~= nil then Serde.encode("json", body) else nil,
 	})
-	local decoded = if response.body ~= "" then Publication.Record(Serde.decode("json", response.body)) else {}
-	return response.statusCode, decoded
+	return response
 end
 
+function Publication.Request(
+	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
+	path: string,
+	body: unknown?
+): (number, { [string]: unknown })
+	local result = response(method, path, body)
+	local decoded = if result.body ~= "" then Publication.Record(Serde.decode("json", result.body)) else {}
+	return result.statusCode, decoded
+end
+
+function Publication.List(path: string): { unknown }
+	local result = response("GET", path, nil)
+	Publication.RequireSuccess(result.statusCode, "List release assets")
+	local value: unknown = Serde.decode("json", result.body)
+	if type(value) ~= "table" then
+		error("Expected a GitHub asset list", 0)
+	end
+	local items: { unknown } = {}
+	for _, item in value do
+		table.insert(items, item)
+	end
+	return items
+end
+
+function Publication.Upload(repository: string, releaseId: number, name: string, bytes: string): { [string]: unknown }
+	local token = Process.env.GH_TOKEN
+	if not token or token == "" then
+		error("Missing run-provided publication token", 0)
+	end
+	local result = Net.request({
+		url = `https://uploads.github.com/repos/{repository}/releases/{releaseId}/assets?name={Publication.Encode(name)}`,
+		method = "POST",
+		headers = {
+			Authorization = `Bearer {token}`,
+			["Content-Type"] = "application/octet-stream",
+			Accept = "application/vnd.github+json",
+		},
+		body = bytes,
+	})
+	Publication.RequireSuccess(result.statusCode, `Upload release asset {name}`)
+	return Publication.Record(Serde.decode("json", result.body))
+end
 function Publication.RequireSuccess(status: number, operation: string): ()
 	if status < 200 or status >= 300 then
 		error(`{operation}: GitHub returned HTTP {status}; check run permissions and repository policies`, 0)

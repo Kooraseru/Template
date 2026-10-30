@@ -1,5 +1,5 @@
 provides = ["releases.published"]
-requires = ["build.completed", "releases.generated"]
+requires = ["releases.generated"]
 inputs = ["build/repo/releases/**"]
 outputs = []
 events = ["push"]

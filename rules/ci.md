@@ -177,3 +177,9 @@ that outcome. Skipped publication must not be labeled passed. Consumers of a
 skipped producer are blocked rather than reading nonexistent artifacts.
 Publication follows enabled manifests and configured records automatically;
 unset GitHub override variables are not an additional opt-in gate.
+
+Release downloads are owned by `release.assets` globs in releases.toml, not
+GitHub Packages records. Release staging depends on compilation and carries
+validated files and hashes to the publisher. New releases with assets stay drafts
+until uploads succeed; mutable replacement verifies a new upload before removing
+the old asset. Missing configured outputs or mismatched build provenance fail.

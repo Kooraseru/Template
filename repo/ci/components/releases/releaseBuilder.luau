@@ -5,12 +5,14 @@ local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local ConflictPolicy = require("@ci/github/conflictPolicy")
+local ReleaseAssets = require("./releaseAssets")
 
 const CONFIG_PATH = "repo/content/releases/releases.toml"
 const RECORD_ROOT = "repo/content/releases/records"
 const OUTPUT_ROOT = "build/repo/releases"
 
 type ReleaseRecord = {
+	assetPatterns: unknown,
 	version: string,
 	tag: string,
 	type: string,
@@ -22,6 +24,7 @@ type ReleaseRecord = {
 }
 
 type ReleaseIndexEntry = {
+	assets: { ReleaseAssets.Asset },
 	version: string,
 	tag: string,
 	type: string,
@@ -226,6 +229,7 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 			commit = resolvedCommit,
 			previousTag = previousTag,
 			notes = sharedNotes,
+			assetPatterns = if value.assets ~= nil then value.assets else shared.assets,
 		})
 	end
 	return records, ConflictPolicy.Parse(shared.on_existing, CONFIG_PATH)
@@ -290,6 +294,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 			notesOutput = `{release.version}/{notesName}`
 		end
 		local entry = {
+			assets = ReleaseAssets.Stage(release.assetPatterns, `{releaseDirectory}/assets`, release.commit),
 			version = release.version,
 			tag = release.tag,
 			type = release.type,

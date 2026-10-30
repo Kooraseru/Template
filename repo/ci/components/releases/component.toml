@@ -1,5 +1,5 @@
 provides = ["releases.generated"]
-requires = []
+requires = ["build.completed"]
 inputs = ["repo/content/releases/releases.toml", "repo/content/releases/records/**"]
 outputs = ["build/repo/releases/**"]
 events = ["push", "pull_request", "workflow_dispatch"]

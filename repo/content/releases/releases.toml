@@ -4,6 +4,8 @@
 on_existing = "replace"
 source = "HEAD"
 notes = "10.1.2026.md"
+# Attach compiled outputs as downloadable release assets (not GitHub Packages).
+assets = ["build/*.exe"]
 
 [release.channels.prerelease]
 prerelease = true

@@ -4,6 +4,7 @@
 local Fs = require("@lune/fs")
 local Publication = require("@ci/github/publication")
 local ConflictPolicy = require("@ci/github/conflictPolicy")
+local ReleaseAssetPublisher = require("./releaseAssetPublisher")
 
 type Request = (
 	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
@@ -17,7 +18,8 @@ function ReleasePublisher.Publish(
 	repository: string,
 	entry: { [string]: unknown },
 	policy: ConflictPolicy.Policy,
-	request: Request
+	request: Request,
+	assetIo: ReleaseAssetPublisher.Io?
 ): boolean
 	local tag = Publication.Text(entry.tag)
 	local commit = Publication.Text(entry.commit)
@@ -44,6 +46,7 @@ function ReleasePublisher.Publish(
 	if releaseStatus == 200 and type(releaseId) ~= "number" then
 		error("Invalid GitHub release ID", 0)
 	end
+	local assets = ReleaseAssetPublisher.Read(entry.assets)
 	local body = ""
 	if entry.notes then
 		local notes = Publication.Text(entry.notes)
@@ -90,15 +93,28 @@ function ReleasePublisher.Publish(
 		name = tag,
 		body = body,
 		prerelease = entry.prerelease == true,
-		draft = false,
+		draft = #assets > 0 and (releaseStatus ~= 200 or existing.draft == true),
 	}
 	local status: number
+	local published: { [string]: unknown }
 	if releaseStatus == 200 and type(releaseId) == "number" then
-		status = request("PATCH", `repos/{repository}/releases/{releaseId}`, payload)
+		status, published = request("PATCH", `repos/{repository}/releases/{releaseId}`, payload)
 	else
-		status = request("POST", `repos/{repository}/releases`, payload)
+		status, published = request("POST", `repos/{repository}/releases`, payload)
 	end
 	Publication.RequireSuccess(status, `Publish release {tag}; a tag update may already have succeeded`)
+	if #assets > 0 then
+		local id = if releaseStatus == 200 then releaseId else published.id
+		if type(id) ~= "number" then
+			error("GitHub returned no release ID for asset upload", 0)
+		end
+		local io = assetIo or { request = request, list = Publication.List, upload = Publication.Upload }
+		ReleaseAssetPublisher.Sync(repository, id, assets, io)
+		if payload.draft then
+			local finalized = request("PATCH", `repos/{repository}/releases/{id}`, { draft = false })
+			Publication.RequireSuccess(finalized, `Publish completed draft release {tag}`)
+		end
+	end
 	print(`Published release https://github.com/{repository}/releases/tag/{tag} (on_existing = {policy})`)
 	return true
 end
