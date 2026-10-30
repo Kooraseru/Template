@@ -46,7 +46,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			if #provider.outputs > 0 then
 				appendStep(steps, {
 					name = `Receive {dependency} outputs`,
-					uses = "actions/download-artifact@v5",
+					uses = "actions/download-artifact@v8",
 					with = { name = `ci-{dependency}`, path = "build/github/artifacts" },
 				})
 			end
@@ -58,7 +58,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		if #task.outputs > 0 then
 			appendStep(steps, {
 				name = `Publish {task.identity} outputs`,
-				uses = "actions/upload-artifact@v4",
+				uses = "actions/upload-artifact@v7",
 				with = {
 					name = `ci-{task.identity}`,
 					path = `build/github/artifacts/{task.identity}.tar`,

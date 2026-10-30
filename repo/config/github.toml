@@ -12,7 +12,7 @@ repository = "Kooraseru/Template"
 
 [github.bootstrap]
 enabled = true
-branch_prefix = "repo/ci/run-"
+branch_prefix = "ci/run-"
 
 [github.credentials]
 # IMPORTANT: These values are NAMES of GitHub secrets/variables, NOT credentials.
