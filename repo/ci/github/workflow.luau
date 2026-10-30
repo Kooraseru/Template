@@ -3,15 +3,11 @@
 
 local Serde = require("@lune/serde")
 local Contract = require("@ci/bootstrap/contract")
+local NativeJob = require("./nativeJob")
 
 local Workflow = {}
 
-type Step = {
-	name: string?,
-	uses: string?,
-	run: string?,
-	with: { [string]: unknown }?,
-}
+type Step = NativeJob.Step
 
 local function appendStep(steps: { Step }, step: Step): ()
 	table.insert(steps, step)
@@ -53,6 +49,15 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 		appendStep(steps, {
 			name = `Run {task.identity}`,
+			env = if task.boundary == "privileged"
+				then {
+					GH_TOKEN = "${{ github.token }}",
+					CI_PUBLISH_RELEASES = "${{ vars.CI_PUBLISH_RELEASES }}",
+					CI_PUBLISH_PACKAGES = "${{ vars.CI_PUBLISH_PACKAGES }}",
+					CI_PUBLISH_BRANCHES = "${{ vars.CI_PUBLISH_BRANCHES }}",
+					CI_PUBLISH_PAGES = "${{ vars.CI_PUBLISH_PAGES }}",
+				}
+				else nil,
 			run = `bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --component {task.identity}`,
 		})
 		if #task.outputs > 0 then
@@ -67,6 +72,10 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			})
 		end
 		local job: { [string]: unknown } = { name = task.identity, ["runs-on"] = "ubuntu-latest", steps = steps }
+		if task.boundary == "privileged" then
+			job.permissions = { contents = "write" }
+		end
+		NativeJob.Configure(task.identity, task.boundary, steps, job)
 		if #needs > 0 then
 			job.needs = needs
 		end

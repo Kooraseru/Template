@@ -4,10 +4,10 @@
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 
-const CONFIG_PATH = "repo/content/releases/packages.toml"
+const CONFIG_PATH = "repo/content/packages/packages.toml"
 const OUTPUT_ROOT = "build/repo/packages"
 
-type PackageEntry = { name: string, files: { string } }
+type PackageEntry = { name: string, files: { string }, format: string?, repository: string? }
 
 local PackageBuilder = {}
 PackageBuilder.__index = PackageBuilder
@@ -51,6 +51,14 @@ local function decodeEntries(): (string, { PackageEntry })
 		end
 		local name = entry.name
 		local files = entry.files
+		local format = entry.format
+		local repository = entry.repository
+		if format ~= nil and (type(format) ~= "string" or not format:match("^[%a][%w_-]*$")) then
+			error(`{CONFIG_PATH}: package format must be a registry format name`, 0)
+		end
+		if repository ~= nil and (type(repository) ~= "string" or repository == "" or repository:find("%s")) then
+			error(`{CONFIG_PATH}: package repository must be owner/repository or a configured alias`, 0)
+		end
 		if type(name) ~= "string" or not name:match("^[%w][%w_.%-]*$") then
 			error(`{CONFIG_PATH}: package {index} has an invalid name`, 0)
 		end
@@ -72,7 +80,7 @@ local function decodeEntries(): (string, { PackageEntry })
 			table.insert(checkedFiles, path)
 		end
 		names[name] = true
-		table.insert(decoded, { name = name, files = checkedFiles })
+		table.insert(decoded, { name = name, files = checkedFiles, format = format, repository = repository })
 	end
 	return packageType, decoded
 end
@@ -94,7 +102,7 @@ function PackageBuilder.Run(_self: PackageBuilder): ()
 	ensureDirectory("build")
 	ensureDirectory("build/repo")
 	ensureDirectory(OUTPUT_ROOT)
-	local index: { { name: string, files: { string } } } = {}
+	local index: { PackageEntry } = {}
 	for _, entry in entries do
 		local directory = `{OUTPUT_ROOT}/{entry.name}`
 		ensureDirectory(directory)
@@ -108,7 +116,10 @@ function PackageBuilder.Run(_self: PackageBuilder): ()
 			Fs.copy(source, destination)
 			table.insert(outputs, `{entry.name}/{filename}`)
 		end
-		table.insert(index, { name = entry.name, files = outputs })
+		table.insert(
+			index,
+			{ name = entry.name, files = outputs, format = entry.format, repository = entry.repository }
+		)
 	end
 	Fs.writeFile(`{OUTPUT_ROOT}/index.json`, Serde.encode("json", { type = packageType, packages = index }))
 	print(`Staged {#entries} {packageType} packages into {OUTPUT_ROOT}`)

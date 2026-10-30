@@ -1,0 +1,7 @@
+provides = ["releases.published"]
+requires = ["build.completed", "releases.generated"]
+inputs = ["build/repo/releases/**"]
+outputs = []
+events = ["push"]
+boundary = "privileged"
+enabled = true

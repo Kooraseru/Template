@@ -24,6 +24,7 @@ type ContractFields = {
 export type Contract = setmetatable<ContractFields, typeof(Contract)>
 
 export type Task = {
+	boundary: string,
 	identity: string,
 	invoker: string,
 	entry: string,
@@ -214,6 +215,7 @@ Method tables and other local state never cross the artifact boundary.
 ]]
 function Contract.ToTask(self: Contract, needs: { string }): Task
 	return {
+		boundary = self.boundary,
 		identity = self.identity,
 		invoker = TASK_INVOKER,
 		entry = self.entry,

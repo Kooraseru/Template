@@ -31,3 +31,7 @@ bootstrap_token = "CI_WORKFLOW_TOKEN"
 
 [branches.main]
 source = ["source/**"]
+# Publication uses the run-provided GITHUB_TOKEN; no actual keys are stored here.
+# Enable Releases/branches/packages with CI_PUBLISH_RELEASES/BRANCHES/PACKAGES=true
+# in GitHub Actions variables. Pages follows Settings > Pages unless
+# CI_PUBLISH_PAGES=false. See repo/ci/github/README.md.

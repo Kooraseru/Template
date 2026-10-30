@@ -1,0 +1,7 @@
+provides = ["packages.publication-checked"]
+requires = ["packages.generated"]
+inputs = ["build/repo/packages/**"]
+outputs = []
+events = ["push"]
+boundary = "privileged"
+enabled = true

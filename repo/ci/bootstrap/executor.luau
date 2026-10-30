@@ -49,6 +49,7 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): bo
 	local options: Process.ExecOptions = {
 		cwd = Process.cwd,
 		stdio = "inherit",
+		env = { GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else "" },
 	}
 	local ok, result = xpcall(Process.exec, tostring, luneExecutable, {
 		"run",

@@ -16,7 +16,8 @@ repo/
     i18n/                 translations and locale settings
       root/               translations of content/root files
       docs/               translations of documentation pages
-    releases/             release records, notes, and package deliverables
+    releases/             GitHub Release records and notes
+    packages/             GitHub Packages declarations and staging fixtures
   ci/
     entry.luau            executable CI entrypoint
     bootstrap/            component discovery, dependency planning, and scheduling
@@ -34,7 +35,7 @@ shared across repository features; it is not a collection of every TOML file.
 
 - `repo/content/i18n/config.toml` defines supported locales and their names.
 - `repo/content/releases/releases.toml` defines release records and commit/tag data.
-- `repo/content/releases/packages.toml` defines files distributed as release packages.
+- `repo/content/packages/packages.toml` declares libraries/packages intended for GitHub Packages; fixtures only stage.
 - `repo/ci/components/*/component.toml` declares a component's execution contract.
 - `repo/ci/preflight/providers/*/config.toml` configures an analyzer beside its code.
 - `repo/ci/dependencies/lune/config.toml` pins and verifies the runtime needed to

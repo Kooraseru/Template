@@ -1,0 +1,7 @@
+provides = ["branches.published"]
+requires = ["build.completed", "branches.generated"]
+inputs = ["build/repo/branches/**", "repo/config/github.toml"]
+outputs = []
+events = ["push"]
+boundary = "privileged"
+enabled = true

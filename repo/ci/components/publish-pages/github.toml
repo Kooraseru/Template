@@ -1,0 +1,30 @@
+# Native Pages adapter appended to this component's generated job.
+[permissions]
+contents = "read"
+pages = "write"
+id-token = "write"
+
+[environment]
+name = "github-pages"
+url = "${{ steps.deployment.outputs.page_url }}"
+
+[[steps]]
+name = "Resolve Pages deployment"
+id = "pages"
+run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --pages-options"
+[steps.env]
+GH_TOKEN = "${{ github.token }}"
+CI_PUBLISH_PAGES = "${{ vars.CI_PUBLISH_PAGES }}"
+
+[[steps]]
+name = "Upload Pages artifact"
+uses = "actions/upload-pages-artifact@v4"
+if = "${{ steps.pages.outputs.enabled == toJSON(true) }}"
+[steps.with]
+path = "${{ steps.pages.outputs.path }}"
+
+[[steps]]
+name = "Deploy Pages"
+id = "deployment"
+uses = "actions/deploy-pages@v4"
+if = "${{ steps.pages.outputs.enabled == toJSON(true) }}"

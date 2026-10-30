@@ -22,7 +22,7 @@ allow_build_metadata = false
 version = "0.2.0-pre.1"
 channel = "prerelease"
 # Passed to GitHub as previous_tag_name for generated release notes.
-previous_tag = "0.1.0-pre.1"
+previous_tag = "beginning"
 
 [[release.formats.semver.entries]]
 version = "0.2.0"

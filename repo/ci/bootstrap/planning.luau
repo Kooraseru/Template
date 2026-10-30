@@ -121,8 +121,8 @@ local function resolveOutputs(active: { [string]: Contract.Contract }): ()
 end
 
 local function requireBoundary(component: Contract.Contract): ()
-	if component.boundary ~= "read" then
-		fail(`{component.identity}: privileged execution requires a separately authorized GitHub job`)
+	if component.boundary == "privileged" and (#component.events ~= 1 or component.events[1] ~= "push") then
+		fail(`{component.identity}: publication is restricted to push events`)
 	end
 end
 

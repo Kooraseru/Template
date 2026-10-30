@@ -3,7 +3,7 @@
 `repo/config/github.toml` owns repository paths, project aliases, output-branch
 declarations, optional branch bootstrap, and credential-name mappings.
 `repo/ci/github/` adapts the existing scheduler's validated tasks to GitHub Actions.
-The maintained workflow only checks out the repository and starts Luau.
+The maintained workflow checks out the repository, starts Luau, and carries a small native Pages adapter. Luau decides whether and what to deploy.
 
 ## Repository paths and aliases
 
@@ -99,13 +99,13 @@ artifacts, preserving repository-relative paths. GitHub displays job progress,
 timings, dependency failures, and logs. A final job reports the component outcomes.
 
 An always-run final cleanup job deletes its own temporary branch using GitHub's
-automatic token. It has Contents write access; component jobs remain read-only.
+automatic token. It has Contents write access. Generation jobs remain read-only; publication jobs receive the permissions required by their boundary and native adapter.
 Cleanup checks the repository, namespace, current workflow ref, default branch,
 and original branch-head SHA before deleting anything. A branch that moved after
 the run started is left untouched. GitHub retains the run results and logs after
 branch deletion. Force-cancelling a workflow or a runner startup failure can
 prevent its cleanup job from executing. No credentials are embedded in generated
-YAML or commits. Existing privileged-component restrictions remain in force.
+YAML or commits. Privileged components are restricted to push events and publication verifies the configured repository and trusted run ref.
 
 Generated YAML saved under `build/github/` is not executable by itself. Without a
 permitted push and a repository ref, GitHub cannot turn it into native jobs. No
@@ -113,8 +113,41 @@ workflow is generated, committed, or pushed on the missing-credential path.
 
 ## Other configuration owners
 
-- `repo/content/releases/packages.toml` declares files distributed as release packages.
+- `repo/content/packages/packages.toml` declares libraries/packages intended for GitHub Packages, independently from Releases.
 - `repo/content/releases/releases.toml` declares release records and their commit/tag data.
 - `repo/ci/dependencies/` owns CI tool setup. Lune's installer and pinned checksums live
   together under `repo/ci/dependencies/lune/`; Pages requests Pandoc when rendering.
 - `source/` contains the application source and its host implementations.
+
+## Publication
+
+Publication is separate from generation. Discovered `publish-*` components declare
+capability dependencies in their own manifests. They use the run-provided
+`GITHUB_TOKEN`; no personal credential or App is required for same-repository
+publication. Write access remains subject to repository and environment policies.
+Read-only component child processes do not receive `GH_TOKEN`.
+
+Set these **Actions variables** in GitHub Settings > Secrets and variables > Actions:
+
+| Variable | Behavior |
+| --- | --- |
+| `CI_PUBLISH_RELEASES=true` | Publish the records from `repo/content/releases/releases.toml`. Existing releases are preserved. |
+| `CI_PUBLISH_BRANCHES=true` | Push generated branches from `repo/config/github.toml`, preserving output-branch history. The default source branch cannot be overwritten. |
+| `CI_PUBLISH_PACKAGES=true` | Enable configured GitHub Packages publication. A real registry-format adapter is required; none is currently installed. |
+| `CI_PUBLISH_PAGES=false` | Disable Pages deployment. Otherwise deploy only when Pages is enabled with GitHub Actions as its source. |
+
+Releases, branches, and package publication are opt-in; unset switches do not
+publish them. Pages follows the repository's existing Pages setting. Sample
+package entries without a format and repository only test compilation/staging.
+They are never attached to Releases or converted into registry packages.
+
+Pages uses GitHub's native upload/deployment actions because these are runner
+integration steps. The minimal entrypoint carries the fallback adapter. Generated
+execution jobs read the equivalent component-owned `github.toml` adapter from
+`publish-pages/`. Deployment waits for the site and compilation dependencies.
+Environment protection rules are honored, never changed automatically.
+
+Package configuration lives in `repo/content/packages/`, separate from Releases.
+See its commented template. Registry integrations belong with publishing, never
+with the compiler or the generic staging provider. A configured but unavailable
+adapter fails explicitly rather than claiming that a package was published.

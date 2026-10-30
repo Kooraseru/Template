@@ -5,12 +5,21 @@ on:
     branches: [source]
 
 permissions:
-  contents: read
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ci-source
+  cancel-in-progress: false
 
 jobs:
   bootstrap:
     name: Starting bootstrap
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -20,10 +29,33 @@ jobs:
         id: credentials
         run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
       - name: Start bootstrap
+        id: bootstrap
         env:
           CI_EVENT: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          CI_PUBLISH_RELEASES: ${{ vars.CI_PUBLISH_RELEASES }}
+          CI_PUBLISH_PACKAGES: ${{ vars.CI_PUBLISH_PACKAGES }}
+          CI_PUBLISH_BRANCHES: ${{ vars.CI_PUBLISH_BRANCHES }}
+          CI_PUBLISH_PAGES: ${{ vars.CI_PUBLISH_PAGES }}
           CI_GITHUB_APP_ID_SECRET: ${{ secrets[steps.credentials.outputs.app_id] }}
           CI_GITHUB_APP_ID_VARIABLE: ${{ vars[steps.credentials.outputs.app_id] }}
           CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
           CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
         run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau
+      - name: Resolve Pages deployment
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_EVENT: ${{ github.event_name }}
+          CI_DELEGATED: ${{ steps.bootstrap.outputs.delegated }}
+          CI_PUBLISH_PAGES: ${{ vars.CI_PUBLISH_PAGES }}
+        run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --pages-options
+      - name: Upload Pages artifact
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ steps.pages.outputs.path }}
+      - name: Deploy Pages
+        id: deployment
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/deploy-pages@v4

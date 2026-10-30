@@ -8,7 +8,7 @@ their configuration are discovered together under `repo/ci/preflight/providers/`
 ## One workflow, one entry point
 
 `.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
-invokes the executable `repo/ci/entry.luau` launcher. The workflow does not maintain component
+invokes the executable `repo/ci/entry.luau` launcher. The workflow also carries the approved native Pages upload/deploy adapter, with enablement and paths resolved by Luau. It does not maintain component
 lists, dependency plans, matrices, or build logic. The bootstrap discovers
 components from `repo/ci/components/`, reads their TOML manifests, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.
@@ -23,8 +23,8 @@ Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
 
 CI setup belongs in `repo/ci/dependencies/`. Lune's pin, checksums, and bootstrap script
-are colocated under `repo/ci/dependencies/lune/`. Release deliverables are declared in
-`repo/content/releases/packages.toml`. Keep CI tooling/configuration out of application
+are colocated under `repo/ci/dependencies/lune/`. GitHub Packages declarations are kept separately in
+`repo/content/packages/packages.toml`. Keep CI tooling/configuration out of application
 `source/` so source globs do not distribute the pipeline itself.
 
 The template has separate `build` and `pages` components. `build` compiles
@@ -124,7 +124,7 @@ dependency edges.
 
 Keep page rendering, static asset copying, site assembly, and external hosting
 as separate responsibilities. The `pages` component produces `build/repo/pages/`;
-deploying that artifact requires a separately authorized publication workflow.
+deploying that artifact is handled by the publication component and the native Pages adapter, using the run-provided token and environment protections.
 
 Each implementation runs in a fresh Lune child process so module cache and
 global state do not leak across components. Declared outputs must exist before

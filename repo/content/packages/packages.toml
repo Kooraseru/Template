@@ -1,0 +1,33 @@
+# GitHub Packages: declare libraries/dependencies built by your project here.
+# Separate from GitHub Releases and release attachments.
+# The files staging provider copies existing build outputs; it does not convert
+# an executable into an npm/NuGet/Maven/RubyGems/OCI package.
+[packages]
+type = "files"
+
+[packages.types.files]
+
+# Compilation/staging fixtures only. No format/repository means NO publishing.
+[[packages.types.files.entries]]
+name = "windows-amd"
+files = ["build/windows-amd.exe"]
+
+[[packages.types.files.entries]]
+name = "windows-arm64"
+files = ["build/windows-arm64.exe"]
+
+[[packages.types.files.entries]]
+name = "windows-intel"
+files = ["build/windows-intel.exe"]
+
+# Template for an actual library built and packaged by your project:
+# [[packages.types.files.entries]]
+# name = "my-library"
+# files = ["build/MyLibrary.1.0.0.nupkg"]
+# format = "nuget"
+# repository = "your-account/your-repository"
+# repository may also name an explicit alias in repo/config/github.toml.
+# Different entries may use different formats and repositories.
+# A configured format requires its own validated registry adapter. This template
+# currently provides staging only; no registry adapter is installed or implied.
+# Credentials belong in GitHub Secrets, NEVER here or in scripts.

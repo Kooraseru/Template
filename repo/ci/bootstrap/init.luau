@@ -7,6 +7,7 @@ local Preflight = require("./preflight")
 local BranchRun = require("@ci/github/branchRun")
 local Credentials = require("@ci/github/credentials")
 local TaskRunner = require("@ci/github/taskRunner")
+local Publication = require("@ci/github/publication")
 
 local Bootstrap = {}
 Bootstrap.__index = Bootstrap
@@ -49,6 +50,7 @@ function Bootstrap.Run(self: Bootstrap, preflightOnly: boolean?, component: stri
 		return
 	end
 	if BranchRun.TryLaunch(preflight.tasks, self.event, self.credentials) then
+		Publication.Output("delegated", "true")
 		return
 	end
 	local result = self.executor:Execute(preflight.tasks, self.event)
