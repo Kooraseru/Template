@@ -150,12 +150,8 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 	for _, task in tasks do
 		indexed[task.identity] = task
 	end
-	local function generatedInput(task: Contract.Task, pattern: string, visited: { [string]: boolean }): boolean
+	local function generatedInput(task: Contract.Task, pattern: string): boolean
 		for _, identity in task.needs do
-			if visited[identity] then
-				continue
-			end
-			visited[identity] = true
 			local provider = indexed[identity]
 			if not provider then
 				continue
@@ -171,9 +167,6 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 				then
 					return true
 				end
-			end
-			if generatedInput(provider, pattern, visited) then
-				return true
 			end
 		end
 		return false
@@ -252,7 +245,7 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 			local line, column, endColumn = contractValueLocation(task.contractFile, "inputs", inputPattern)
 			line = line or 1
 			column = column or 1
-			if generatedInput(task, inputPattern, {}) then
+			if generatedInput(task, inputPattern) then
 				report(
 					task.contractFile,
 					line,
