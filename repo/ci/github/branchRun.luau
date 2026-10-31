@@ -10,6 +10,7 @@ local Authentication = require("./authentication")
 local Configuration = require("./configuration")
 local Credentials = require("./credentials")
 local Workflow = require("./workflow")
+local ActionsLock = require("@ci/dependencies/actions-lock")
 
 local BranchRun = {}
 
@@ -53,7 +54,8 @@ local function launch(
 	local ok = xpcall(function(): ()
 		Fs.writeDir(`{worktree}/.github/workflows`)
 		Fs.writeFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
-		git({ "add", "--", ".github/workflows/ci-execution.yml" }, worktree)
+		ActionsLock.Lock(worktree, ".github/workflows/ci-execution.yml")
+		git({ "add", "--", ".github/workflows/ci-execution.yml", ".github/workflows/actions.lock" }, worktree)
 		git({
 			"-c",
 			"user.name=CI bootstrap",

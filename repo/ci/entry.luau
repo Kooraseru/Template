@@ -6,6 +6,7 @@ local Process = require("@lune/process")
 local Credentials = require("@ci/github/credentials")
 local BranchRun = require("@ci/github/branchRun")
 local PagesDeployment = require("@ci/github/pagesDeployment")
+local Attestations = require("@ci/github/attestations")
 
 local argumentIndex = if Process.args[1] == "--" then 2 else 1
 local argument = Process.args[argumentIndex]
@@ -15,6 +16,8 @@ local reportOnly = argument == "--report"
 local credentialNames = argument == "--credential-names"
 local cleanupBranch = argument == "--cleanup-branch"
 local pagesOptions = argument == "--pages-options"
+local attestationOptions = argument == "--attestation-options"
+local attestationReport = argument == "--attestation-report"
 if
 	argument
 	and not preflightOnly
@@ -23,9 +26,11 @@ if
 	and not credentialNames
 	and not cleanupBranch
 	and not pagesOptions
+	and not attestationOptions
+	and not attestationReport
 then
 	error(
-		"expected --preflight-only, --component <identity>, --report, --credential-names, --cleanup-branch, --pages-options, or no arguments",
+		"expected --preflight-only, --component <identity>, --report, --credential-names, --cleanup-branch, --pages-options, --attestation-options, --attestation-report, or no arguments",
 		0
 	)
 end
@@ -47,6 +52,14 @@ local ok, problem = xpcall(function(): boolean
 	end
 	if cleanupBranch then
 		BranchRun.Cleanup()
+		return true
+	end
+	if attestationOptions then
+		Attestations.Options()
+		return true
+	end
+	if attestationReport then
+		Attestations.Report()
 		return true
 	end
 	if pagesOptions then

@@ -1,0 +1,27 @@
+[project]
+title = "Development"
+description = "Development work, fixes, and improvements for this repository."
+# Owner defaults to the account in repo/config/github.toml's repository path.
+# owner = "your-organization"
+public = false
+
+[[fields]]
+name = "Status"
+data_type = "SINGLE_SELECT"
+options = [
+  { name = "Backlog", color = "GRAY", description = "Recorded, not yet selected." },
+  { name = "Ready", color = "BLUE", description = "Ready to start." },
+  { name = "In progress", color = "YELLOW", description = "Implementation is underway." },
+  { name = "In review", color = "PURPLE", description = "Awaiting review or validation." },
+  { name = "Done", color = "GREEN", description = "Completed and verified." },
+]
+
+[[fields]]
+name = "Priority"
+data_type = "SINGLE_SELECT"
+options = [
+  { name = "P0 - Critical", color = "RED", description = "Immediate attention required." },
+  { name = "P1 - High", color = "ORANGE", description = "Address before normal-priority work." },
+  { name = "P2 - Normal", color = "YELLOW", description = "Normal planned work." },
+  { name = "P3 - Low", color = "GRAY", description = "Useful when capacity allows." },
+]

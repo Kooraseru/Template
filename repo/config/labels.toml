@@ -1,6 +1,7 @@
 # Declarative repository labels. GitHub does NOT read this file natively.
 # The discovered Luau sync-labels component creates/updates these on source pushes.
-# Removing a definition does not delete the remote label or alter existing issues.
+# This is the COMPLETE allowed set. Every unlisted repository label is deleted.
+# Deleting a label also removes it from existing issues/PRs. Declared labels keep their IDs.
 [[labels]]
 name = "bug"
 color = "d73a4a"

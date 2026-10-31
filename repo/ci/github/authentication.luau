@@ -43,7 +43,13 @@ local function request(token: string, method: Net.HttpMethod, path: string, body
 	})
 end
 
-local function appAccess(id: string, key: string, repository: string): Access
+local function appAccess(
+	id: string,
+	key: string,
+	repository: string,
+	permissions: { [string]: string }?,
+	organization: string?
+): Access
 	if Process.os ~= "linux" then
 		error("GitHub App signing currently requires the Linux Actions runner", 0)
 	end
@@ -68,7 +74,10 @@ local function appAccess(id: string, key: string, repository: string): Access
 	end
 	local jwt = message .. "." .. base64url(signature.stdout)
 	mask(jwt)
-	local installation = request(jwt, "GET", `/repos/{repository}/installation`)
+	local installationPath = if organization
+		then `/orgs/{organization}/installation`
+		else `/repos/{repository}/installation`
+	local installation = request(jwt, "GET", installationPath)
 	if not installation.ok then
 		error(`GitHub App installation lookup returned HTTP {installation.statusCode}`, 0)
 	end
@@ -78,8 +87,8 @@ local function appAccess(id: string, key: string, repository: string): Access
 	end
 	local repositoryName = repository:match("/([^/]+)$")
 	local created = request(jwt, "POST", `/app/installations/{decoded.id}/access_tokens`, {
-		repositories = { repositoryName },
-		permissions = { contents = "write", workflows = "write" },
+		repositories = if organization then nil else { repositoryName },
+		permissions = permissions or { contents = "write", workflows = "write" },
 	})
 	if not created.ok then
 		error(`App installation token request returned HTTP {created.statusCode}`, 0)
@@ -91,6 +100,8 @@ local function appAccess(id: string, key: string, repository: string): Access
 	mask(token.token)
 	return { token = token.token, temporary = true }
 end
+
+Authentication.AppAccess = appAccess
 
 function Authentication.Acquire(
 	configuration: Configuration.Configuration,

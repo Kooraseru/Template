@@ -10,6 +10,7 @@ local Glob = require("@ci/bootstrap/glob")
 local Reporter = require("@ci/bootstrap/reporter")
 local Workflow = require("./workflow")
 local Publication = require("./publication")
+local Credentials = require("./credentials")
 
 const ARTIFACT_ROOT = "build/github/artifacts"
 
@@ -81,7 +82,12 @@ local function bundle(task: Contract.Task): ()
 	validateArchive(archive, task)
 end
 
-function TaskRunner.Run(tasks: { Contract.Task }, event: string, identity: string): ()
+function TaskRunner.Run(
+	tasks: { Contract.Task },
+	event: string,
+	identity: string,
+	credentials: Credentials.Credentials?
+): ()
 	local indexed: { [string]: Contract.Task } = {}
 	for _, task in tasks do
 		indexed[task.identity] = task
@@ -105,7 +111,7 @@ function TaskRunner.Run(tasks: { Contract.Task }, event: string, identity: strin
 		validateArchive(archive, provider)
 		command({ "--extract", "--file", archive, "--no-same-owner", "--no-same-permissions" })
 	end
-	local executor = Executor.new()
+	local executor = Executor.new(credentials)
 	print(`::notice::Starting {identity}`)
 	local outcome = executor:Invoke(selected, event)
 	if outcome == "skipped" then

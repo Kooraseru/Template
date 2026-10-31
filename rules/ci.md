@@ -190,5 +190,21 @@ GitHub-native issue forms and PR templates are authored directly in `.github/`
 on the default branch. Do not duplicate them under repository content or add
 another workflow for them. `repo/config/labels.toml` owns the label definitions;
 `sync-labels` validates form references and creates/updates labels using the
-built-in token with Issues write permission. It must preserve unrelated labels
-and existing issue/PR associations. Already matching label data reports skipped.
+built-in token with Issues write permission. The catalog is authoritative: remove all unlisted repository labels. Keep IDs and issue/PR associations for labels still declared. Already matching label data reports skipped.
+
+## Management and capability fallbacks
+
+Source configuration is authoritative for labels: remove every remote label not
+in repo/config/labels.toml after validating/upserting all declared entries. Do not
+carry exemptions for labels added by defaults or other automation.
+
+Project blueprints are discovered under repo/config/projects/*/. Source owns
+managed project structure; actual issue/PR records remain GitHub data. Projects
+use configured App/PAT roles and warn/skip on unavailable account permissions.
+Do not confuse missing credentials with an unsupported integration.
+
+Optional integrations must be isolated. Attestations are best-effort and record
+failed/non-blocking versus skipped versus successful signing accurately. Private
+repository capabilities depend on account entitlement; probe/attempt them rather
+than blanket-rejecting private repositories. Independent work must continue.
+Lockfile failures must never downgrade to unlocked action execution.

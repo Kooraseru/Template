@@ -17,6 +17,7 @@ const SECRET_ROLES: { [string]: string } = {
 	app_id = "CI_GITHUB_APP_ID_SECRET",
 	app_private_key = "CI_GITHUB_APP_PRIVATE_KEY",
 	bootstrap_token = "CI_GITHUB_BOOTSTRAP_TOKEN",
+	projects_token = "CI_GITHUB_PROJECTS_TOKEN",
 }
 
 function Credentials.new(): Credentials
@@ -34,6 +35,14 @@ function Credentials.new(): Credentials
 	Process.env.CI_GITHUB_SECRETS = nil
 	Process.env.CI_GITHUB_VARIABLES = nil
 	local configuration = Configuration.new()
+	for role in configuration.credentials do
+		local environment = "CI_CREDENTIAL_" .. role:upper()
+		local value = Process.env[environment]
+		Process.env[environment] = nil
+		if value and value ~= "" then
+			supplied[role] = value
+		end
+	end
 	local fields: Fields = { secrets = {}, variables = {} }
 	for role, value in supplied do
 		local name = configuration.credentials[role]
@@ -84,6 +93,15 @@ function Credentials.Get(
 	return self.secrets[name] or self.variables[name]
 end
 
+function Credentials.Environment(self: Credentials, roles: { string }): { [string]: string }
+	local configuration = Configuration.new()
+	local result: { [string]: string } = {}
+	for _, role in roles do
+		local value = self:Get(configuration, role, role ~= "app_id")
+		result["CI_CREDENTIAL_" .. role:upper()] = value or ""
+	end
+	return result
+end
 function Credentials.Describe(self: Credentials, configuration: Configuration.Configuration): ()
 	local secretNames: { string } = {}
 	local variableNames: { string } = {}

@@ -47,6 +47,22 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				})
 			end
 		end
+		if #task.credentials > 0 then
+			appendStep(steps, {
+				name = "Resolve credential names",
+				id = "credentials",
+				run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names",
+			})
+		end
+		local credentialEnvironment: { [string]: string } = {}
+		for _, role in task.credentials do
+			local output = "steps.credentials.outputs." .. role
+			local expression = "${{ secrets[" .. output .. "] }}"
+			if role == "app_id" then
+				expression = "${{ secrets[" .. output .. "] || vars[" .. output .. "] }}"
+			end
+			credentialEnvironment["CI_CREDENTIAL_" .. role:upper()] = expression
+		end
 		appendStep(steps, {
 			name = `Run {task.identity}`,
 			id = "component",
@@ -61,6 +77,14 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				else nil,
 			run = `bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --component {task.identity}`,
 		})
+		local runStep = steps[#steps]
+		if #task.credentials > 0 then
+			local environment = runStep.env or {}
+			for name, value in credentialEnvironment do
+				environment[name] = value
+			end
+			runStep.env = environment
+		end
 		if #task.outputs > 0 then
 			appendStep(steps, {
 				name = `Publish {task.identity} outputs`,

@@ -1,0 +1,7 @@
+provides = ["attestations.prepared"]
+requires = ["releases.generated"]
+inputs = ["repo/config/attestations.toml", "build/repo/releases/**"]
+outputs = ["build/repo/attestations/**"]
+events = ["push"]
+boundary = "privileged"
+enabled = true

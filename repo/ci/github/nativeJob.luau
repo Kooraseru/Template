@@ -10,6 +10,7 @@ local NativeJob = {}
 export type Step = {
 	name: string?,
 	id: string?,
+	["continue-on-error"]: boolean?,
 	uses: string?,
 	run: string?,
 	["if"]: string?,
@@ -74,11 +75,17 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 				and field ~= "if"
 				and field ~= "with"
 				and field ~= "env"
+				and field ~= "continue-on-error"
 			then
 				error(`{path}: unsupported native step field {field}`, 0)
 			end
 		end
+		local continueOnError = record["continue-on-error"]
+		if continueOnError ~= nil and type(continueOnError) ~= "boolean" then
+			error(`{path}: continue-on-error must be boolean`, 0)
+		end
 		local step: Step = {
+			["continue-on-error"] = continueOnError,
 			name = optionalText(record.name),
 			id = optionalText(record.id),
 			uses = optionalText(record.uses),

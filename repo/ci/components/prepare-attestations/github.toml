@@ -1,0 +1,30 @@
+[permissions]
+contents = "read"
+id-token = "write"
+attestations = "write"
+
+[[steps]]
+name = "Resolve attestation subjects"
+id = "attestation_options"
+continue-on-error = true
+run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --attestation-options"
+
+[[steps]]
+name = "Generate build provenance"
+id = "attestation"
+uses = "actions/attest@v4.2.2"
+continue-on-error = true
+if = "${{ !cancelled() && steps.attestation_options.outputs.enabled == toJSON(true) }}"
+[steps.with]
+subject-path = "${{ steps.attestation_options.outputs.subject_path }}"
+predicate-type = "https://slsa.dev/provenance/v1"
+predicate-path = "${{ steps.attestation_options.outputs.predicate_path }}"
+
+[[steps]]
+name = "Report attestation outcome"
+if = "${{ !cancelled() }}"
+run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --attestation-report"
+[steps.env]
+CI_ATTESTATION_SETUP = "${{ steps.attestation_options.outcome }}"
+CI_ATTESTATION_ENABLED = "${{ steps.attestation_options.outputs.enabled }}"
+CI_ATTESTATION_OUTCOME = "${{ steps.attestation.outcome }}"

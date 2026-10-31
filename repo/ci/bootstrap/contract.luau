@@ -18,6 +18,7 @@ type ContractFields = {
 	outputs: { string },
 	events: { string },
 	boundary: string,
+	credentials: { string },
 	enabled: boolean,
 }
 
@@ -25,6 +26,7 @@ export type Contract = setmetatable<ContractFields, typeof(Contract)>
 
 export type Task = {
 	boundary: string,
+	credentials: { string },
 	identity: string,
 	invoker: string,
 	entry: string,
@@ -183,8 +185,12 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		outputs = paths(contractFile, "outputs", outputPatterns),
 		events = events,
 		boundary = boundaryValue,
+		credentials = strings(contractFile, "credentials", raw.credentials or {}, "^[a-z][a-z0-9_]*$"),
 		enabled = enabledValue,
 	}
+	if boundaryValue ~= "privileged" and #fields.credentials > 0 then
+		invalid(contractFile, "credentials require a privileged boundary")
+	end
 	local allowedFields: { [string]: boolean } = {
 		provides = true,
 		requires = true,
@@ -192,6 +198,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		outputs = true,
 		events = true,
 		boundary = true,
+		credentials = true,
 		enabled = true,
 	}
 	for field in raw do
@@ -216,6 +223,7 @@ Method tables and other local state never cross the artifact boundary.
 function Contract.ToTask(self: Contract, needs: { string }): Task
 	return {
 		boundary = self.boundary,
+		credentials = self.credentials,
 		identity = self.identity,
 		invoker = TASK_INVOKER,
 		entry = self.entry,

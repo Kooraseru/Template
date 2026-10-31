@@ -1,0 +1,3 @@
+[tool]
+repository = "github/gh-actions-lock"
+version = "v0.4.0"

@@ -15,9 +15,6 @@ end
 
 function Component.Run(_self: Component, _context: { event: string }): string?
 	local labels = LabelCatalog.Read()
-	if #labels == 0 then
-		return "skipped"
-	end
 	local repository = Publication.Begin("LABELS")
 	if not repository then
 		return "skipped"

@@ -9,8 +9,26 @@ local LabelSync = {}
 function LabelSync.Sync(
 	repository: string,
 	labels: { LabelCatalog.Label },
-	request: typeof(Publication.Request)
+	request: typeof(Publication.Request),
+	list: typeof(Publication.List)?
 ): boolean
+	local read = list or Publication.List
+	local remote: { string } = {}
+	local page = 1
+	while true do
+		local items = read(`repos/{repository}/labels?per_page=100&page={page}`)
+		for _, value in items do
+			table.insert(remote, Publication.Text(Publication.Record(value).name))
+		end
+		if #items < 100 then
+			break
+		end
+		page += 1
+	end
+	local declared: { [string]: boolean } = {}
+	for _, label in labels do
+		declared[label.name:lower()] = true
+	end
 	local changed = false
 	for _, label in labels do
 		local path = `repos/{repository}/labels/{Publication.Encode(label.name)}`
@@ -39,6 +57,18 @@ function LabelSync.Sync(
 			print(`Updated label {label.name}`)
 			changed = true
 		end
+	end
+	-- Upsert the complete validated catalog before pruning any remote labels.
+	for _, name in remote do
+		if declared[name:lower()] then
+			continue
+		end
+		local deleted = request("DELETE", `repos/{repository}/labels/{Publication.Encode(name)}`, nil)
+		if deleted ~= 404 then
+			Publication.RequireSuccess(deleted, `Remove undeclared label {name}`)
+		end
+		print(`Removed undeclared label {name}`)
+		changed = true
 	end
 	return changed
 end

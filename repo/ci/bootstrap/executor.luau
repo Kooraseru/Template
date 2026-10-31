@@ -7,21 +7,23 @@ local DateTime = require("@lune/datetime")
 local Glob = require("./glob")
 local Contract = require("./contract")
 local Outcome = require("./outcome")
+local Credentials = require("@ci/github/credentials")
 
 local Executor = {}
 Executor.__index = Executor
 
 type Outcomes = { [string]: string }
 
-export type Executor = setmetatable<{}, typeof(Executor)>
+type Fields = { credentials: Credentials.Credentials? }
+export type Executor = setmetatable<Fields, typeof(Executor)>
 
 export type Result = {
 	outcomes: Outcomes,
 	passed: boolean,
 }
 
-function Executor.new(): Executor
-	local fields = {}
+function Executor.new(credentials: Credentials.Credentials?): Executor
+	local fields: Fields = { credentials = credentials }
 	return setmetatable(fields, Executor)
 end
 
@@ -47,10 +49,17 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Ou
 		)
 		return "failed"
 	end
+	local environment: { [string]: string } =
+		{ GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else "" }
+	if self.credentials and task.boundary == "privileged" then
+		for name, value in self.credentials:Environment(task.credentials) do
+			environment[name] = value
+		end
+	end
 	local options: Process.ExecOptions = {
 		cwd = Process.cwd,
 		stdio = "inherit",
-		env = { GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else "" },
+		env = environment,
 	}
 	local ok, result = xpcall(Process.exec, tostring, luneExecutable, {
 		"run",

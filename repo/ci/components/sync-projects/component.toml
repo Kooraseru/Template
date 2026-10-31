@@ -1,0 +1,8 @@
+provides = ["github.projects.synced"]
+requires = ["github.projects.planned"]
+inputs = ["repo/config/projects/**", "repo/config/github.toml", "build/repo/project-plans/**"]
+outputs = ["build/repo/project-sync/**"]
+events = ["push"]
+boundary = "privileged"
+credentials = ["app_id", "app_private_key", "projects_token"]
+enabled = true

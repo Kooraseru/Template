@@ -76,7 +76,7 @@ end
 
 function Publication.List(path: string): { unknown }
 	local result = response("GET", path, nil)
-	Publication.RequireSuccess(result.statusCode, "List release assets")
+	Publication.RequireSuccess(result.statusCode, "Read GitHub list")
 	local value: unknown = Serde.decode("json", result.body)
 	if type(value) ~= "table" then
 		error("Expected a GitHub asset list", 0)

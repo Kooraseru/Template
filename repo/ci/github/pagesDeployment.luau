@@ -27,7 +27,8 @@ function PagesDeployment.Prepare(): boolean
 		error("Pages publication requires Settings > Pages > Source = GitHub Actions", 0)
 	end
 	if not Fs.isFile("build/repo/pages/index.html") then
-		error("Pages artifact is missing build/repo/pages/index.html", 0)
+		print("::warning::Pages deployment skipped: no completed site artifact is available")
+		return false
 	end
 	Publication.Output("path", "build/repo/pages")
 	Publication.Output("enabled", "true")

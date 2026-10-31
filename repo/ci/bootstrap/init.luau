@@ -23,12 +23,13 @@ type BootstrapFields = {
 export type Bootstrap = setmetatable<BootstrapFields, typeof(Bootstrap)>
 
 function Bootstrap.new(event: string): Bootstrap
+	local credentials = Credentials.new()
 	local fields: BootstrapFields = {
 		event = event,
-		executor = Executor.new(),
+		executor = Executor.new(credentials),
 		reporter = Reporter.new(),
 		preflight = Preflight.new(),
-		credentials = Credentials.new(),
+		credentials = credentials,
 	}
 	return setmetatable(fields, Bootstrap)
 end
@@ -42,7 +43,7 @@ function Bootstrap.Run(self: Bootstrap, preflightOnly: boolean?, component: stri
 		return
 	end
 	if component then
-		TaskRunner.Run(preflight.tasks, self.event, component)
+		TaskRunner.Run(preflight.tasks, self.event, component, self.credentials)
 		return
 	end
 	if reportOnly then

@@ -1,0 +1,4 @@
+# Projects authorization comes from the declared scoped App/PAT roles, not this token.
+steps = []
+[permissions]
+contents = "read"

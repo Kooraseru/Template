@@ -9,6 +9,7 @@ permissions:
   issues: write
   pages: write
   id-token: write
+  attestations: write
 
 concurrency:
   group: ci-source
@@ -42,9 +43,36 @@ jobs:
           CI_GITHUB_APP_ID_VARIABLE: ${{ vars[steps.credentials.outputs.app_id] }}
           CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
           CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
+          CI_GITHUB_PROJECTS_TOKEN: ${{ secrets[steps.credentials.outputs.projects_token] }}
         run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau
+      - name: Resolve attestation subjects
+        id: attestation_options
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_DELEGATED: ${{ steps.bootstrap.outputs.delegated }}
+        run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --attestation-options
+      - name: Generate build provenance
+        id: attestation
+        if: ${{ !cancelled() && steps.attestation_options.outputs.enabled == 'true' }}
+        continue-on-error: true
+        uses: actions/attest@v4.2.2
+        with:
+          subject-path: ${{ steps.attestation_options.outputs.subject_path }}
+          predicate-type: https://slsa.dev/provenance/v1
+          predicate-path: ${{ steps.attestation_options.outputs.predicate_path }}
+      - name: Report attestation outcome
+        if: ${{ !cancelled() }}
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_ATTESTATION_SETUP: ${{ steps.attestation_options.outcome }}
+          CI_ATTESTATION_ENABLED: ${{ steps.attestation_options.outputs.enabled }}
+          CI_ATTESTATION_OUTCOME: ${{ steps.attestation.outcome }}
+        run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --attestation-report
       - name: Resolve Pages deployment
         id: pages
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
           CI_EVENT: ${{ github.event_name }}
@@ -52,11 +80,11 @@ jobs:
           CI_PUBLISH_PAGES: ${{ vars.CI_PUBLISH_PAGES }}
         run: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --pages-options
       - name: Upload Pages artifact
-        if: steps.pages.outputs.enabled == 'true'
+        if: ${{ !cancelled() && steps.pages.outputs.enabled == 'true' }}
         uses: actions/upload-pages-artifact@v4
         with:
           path: ${{ steps.pages.outputs.path }}
       - name: Deploy Pages
         id: deployment
-        if: steps.pages.outputs.enabled == 'true'
+        if: ${{ !cancelled() && steps.pages.outputs.enabled == 'true' }}
         uses: actions/deploy-pages@v4
