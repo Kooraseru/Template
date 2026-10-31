@@ -147,12 +147,17 @@ function Attestations.Options(): ()
 		runner_environment = Process.env.RUNNER_ENVIRONMENT,
 		workflowSha = Process.env.GITHUB_WORKFLOW_SHA,
 	}
-	local dependency = { uri = sourceUri, digest = { gitCommit = sha } }
+	local workflowSha = Process.env.GITHUB_SHA or sha
+	local dependency = { uri = `git+{server}/{repository}@{workflowRef}`, digest = { gitCommit = workflowSha } }
+	local dependencies = { dependency }
+	if workflowSha ~= sha then
+		table.insert(dependencies, { uri = sourceUri, digest = { gitCommit = sha } })
+	end
 	local buildDefinition = {
 		buildType = "https://actions.github.io/buildtypes/workflow/v1",
 		externalParameters = { source = sourceParameters, workflow = workflowParameters },
 		internalParameters = { github = githubParameters },
-		resolvedDependencies = { dependency },
+		resolvedDependencies = dependencies,
 	}
 	local runDetails = {
 		builder = { id = `{server}/{workflow}` },
