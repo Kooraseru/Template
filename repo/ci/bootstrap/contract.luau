@@ -42,6 +42,24 @@ const TASK_INVOKER = "repo/ci/bootstrap/invoke.luau"
 
 local EVENTS: { [string]: boolean } = { push = true, pull_request = true, workflow_dispatch = true }
 
+function Contract.ValidIdentity(identity: string): boolean
+	if identity == "" or identity:sub(1, 1) == "/" or identity:sub(-1) == "/" or identity:find("//", 1, true) then
+		return false
+	end
+	for segment in identity:gmatch("[^/]+") do
+		if segment == "init" or not segment:match("^[%a%d][%w_-]*$") then
+			return false
+		end
+	end
+	return true
+end
+
+-- Escape separators and the escape character without merging distinct identities.
+function Contract.Key(identity: string): string
+	local key = identity:gsub("_", "_u"):gsub("/", "_s")
+	return key
+end
+
 --# Helpers
 
 local function invalid(entry: string, reason: string): never
@@ -116,7 +134,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		end
 		raw[field] = value
 	end
-	if identity == "init" or not identity:match("^[%a%d][%w_-]*$") then
+	if not Contract.ValidIdentity(identity) then
 		invalid(contractFile, `invalid component identity: {identity}`)
 	end
 
@@ -152,16 +170,6 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		return invalid(contractFile, "boundary must be read or privileged")
 	end
 
-	local enabled = raw.enabled
-	local enabledValue: boolean
-	if enabled == nil then
-		enabledValue = true
-	elseif type(enabled) == "boolean" then
-		enabledValue = enabled
-	else
-		return invalid(contractFile, "enabled must be boolean")
-	end
-
 	local requirements = raw.requires
 	if requirements == nil then
 		requirements = {}
@@ -186,7 +194,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		events = events,
 		boundary = boundaryValue,
 		credentials = strings(contractFile, "credentials", raw.credentials or {}, "^[a-z][a-z0-9_]*$"),
-		enabled = enabledValue,
+		enabled = true,
 	}
 	if boundaryValue ~= "privileged" and #fields.credentials > 0 then
 		invalid(contractFile, "credentials require a privileged boundary")
@@ -199,7 +207,6 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		events = true,
 		boundary = true,
 		credentials = true,
-		enabled = true,
 	}
 	for field in raw do
 		if not allowedFields[field] then

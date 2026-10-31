@@ -1,0 +1,5 @@
+# Components are discovered recursively; this is only an optional override list.
+default = true
+
+[enabled]
+# "publish/packages" = false

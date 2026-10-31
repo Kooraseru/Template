@@ -8,6 +8,7 @@ local Serde = require("@lune/serde")
 local Authentication = require("@ci/github/authentication")
 local Configuration = require("@ci/github/configuration")
 local Credentials = require("@ci/github/credentials")
+local Contract = require("./contract")
 
 local SkipPolicy = {}
 
@@ -72,7 +73,7 @@ function SkipPolicy.Conclusion(identity: string): string
 	end
 	local overrides = record(settings.components)
 	for name, value in overrides do
-		if type(name) ~= "string" or not name:match("^[a-z][a-z0-9_-]*$") then
+		if type(name) ~= "string" or not Contract.ValidIdentity(name) then
 			error("Invalid skip component identity", 0)
 		end
 		if type(value) ~= "string" or not supported[value] then

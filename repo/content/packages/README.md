@@ -7,14 +7,18 @@ identity. No central package list is maintained.
 Each folder requires:
 
 - `package.toml`: existing build/package files and optional registry metadata.
-- `README.md`: the package's own Markdown description, copied into staged output.
+- `description.md`: the package's own description, copied into staged output as
+  `README.md` so GitHub's package views can render it.
+
+Use `README.md` at a directory level to explain that directory's contents and
+conventions. A package record's description belongs in `description.md`.
 
 For example, copy this shape and fill it with a library you actually build:
 
 ```text
 records/my-library/
   package.toml
-  README.md
+  description.md
 ```
 
 ```toml

@@ -31,32 +31,24 @@ end
 function ProviderDiscovery.Discover(self: ProviderDiscovery): ({ Contracts.ProviderPackage }, { Contracts.Diagnostic })
 	local packages: { Contracts.ProviderPackage } = {}
 	local diagnostics: { Contracts.Diagnostic } = {}
-	if not Fs.isDir("repo/ci/preflight/providers") then
-		appendDiagnostic(diagnostics, "repo/ci/preflight/providers", "missing provider package root")
+	if not Fs.isDir("providers") then
+		appendDiagnostic(diagnostics, "providers", "missing provider package root")
 		return packages, diagnostics
 	end
 
-	local tracked = Process.exec("git", { "ls-files", "--stage", "--", "repo/ci/preflight/providers" })
+	local tracked = Process.exec("git", { "ls-files", "--stage", "--", "providers" })
 	if not tracked.ok then
-		appendDiagnostic(
-			diagnostics,
-			"repo/ci/preflight/providers",
-			`unable to inspect provider entries: {tracked.stderr}`
-		)
+		appendDiagnostic(diagnostics, "providers", `unable to inspect provider entries: {tracked.stderr}`)
 		return packages, diagnostics
 	end
 	for line in tracked.stdout:gmatch("[^\r\n]+") do
 		local mode, path = line:match("^(%d+)%s+[%da-fA-F]+%s+%d+\t(.+)$")
 		if mode == "120000" or mode == "160000" then
-			appendDiagnostic(
-				diagnostics,
-				path or "repo/ci/preflight/providers",
-				"provider packages cannot contain symlinks or gitlinks"
-			)
+			appendDiagnostic(diagnostics, path or "providers", "provider packages cannot contain symlinks or gitlinks")
 		end
 	end
 
-	for _, directory in Glob.Find("repo/ci/preflight/providers/*") do
+	for _, directory in Glob.Find("providers/*") do
 		local identity = directory:match("([^/]+)$")
 		local configPath = `repo/config/ci/preflight/{identity}.toml`
 		local entryPath = `{directory}/init.luau`
@@ -125,7 +117,7 @@ function ProviderDiscovery.Discover(self: ProviderDiscovery): ({ Contracts.Provi
 	end
 	for _, configPath in Glob.Find("repo/config/ci/preflight/*.toml") do
 		local identity = configPath:match("([^/]+)%.toml$")
-		if not identity or not Fs.isFile(`repo/ci/preflight/providers/{identity}/init.luau`) then
+		if not identity or not Fs.isFile(`providers/{identity}/init.luau`) then
 			appendDiagnostic(diagnostics, configPath, "provider settings have no matching implementation")
 		end
 	end

@@ -18,7 +18,7 @@ if variant == "--" then
 end
 if not variant or not EXECUTABLES[variant] then
 	error(
-		"usage: bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/run.luau --windows-amd|--windows-arm64|--windows-intel",
+		"usage: bash dependencies/lune/bootstrap.sh run repo/ci/run.luau --windows-amd|--windows-arm64|--windows-intel",
 		0
 	)
 end
@@ -26,7 +26,7 @@ end
 local executable = EXECUTABLES[variant]
 if not Fs.isFile(executable) then
 	error(
-		`missing {executable}; build first with CI_EVENT=workflow_dispatch bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau`,
+		`missing {executable}; build first with CI_EVENT=workflow_dispatch bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau`,
 		0
 	)
 end

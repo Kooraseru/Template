@@ -1,0 +1,18 @@
+[project]
+title = "Planning"
+description = "Proposals and milestones before implementation begins."
+public = false
+
+[[fields]]
+name = "Status"
+data_type = "SINGLE_SELECT"
+options = [
+  { name = "Proposed", color = "GRAY", description = "An idea awaiting assessment." },
+  { name = "Assessing", color = "YELLOW", description = "Scope and feasibility are being evaluated." },
+  { name = "Planned", color = "BLUE", description = "Accepted for future implementation." },
+  { name = "Delivered", color = "GREEN", description = "Implementation has been delivered." },
+]
+
+[[fields]]
+name = "Target date"
+data_type = "DATE"

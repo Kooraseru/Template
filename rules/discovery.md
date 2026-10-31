@@ -6,14 +6,16 @@
 
 Every CI component is a package directory with a public `init.luau` head:
 
-- `repo/ci/components/*/init.luau`
+- `repo/ci/components/**/init.luau`
 
-The directory name is the component identity. Files directly under
-`repo/ci/components/` are invalid. Directory internals are private unless their
-component explicitly declares another extension point. Invalid direct
-children are errors, not silently skipped, with the sole exception of the
-initial empty-tree `.gitkeep` marker. The template currently has one component,
-`build/`; add another only when it owns a distinct CI responsibility.
+Ordinary directories group components recursively. A directory with either
+`component.toml` or `init.luau` declares a component and must contain both.
+Its relative path is its identity, such as `build/application`. Component
+internals remain private; discovery does not turn their implementation folders
+into components. Grouping folders may contain README.md and `.gitkeep` files.
+Other loose files, invalid identities, and case-ambiguous paths are errors.
+Enablement overrides belong in `repo/config/ci/components.toml`; component
+manifests declare implementation contracts rather than consumer settings.
 
 The trusted glob adapter may use Lune's filesystem API internally to expand patterns. Callers must use glob discovery, not reproduce the traversal or track filenames themselves. `*` matches one path segment; `**` spans zero or more segments. Glob expansion must be deterministic; reject symlinks in discovered CI scopes and unsafe path traversal.
 

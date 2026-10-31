@@ -45,9 +45,7 @@ end
 function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Outcome.Value
 	local luneExecutable = Process.env.CI_LUNE
 	if not luneExecutable then
-		print(
-			"::error::CI_LUNE is unset; start CI with bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau"
-		)
+		print("::error::CI_LUNE is unset; start CI with bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau")
 		return "failed"
 	end
 	local environment: { [string]: string } =

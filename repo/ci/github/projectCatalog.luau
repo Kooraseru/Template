@@ -127,9 +127,9 @@ function ProjectCatalog.Read(): { Project }
 		if type(public) ~= "boolean" then
 			error(`{path}: project.public must be boolean`, 0)
 		end
-		local readme = Fs.readFile(`{directory}/README.md`)
+		local readme = Fs.readFile(`{directory}/description.md`)
 		if not readme:find("%S") then
-			error(`{directory}: README.md must describe the project`, 0)
+			error(`{directory}: description.md must describe the project`, 0)
 		end
 		table.insert(result, {
 			identity = identity,

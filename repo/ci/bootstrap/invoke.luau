@@ -3,6 +3,7 @@
 
 local Process = require("@lune/process")
 local Outcome = require("./outcome")
+local Contract = require("./contract")
 
 const COMPONENTS_MODULE_PREFIX = "@ci/components"
 
@@ -17,15 +18,15 @@ type ComponentClass = {
 -- The trusted coordinator inspects component contracts without executing them.
 local entry = Process.args[1]
 local event = Process.args[2]
-if not entry or not entry:match("^repo/ci/components/[%w_-]+/init%.luau$") then
+if not entry then
 	error("invalid CI component entry", 0)
 end
 if event ~= "push" and event ~= "pull_request" and event ~= "workflow_dispatch" then
 	error("invalid CI event", 0)
 end
 
-local identity = entry:match("^repo/ci/components/([%w_-]+)/init%.luau$")
-if not identity then
+local identity = entry:match("^repo/ci/components/(.+)/init%.luau$")
+if not identity or not Contract.ValidIdentity(identity) then
 	error("invalid CI component identity", 0)
 end
 

@@ -1,0 +1,6 @@
+provides = ["pages.deployment-ready"]
+requires = ["build.completed", "pages.generated"]
+inputs = ["build/repo/pages/**"]
+outputs = []
+events = ["push"]
+boundary = "privileged"

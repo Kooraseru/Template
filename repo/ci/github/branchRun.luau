@@ -10,7 +10,7 @@ local Authentication = require("./authentication")
 local Configuration = require("./configuration")
 local Credentials = require("./credentials")
 local Workflow = require("./workflow")
-local ActionsLock = require("@ci/dependencies/actions-lock")
+local ActionsLock = require("@workspace/dependencies/actions-lock")
 
 local BranchRun = {}
 

@@ -75,7 +75,7 @@ local function bundle(task: Contract.Task): ()
 	end
 	table.sort(paths)
 	Fs.writeDir(ARTIFACT_ROOT)
-	local archive = `{ARTIFACT_ROOT}/{task.identity}.tar`
+	local archive = `{ARTIFACT_ROOT}/{Contract.Key(task.identity)}.tar`
 	command(
 		{ "-cf", archive, "--no-recursion", "--null", "--files-from", "-" },
 		table.concat(paths, "\0") .. (if #paths > 0 then "\0" else "")
@@ -106,7 +106,7 @@ function TaskRunner.Run(
 		if #provider.outputs == 0 then
 			continue
 		end
-		local archive = `{ARTIFACT_ROOT}/{dependency}.tar`
+		local archive = `{ARTIFACT_ROOT}/{Contract.Key(dependency)}.tar`
 		if not Fs.isFile(archive) then
 			error(`{identity}: missing dependency artifact {dependency}`, 0)
 		end

@@ -22,9 +22,11 @@ export type PlanBuilder = setmetatable<Fields, typeof(PlanBuilder)>
 
 local function failureLocation(message: string): (string, number)
 	local path = message:match("^([^:]+%.toml):") or message:match("^([^:]+%.luau):")
-	local identity = message:match("^([%w_-]+):") or message:match("^output collision: ([%w_-]+)")
+	local identity = message:match("^([%w_/-]+):") or message:match("^output collision: ([%w_/-]+)")
 	if not path and identity then
-		path = `repo/ci/components/{identity}/component.toml`
+		local prefix = "repo/ci/components/"
+		local directory = if identity:sub(1, #prefix) == prefix then identity else prefix .. identity
+		path = `{directory}/component.toml`
 	end
 	path = path or "repo/ci/bootstrap/planning.luau"
 

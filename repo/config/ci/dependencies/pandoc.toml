@@ -1,0 +1,3 @@
+[tool]
+# Install Pandoc on a Linux Actions runner when it is missing from PATH.
+install_on_runner = true

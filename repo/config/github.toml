@@ -30,7 +30,7 @@ projects_token = "CI_PROJECTS_TOKEN"
 # release_token = "MY_RELEASE_SECRET"
 # organization_token = "MY_ORGANIZATION_SECRET"
 
-# Each named output branch is built from source globs and repo/content/root/.
+# Each named output branch is built from source globs and repo/content/files/.
 
 [branches.main]
 source = ["source/**"]

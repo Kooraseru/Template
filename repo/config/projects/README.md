@@ -1,10 +1,10 @@
 # Source-managed GitHub Projects
 
 Each direct folder defines one project through `project.toml` and its own
-`README.md`. Adding a valid folder includes it automatically; there is no central
-project list. The development default declares Status stages and Priority levels.
+`description.md`. Adding a valid folder includes it automatically; there is no central
+project list. Development tracks implementation and priorities; Planning tracks proposals and target dates.
 
-`plan-projects` validates definitions and emits a reviewable plan. `sync-projects`
+`repository/plan-projects` validates definitions and emits a reviewable plan. `repository/projects`
 creates or reconciles projects, fields, single-select choices, repository links,
 and metadata. It preserves the IDs of retained options, so their existing item
 values remain associated. It does not create issues, PRs, draft issues, or project

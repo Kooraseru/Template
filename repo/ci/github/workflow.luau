@@ -15,7 +15,7 @@ local function appendStep(steps: { Step }, step: Step): ()
 end
 
 function Workflow.JobId(identity: string): string
-	return "component_" .. identity
+	return "component_" .. Contract.Key(identity)
 end
 
 -- This consumes the scheduler's validated tasks, not a second component list.
@@ -49,7 +49,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				appendStep(steps, {
 					name = `Receive {dependency} outputs`,
 					uses = "actions/download-artifact@v8",
-					with = { name = `ci-{dependency}`, path = "build/github/artifacts" },
+					with = { name = `ci-{Contract.Key(dependency)}`, path = "build/github/artifacts" },
 				})
 			end
 		end
@@ -57,7 +57,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			appendStep(steps, {
 				name = "Resolve credential names",
 				id = "credentials",
-				run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names",
+				run = "bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names",
 			})
 		end
 		local credentialEnvironment: { [string]: string } = {}
@@ -81,10 +81,10 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 					CI_PUBLISH_PAGES = "${{ vars.CI_PUBLISH_PAGES }}",
 				}
 				else nil,
-			run = `bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --component {task.identity}`,
+			run = `bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --component {task.identity}`,
 		})
 		local runStep = steps[#steps]
-		if #task.credentials > 0 then
+		if #credentialRoles > 0 then
 			local environment = runStep.env or {}
 			for name, value in credentialEnvironment do
 				environment[name] = value
@@ -97,8 +97,8 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				["if"] = "${{ steps.component.outputs.skipped != toJSON(true) }}",
 				uses = "actions/upload-artifact@v7",
 				with = {
-					name = `ci-{task.identity}`,
-					path = `build/github/artifacts/{task.identity}.tar`,
+					name = `ci-{Contract.Key(task.identity)}`,
+					path = `build/github/artifacts/{Contract.Key(task.identity)}.tar`,
 					["if-no-files-found"] = "error",
 				},
 			})
@@ -137,7 +137,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			{
 				name = "Report component results",
 				env = { CI_JOB_RESULTS = "${{ toJSON(needs) }}" },
-				run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --report",
+				run = "bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --report",
 			},
 		},
 	}
@@ -155,7 +155,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			{
 				name = "Delete temporary branch for this run",
 				env = { GH_TOKEN = "${{ github.token }}" },
-				run = "bash repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --cleanup-branch",
+				run = "bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --cleanup-branch",
 			},
 		},
 	}

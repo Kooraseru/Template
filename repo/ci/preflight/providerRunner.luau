@@ -30,12 +30,12 @@ function ProviderRunner.Run(
 	packages: { Contracts.ProviderPackage },
 	context: Contracts.Context
 ): { Contracts.Diagnostic }
-	local providerEntries = Glob.Find("repo/ci/preflight/providers/*/init.luau")
+	local providerEntries = Glob.Find("providers/*/init.luau")
 	local diagnostics: { Contracts.Diagnostic } = {}
 	if #providerEntries ~= #packages then
 		appendDiagnostic(
 			diagnostics,
-			"repo/ci/preflight/providers",
+			"providers",
 			"configured provider entries do not match discovered provider packages"
 		)
 	end

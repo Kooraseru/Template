@@ -1,7 +1,7 @@
 # Repository support
 
 This directory owns the repository's configuration, authored content, and CI.
-Application source lives in `source/`, built-in plugins live in `plugins/`, and
+Application source lives in `source/`, built-in plugins live in `plugin/`, and
 generated results live in `build/`.
 
 ```text
@@ -16,23 +16,29 @@ repo/
       dependencies/       CI runtime/tool versions and checksums
       authorization/      requested App permissions and classic PAT scopes
   content/
-    root/                 README, CONTRIBUTING, SECURITY, and other root files
+    files/                README, CONTRIBUTING, SECURITY, and other root files
     docs/                 authored GitHub Pages content
     ci/                   authored CI summaries and authorization messages
     i18n/                 translations and locale settings
-      root/               translations of content/root files
+      files/              translations of content/files
       docs/               translations of documentation pages
     releases/             GitHub Release records and notes
     packages/             GitHub Packages declarations and staging fixtures
   ci/
     entry.luau            executable CI entrypoint
     bootstrap/            component discovery, dependency planning, and scheduling
-    components/           discovered build/content-generation components
-    dependencies/         CI dependency installation code
+    components/           recursively discovered component packages and groupings
+      build/              application, package, page, and release preparation
+      publish/            publication and provenance components
+      repository/         branch generation and GitHub resource synchronization
     preflight/            plan analysis and diagnostics
-      providers/          discovered validator implementations
     github/               optional native Actions job visualization
+    rendering/            shared content rendering implementation
 ```
+
+`providers/` and `dependencies/` are siblings of `repo/` at the repository root.
+They own validator and CI tool installation implementations. Their editable
+settings live in `repo/config/ci/preflight/` and `repo/config/ci/dependencies/`.
 
 ## Where configuration belongs
 
@@ -42,8 +48,9 @@ and remain with that code. Content records stay with their owning content.
 
 - `repo/content/i18n/config.toml` defines supported locales and their names.
 - `repo/content/releases/releases.toml` defines release records and commit/tag data.
-- `repo/content/packages/packages.toml` owns shared GitHub Packages policy; `packages/records/*/` owns each package and its Markdown description.
-- `repo/ci/components/*/component.toml` declares a component's execution contract.
+- `repo/content/packages/packages.toml` owns shared GitHub Packages policy; each `packages/records/*/` folder owns its `package.toml` and `description.md`.
+- `repo/config/ci/components.toml` enables or disables discovered components.
+- `repo/ci/components/**/component.toml` declares a component's execution contract.
 - `repo/config/ci/preflight/*.toml` configures each discovered analyzer.
 - `repo/config/ci/dependencies/lune.toml` pins and verifies the runtime needed to
   start Luau. It does not declare application dependencies.
@@ -58,13 +65,19 @@ owners and do not duplicate one another.
 platforms expect. They point into this directory rather than duplicating pipeline
 definitions. The existing `@ci` import alias resolves to `repo/ci/`.
 The VS Code Problems-panel integration lives in `.vscode/preflight/`; the
-preflight engine and its analyzers live under `repo/ci/preflight/`.
+preflight engine lives under `repo/ci/preflight/` and discovers analyzers from
+the repository-root `providers/` directory.
 
 The scheduler discovers component and provider packages from their owning
 directories. Adding a conforming package does not require a new central list.
+Component groupings are ordinary directories. A component has both
+`component.toml` and `init.luau`; its identity is its relative path, such as
+`publish/releases`. Component internals are private and are not discovered as
+additional components. Consumer settings belong in `config/`; runtime code and
+component manifests are maintained as implementation.
 
 `repo/` is editable input. `build/repo/` contains generated repository output.
-Edit a root-document template in `repo/content/root/`, not its generated copy.
+Edit a root-document template in `repo/content/files/`, not its generated copy.
 
 Credential mappings contain **GitHub secret/variable names only**. Real tokens,
 passwords, and private keys stay in GitHub Secrets and must never be committed.

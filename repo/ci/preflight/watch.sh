@@ -16,7 +16,7 @@ export PREFLIGHT_LUAU_LSP PREFLIGHT_STYLUA_PATH PREFLIGHT_VSCODE_GLOBAL_STORAGE
 run_preflight() {
 	local output
 	local status
-	output="$(CI_EVENT=workflow_dispatch; export CI_EVENT; source repo/ci/dependencies/lune/bootstrap.sh run repo/ci/entry.luau --preflight-only 2>&1)"
+	output="$(CI_EVENT=workflow_dispatch; export CI_EVENT; source dependencies/lune/bootstrap.sh run repo/ci/entry.luau --preflight-only 2>&1)"
 	status=$?
 
 	if ((status == 0)); then
@@ -34,7 +34,7 @@ run_preflight() {
 	fi
 
 	local runtime_version
-	runtime_version="$(bash repo/ci/dependencies/lune/bootstrap.sh --version 2>/dev/null | head -n 1)"
+	runtime_version="$(bash dependencies/lune/bootstrap.sh --version 2>/dev/null | head -n 1)"
 	local syntax_location
 	syntax_location="$(printf '%s\n' "$output" | sed -nE 's#^syntax error: .*\\template\\([^:]+):([0-9]+):.*#\1 \2#p' | head -n 1)"
 	if [[ -n $syntax_location ]]; then
@@ -66,7 +66,7 @@ snapshot() {
 
 previous=""
 while true; do
-	runtime_path="$(bash repo/ci/dependencies/lune/bootstrap.sh --print-path 2>/dev/null || true)"
+	runtime_path="$(bash dependencies/lune/bootstrap.sh --print-path 2>/dev/null || true)"
 	current="$(snapshot):$runtime_path"
 	if [[ $current != "$previous" ]]; then
 		printf '%s\n' '::preflight-start::'
