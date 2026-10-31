@@ -82,11 +82,16 @@ repository secret using the personal-account secret steps above.
 
 </details>
 
-For personal Projects, GitHub does not currently support fine-grained PATs.
-An existing GitHub App user access token may also be supplied in the Projects
-token secret if it has the required access. This pipeline does not create or
-refresh user access tokens; an App ID and private key alone do not authorize a
-user-owned Project.
+Fine-grained PATs can grant access to the selected repositories and their
+repository permissions. GitHub's documentation currently lists access to
+user-owned Projects as a limitation of fine-grained PATs; that limitation is
+specific to the Project, not the repository. See
+[GitHub's token limitations](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#fine-grained-personal-access-tokens-limitations).
+
+The Projects token secret also accepts an existing GitHub App user access token,
+but this template has not verified that path against a user-owned Project. It
+does not create or refresh user access tokens; an App ID and private key alone
+do not authorize a user-owned Project.
 
 Credential names come from `repo/config/github.toml`. Store actual tokens and
 private keys in GitHub Secrets, never in TOML or scripts. The built-in
