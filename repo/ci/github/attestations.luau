@@ -140,7 +140,13 @@ function Attestations.Options(): ()
 		error("Invalid attestation workflow reference", 0)
 	end
 	local workflowParameters = { ref = workflowRef, repository = `{server}/{repository}`, path = workflowPath }
-	local githubParameters = { event = Process.env.CI_EVENT, workflowSha = Process.env.GITHUB_WORKFLOW_SHA }
+	local githubParameters = {
+		event_name = Process.env.GITHUB_EVENT_NAME or Process.env.CI_EVENT,
+		repository_id = Process.env.GITHUB_REPOSITORY_ID,
+		repository_owner_id = Process.env.GITHUB_REPOSITORY_OWNER_ID,
+		runner_environment = Process.env.RUNNER_ENVIRONMENT,
+		workflowSha = Process.env.GITHUB_WORKFLOW_SHA,
+	}
 	local dependency = { uri = sourceUri, digest = { gitCommit = sha } }
 	local buildDefinition = {
 		buildType = "https://actions.github.io/buildtypes/workflow/v1",
