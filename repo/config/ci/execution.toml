@@ -1,13 +1,12 @@
-# A component outcome stays "skipped". This selects how GitHub reports that
-# skip. Exact Check Run conclusion names: success, failure, skipped, neutral,
-# cancelled, timed_out, action_required, stale.
-# Runtime skips support success/failure natively. neutral creates a separate
-# GitHub App Check Run (checks:write); it does not change the Actions job result.
-# skipped is only available before a job starts; the other listed conclusions
-# are GitHub lifecycle or App-check results, not runtime skip policies.
+# A component skips when it has no work to perform.
+# This policy selects the result reported for that skipped component.
+# The default applies to every component without an override.
+# A component-specific entry overrides the default.
+# success: accept the skip and continue successfully.
+# neutral: report the skip as neutral.
+# failure: fail CI because the component skipped.
 [skip]
-default = "success"
+default = "neutral"
 
-# Optional component-specific policy; identities come from component folders.
 [skip.components]
 # publish-packages = "neutral"
