@@ -2,8 +2,11 @@
 
 Repository support lives under `repo/`; see `repo/README.md` for ownership rules.
 Keep feature-specific settings beside their content or CI implementation.
-Shared settings live in `repo/config/`. Preflight provider implementations and
-their configuration are discovered together under `repo/ci/preflight/providers/`.
+Editable CI policies, provider settings, dependency pins, and authorization
+requirements live under `repo/config/ci/`. Preflight implementations are discovered
+under `repo/ci/preflight/providers/` and load matching settings by identity from
+`repo/config/ci/preflight/`. Component manifests and native adapters remain beside
+implementation as executable contracts; they are not a second settings store.
 
 ## One workflow, one entry point
 
@@ -23,8 +26,9 @@ inventory. Without usable credentials the existing local scheduler runs the plan
 Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
 
-CI setup belongs in `repo/ci/dependencies/`. Lune's pin, checksums, and bootstrap script
-are colocated under `repo/ci/dependencies/lune/`. GitHub Packages declarations are kept separately in
+CI installation code belongs in `repo/ci/dependencies/`. Lune's pin and checksums
+live in `repo/config/ci/dependencies/lune.toml`; its bootstrap script stays under
+`repo/ci/dependencies/lune/`. GitHub Packages declarations are kept separately in
 `repo/content/packages/packages.toml`. Keep CI tooling/configuration out of application
 `source/` so source globs do not distribute the pipeline itself.
 
@@ -182,6 +186,11 @@ that outcome. Skipped publication must not be labeled passed. Consumers of a
 skipped producer are blocked rather than reading nonexistent artifacts.
 Publication follows enabled manifests and configured records automatically;
 unset GitHub override variables are not an additional opt-in gate.
+
+`repo/config/ci/execution.toml` owns the default and per-component skip policy.
+Both the Luau scheduler and generated native jobs enforce it. A rejected runtime
+skip fails the job/run while retaining the skipped outcome in summaries. An
+allowed runtime skip exits successfully; do not label it native neutral.
 
 Release downloads are owned by `release.assets` globs in releases.toml, not
 GitHub Packages records. Release staging depends on compilation and carries

@@ -58,7 +58,7 @@ function ProviderDiscovery.Discover(self: ProviderDiscovery): ({ Contracts.Provi
 
 	for _, directory in Glob.Find("repo/ci/preflight/providers/*") do
 		local identity = directory:match("([^/]+)$")
-		local configPath = `{directory}/config.toml`
+		local configPath = `repo/config/ci/preflight/{identity}.toml`
 		local entryPath = `{directory}/init.luau`
 		local function report(message: string)
 			appendDiagnostic(diagnostics, configPath, message)
@@ -73,7 +73,7 @@ function ProviderDiscovery.Discover(self: ProviderDiscovery): ({ Contracts.Provi
 			continue
 		end
 		if not Fs.isFile(configPath) then
-			report("provider package requires config.toml")
+			report("provider requires its settings under repo/config/ci/preflight/")
 			continue
 		end
 		if not Fs.isFile(entryPath) then
@@ -121,6 +121,12 @@ function ProviderDiscovery.Discover(self: ProviderDiscovery): ({ Contracts.Provi
 				enabled = enabled,
 				options = raw,
 			})
+		end
+	end
+	for _, configPath in Glob.Find("repo/config/ci/preflight/*.toml") do
+		local identity = configPath:match("([^/]+)%.toml$")
+		if not identity or not Fs.isFile(`repo/ci/preflight/providers/{identity}/init.luau`) then
+			appendDiagnostic(diagnostics, configPath, "provider settings have no matching implementation")
 		end
 	end
 

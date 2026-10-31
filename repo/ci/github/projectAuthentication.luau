@@ -12,8 +12,7 @@ local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string? }
 
 local function requirements(): ({ [string]: string }, { string })
-	local root =
-		Publication.Record(Serde.decode("toml", Fs.readFile("repo/ci/components/sync-projects/authorization.toml")))
+	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/config/ci/authorization/projects.toml")))
 	local app = Publication.Record(Publication.Record(root.app).organization)
 	local permissions: { [string]: string } = {}
 	for name, value in app do
@@ -52,7 +51,7 @@ local function combinedScopes(configuration: Configuration.Configuration, projec
 	then
 		return combined
 	end
-	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/ci/github/bootstrap-authorization.toml")))
+	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/config/ci/authorization/bootstrap.toml")))
 	local scopes = Publication.Record(root.classic).scopes
 	if type(scopes) ~= "table" or #scopes == 0 then
 		error("Bootstrap classic token scopes must be a nonempty array", 0)

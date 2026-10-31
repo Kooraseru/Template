@@ -11,6 +11,7 @@ local Reporter = require("@ci/bootstrap/reporter")
 local Workflow = require("./workflow")
 local Publication = require("./publication")
 local Credentials = require("./credentials")
+local SkipPolicy = require("@ci/bootstrap/skipPolicy")
 
 const ARTIFACT_ROOT = "build/github/artifacts"
 
@@ -96,6 +97,7 @@ function TaskRunner.Run(
 	if not selected then
 		error(`component {identity} is not in the validated execution plan`, 0)
 	end
+	local rejectSkip = SkipPolicy.Reject(identity)
 	for _, dependency in selected.needs do
 		local provider = indexed[dependency]
 		if not provider then
@@ -118,6 +120,9 @@ function TaskRunner.Run(
 		Publication.Output("outcome", "skipped")
 		Publication.Output("skipped", "true")
 		print(`::notice::Skipped {identity}`)
+		if rejectSkip then
+			error(`component {identity} skipped; rejected by repo/config/ci/execution.toml`, 0)
+		end
 		return
 	end
 	if outcome == "failed" then
@@ -158,10 +163,10 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 		local job: { [string]: unknown } = if type(value) == "table" then Publication.Record(value) else {}
 		local outputs = job.outputs
 		local skipped = type(outputs) == "table" and Publication.Record(outputs).outcome == "skipped"
-		outcomes[task.identity] = if result == "success" and skipped
+		outcomes[task.identity] = if skipped
 			then "skipped"
 			else if result == "success" then "passed" else if result == "skipped" then "blocked" else result
-		if result ~= "success" then
+		if result ~= "success" or (skipped and SkipPolicy.Reject(task.identity)) then
 			passed = false
 		end
 	end

@@ -7,6 +7,7 @@ local DateTime = require("@lune/datetime")
 local Glob = require("./glob")
 local Contract = require("./contract")
 local Outcome = require("./outcome")
+local SkipPolicy = require("./skipPolicy")
 local Credentials = require("@ci/github/credentials")
 
 local Executor = {}
@@ -83,6 +84,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 	local outcomes: Outcomes = {}
 	local passed = true
 	for _, task in tasks do
+		local rejectSkip = SkipPolicy.Reject(task.identity)
 		local blockedBy: { string } = {}
 		for _, dependency in task.needs do
 			if outcomes[dependency] ~= "passed" then
@@ -108,8 +110,11 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		print("::endgroup::")
 
 		outcomes[task.identity] = outcome
-		if outcome == "failed" or outcome == "blocked" then
+		if outcome == "failed" or outcome == "blocked" or (outcome == "skipped" and rejectSkip) then
 			passed = false
+			if outcome == "skipped" then
+				print(`::error::{task.identity}: runtime skip rejected by repo/config/ci/execution.toml`)
+			end
 		end
 	end
 	return { outcomes = outcomes, passed = passed }

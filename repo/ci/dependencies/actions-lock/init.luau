@@ -9,7 +9,7 @@ local Publication = require("@ci/github/publication")
 local ActionsLock = {}
 
 function ActionsLock.Lock(directory: string, workflow: string): ()
-	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/ci/dependencies/actions-lock/config.toml")))
+	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/config/ci/dependencies/actions-lock.toml")))
 	local tool = Publication.Record(root.tool)
 	local repository = Publication.Text(tool.repository)
 	local version = Publication.Text(tool.version)

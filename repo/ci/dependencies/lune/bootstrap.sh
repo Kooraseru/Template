@@ -4,7 +4,7 @@ set -euo pipefail
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$script_directory/../../../.." && pwd)"
-configuration="$script_directory/config.toml"
+configuration="$root/repo/config/ci/dependencies/lune.toml"
 
 read_setting() {
 	local section=$1
@@ -22,7 +22,7 @@ read_setting() {
 
 version="$(read_setting lune version)"
 if [[ -z $version ]]; then
-	printf '%s\n' "repo/ci/dependencies/lune/bootstrap.sh:1:1:2: error: repo/ci/dependencies/lune/config.toml does not define lune.version" >&2
+	printf '%s\n' "repo/config/ci/dependencies/lune.toml:1:1:2: error: missing lune.version" >&2
 	exit 2
 fi
 
@@ -59,7 +59,7 @@ esac
 platform="$platform_os-$platform_arch"
 checksum="$(read_setting lune.checksums "$platform")"
 if [[ -z $checksum ]]; then
-	printf 'repo/ci/dependencies/lune/bootstrap.sh:1:1:2: error: repo/ci/dependencies/lune/config.toml has no checksum for %s\n' "$platform" >&2
+	printf 'repo/config/ci/dependencies/lune.toml:1:1:2: error: no checksum for %s\n' "$platform" >&2
 	exit 2
 fi
 

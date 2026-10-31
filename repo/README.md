@@ -10,6 +10,11 @@ repo/
     github.toml           repository paths, aliases, credential names, branch policy
     luau/                 shared editor/analyzer/formatter settings
     docker/               local Actions/Docker runner settings
+    ci/                   editable CI policies, provider settings, and tool pins
+      execution.toml      default and per-component runtime skip policy
+      preflight/          settings matched to discovered analyzer identities
+      dependencies/       CI runtime/tool versions and checksums
+      authorization/      requested App permissions and classic PAT scopes
   content/
     root/                 README, CONTRIBUTING, SECURITY, and other root files
     docs/                 authored GitHub Pages content
@@ -23,23 +28,24 @@ repo/
     entry.luau            executable CI entrypoint
     bootstrap/            component discovery, dependency planning, and scheduling
     components/           discovered build/content-generation components
-    dependencies/         CI dependency setup and bootstrap-runtime metadata
+    dependencies/         CI dependency installation code
     preflight/            plan analysis and diagnostics
-      providers/          discovered validators and their own configuration
+      providers/          discovered validator implementations
     github/               optional native Actions job visualization
 ```
 
 ## Where configuration belongs
 
-Keep configuration with the feature that owns it. `repo/config/` holds settings
-shared across repository features; it is not a collection of every TOML file.
+Editable CI settings belong in `repo/config/ci/`; implementation belongs in
+`repo/ci/`. Component manifests and native job adapters describe code structure
+and remain with that code. Content records stay with their owning content.
 
 - `repo/content/i18n/config.toml` defines supported locales and their names.
 - `repo/content/releases/releases.toml` defines release records and commit/tag data.
 - `repo/content/packages/packages.toml` owns shared GitHub Packages policy; `packages/records/*/` owns each package and its Markdown description.
 - `repo/ci/components/*/component.toml` declares a component's execution contract.
-- `repo/ci/preflight/providers/*/config.toml` configures an analyzer beside its code.
-- `repo/ci/dependencies/lune/config.toml` pins and verifies the runtime needed to
+- `repo/config/ci/preflight/*.toml` configures each discovered analyzer.
+- `repo/config/ci/dependencies/lune.toml` pins and verifies the runtime needed to
   start Luau. It does not declare application dependencies.
 
 For example, the i18n validator's configuration enables validation; the content

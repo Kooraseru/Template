@@ -3,6 +3,7 @@
 
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
+local SkipPolicy = require("./skipPolicy")
 
 local Reporter = {}
 Reporter.__index = Reporter
@@ -28,7 +29,11 @@ function Reporter.Report(self: Reporter, outcomes: { [string]: string }, selecte
 	table.sort(identities)
 	local rows: { string } = {}
 	for _, identity in identities do
-		table.insert(rows, `| {identity} | {outcomes[identity]} |`)
+		local outcome = outcomes[identity]
+		if outcome == "skipped" then
+			outcome = if SkipPolicy.Reject(identity) then "skipped (policy: fail)" else "skipped (policy: allow)"
+		end
+		table.insert(rows, `| {identity} | {outcome} |`)
 	end
 	if #identities == 0 then
 		table.insert(rows, "| — | No components were discovered |")
