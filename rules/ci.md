@@ -187,10 +187,19 @@ skipped producer are blocked rather than reading nonexistent artifacts.
 Publication follows enabled manifests and configured records automatically;
 unset GitHub override variables are not an additional opt-in gate.
 
-`repo/config/ci/execution.toml` owns the default and per-component skip policy.
-Both the Luau scheduler and generated native jobs enforce it. A rejected runtime
-skip fails the job/run while retaining the skipped outcome in summaries. An
-allowed runtime skip exits successfully; do not label it native neutral.
+`repo/config/ci/execution.toml` owns the default and per-component result policy
+for a runtime component skip. A skipped component remains internally `skipped`;
+the policy chooses the enclosing result using GitHub's exact `success` or
+`failure` names. A `success` policy ends the native job successfully while the
+summary still records `skipped`; a `failure` policy fails that job/run. The
+fallback scheduler uses the same policy and continues independent components.
+
+Do not accept other Check Run conclusions as runtime-skip choices for the
+current native Actions backend. `cancelled`, `timed_out`, and pre-start `skipped`
+are lifecycle results produced by GitHub; `neutral` and `action_required` need a
+GitHub App Check Run; GitHub alone assigns `stale`. Job timeouts and approval
+gates are separate native settings: timeouts produce GitHub's timeout result,
+and protected environments wait for approval before a job starts.
 
 Release downloads are owned by `release.assets` globs in releases.toml, not
 GitHub Packages records. Release staging depends on compilation and carries

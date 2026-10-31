@@ -31,7 +31,7 @@ function Reporter.Report(self: Reporter, outcomes: { [string]: string }, selecte
 	for _, identity in identities do
 		local outcome = outcomes[identity]
 		if outcome == "skipped" then
-			outcome = if SkipPolicy.Reject(identity) then "skipped (policy: fail)" else "skipped (policy: allow)"
+			outcome = `skipped (configured job conclusion: {SkipPolicy.Conclusion(identity)})`
 		end
 		table.insert(rows, `| {identity} | {outcome} |`)
 	end

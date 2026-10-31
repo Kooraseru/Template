@@ -97,7 +97,7 @@ function TaskRunner.Run(
 	if not selected then
 		error(`component {identity} is not in the validated execution plan`, 0)
 	end
-	local rejectSkip = SkipPolicy.Reject(identity)
+	local skipConclusion = SkipPolicy.Conclusion(identity)
 	for _, dependency in selected.needs do
 		local provider = indexed[dependency]
 		if not provider then
@@ -120,8 +120,8 @@ function TaskRunner.Run(
 		Publication.Output("outcome", "skipped")
 		Publication.Output("skipped", "true")
 		print(`::notice::Skipped {identity}`)
-		if rejectSkip then
-			error(`component {identity} skipped; rejected by repo/config/ci/execution.toml`, 0)
+		if skipConclusion == "failure" then
+			error(`component outcome is skipped; configured native job conclusion is failure`, 0)
 		end
 		return
 	end
@@ -166,7 +166,7 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 		outcomes[task.identity] = if skipped
 			then "skipped"
 			else if result == "success" then "passed" else if result == "skipped" then "blocked" else result
-		if result ~= "success" or (skipped and SkipPolicy.Reject(task.identity)) then
+		if result ~= "success" or (skipped and SkipPolicy.Conclusion(task.identity) == "failure") then
 			passed = false
 		end
 	end

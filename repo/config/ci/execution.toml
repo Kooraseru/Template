@@ -1,8 +1,9 @@
-# A runtime skip cannot become a neutral native GitHub Actions job.
-# fail: reject runtime skips; allow: accept them (the native job stays green).
+# A component can return the internal outcome "skipped" after its job starts.
+# This chooses the resulting native job conclusion; it does not change the
+# component outcome. Native Actions cannot return neutral for a running job.
 [skip]
-default = "allow"
+default = "success"
 
 # Optional component-specific policy; identities come from component folders.
 [skip.components]
-# publish-packages = "allow"
+# publish-packages = "success"

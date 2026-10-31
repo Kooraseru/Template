@@ -20,7 +20,7 @@ local function record(value: unknown): { [string]: unknown }
 	return result
 end
 
-function SkipPolicy.Reject(identity: string): boolean
+function SkipPolicy.Conclusion(identity: string): string
 	local decoded = record(Serde.decode("toml", Fs.readFile("repo/config/ci/execution.toml")))
 	for field in decoded do
 		if field ~= "skip" then
@@ -33,19 +33,23 @@ function SkipPolicy.Reject(identity: string): boolean
 			error(`Unknown CI skip setting {tostring(field)}`, 0)
 		end
 	end
-	if settings.default ~= "allow" and settings.default ~= "fail" then
-		error("skip.default must be allow or fail", 0)
+	if settings.default ~= "success" and settings.default ~= "failure" then
+		error("skip.default must be success or failure for the native Actions backend", 0)
 	end
 	local overrides = record(settings.components)
 	for name, value in overrides do
 		if type(name) ~= "string" or not name:match("^[a-z][a-z0-9_-]*$") then
 			error("Invalid skip component identity", 0)
 		end
-		if value ~= "allow" and value ~= "fail" then
-			error(`skip.components.{name} must be allow or fail`, 0)
+		if value ~= "success" and value ~= "failure" then
+			error(`skip.components.{name} must be success or failure for the native Actions backend`, 0)
 		end
 	end
-	return (overrides[identity] or settings.default) == "fail"
+	local conclusion = overrides[identity]
+	if type(conclusion) ~= "string" then
+		conclusion = settings.default
+	end
+	return conclusion :: string
 end
 
 return SkipPolicy

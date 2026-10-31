@@ -84,7 +84,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 	local outcomes: Outcomes = {}
 	local passed = true
 	for _, task in tasks do
-		local rejectSkip = SkipPolicy.Reject(task.identity)
+		local skipConclusion = SkipPolicy.Conclusion(task.identity)
 		local blockedBy: { string } = {}
 		for _, dependency in task.needs do
 			if outcomes[dependency] ~= "passed" then
@@ -110,10 +110,10 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		print("::endgroup::")
 
 		outcomes[task.identity] = outcome
-		if outcome == "failed" or outcome == "blocked" or (outcome == "skipped" and rejectSkip) then
+		if outcome == "failed" or outcome == "blocked" or (outcome == "skipped" and skipConclusion == "failure") then
 			passed = false
 			if outcome == "skipped" then
-				print(`::error::{task.identity}: runtime skip rejected by repo/config/ci/execution.toml`)
+				print(`::error::{task.identity}: component outcome is skipped; configured job conclusion is failure`)
 			end
 		end
 	end
