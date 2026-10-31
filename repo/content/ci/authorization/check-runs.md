@@ -1,39 +1,47 @@
-## Check Run authorization: {{status}}
+## Neutral reporting unavailable
 
-The component **{{component}}** skipped, but its configured `neutral` reporting
-could not create the separate Check Run. This failure concerns Check Run
-reporting; it does not establish a Projects synchronization failure.
+**The classic PAT method does not support creating Check Runs.** Adding PAT
+scopes will not enable this operation.
 
-This reporting backend uses the App ID named `{{app_id}}` and private-key secret
-named `{{app_private_key}}` from `repo/config/github.toml`.
+Component: **{{component}}** · Result: **{{status}}**
 
-**Required App repository permissions:**
+<details open>
+<summary>Enable neutral reporting — install a GitHub App</summary>
+
+Works with personal repositories and organization repositories.
+
+{{app_setup}}
+
+</details>
+
+<details>
+<summary>Keep the classic PAT — choose a different skip result</summary>
+
+1. [Open execution settings]({{execution_config_url}}) → click the pencil.
+2. Under `[skip]`, replace the `default` line with:
+
+   ```toml
+   default = "success"
+   ```
+
+   Use `failure` instead if skipped work should fail CI.
+3. Commit the change to the default branch. The new run uses the new policy;
+   rerunning an old commit keeps its old policy.
+
+</details>
+
+<details>
+<summary>Technical details and required permissions</summary>
+
+**Required Check Run repository permissions:**
 
 {{app_permissions}}
 
-<details>
-<summary>GitHub CLI (Bash)</summary>
+The App setup link also includes bootstrap permissions when bootstrap is enabled.
+No neutral Check Run was created; the component remains skipped and its reporting
+job fails. The existing PAT is not missing merely because this App backend is
+unavailable.
 
-Configure the App's permissions and approve the installation update on GitHub.
-If its credentials changed, update the configured names:
-
-```bash
-gh variable set {{app_id}} --repo {{repository}} --body YOUR_APP_ID
-gh secret set {{app_private_key}} --repo {{repository}} < PATH_TO_PRIVATE_KEY.pem
-```
+[GitHub Check Run requirements](https://docs.github.com/en/rest/checks/runs#create-a-check-run).
 
 </details>
-
-<details>
-<summary>GitHub website</summary>
-
-Open the App's **Permissions & events** settings, grant the permissions above,
-and approve any requested installation update for `{{repository}}`.
-Under the repository's **Settings → Secrets and variables → Actions**, configure
-the App ID variable and private-key secret using the names above.
-
-</details>
-
-No neutral Check Run was created. Component execution remains skipped; the
-configured reporting policy still determines the job's failure. Existing PAT
-credentials are not used by this App-backed reporting implementation.

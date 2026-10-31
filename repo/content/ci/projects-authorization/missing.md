@@ -1,5 +1,4 @@
-## Projects authorization: credential missing
+## Projects: credential needed
 
-Projects synchronization for **{{owner}}** was skipped because no usable
-Projects credential was supplied. Configure the secret `{{projects_token}}`
-or the App credentials named below.
+Configure `{{projects_token}}` to manage Projects owned by **{{owner}}**.
+Choose a method below.

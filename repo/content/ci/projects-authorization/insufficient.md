@@ -1,9 +1,13 @@
-## Projects authorization: update credential access
+## Projects: update credential access
 
-A credential was supplied for **{{owner}}**, but its permissions or resource
-access could not authorize Projects synchronization. Update the token stored as
-`{{projects_token}}`, or update the configured App's permissions and installation.
+The supplied credential could not authorize Projects synchronization for
+**{{owner}}**. Update `{{projects_token}}` or the configured App below.
+
+<details>
+<summary>Show the permission check result</summary>
 
 {{permission_evidence}}
 
-Projects synchronization was skipped. Earlier partial operations may remain.
+Synchronization was skipped; earlier partial changes may remain.
+
+</details>

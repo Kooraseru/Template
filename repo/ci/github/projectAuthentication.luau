@@ -8,6 +8,7 @@ local Configuration = require("./configuration")
 local Authentication = require("./authentication")
 local Publication = require("./publication")
 local TokenPermissions = require("./tokenPermissions")
+local SetupInstructions = require("./setupInstructions")
 
 local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string? }
@@ -53,25 +54,19 @@ function ProjectAuthentication.Warn(
 	for _, scope in scopes do
 		table.insert(classicScopes, `- \`{scope}\``)
 	end
-	local repository = configuration:ResolveRepository(configuration.repository)
 	local tokenName = configuration.credentials.projects_token or "<github.credentials.projects_token>"
-	local description = Publication.Encode(`{tokenName} - CI for {repository}`)
-	local requestedScopes = Publication.Encode(table.concat(scopes, ","))
-	local tokenUrl = `https://github.com/settings/tokens/new?description={description}&scopes={requestedScopes}`
-	local values: { [string]: string } = {
-		owner = owner,
-		repository = repository,
-		classic_token_url = tokenUrl,
-		app_permissions = table.concat(appPermissions, "\n"),
-		classic_scopes = table.concat(classicScopes, "\n"),
-		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
-		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
-		projects_token = tokenName,
-		permission_evidence = TokenPermissions.Evidence(
-			inspection,
-			reason == "insufficient" and (not inspection or inspection.state == "verified")
-		),
-	}
+	local values = SetupInstructions.Values(configuration, tokenName, scopes, {}, permissions, owner)
+	values.app_permissions = table.concat(appPermissions, "\n")
+	values.classic_scopes = table.concat(classicScopes, "\n")
+	values.projects_token = tokenName
+	values.permission_evidence = TokenPermissions.Evidence(
+		inspection,
+		reason == "insufficient" and (not inspection or inspection.state == "verified")
+	)
+	SetupInstructions.Guides(values, true)
+	values.organization_setup = if values.owner_type == "User"
+		then ""
+		else SetupInstructions.Render("repo/content/ci/projects-authorization/organization-setup.md", values)
 	local outcome = reason or "missing"
 	print(
 		`::warning::Projects authorization for {owner}: {outcome}. Configure/update {tokenName} or the configured App; see the job summary.`

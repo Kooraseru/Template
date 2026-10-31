@@ -5,3 +5,7 @@ scopes = ["repo", "workflow"]
 
 [credential]
 role = "bootstrap_token"
+
+[app.repository]
+contents = "write"
+workflows = "write"

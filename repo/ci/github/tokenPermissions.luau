@@ -8,6 +8,7 @@ local Serde = require("@lune/serde")
 local Glob = require("@ci/bootstrap/glob")
 local Configuration = require("./configuration")
 local Publication = require("./publication")
+local SetupInstructions = require("./setupInstructions")
 
 local TokenPermissions = {}
 export type Inspection = {
@@ -171,15 +172,9 @@ function TokenPermissions.Warn(
 	rejected: boolean?
 ): ()
 	local name = configuration.credentials[role] or role
-	local repository = configuration:ResolveRepository(configuration.repository)
-	local values = {
-		credential = name,
-		repository = repository,
-		permission_evidence = TokenPermissions.Evidence(inspection, rejected),
-		token_url = "https://github.com/settings/tokens/new?description=" .. Publication.Encode(
-			name .. " - CI for " .. repository
-		) .. "&scopes=" .. Publication.Encode(table.concat(inspection.required, ",")),
-	}
+	local values = SetupInstructions.Values(configuration, name, inspection.required)
+	values.permission_evidence = TokenPermissions.Evidence(inspection, rejected)
+	SetupInstructions.Guides(values)
 	local outcome = if rejected then "operation rejected" else inspection.state
 	print(
 		`::warning::Credential {name}: {outcome}; scope audit: {inspection.state}. Verify permissions and resource access; see the job summary.`

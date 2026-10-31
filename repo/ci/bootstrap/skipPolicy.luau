@@ -9,6 +9,7 @@ local Authentication = require("@ci/github/authentication")
 local Configuration = require("@ci/github/configuration")
 local Credentials = require("@ci/github/credentials")
 local Contract = require("./contract")
+local SetupInstructions = require("@ci/github/setupInstructions")
 
 local SkipPolicy = {}
 
@@ -94,14 +95,16 @@ local function warnAuthorization(identity: string, status: string): ()
 		table.insert(permissions, `- {name}: {access}`)
 	end
 	table.sort(permissions)
-	local values = {
-		component = identity,
-		status = status,
-		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
-		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
-		repository = configuration:ResolveRepository(configuration.repository),
-		app_permissions = table.concat(permissions, "\n"),
-	}
+	local values = SetupInstructions.Values(
+		configuration,
+		configuration.credentials.bootstrap_token or "CI_TOKEN",
+		{},
+		neutralCheckPermissions()
+	)
+	values.component = identity
+	values.status = status
+	values.app_permissions = table.concat(permissions, "\n")
+	SetupInstructions.Guides(values)
 	print(
 		`::warning::Neutral Check Run authorization for {identity}: {status}. Verify App {values.app_id}/{values.app_private_key} and its declared permissions; see the job summary.`
 	)
@@ -116,16 +119,19 @@ end
 
 function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Credentials?): ()
 	if not credentials then
-		warnAuthorization(identity, "credentials missing")
-		error("Neutral Check Run reporting requires resolved GitHub App credentials", 0)
+		warnAuthorization(identity, "supported reporting credential unavailable")
+		error(
+			"Current credential method cannot report neutral: this backend requires GitHub App credentials; a classic PAT does not support Check Run creation",
+			0
+		)
 	end
 	local configuration = Configuration.new()
 	local appId = credentials:Get(configuration, "app_id")
 	local privateKey = credentials:Get(configuration, "app_private_key", true)
 	if not appId or not privateKey then
-		warnAuthorization(identity, "credentials missing")
+		warnAuthorization(identity, "supported reporting credential unavailable")
 		error(
-			`skip conclusion neutral for {identity} requires the configured GitHub App ID/key with Checks: write permission`,
+			`Current credential method cannot report neutral for {identity}: a classic PAT cannot create Check Runs; configure an App installed on the owning personal account or organization with Checks: write`,
 			0
 		)
 	end

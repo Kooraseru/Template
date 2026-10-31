@@ -1,100 +1,27 @@
-The configured credential roles declare these permissions for this secret:
+<details open>
+<summary>Use a classic PAT — personal account or organization</summary>
 
-**Classic PAT scopes:**
+{{token_setup}}
+
+</details>
+
+{{organization_setup}}
+
+<details>
+<summary>Required permissions and credential rules</summary>
+
+**Classic PAT scopes** (combined for roles sharing this secret):
 
 {{classic_scopes}}
 
-**GitHub App organization permissions** (API names and access levels):
+**App organization permissions:**
 
 {{app_permissions}}
 
-When bootstrap is enabled and uses the same secret, the list also includes its
-repository and workflow scopes. The `repo` scope grants broad access to private
-repositories the token's user can access. For public-only repositories,
-`public_repo` may be sufficient instead; review your repository's needs.
+Personal-account Projects use the PAT path above. This template's installed-App
+Projects path supports organization ownership. The built-in GITHUB_TOKEN cannot
+manage account-owned Projects.
 
-<details>
-<summary>GitHub CLI (Bash)</summary>
-
-### Personal account
-
-1. Create a [classic personal access token]({{classic_token_url}})
-   on GitHub for a user who can manage the project. Grant the declared classic
-   PAT scopes above and any repository access needed for linking.
-2. Sign in with `gh auth login`, then run this and paste the token at the prompt:
-
-   ```bash
-   gh secret set {{projects_token}} --repo {{repository}}
-   ```
-
-GitHub's website is required to create the classic PAT. `gh auth refresh`
-changes the CLI's own authorization; it does not set the Actions secret.
-
-### Organization
-
-1. On GitHub, [create or configure an App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)
-   with the declared organization permissions above, install it on the organization,
-   and grant it access to the repository where needed. Record its App ID and
-   [generate a private key](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps).
-2. Replace `YOUR_APP_ID` and `PATH_TO_PRIVATE_KEY.pem` with the App ID and
-   downloaded key file, then run:
-
-   ```bash
-   gh variable set {{app_id}} --repo {{repository}} --body YOUR_APP_ID
-   gh secret set {{app_private_key}} --repo {{repository}} < PATH_TO_PRIVATE_KEY.pem
-   ```
-
-Alternatively, set a Projects-capable token as `{{projects_token}}` with the
-`gh secret set` command above. App registration and installation use GitHub's
-website.
+Token and key values belong in Actions secrets. Configuration stores their names.
 
 </details>
-
-<details>
-<summary>GitHub website</summary>
-
-### Personal account
-
-1. Create a [classic personal access token]({{classic_token_url}})
-   for a user who can manage the project. Grant the declared classic PAT scopes and any
-   repository access needed for linking.
-2. Open `{{repository}}` → **Settings → Secrets and variables → Actions → New
-   repository secret**. Name it `{{projects_token}}`, paste the token, and save.
-
-### Organization
-
-1. [Create or configure an App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)
-   with the declared organization permissions above, install it on the organization,
-   and grant it access to the repository where needed. Record its App ID and
-   [generate a private key](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps).
-2. Open `{{repository}}` → **Settings → Secrets and variables → Actions**.
-   Under **Variables**, add `{{app_id}}` with the App ID. Under **Secrets**,
-   add `{{app_private_key}}` with the complete private key.
-
-Alternatively, add a Projects-capable token as the `{{projects_token}}`
-repository secret using the personal-account secret steps above.
-
-</details>
-
-Fine-grained PATs can grant access to the selected repositories and their
-repository permissions. GitHub's documentation currently lists access to
-user-owned Projects as a limitation of fine-grained PATs; that limitation is
-specific to the Project, not the repository. See
-[GitHub's token limitations](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#fine-grained-personal-access-tokens-limitations).
-
-The Projects token secret also accepts an existing GitHub App user access token,
-but this template has not verified that path against a user-owned Project. It
-does not create or refresh user access tokens; an App ID and private key alone
-do not authorize a user-owned Project.
-
-Credential names come from `repo/config/github.toml`. Store actual tokens and
-private keys in GitHub Secrets, never in TOML or scripts. The built-in
-`GITHUB_TOKEN` cannot access account-owned Projects.
-
-The classic token link pre-fills its note and declared scopes; review
-them and any additional repository access before creating the token. The note
-identifies its intended secret name; creating the token does not create that secret.
-
-The current sync links each project to this repository; GitHub requires the
-same owner for that link. The next source push can apply the definitions once
-a usable credential is available. Earlier partial operations, if any, may remain.
