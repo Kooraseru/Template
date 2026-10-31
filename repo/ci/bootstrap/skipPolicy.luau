@@ -87,14 +87,43 @@ function SkipPolicy.Conclusion(identity: string): string
 	return conclusion :: string
 end
 
+local function warnAuthorization(identity: string, status: string): ()
+	local configuration = Configuration.new()
+	local permissions: { string } = {}
+	for name, access in neutralCheckPermissions() do
+		table.insert(permissions, `- {name}: {access}`)
+	end
+	table.sort(permissions)
+	local values = {
+		component = identity,
+		status = status,
+		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
+		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
+		repository = configuration:ResolveRepository(configuration.repository),
+		app_permissions = table.concat(permissions, "\n"),
+	}
+	print(
+		`::warning::Neutral Check Run authorization for {identity}: {status}. Verify App {values.app_id}/{values.app_private_key} and its declared permissions; see the job summary.`
+	)
+	local text = Fs.readFile("repo/content/ci/authorization/check-runs.md"):gsub("{{([%w_]+)}}", function(key)
+		return values[key] or error(`Unknown Check Run authorization template field {key}`, 0)
+	end)
+	local path = Process.env.GITHUB_STEP_SUMMARY
+	if path then
+		Fs.writeFile(path, (if Fs.isFile(path) then Fs.readFile(path) else "") .. "\n" .. text)
+	end
+end
+
 function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Credentials?): ()
 	if not credentials then
+		warnAuthorization(identity, "credentials missing")
 		error("Neutral Check Run reporting requires resolved GitHub App credentials", 0)
 	end
 	local configuration = Configuration.new()
 	local appId = credentials:Get(configuration, "app_id")
 	local privateKey = credentials:Get(configuration, "app_private_key", true)
 	if not appId or not privateKey then
+		warnAuthorization(identity, "credentials missing")
 		error(
 			`skip conclusion neutral for {identity} requires the configured GitHub App ID/key with Checks: write permission`,
 			0
@@ -105,7 +134,13 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 	if not sha or #sha ~= 40 or not sha:match("^%x+$") then
 		error("A neutral Check Run requires the source commit SHA", 0)
 	end
-	local access = Authentication.AppAccess(appId, privateKey, repository, neutralCheckPermissions())
+	local acquired, access = pcall(function(): Authentication.Access
+		return Authentication.AppAccess(appId, privateKey, repository, neutralCheckPermissions())
+	end)
+	if not acquired then
+		warnAuthorization(identity, "App authentication or installation access rejected")
+		error(`Could not authorize neutral Check Run reporting for {identity}`, 0)
+	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
 	local run = Process.env.GITHUB_RUN_ID or "local"
 	local response = Net.request({
@@ -132,6 +167,9 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 	})
 	Authentication.Release(access)
 	if not response.ok then
+		if response.statusCode == 401 or response.statusCode == 403 or response.statusCode == 404 then
+			warnAuthorization(identity, `Check Run access rejected (HTTP {response.statusCode})`)
+		end
 		error(
 			`Could not create neutral Check Run for {identity} (HTTP {response.statusCode}); verify App installation and Checks: write permission`,
 			0

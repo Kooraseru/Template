@@ -4,3 +4,6 @@ organization_projects = "write"
 
 [classic]
 scopes = ["project"]
+
+[credential]
+role = "projects_token"

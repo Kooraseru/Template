@@ -7,11 +7,12 @@ local Serde = require("@lune/serde")
 local Configuration = require("./configuration")
 local Authentication = require("./authentication")
 local Publication = require("./publication")
+local TokenPermissions = require("./tokenPermissions")
 
 local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string? }
 
-local function requirements(): ({ [string]: string }, { string })
+local function requirements(): { [string]: string }
 	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/config/ci/authorization/projects.toml")))
 	local app = Publication.Record(Publication.Record(root.app).organization)
 	local permissions: { [string]: string } = {}
@@ -24,59 +25,25 @@ local function requirements(): ({ [string]: string }, { string })
 	if next(permissions) == nil then
 		error("Projects App permissions must not be empty", 0)
 	end
-	local scopesValue = Publication.Record(root.classic).scopes
-	if type(scopesValue) ~= "table" or #scopesValue == 0 then
-		error("Projects classic token scopes must be a nonempty array", 0)
-	end
-	local scopes: { string } = {}
-	for _, scope in scopesValue do
-		if type(scope) ~= "string" or not scope:match("^[%w_:]+$") then
-			error("Invalid Projects classic token scope", 0)
-		end
-		table.insert(scopes, scope)
-	end
-	table.sort(scopes)
-	return permissions, scopes
+	return permissions
 end
 
-local function combinedScopes(configuration: Configuration.Configuration, projectScopes: { string }): { string }
-	local combined: { string } = table.clone(projectScopes)
-	local bootstrapName = configuration.credentials.bootstrap_token
-	local projectName = configuration.credentials.projects_token
-	if
-		not configuration.enabled
-		or not bootstrapName
-		or not projectName
-		or bootstrapName:upper() ~= projectName:upper()
-	then
-		return combined
-	end
-	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/config/ci/authorization/bootstrap.toml")))
-	local scopes = Publication.Record(root.classic).scopes
-	if type(scopes) ~= "table" or #scopes == 0 then
-		error("Bootstrap classic token scopes must be a nonempty array", 0)
-	end
-	local seen: { [string]: boolean } = {}
-	for _, scope in combined do
-		seen[scope] = true
-	end
-	for _, scope in scopes do
-		if type(scope) ~= "string" or not scope:match("^[%w_:]+$") then
-			error("Invalid bootstrap classic token scope", 0)
-		end
-		if not seen[scope] then
-			table.insert(combined, scope)
-			seen[scope] = true
-		end
-	end
-	table.sort(combined)
-	return combined
+local function combinedScopes(configuration: Configuration.Configuration): { string }
+	return TokenPermissions.Required(
+		configuration,
+		if configuration.enabled then { "projects_token", "bootstrap_token" } else { "projects_token" },
+		"projects_token"
+	)
 end
 
-function ProjectAuthentication.Warn(owner: string): ()
+function ProjectAuthentication.Warn(
+	owner: string,
+	reason: ("missing" | "insufficient")?,
+	inspection: TokenPermissions.Inspection?
+): ()
 	local configuration = Configuration.new()
-	local permissions, projectScopes = requirements()
-	local scopes = combinedScopes(configuration, projectScopes)
+	local permissions = requirements()
+	local scopes = combinedScopes(configuration)
 	local appPermissions: { string } = {}
 	for name, value in permissions do
 		table.insert(appPermissions, `- \`{name}\`: {value}`)
@@ -100,9 +67,19 @@ function ProjectAuthentication.Warn(owner: string): ()
 		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
 		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
 		projects_token = tokenName,
+		permission_evidence = TokenPermissions.Evidence(
+			inspection,
+			reason == "insufficient" and (not inspection or inspection.state == "verified")
+		),
 	}
-	local text = Fs.readFile("repo/content/ci/projects-authorization.md"):gsub("{{([%w_]+)}}", function(key)
-		return values[key] or key
+	local outcome = reason or "missing"
+	print(
+		`::warning::Projects authorization for {owner}: {outcome}. Configure/update {tokenName} or the configured App; see the job summary.`
+	)
+	local folder = "repo/content/ci/projects-authorization"
+	local template = Fs.readFile(`{folder}/{outcome}.md`) .. "\n\n" .. Fs.readFile(`{folder}/setup.md`)
+	local text = template:gsub("{{([%w_]+)}}", function(key)
+		return values[key] or error(`Unknown Projects authorization template field {key}`, 0)
 	end)
 	local path = Process.env.GITHUB_STEP_SUMMARY
 	if path then
@@ -149,13 +126,24 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 	end
 	local token = supplied.token
 	if token and token ~= "" and tokenName:upper() ~= "GITHUB_TOKEN" and token ~= Process.env.GH_TOKEN then
+		local inspection = TokenPermissions.Inspect(token, combinedScopes(configuration))
+		if inspection.state == "insufficient" or inspection.state == "invalid" then
+			ProjectAuthentication.Warn(owner, "insufficient", inspection)
+			return nil
+		end
+		if inspection.state == "unverified" then
+			print(
+				`::warning::Credential {tokenName}: GitHub did not expose a verifiable scope inventory. Projects API access is still checked during synchronization.`
+			)
+		end
 		print(`Using configured Projects credential secret {tokenName} for {owner}`)
-		return { token = token, temporary = false }
+		return { token = token, temporary = false, inspection = inspection }
 	end
 	print(
 		`::warning::Projects sync skipped for {owner}: configure secret {tokenName} with a Projects-capable user token, or for an organization configure App {idName}/{keyName}. See the run summary for personal and organization setup instructions. Store credential values in GitHub Secrets.`
 	)
-	ProjectAuthentication.Warn(owner)
+	local suppliedCredential = (supplied.appId and supplied.appId ~= "") or (token and token ~= "")
+	ProjectAuthentication.Warn(owner, if suppliedCredential then "insufficient" else "missing")
 	return nil
 end
 

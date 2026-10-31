@@ -11,6 +11,7 @@ local Configuration = require("./configuration")
 local Credentials = require("./credentials")
 local Workflow = require("./workflow")
 local ActionsLock = require("@workspace/dependencies/actions-lock")
+local TokenPermissions = require("./tokenPermissions")
 
 local BranchRun = {}
 
@@ -123,7 +124,13 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	then
 		error("GitHub bootstrap context has an invalid commit or run identity", 0)
 	end
-	local access = Authentication.Acquire(configuration, credentials, repository)
+	local roles = { "bootstrap_token" }
+	for _, task in tasks do
+		for _, role in task.credentials do
+			table.insert(roles, role)
+		end
+	end
+	local access = Authentication.Acquire(configuration, credentials, repository, roles)
 	if not access then
 		return false
 	end
@@ -131,6 +138,9 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	local ok = xpcall(launch, tostring, tasks, event, repository, branch, sha, access)
 	Authentication.Release(access)
 	if not ok then
+		if access.inspection then
+			TokenPermissions.Warn(configuration, "bootstrap_token", access.inspection, true)
+		end
 		print(
 			"::warning::Native job graph could not be launched. Verify the configured App/token and repository branch rules. Continuing with the Luau scheduler."
 		)

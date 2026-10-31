@@ -8,9 +8,10 @@ local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Configuration = require("./configuration")
 local Credentials = require("./credentials")
+local TokenPermissions = require("./tokenPermissions")
 
 local Authentication = {}
-export type Access = { token: string, temporary: boolean }
+export type Access = { token: string, temporary: boolean, inspection: TokenPermissions.Inspection? }
 
 local function mask(value: string): ()
 	if Process.env.GITHUB_ACTIONS ~= "true" then
@@ -106,7 +107,8 @@ Authentication.AppAccess = appAccess
 function Authentication.Acquire(
 	configuration: Configuration.Configuration,
 	credentials: Credentials.Credentials,
-	repository: string
+	repository: string,
+	roles: { string }?
 ): Access?
 	local id = credentials:Get(configuration, "app_id")
 	local key = credentials:Get(configuration, "app_private_key", true)
@@ -125,8 +127,18 @@ function Authentication.Acquire(
 	local name = configuration.credentials.bootstrap_token
 	if token and name and name:upper() ~= "GITHUB_TOKEN" then
 		mask(token)
-		print(`::notice::Using configured bootstrap_token secret {name}; GitHub will verify its permissions on push`)
-		return { token = token, temporary = false }
+		local scopes = TokenPermissions.Required(configuration, roles or { "bootstrap_token" }, "bootstrap_token")
+		local inspection = TokenPermissions.Inspect(token, scopes)
+		if inspection.state ~= "verified" then
+			TokenPermissions.Warn(configuration, "bootstrap_token", inspection)
+		end
+		if inspection.state == "invalid" or inspection.state == "insufficient" then
+			return nil
+		end
+		print(
+			`::notice::Using configured bootstrap_token secret {name}; scope audit: {inspection.state}. GitHub still enforces repository access on push.`
+		)
+		return { token = token, temporary = false, inspection = inspection }
 	end
 	local idName = configuration.credentials.app_id or "<configure github.credentials.app_id>"
 	local keyName = configuration.credentials.app_private_key or "<configure github.credentials.app_private_key>"

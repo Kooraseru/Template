@@ -61,7 +61,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 				print(
 					`::warning::Projects sync skipped for {owner}: verify Projects access for the configured App or secret {name}. See the run summary for personal and organization setup instructions. Partial earlier operations may have succeeded.`
 				)
-				ProjectAuthentication.Warn(owner)
+				ProjectAuthentication.Warn(owner, "insufficient", access.inspection)
 				skipped = true
 				continue
 			end

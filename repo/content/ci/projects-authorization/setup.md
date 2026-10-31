@@ -1,9 +1,3 @@
-## Projects authorization required
-
-Project synchronization for **{{owner}}** was skipped, not completed. Choose
-the setup method you prefer; both require access to manage Actions secrets in
-`{{repository}}`.
-
 The configured credential roles declare these permissions for this secret:
 
 **Classic PAT scopes:**
@@ -14,7 +8,7 @@ The configured credential roles declare these permissions for this secret:
 
 {{app_permissions}}
 
-When the same secret is configured for bootstrap, the list also includes its
+When bootstrap is enabled and uses the same secret, the list also includes its
 repository and workflow scopes. The `repo` scope grants broad access to private
 repositories the token's user can access. For public-only repositories,
 `public_repo` may be sufficient instead; review your repository's needs.

@@ -27,6 +27,15 @@ inventory. Without usable credentials the existing local scheduler runs the plan
 Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
 
+Authorization declarations under `repo/config/ci/authorization/` associate
+classic scopes with `credential.role`. The shared scope auditor aggregates
+requirements for requested roles mapped to the same secret in `github.toml`.
+It uses GitHub's reported scope inventory when available; absent inventory,
+fine-grained permissions, and resource-level access remain unverified until
+the operation enforces them. Do not infer all grants from a token's presence.
+Missing credentials and rejected/insufficient access use separate result text
+under `repo/content/ci/projects-authorization/`, sharing one setup guide.
+
 CI installation code belongs in `dependencies/`. Lune's pin and checksums
 live in `repo/config/ci/dependencies/lune.toml`; its bootstrap script stays under
 `dependencies/lune/`. GitHub Packages declarations are kept separately in
