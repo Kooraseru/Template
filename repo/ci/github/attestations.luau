@@ -92,10 +92,6 @@ end
 
 function Attestations.Options(): ()
 	Publication.Output("enabled", "false")
-	if Process.env.CI_DELEGATED == "true" then
-		print("Attestations belong to the generated execution run")
-		return
-	end
 	if not Attestations.Enabled() then
 		return
 	end

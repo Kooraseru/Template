@@ -8,7 +8,8 @@ their configuration are discovered together under `repo/ci/preflight/providers/`
 ## One workflow, one entry point
 
 `.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
-invokes the executable `repo/ci/entry.luau` launcher. The workflow also carries the approved native Pages upload/deploy adapter, with enablement and paths resolved by Luau. It does not maintain component
+invokes the executable `repo/ci/entry.luau` launcher. It resolves configured
+credential names and passes the selected secrets to bootstrap. It does not maintain component
 lists, dependency plans, matrices, or build logic. The bootstrap discovers
 components from `repo/ci/components/`, reads their TOML manifests, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.

@@ -2,6 +2,7 @@
 --!strict
 
 local PagesDeployment = require("@ci/github/pagesDeployment")
+local Process = require("@lune/process")
 
 local Component = {}
 Component.__index = Component
@@ -12,6 +13,14 @@ function Component.new(): Component
 end
 
 function Component.Run(_self: Component, _context: { event: string }): string?
+	if Process.env.CI_GRAPH_RUN ~= "true" then
+		if Process.env.CI_PUBLISH_PAGES == "false" then
+			print("Pages deployment skipped: disabled by configuration")
+		else
+			print("::warning::Pages deployment skipped: the generated CI execution workflow is unavailable")
+		end
+		return "skipped"
+	end
 	if not PagesDeployment.Prepare() then
 		return "skipped"
 	end

@@ -2,17 +2,12 @@
 --!strict
 
 local Fs = require("@lune/fs")
-local Process = require("@lune/process")
 local Publication = require("./publication")
 
 local PagesDeployment = {}
 
 function PagesDeployment.Prepare(): boolean
 	Publication.Output("enabled", "false")
-	if Process.env.CI_DELEGATED == "true" then
-		print("Pages deployment belongs to the generated execution run")
-		return false
-	end
 	local repository = Publication.Begin("PAGES")
 	if not repository then
 		return false
