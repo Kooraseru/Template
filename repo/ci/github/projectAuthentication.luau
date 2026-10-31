@@ -75,7 +75,7 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 		return { token = token, temporary = false }
 	end
 	print(
-		`::warning::Projects sync skipped for {owner}: set up an organization App using {idName} and {keyName} with Organization Projects read/write access, or secret {tokenName} with Projects read/write access (classic PAT scope: project). Values belong in GitHub Secrets, never TOML. GITHUB_TOKEN cannot access Projects.`
+		`::warning::Projects sync skipped for {owner}: configure secret {tokenName} with a Projects-capable user token, or for an organization configure App {idName}/{keyName}. See the run summary for personal and organization setup instructions. Store credential values in GitHub Secrets.`
 	)
 	ProjectAuthentication.Warn(owner)
 	return nil

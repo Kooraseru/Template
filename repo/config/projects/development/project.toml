@@ -2,7 +2,7 @@
 title = "Development"
 description = "Development work, fixes, and improvements for this repository."
 # Owner defaults to the account in repo/config/github.toml's repository path.
-# owner = "your-organization"
+# owner = "your-account-or-organization"
 public = false
 
 [[fields]]
