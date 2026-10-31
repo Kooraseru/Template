@@ -110,10 +110,33 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		print("::endgroup::")
 
 		outcomes[task.identity] = outcome
-		if outcome == "failed" or outcome == "blocked" or (outcome == "skipped" and skipConclusion == "failure") then
+		local neutralReported = true
+		if outcome == "skipped" and skipConclusion == "neutral" then
+			local ok, failure = xpcall(function(): string
+				SkipPolicy.ReportNeutral(task.identity, self.credentials)
+				return "reported"
+			end, tostring)
+			if not ok then
+				neutralReported = false
+				print(`::error::{task.identity}: unable to report neutral Check Run: {failure}`)
+			end
+		end
+		if
+			outcome == "failed"
+			or outcome == "blocked"
+			or (outcome == "skipped" and skipConclusion == "failure")
+			or not neutralReported
+		then
 			passed = false
+			if outcome == "skipped" and skipConclusion == "neutral" and not neutralReported then
+				outcomes[task.identity] = "skipped (neutral Check Run failed)"
+			end
 			if outcome == "skipped" then
-				print(`::error::{task.identity}: component outcome is skipped; configured job conclusion is failure`)
+				if skipConclusion == "failure" then
+					print(
+						`::error::{task.identity}: component outcome is skipped; configured job conclusion is failure`
+					)
+				end
 			end
 		end
 	end

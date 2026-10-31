@@ -3,6 +3,7 @@
 
 local Serde = require("@lune/serde")
 local Contract = require("@ci/bootstrap/contract")
+local SkipPolicy = require("@ci/bootstrap/skipPolicy")
 local NativeJob = require("./nativeJob")
 
 local Workflow = {}
@@ -27,6 +28,11 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	end
 	for _, task in tasks do
 		local needs: { string } = {}
+		local credentialRoles = table.clone(task.credentials)
+		if SkipPolicy.Conclusion(task.identity) == "neutral" then
+			table.insert(credentialRoles, "app_id")
+			table.insert(credentialRoles, "app_private_key")
+		end
 		local steps: { Step } = {
 			{
 				uses = "actions/checkout@v7",
@@ -47,7 +53,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				})
 			end
 		end
-		if #task.credentials > 0 then
+		if #credentialRoles > 0 then
 			appendStep(steps, {
 				name = "Resolve credential names",
 				id = "credentials",
@@ -55,7 +61,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			})
 		end
 		local credentialEnvironment: { [string]: string } = {}
-		for _, role in task.credentials do
+		for _, role in credentialRoles do
 			local output = "steps.credentials.outputs." .. role
 			local expression = "${{ secrets[" .. output .. "] }}"
 			if role == "app_id" then

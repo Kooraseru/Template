@@ -1,0 +1,4 @@
+# A neutral runtime-skip conclusion is reported as a separate GitHub Check Run.
+# The configured GitHub App must be installed on this repository with this grant.
+[app.repository]
+checks = "write"

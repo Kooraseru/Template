@@ -122,6 +122,8 @@ function TaskRunner.Run(
 		print(`::notice::Skipped {identity}`)
 		if skipConclusion == "failure" then
 			error(`component outcome is skipped; configured native job conclusion is failure`, 0)
+		elseif skipConclusion == "neutral" then
+			SkipPolicy.ReportNeutral(identity, credentials)
 		end
 		return
 	end
@@ -164,8 +166,12 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 		local outputs = job.outputs
 		local skipped = type(outputs) == "table" and Publication.Record(outputs).outcome == "skipped"
 		outcomes[task.identity] = if skipped
-			then "skipped"
-			else if result == "success" then "passed" else if result == "skipped" then "blocked" else result
+				and result ~= "success"
+				and SkipPolicy.Conclusion(task.identity) == "neutral"
+			then "skipped (neutral Check Run failed)"
+			else if skipped
+				then "skipped"
+				else if result == "success" then "passed" else if result == "skipped" then "blocked" else result
 		if result ~= "success" or (skipped and SkipPolicy.Conclusion(task.identity) == "failure") then
 			passed = false
 		end
