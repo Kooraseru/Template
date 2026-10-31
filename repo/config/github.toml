@@ -37,4 +37,4 @@ source = ["source/**"]
 # Publication runs automatically for enabled, configured components.
 # Optionally disable with CI_PUBLISH_RELEASES/BRANCHES/PACKAGES=false
 # in GitHub Actions variables. Pages follows Settings > Pages unless
-# CI_PUBLISH_PAGES=false. See repo/content/docs/ci/github.md.
+# CI_PUBLISH_PAGES=false.

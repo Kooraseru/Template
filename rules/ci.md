@@ -114,7 +114,8 @@ Keep Markdown summaries and other authored text under `repo/content/ci/`, such a
 `repo/content/ci/bootstrap-summary.md`; reporter classes supply runtime values and write the
 rendered artifact.
 
-CI guides and design documents belong under `repo/content/docs/ci/`.
+`repo/content/docs/` is published GitHub Pages content. Do not add internal plans,
+implementation notes, or unsolicited documentation to that tree.
 Keep executable pipeline code under `repo/ci/`; do not store authored Markdown there.
 
 Discovery parses `component.toml` as data and does not execute component code.
