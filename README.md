@@ -7,4 +7,4 @@ Describe this project.
 
 The main branch contains the generated repository. Switch to source to change source files and publication content.
 
-Edit this template in repo/content/root/README.md.
+Edit this template in repo/content/files/README.md.

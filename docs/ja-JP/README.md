@@ -7,4 +7,4 @@
 
 main ブランチには生成されたリポジトリが含まれます。ソースファイルや公開内容を変更するには source ブランチに切り替えてください。
 
-このテンプレートは repo/content/root/README.md で編集してください。
+このテンプレートは repo/content/files/README.md で編集してください。
