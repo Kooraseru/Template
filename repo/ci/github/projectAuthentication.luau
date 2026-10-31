@@ -40,9 +40,44 @@ local function requirements(): ({ [string]: string }, { string })
 	return permissions, scopes
 end
 
+local function combinedScopes(configuration: Configuration.Configuration, projectScopes: { string }): { string }
+	local combined: { string } = table.clone(projectScopes)
+	local bootstrapName = configuration.credentials.bootstrap_token
+	local projectName = configuration.credentials.projects_token
+	if
+		not configuration.enabled
+		or not bootstrapName
+		or not projectName
+		or bootstrapName:upper() ~= projectName:upper()
+	then
+		return combined
+	end
+	local root = Publication.Record(Serde.decode("toml", Fs.readFile("repo/ci/github/bootstrap-authorization.toml")))
+	local scopes = Publication.Record(root.classic).scopes
+	if type(scopes) ~= "table" or #scopes == 0 then
+		error("Bootstrap classic token scopes must be a nonempty array", 0)
+	end
+	local seen: { [string]: boolean } = {}
+	for _, scope in combined do
+		seen[scope] = true
+	end
+	for _, scope in scopes do
+		if type(scope) ~= "string" or not scope:match("^[%w_:]+$") then
+			error("Invalid bootstrap classic token scope", 0)
+		end
+		if not seen[scope] then
+			table.insert(combined, scope)
+			seen[scope] = true
+		end
+	end
+	table.sort(combined)
+	return combined
+end
+
 function ProjectAuthentication.Warn(owner: string): ()
 	local configuration = Configuration.new()
-	local permissions, scopes = requirements()
+	local permissions, projectScopes = requirements()
+	local scopes = combinedScopes(configuration, projectScopes)
 	local appPermissions: { string } = {}
 	for name, value in permissions do
 		table.insert(appPermissions, `- \`{name}\`: {value}`)
@@ -54,7 +89,7 @@ function ProjectAuthentication.Warn(owner: string): ()
 	end
 	local repository = configuration:ResolveRepository(configuration.repository)
 	local tokenName = configuration.credentials.projects_token or "<github.credentials.projects_token>"
-	local description = Publication.Encode(`{tokenName} - Projects sync for {repository}`)
+	local description = Publication.Encode(`{tokenName} - CI for {repository}`)
 	local requestedScopes = Publication.Encode(table.concat(scopes, ","))
 	local tokenUrl = `https://github.com/settings/tokens/new?description={description}&scopes={requestedScopes}`
 	local values: { [string]: string } = {

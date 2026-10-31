@@ -1,0 +1,4 @@
+# Classic PAT scopes for a bootstrap that can operate on private repositories
+# and push generated workflow files. The repo scope includes public repositories.
+[classic]
+scopes = ["repo", "workflow"]

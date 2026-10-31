@@ -23,8 +23,9 @@ branch_prefix = "ci/run-"
 # Prefer an installed App. App ID can be a variable; keys and tokens are secrets.
 app_id = "CI_APP_ID"
 app_private_key = "CI_APP_PRIVATE_KEY"
-bootstrap_token = "CI_WORKFLOW_TOKEN"
-# Projects-capable App installation/user token or PAT: this is its SECRET NAME.
+# The same secret can serve bootstrap and Projects when it has both permissions.
+bootstrap_token = "CI_PROJECTS_TOKEN"
+# This is the GitHub Actions SECRET NAME, never the token value.
 projects_token = "CI_PROJECTS_TOKEN"
 # release_token = "MY_RELEASE_SECRET"
 # organization_token = "MY_ORGANIZATION_SECRET"

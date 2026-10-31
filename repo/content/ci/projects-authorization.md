@@ -4,7 +4,7 @@ Project synchronization for **{{owner}}** was skipped, not completed. Choose
 the setup method you prefer; both require access to manage Actions secrets in
 `{{repository}}`.
 
-The Projects synchronization component declares these permissions:
+The configured credential roles declare these permissions for this secret:
 
 **Classic PAT scopes:**
 
@@ -14,10 +14,10 @@ The Projects synchronization component declares these permissions:
 
 {{app_permissions}}
 
-These requirements apply to Projects synchronization only. Repository access
-needed for linking depends on visibility and account permissions; a classic PAT
-may also need `repo` for private repositories or `public_repo` for public
-repository operations. Grant only what your repository requires.
+When the same secret is configured for bootstrap, the list also includes its
+repository and workflow scopes. The `repo` scope grants broad access to private
+repositories the token's user can access. For public-only repositories,
+`public_repo` may be sufficient instead; review your repository's needs.
 
 <details>
 <summary>GitHub CLI (Bash)</summary>
@@ -97,7 +97,7 @@ Credential names come from `repo/config/github.toml`. Store actual tokens and
 private keys in GitHub Secrets, never in TOML or scripts. The built-in
 `GITHUB_TOKEN` cannot access account-owned Projects.
 
-The classic token link pre-fills its note and declared Projects scopes; review
+The classic token link pre-fills its note and declared scopes; review
 them and any additional repository access before creating the token. The note
 identifies its intended secret name; creating the token does not create that secret.
 
