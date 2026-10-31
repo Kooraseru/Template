@@ -7,8 +7,8 @@
 5. Preserve security, provenance, and publication gates.
 6. Record deferred migrations explicitly. Do not report an unfinished refactor, skipped branch, or unavailable platform as verified.
 
-On Windows, prefer the configured MSYS2 Bash for repository commands and local
-hooks. Use PowerShell only when a Windows-specific operation requires it.
+On Windows, use the configured MSYS2 Bash for repository commands and local
+hooks. Examples and instructions should use Bash.
 
 ## Editor configuration changes
 
