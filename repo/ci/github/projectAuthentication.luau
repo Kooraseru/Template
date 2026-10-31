@@ -52,14 +52,20 @@ function ProjectAuthentication.Warn(owner: string): ()
 	for _, scope in scopes do
 		table.insert(classicScopes, `- \`{scope}\``)
 	end
+	local repository = configuration:ResolveRepository(configuration.repository)
+	local tokenName = configuration.credentials.projects_token or "<github.credentials.projects_token>"
+	local description = Publication.Encode(`{tokenName} - Projects sync for {repository}`)
+	local requestedScopes = Publication.Encode(table.concat(scopes, ","))
+	local tokenUrl = `https://github.com/settings/tokens/new?description={description}&scopes={requestedScopes}`
 	local values: { [string]: string } = {
 		owner = owner,
-		repository = configuration:ResolveRepository(configuration.repository),
+		repository = repository,
+		classic_token_url = tokenUrl,
 		app_permissions = table.concat(appPermissions, "\n"),
 		classic_scopes = table.concat(classicScopes, "\n"),
 		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
 		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
-		projects_token = configuration.credentials.projects_token or "<github.credentials.projects_token>",
+		projects_token = tokenName,
 	}
 	local text = Fs.readFile("repo/content/ci/projects-authorization.md"):gsub("{{([%w_]+)}}", function(key)
 		return values[key] or key

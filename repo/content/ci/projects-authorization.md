@@ -24,7 +24,7 @@ repository operations. Grant only what your repository requires.
 
 ### Personal account
 
-1. Create a [classic personal access token](https://github.com/settings/tokens/new)
+1. Create a [classic personal access token]({{classic_token_url}})
    on GitHub for a user who can manage the project. Grant the declared classic
    PAT scopes above and any repository access needed for linking.
 2. Sign in with `gh auth login`, then run this and paste the token at the prompt:
@@ -61,7 +61,7 @@ website.
 
 ### Personal account
 
-1. Create a [classic personal access token](https://github.com/settings/tokens/new)
+1. Create a [classic personal access token]({{classic_token_url}})
    for a user who can manage the project. Grant the declared classic PAT scopes and any
    repository access needed for linking.
 2. Open `{{repository}}` → **Settings → Secrets and variables → Actions → New
@@ -96,6 +96,10 @@ do not authorize a user-owned Project.
 Credential names come from `repo/config/github.toml`. Store actual tokens and
 private keys in GitHub Secrets, never in TOML or scripts. The built-in
 `GITHUB_TOKEN` cannot access account-owned Projects.
+
+The classic token link pre-fills its note and declared Projects scopes; review
+them and any additional repository access before creating the token. The note
+identifies its intended secret name; creating the token does not create that secret.
 
 The current sync links each project to this repository; GitHub requires the
 same owner for that link. The next source push can apply the definitions once
