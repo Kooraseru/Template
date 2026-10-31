@@ -12,7 +12,8 @@ repo/
     docker/               local Actions/Docker runner settings
   content/
     root/                 README, CONTRIBUTING, SECURITY, and other root files
-    docs/                 documentation pages
+    docs/                 documentation pages, including CI guides and designs
+    ci/                   authored CI summaries and authorization messages
     i18n/                 translations and locale settings
       root/               translations of content/root files
       docs/               translations of documentation pages
@@ -55,7 +56,7 @@ preflight engine and its analyzers live under `repo/ci/preflight/`.
 
 The scheduler discovers component and provider packages from their owning
 directories. Adding a conforming package does not require a new central list.
-See [CI GitHub integration](ci/github/README.md) for optional job visualization.
+See [CI GitHub integration](content/docs/ci/github.md) for optional job visualization.
 
 `repo/` is editable input. `build/repo/` contains generated repository output.
 Edit a root-document template in `repo/content/root/`, not its generated copy.

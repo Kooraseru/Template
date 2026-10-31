@@ -200,7 +200,7 @@ function Attestations.Report(): ()
 	end
 	local path = Process.env.GITHUB_STEP_SUMMARY
 	if path then
-		local template = Fs.readFile("repo/ci/github/attestation-summary.md")
+		local template = Fs.readFile("repo/content/ci/attestation-summary.md")
 		local text = template:gsub("{{outcome}}", outcome):gsub("{{detail}}", detail)
 		local current = if Fs.isFile(path) then Fs.readFile(path) else ""
 		Fs.writeFile(path, current .. "\n" .. text)

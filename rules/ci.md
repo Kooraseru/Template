@@ -110,9 +110,12 @@ build component.
 `Bootstrap.new()`, `Bootstrap.Run(self)`, and returns `Bootstrap`. The launcher
 owns process startup, environment checks, and error-to-exit handling. Bootstrap
 delegates discovery, planning, execution, and reporting to collaborator classes.
-Keep Markdown summaries and other authored text in text files such as
-`repo/ci/bootstrap/summary.md`; reporter classes supply runtime values and write the
+Keep Markdown summaries and other authored text under `repo/content/ci/`, such as
+`repo/content/ci/bootstrap-summary.md`; reporter classes supply runtime values and write the
 rendered artifact.
+
+CI guides and design documents belong under `repo/content/docs/ci/`.
+Keep executable pipeline code under `repo/ci/`; do not store authored Markdown there.
 
 Discovery parses `component.toml` as data and does not execute component code.
 Component modules load only in their planned child process. Reject malformed

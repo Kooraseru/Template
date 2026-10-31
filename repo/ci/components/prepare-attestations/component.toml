@@ -1,6 +1,6 @@
 provides = ["attestations.prepared"]
 requires = ["releases.generated"]
-inputs = ["repo/config/attestations.toml", "build/repo/releases/**"]
+inputs = ["repo/config/attestations.toml", "repo/content/ci/attestation-summary.md", "build/repo/releases/**"]
 outputs = ["build/repo/attestations/**"]
 events = ["push"]
 boundary = "privileged"

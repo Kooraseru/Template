@@ -15,7 +15,7 @@ export type Reporter = setmetatable<ReporterFields, typeof(Reporter)>
 
 function Reporter.new(): Reporter
 	local fields: ReporterFields = {
-		template = Fs.readFile("repo/ci/bootstrap/summary.md"),
+		template = Fs.readFile("repo/content/ci/bootstrap-summary.md"),
 	}
 	return setmetatable(fields, Reporter)
 end

@@ -18,7 +18,7 @@ function ProjectAuthentication.Warn(owner: string): ()
 		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
 		projects_token = configuration.credentials.projects_token or "<github.credentials.projects_token>",
 	}
-	local text = Fs.readFile("repo/ci/github/projects-authorization.md"):gsub("{{([%w_]+)}}", function(key)
+	local text = Fs.readFile("repo/content/ci/projects-authorization.md"):gsub("{{([%w_]+)}}", function(key)
 		return values[key] or key
 	end)
 	local path = Process.env.GITHUB_STEP_SUMMARY

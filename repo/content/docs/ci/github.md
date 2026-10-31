@@ -205,4 +205,4 @@ successful attestation is verified independently against the published binary.
 
 The fallback entrypoint carries the native signing bridge; generated jobs use
 the component-owned adapter. No additional maintained workflow is introduced.
-See `stage-graph-design.md` for the proposed finer-grained execution graph.
+See the [stage graph design](stage-graph-design.md) for the proposed finer-grained execution graph.
