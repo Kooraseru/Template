@@ -14,6 +14,7 @@ function ProjectAuthentication.Warn(owner: string): ()
 	local configuration = Configuration.new()
 	local values: { [string]: string } = {
 		owner = owner,
+		repository = configuration:ResolveRepository(configuration.repository),
 		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
 		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
 		projects_token = configuration.credentials.projects_token or "<github.credentials.projects_token>",
