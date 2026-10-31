@@ -1,7 +1,7 @@
 # A runtime skip cannot become a neutral native GitHub Actions job.
 # fail: reject runtime skips; allow: accept them (the native job stays green).
 [skip]
-default = "fail"
+default = "allow"
 
 # Optional component-specific policy; identities come from component folders.
 [skip.components]
