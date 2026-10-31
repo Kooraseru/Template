@@ -4,14 +4,29 @@ Project synchronization for **{{owner}}** was skipped, not completed. Choose
 the setup method you prefer; both require access to manage Actions secrets in
 `{{repository}}`.
 
+The Projects synchronization component declares these permissions:
+
+**Classic PAT scopes:**
+
+{{classic_scopes}}
+
+**GitHub App organization permissions** (API names and access levels):
+
+{{app_permissions}}
+
+These requirements apply to Projects synchronization only. Repository access
+needed for linking depends on visibility and account permissions; a classic PAT
+may also need `repo` for private repositories or `public_repo` for public
+repository operations. Grant only what your repository requires.
+
 <details>
 <summary>GitHub CLI (Bash)</summary>
 
 ### Personal account
 
 1. Create a [classic personal access token](https://github.com/settings/tokens/new)
-   on GitHub for a user who can manage the project. Grant the `project` scope
-   and any repository access needed for linking.
+   on GitHub for a user who can manage the project. Grant the declared classic
+   PAT scopes above and any repository access needed for linking.
 2. Sign in with `gh auth login`, then run this and paste the token at the prompt:
 
    ```bash
@@ -24,7 +39,7 @@ changes the CLI's own authorization; it does not set the Actions secret.
 ### Organization
 
 1. On GitHub, [create or configure an App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)
-   with **Organization Projects: read/write**, install it on the organization,
+   with the declared organization permissions above, install it on the organization,
    and grant it access to the repository where needed. Record its App ID and
    [generate a private key](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps).
 2. Replace `YOUR_APP_ID` and `PATH_TO_PRIVATE_KEY.pem` with the App ID and
@@ -47,7 +62,7 @@ website.
 ### Personal account
 
 1. Create a [classic personal access token](https://github.com/settings/tokens/new)
-   for a user who can manage the project. Grant the `project` scope and any
+   for a user who can manage the project. Grant the declared classic PAT scopes and any
    repository access needed for linking.
 2. Open `{{repository}}` → **Settings → Secrets and variables → Actions → New
    repository secret**. Name it `{{projects_token}}`, paste the token, and save.
@@ -55,7 +70,7 @@ website.
 ### Organization
 
 1. [Create or configure an App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app)
-   with **Organization Projects: read/write**, install it on the organization,
+   with the declared organization permissions above, install it on the organization,
    and grant it access to the repository where needed. Record its App ID and
    [generate a private key](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps).
 2. Open `{{repository}}` → **Settings → Secrets and variables → Actions**.

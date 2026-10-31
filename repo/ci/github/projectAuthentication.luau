@@ -3,6 +3,7 @@
 
 local Process = require("@lune/process")
 local Fs = require("@lune/fs")
+local Serde = require("@lune/serde")
 local Configuration = require("./configuration")
 local Authentication = require("./authentication")
 local Publication = require("./publication")
@@ -10,11 +11,52 @@ local Publication = require("./publication")
 local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string? }
 
+local function requirements(): ({ [string]: string }, { string })
+	local root =
+		Publication.Record(Serde.decode("toml", Fs.readFile("repo/ci/components/sync-projects/authorization.toml")))
+	local app = Publication.Record(Publication.Record(root.app).organization)
+	local permissions: { [string]: string } = {}
+	for name, value in app do
+		if not name:match("^[a-z_]+$") or (value ~= "read" and value ~= "write") then
+			error("Invalid Projects App permission declaration", 0)
+		end
+		permissions[name] = value
+	end
+	if next(permissions) == nil then
+		error("Projects App permissions must not be empty", 0)
+	end
+	local scopesValue = Publication.Record(root.classic).scopes
+	if type(scopesValue) ~= "table" or #scopesValue == 0 then
+		error("Projects classic token scopes must be a nonempty array", 0)
+	end
+	local scopes: { string } = {}
+	for _, scope in scopesValue do
+		if type(scope) ~= "string" or not scope:match("^[%w_:]+$") then
+			error("Invalid Projects classic token scope", 0)
+		end
+		table.insert(scopes, scope)
+	end
+	table.sort(scopes)
+	return permissions, scopes
+end
+
 function ProjectAuthentication.Warn(owner: string): ()
 	local configuration = Configuration.new()
+	local permissions, scopes = requirements()
+	local appPermissions: { string } = {}
+	for name, value in permissions do
+		table.insert(appPermissions, `- \`{name}\`: {value}`)
+	end
+	table.sort(appPermissions)
+	local classicScopes: { string } = {}
+	for _, scope in scopes do
+		table.insert(classicScopes, `- \`{scope}\``)
+	end
 	local values: { [string]: string } = {
 		owner = owner,
 		repository = configuration:ResolveRepository(configuration.repository),
+		app_permissions = table.concat(appPermissions, "\n"),
+		classic_scopes = table.concat(classicScopes, "\n"),
 		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
 		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
 		projects_token = configuration.credentials.projects_token or "<github.credentials.projects_token>",
@@ -46,17 +88,12 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 	local keyName = configuration.credentials.app_private_key or "<github.credentials.app_private_key>"
 	local tokenName = configuration.credentials.projects_token or "<github.credentials.projects_token>"
 	if supplied.appId and supplied.appId ~= "" and supplied.privateKey and supplied.privateKey ~= "" then
+		local permissions = requirements()
 		local status, account = Publication.Request("GET", `users/{Publication.Encode(owner)}`)
 		Publication.RequireSuccess(status, `Read project owner {owner}`)
 		if account.type == "Organization" then
-			local ok, access = pcall(
-				Authentication.AppAccess,
-				supplied.appId,
-				supplied.privateKey,
-				repository,
-				{ organization_projects = "write" },
-				owner
-			)
+			local ok, access =
+				pcall(Authentication.AppAccess, supplied.appId, supplied.privateKey, repository, permissions, owner)
 			if ok then
 				print(`Using configured App {idName}/{keyName} for Projects owned by {owner}`)
 				return access

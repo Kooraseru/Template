@@ -1,0 +1,6 @@
+# Permissions used by Projects synchronization, not a repository-wide scope list.
+[app.organization]
+organization_projects = "write"
+
+[classic]
+scopes = ["project"]
