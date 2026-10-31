@@ -135,11 +135,15 @@ function Attestations.Options(): ()
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local sourceUri = `git+{server}/{repository}@{sha}`
 	local sourceParameters = { repository = `{server}/{repository}`, commit = sha }
-	local workflowParameters = { ref = workflow }
+	local workflowPath, workflowRef = workflow:sub(#repository + 2):match("^(.-)@(.+)$")
+	if not workflowPath or not workflowRef then
+		error("Invalid attestation workflow reference", 0)
+	end
+	local workflowParameters = { ref = workflowRef, repository = `{server}/{repository}`, path = workflowPath }
 	local githubParameters = { event = Process.env.CI_EVENT, workflowSha = Process.env.GITHUB_WORKFLOW_SHA }
 	local dependency = { uri = sourceUri, digest = { gitCommit = sha } }
 	local buildDefinition = {
-		buildType = `{server}/{repository}/repo/ci/bootstrap/v1`,
+		buildType = "https://actions.github.io/buildtypes/workflow/v1",
 		externalParameters = { source = sourceParameters, workflow = workflowParameters },
 		internalParameters = { github = githubParameters },
 		resolvedDependencies = { dependency },
