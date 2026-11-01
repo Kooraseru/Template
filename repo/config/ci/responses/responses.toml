@@ -1,0 +1,96 @@
+version = 1
+
+# Aliases resolve to GitHub's native alert styles, never custom CSS.
+# GitHub surfaces choose their own theme colors. Alert styling depends on
+# the rendering surface; ordinary text does not support arbitrary colors.
+[colors]
+success = "github.tip"
+failure = "github.caution"
+warning = "github.warning"
+neutral = "github.note"
+info = "github.note"
+pending = "github.important"
+
+# Every node can have more children. Its Markdown receives {{children}}.
+# if_value hides a node when the named runtime value is empty.
+[responses.start]
+markdown = "start/root.md"
+
+[responses.start.children.overview]
+markdown = "start/overview/root.md"
+order = 10
+
+[responses.start.children.execution]
+markdown = "start/execution/root.md"
+if_value = "execution_url"
+order = 15
+
+[responses.start.children.details]
+markdown = "shared/records/root.md"
+records = "**"
+component = "bootstrap"
+order = 20
+
+[responses.start.children.components]
+markdown = "shared/components/root.md"
+if_value = "component_tree"
+order = 30
+
+[responses.execution]
+markdown = "execution/root.md"
+
+[responses.execution.children.overview]
+markdown = "execution/overview/root.md"
+order = 10
+
+[responses.execution.children.components]
+markdown = "shared/components/root.md"
+if_value = "component_tree"
+order = 20
+
+[responses.execution.children.details]
+markdown = "shared/records/root.md"
+records = "**"
+order = 30
+
+# Template roles are separate from component inventories. Components are still
+# discovered by the Luau scheduler; these associations only control presentation.
+[templates]
+"components.group" = "shared/components/group/root.md"
+"components.component" = "shared/components/component/root.md"
+"records.record" = "shared/records/record/root.md"
+"execution.error" = "shared/error.md"
+"execution.response-transfer" = "shared/response-transfer.md"
+"attestations.result" = "shared/attestation-summary.md"
+"authorization.check-runs" = "shared/authorization/check-runs.md"
+"authorization.token" = "shared/authorization/token-permissions.md"
+"token.evidence" = "shared/authorization/token/evidence.md"
+"token.verified" = "shared/authorization/token/verified.md"
+"token.insufficient" = "shared/authorization/token/insufficient.md"
+"token.invalid" = "shared/authorization/token/invalid.md"
+"token.unverified" = "shared/authorization/token/unverified.md"
+"token.rejected" = "shared/authorization/token/rejected.md"
+"setup.app" = "shared/authorization/app-setup.md"
+"setup.app-update" = "shared/authorization/app-update.md"
+"setup.app-connect" = "shared/authorization/app-connect.md"
+"setup.app-restore" = "shared/authorization/app-restore.md"
+"setup.app-state-configured" = "shared/authorization/app-state-configured.md"
+"setup.app-state-partial" = "shared/authorization/app-state-partial.md"
+"setup.app-state-unavailable" = "shared/authorization/app-state-unavailable.md"
+"setup.app-registration" = "shared/authorization/app-registration.md"
+"setup.app-account" = "shared/authorization/app-account.md"
+"setup.app-account-personal" = "shared/authorization/app-account-personal.md"
+"setup.app-account-organization" = "shared/authorization/app-account-organization.md"
+"setup.token" = "shared/authorization/token-setup.md"
+"projects.missing" = "shared/projects-authorization/missing.md"
+"projects.insufficient" = "shared/projects-authorization/insufficient.md"
+"projects.setup" = "shared/projects-authorization/setup.md"
+"projects.organization-setup" = "shared/projects-authorization/organization-setup.md"
+
+[labels]
+"authorization/check-runs" = "Enable neutral reporting"
+"authorization/token" = "Update credential permissions"
+"authorization/projects/**" = "Authorize Projects synchronization"
+"publication/attestations" = "Artifact provenance"
+"execution/error" = "Execution stopped"
+"execution/response-transfer" = "Some response details are unavailable"

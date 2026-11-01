@@ -10,6 +10,7 @@ local Configuration = require("@ci/github/configuration")
 local Credentials = require("@ci/github/credentials")
 local Contract = require("./contract")
 local SetupInstructions = require("@ci/github/setupInstructions")
+local Responses = require("@ci/github/responses")
 
 local SkipPolicy = {}
 
@@ -88,7 +89,7 @@ function SkipPolicy.Conclusion(identity: string): string
 	return conclusion :: string
 end
 
-local function warnAuthorization(identity: string, status: string): ()
+local function warnAuthorization(identity: string, status: string, appState: string?): ()
 	local configuration = Configuration.new()
 	local permissions: { string } = {}
 	for name, access in neutralCheckPermissions() do
@@ -103,23 +104,21 @@ local function warnAuthorization(identity: string, status: string): ()
 	)
 	values.component = identity
 	values.status = status
+	values.app_state = appState or "unavailable"
 	values.app_permissions = table.concat(permissions, "\n")
 	SetupInstructions.Guides(values)
 	print(
 		`::warning::Neutral Check Run authorization for {identity}: {status}. Verify App {values.app_id}/{values.app_private_key} and its declared permissions; see the job summary.`
 	)
-	local text = Fs.readFile("repo/content/ci/authorization/check-runs.md"):gsub("{{([%w_]+)}}", function(key)
+	local text = Responses.Template("authorization.check-runs"):gsub("{{([%w_]+)}}", function(key)
 		return values[key] or error(`Unknown Check Run authorization template field {key}`, 0)
 	end)
-	local path = Process.env.GITHUB_STEP_SUMMARY
-	if path then
-		Fs.writeFile(path, (if Fs.isFile(path) then Fs.readFile(path) else "") .. "\n" .. text)
-	end
+	Responses.Record("authorization/check-runs", text)
 end
 
 function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Credentials?): ()
 	if not credentials then
-		warnAuthorization(identity, "supported reporting credential unavailable")
+		warnAuthorization(identity, "supported reporting credential unavailable", "unavailable")
 		error(
 			"Current credential method cannot report neutral: this backend requires GitHub App credentials; a classic PAT does not support Check Run creation",
 			0
@@ -129,7 +128,11 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 	local appId = credentials:Get(configuration, "app_id")
 	local privateKey = credentials:Get(configuration, "app_private_key", true)
 	if not appId or not privateKey then
-		warnAuthorization(identity, "supported reporting credential unavailable")
+		warnAuthorization(
+			identity,
+			"supported reporting credential unavailable",
+			if appId or privateKey then "partial" else "unavailable"
+		)
 		error(
 			`Current credential method cannot report neutral for {identity}: a classic PAT cannot create Check Runs; configure an App installed on the owning personal account or organization with Checks: write`,
 			0
@@ -144,7 +147,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 		return Authentication.AppAccess(appId, privateKey, repository, neutralCheckPermissions())
 	end)
 	if not acquired then
-		warnAuthorization(identity, "App authentication or installation access rejected")
+		warnAuthorization(identity, "App authentication or installation access rejected", "configured")
 		error(`Could not authorize neutral Check Run reporting for {identity}`, 0)
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
@@ -174,7 +177,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 	Authentication.Release(access)
 	if not response.ok then
 		if response.statusCode == 401 or response.statusCode == 403 or response.statusCode == 404 then
-			warnAuthorization(identity, `Check Run access rejected (HTTP {response.statusCode})`)
+			warnAuthorization(identity, `Check Run access rejected (HTTP {response.statusCode})`, "configured")
 		end
 		error(
 			`Could not create neutral Check Run for {identity} (HTTP {response.statusCode}); verify App installation and Checks: write permission`,

@@ -9,6 +9,7 @@ local Glob = require("@ci/bootstrap/glob")
 local Configuration = require("./configuration")
 local Publication = require("./publication")
 local SetupInstructions = require("./setupInstructions")
+local Responses = require("./responses")
 
 local TokenPermissions = {}
 export type Inspection = {
@@ -151,15 +152,14 @@ local function scopeText(scopes: { string }?): string
 end
 
 function TokenPermissions.Evidence(inspection: Inspection?, rejected: boolean?): string
-	local folder = "repo/content/ci/authorization/token"
 	local state = if rejected or not inspection then "rejected" else inspection.state
 	local values = {
-		observation = Fs.readFile(`{folder}/{state}.md`),
+		observation = Responses.Template("token." .. state),
 		granted = scopeText(if inspection then inspection.granted else nil),
 		required = scopeText(if inspection then inspection.required else nil),
 		missing = scopeText(if inspection and inspection.granted then inspection.missing else nil),
 	}
-	local text = Fs.readFile(`{folder}/evidence.md`):gsub("{{([%w_]+)}}", function(key)
+	local text = Responses.Template("token.evidence"):gsub("{{([%w_]+)}}", function(key)
 		return values[key] or error(`Unknown permission evidence field {key}`, 0)
 	end)
 	return text
@@ -179,13 +179,10 @@ function TokenPermissions.Warn(
 	print(
 		`::warning::Credential {name}: {outcome}; scope audit: {inspection.state}. Verify permissions and resource access; see the job summary.`
 	)
-	local summary = Fs.readFile("repo/content/ci/authorization/token-permissions.md"):gsub("{{([%w_]+)}}", function(key)
+	local summary = Responses.Template("authorization.token"):gsub("{{([%w_]+)}}", function(key)
 		return values[key] or error(`Unknown authorization template field {key}`, 0)
 	end)
-	local path = Process.env.GITHUB_STEP_SUMMARY
-	if path then
-		Fs.writeFile(path, (if Fs.isFile(path) then Fs.readFile(path) else "") .. "\n" .. summary)
-	end
+	Responses.Record("authorization/token", summary)
 end
 
 return TokenPermissions

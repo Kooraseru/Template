@@ -12,6 +12,7 @@ local Workflow = require("./workflow")
 local Publication = require("./publication")
 local Credentials = require("./credentials")
 local SkipPolicy = require("@ci/bootstrap/skipPolicy")
+local Responses = require("./responses")
 
 const ARTIFACT_ROOT = "build/github/artifacts"
 
@@ -89,6 +90,8 @@ function TaskRunner.Run(
 	identity: string,
 	credentials: Credentials.Credentials?
 ): ()
+	Process.env.CI_COMPONENT = identity
+	Responses.Prepare()
 	local indexed: { [string]: Contract.Task } = {}
 	for _, task in tasks do
 		indexed[task.identity] = task
@@ -158,7 +161,11 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 		end
 	end
 	local outcomes: { [string]: string } = {}
-	local passed = true
+	local responseTransferFailed = Process.env.CI_RESPONSE_DOWNLOAD_OUTCOME == "failure"
+	local passed = not responseTransferFailed
+	if responseTransferFailed then
+		Responses.Record("execution/response-transfer", Responses.Template("execution.response-transfer"), "warning")
+	end
 	for _, task in tasks do
 		local value = results[Workflow.JobId(task.identity)]
 		local result = if type(value) == "table" and type(value.result) == "string" then value.result else "skipped"
@@ -176,7 +183,7 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 			passed = false
 		end
 	end
-	Reporter.new():Report(outcomes, #tasks)
+	Reporter.new():Report(outcomes, #tasks, responseTransferFailed)
 	if not passed then
 		error("one or more discovered CI components failed or were blocked", 0)
 	end

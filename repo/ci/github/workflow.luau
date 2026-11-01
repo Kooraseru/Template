@@ -105,6 +105,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 		local job: { [string]: unknown } = {
 			name = task.identity,
+			env = { CI_COMPONENT = task.identity },
 			["runs-on"] = "ubuntu-latest",
 			steps = steps,
 			outputs = {
@@ -116,6 +117,16 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			job.permissions = { contents = "write" }
 		end
 		NativeJob.Configure(task.identity, task.boundary, steps, job)
+		appendStep(steps, {
+			name = "Collect response fragments",
+			["if"] = "${{ always() }}",
+			uses = "actions/upload-artifact@v7",
+			with = {
+				name = `ci-response-{Contract.Key(task.identity)}`,
+				path = "build/github/responses/",
+				["if-no-files-found"] = "ignore",
+			},
+		})
 		if #needs > 0 then
 			job.needs = needs
 			job["if"] = "${{ success() && !contains(needs.*.outputs.skipped, toJSON(true)) }}"
@@ -126,6 +137,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	end
 	jobs.report = {
 		name = "CI result",
+		env = { CI_COMPONENT = "response" },
 		["runs-on"] = "ubuntu-latest",
 		needs = if #jobIds > 0 then jobIds else nil,
 		["if"] = "${{ always() }}",
@@ -135,8 +147,18 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				with = { ref = sourceSha, ["persist-credentials"] = false },
 			},
 			{
+				name = "Receive component response fragments",
+				id = "responses",
+				uses = "actions/download-artifact@v8",
+				with = { pattern = "ci-response-*", ["merge-multiple"] = true, path = "build/github/responses" },
+			},
+			{
 				name = "Report component results",
-				env = { CI_JOB_RESULTS = "${{ toJSON(needs) }}" },
+				["if"] = "${{ always() }}",
+				env = {
+					CI_JOB_RESULTS = "${{ toJSON(needs) }}",
+					CI_RESPONSE_DOWNLOAD_OUTCOME = "${{ steps.responses.outcome }}",
+				},
 				run = "bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --report",
 			},
 		},

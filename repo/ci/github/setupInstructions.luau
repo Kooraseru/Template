@@ -6,6 +6,7 @@ local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Configuration = require("./configuration")
 local Publication = require("./publication")
+local Responses = require("./responses")
 
 local SetupInstructions = {}
 
@@ -33,9 +34,9 @@ local function ownerType(owner: string): string
 	return "Unknown"
 end
 
-function SetupInstructions.Render(path: string, values: { [string]: string }): string
-	local text = Fs.readFile(path):gsub("{{([%w_]+)}}", function(key)
-		return values[key] or error(`{path}: unknown instruction field {key}`, 0)
+function SetupInstructions.Render(role: string, values: { [string]: string }): string
+	local text = Responses.Template(role):gsub("{{([%w_]+)}}", function(key)
+		return values[key] or error(`{role}: unknown instruction field {key}`, 0)
 	end)
 	return text
 end
@@ -141,17 +142,28 @@ function SetupInstructions.Values(
 end
 
 function SetupInstructions.Guides(values: { [string]: string }, organizationOnly: boolean?): ()
-	local folder = "repo/content/ci/authorization"
 	local accountChoices = if organizationOnly or values.owner_type == "Organization"
-		then "app-account-organization.md"
-		else if values.owner_type == "User" then "app-account-personal.md" else "app-account.md"
-	values.app_account_choices = SetupInstructions.Render(`{folder}/{accountChoices}`, values)
+		then "setup.app-account-organization"
+		else if values.owner_type == "User" then "setup.app-account-personal" else "setup.app-account"
+	values.app_account_choices = SetupInstructions.Render(accountChoices, values)
 	if organizationOnly or values.owner_type == "Organization" then
 		values.apps_url = values.organization_apps_url
 	end
-	values.app_registration = SetupInstructions.Render(`{folder}/app-registration.md`, values)
-	values.app_setup = SetupInstructions.Render(`{folder}/app-setup.md`, values)
-	values.token_setup = SetupInstructions.Render(`{folder}/token-setup.md`, values)
+	values.app_registration = SetupInstructions.Render("setup.app-registration", values)
+	local state = values.app_state or "unavailable"
+	values.app_detection = SetupInstructions.Render("setup.app-state-" .. state, values)
+	if state == "configured" then
+		values.app_setup = SetupInstructions.Render("setup.app-update", values)
+	else
+		if state == "partial" then
+			values.app_registration = SetupInstructions.Render("setup.app-restore", values)
+		else
+			values.app_existing = SetupInstructions.Render("setup.app-restore", values)
+			values.app_registration = SetupInstructions.Render("setup.app-connect", values)
+		end
+		values.app_setup = SetupInstructions.Render("setup.app", values)
+	end
+	values.token_setup = SetupInstructions.Render("setup.token", values)
 end
 
 return SetupInstructions

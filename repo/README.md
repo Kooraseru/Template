@@ -15,10 +15,10 @@ repo/
       preflight/          settings matched to discovered analyzer identities
       dependencies/       CI runtime/tool versions and checksums
       authorization/      requested App permissions and classic PAT scopes
+      responses/          two root responses, templates, layout, and color mappings
   content/
     files/                README, CONTRIBUTING, SECURITY, and other root files
     docs/                 authored GitHub Pages content
-    ci/                   authored CI summaries and authorization messages
     i18n/                 translations and locale settings
       files/              translations of content/files
       docs/               translations of documentation pages

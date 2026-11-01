@@ -1,33 +1,33 @@
 -- repo/ci/bootstrap/reporter.luau
 --!strict
 
-local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local SkipPolicy = require("./skipPolicy")
+local Responses = require("@ci/github/responses")
 
 local Reporter = {}
 Reporter.__index = Reporter
 
-type ReporterFields = {
-	template: string,
-}
-
-export type Reporter = setmetatable<ReporterFields, typeof(Reporter)>
+export type Reporter = setmetatable<{}, typeof(Reporter)>
 
 function Reporter.new(): Reporter
-	local fields: ReporterFields = {
-		template = Fs.readFile("repo/content/ci/bootstrap-summary.md"),
-	}
-	return setmetatable(fields, Reporter)
+	return setmetatable({}, Reporter)
 end
 
-function Reporter.Report(self: Reporter, outcomes: { [string]: string }, selectedCount: number): ()
+function Reporter.Report(
+	_self: Reporter,
+	outcomes: { [string]: string },
+	selectedCount: number,
+	reportingFailed: boolean?
+): ()
 	local identities: { string } = {}
 	for identity in outcomes do
 		table.insert(identities, identity)
 	end
 	table.sort(identities)
-	local rows: { string } = {}
+	local displayed: { [string]: string } = {}
+	local failed = reportingFailed == true
+	local skipped = false
 	for _, identity in identities do
 		local outcome = outcomes[identity]
 		if outcome == "skipped" then
@@ -36,21 +36,19 @@ function Reporter.Report(self: Reporter, outcomes: { [string]: string }, selecte
 				then "skipped (separate Check Run: neutral)"
 				else `skipped (configured job conclusion: {conclusion})`
 		end
-		table.insert(rows, `| {identity} | {outcome} |`)
+		displayed[identity] = outcome
+		failed = failed or outcome:find("fail", 1, true) ~= nil or outcome == "blocked"
+		skipped = skipped or outcome:find("skipped", 1, true) ~= nil
 	end
-	if #identities == 0 then
-		table.insert(rows, "| — | No components were discovered |")
-	end
-
-	local text = self.template:gsub("{{selected_count}}", tostring(selectedCount))
-	text = text:gsub("{{component_rows}}", table.concat(rows, "\n"))
-	print(text)
-
-	local destination = Process.env.GITHUB_STEP_SUMMARY
-	if destination then
-		local current = if Fs.isFile(destination) then Fs.readFile(destination) else ""
-		Fs.writeFile(destination, `{current}{text}`)
-	end
+	Responses.Write(if Process.env.CI_GRAPH_RUN == "true" then "execution" else "start", {
+		selected_count = tostring(selectedCount),
+		color = if failed then "failure" else if skipped then "warning" else "success",
+		result = if failed
+			then "Some work failed or was blocked. Open its details below."
+			else if skipped
+				then "Execution finished with skipped work. Review its outcome below."
+				else "Selected components completed successfully.",
+	}, displayed)
 end
 
 return Reporter

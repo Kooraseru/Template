@@ -7,6 +7,7 @@ local Credentials = require("@ci/github/credentials")
 local BranchRun = require("@ci/github/branchRun")
 local PagesDeployment = require("@ci/github/pagesDeployment")
 local Attestations = require("@ci/github/attestations")
+local Responses = require("@ci/github/responses")
 
 local argumentIndex = if Process.args[1] == "--" then 2 else 1
 local argument = Process.args[argumentIndex]
@@ -66,10 +67,25 @@ local ok, problem = xpcall(function(): boolean
 		PagesDeployment.Prepare()
 		return true
 	end
+	if component then
+		Responses.Prepare()
+	end
 	Bootstrap.new(event):Run(preflightOnly, component, reportOnly)
 	return true
 end, tostring)
 if not ok then
 	print(`::error::{problem}`)
+	if
+		not preflightOnly
+		and not credentialNames
+		and not Responses.Written()
+		and (Process.env.CI_GRAPH_RUN ~= "true" or reportOnly)
+	then
+		Responses.Record("execution/error", Responses.Template("execution.error"), "failure")
+		Responses.Write(if Process.env.CI_GRAPH_RUN == "true" then "execution" else "start", {
+			color = "failure",
+			result = "CI stopped before completion. Open the run logs for the reported error.",
+		})
+	end
 	Process.exit(1)
 end

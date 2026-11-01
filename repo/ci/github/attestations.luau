@@ -4,6 +4,7 @@
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local Process = require("@lune/process")
+local Responses = require("./responses")
 local Publication = require("./publication")
 
 const ROOT = "build/repo/attestations"
@@ -194,13 +195,8 @@ function Attestations.Report(): ()
 	else
 		print(`Attestations: {outcome}. {detail}`)
 	end
-	local path = Process.env.GITHUB_STEP_SUMMARY
-	if path then
-		local template = Fs.readFile("repo/content/ci/attestation-summary.md")
-		local text = template:gsub("{{outcome}}", outcome):gsub("{{detail}}", detail)
-		local current = if Fs.isFile(path) then Fs.readFile(path) else ""
-		Fs.writeFile(path, current .. "\n" .. text)
-	end
+	local text = Responses.Fill(Responses.Template("attestations.result"), { outcome = outcome, detail = detail })
+	Responses.Record("publication/attestations", text, if outcome == "passed" then "success" else "warning")
 end
 
 return Attestations

@@ -1,5 +1,5 @@
 <details open>
-<summary>GitHub CLI — copy/paste</summary>
+<summary>GitHub CLI - copy/paste</summary>
 
 1. [Create the token with its name and scopes prefilled]({{token_url}}).
 2. Choose an expiration → **Generate token** → copy the token.
@@ -18,7 +18,7 @@
 </details>
 
 <details>
-<summary>Keep the existing token — edit its scopes</summary>
+<summary>Keep the existing token - edit its scopes</summary>
 
 1. [Open classic tokens]({{tokens_url}}) → select the token whose Note identifies `{{credential}}`.
 2. Under **Select scopes**, enable: {{required_scopes}}.
@@ -35,7 +35,7 @@ to save a replacement value.
 </details>
 
 <details>
-<summary>GitHub website — click by click</summary>
+<summary>GitHub website - click by click</summary>
 
 1. [Create the token with its name and scopes prefilled]({{token_url}}).
 2. Choose an expiration → **Generate token** → copy the token.

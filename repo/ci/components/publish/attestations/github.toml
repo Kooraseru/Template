@@ -16,6 +16,7 @@ uses = "actions/attest@v4.2.2"
 continue-on-error = true
 if = "${{ !cancelled() && steps.attestation_options.outputs.enabled == toJSON(true) }}"
 [steps.with]
+show-summary = false
 subject-path = "${{ steps.attestation_options.outputs.subject_path }}"
 predicate-type = "https://slsa.dev/provenance/v1"
 predicate-path = "${{ steps.attestation_options.outputs.predicate_path }}"

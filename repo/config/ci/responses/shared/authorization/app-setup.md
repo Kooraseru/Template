@@ -1,7 +1,7 @@
-<details open>
-<summary>GitHub CLI — guided prompts</summary>
-
 {{app_registration}}
+
+<details>
+<summary>Save credentials with GitHub CLI (Bash)</summary>
 
 5. Run this block. Enter the App ID and the downloaded key's file path when asked:
 
@@ -26,9 +26,7 @@
 </details>
 
 <details>
-<summary>GitHub website — click by click</summary>
-
-{{app_registration}}
+<summary>Save credentials on GitHub</summary>
 
 5. [Open repository Actions variables]({{variables_url}}) → **New repository variable** (or edit the existing variable). Use this **Name**:
 
@@ -51,15 +49,3 @@
 
 </details>
 
-<details>
-<summary>Already have an App? Update it</summary>
-
-1. [Open your Apps]({{apps_url}}) → select the App → **Permissions & events**.
-2. Set the required permissions shown in this warning → **Save changes**.
-
-   {{app_registration_permissions}}
-
-3. Open **Install App** → the owner's installation → approve the permission update if requested.
-4. If the App ID or key changed, use either setup method above to update its stored credentials. Otherwise, [open the run]({{actions_url}}) → **Re-run jobs → Re-run failed jobs**.
-
-</details>

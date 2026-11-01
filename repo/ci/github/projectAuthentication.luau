@@ -9,6 +9,7 @@ local Authentication = require("./authentication")
 local Publication = require("./publication")
 local TokenPermissions = require("./tokenPermissions")
 local SetupInstructions = require("./setupInstructions")
+local Responses = require("./responses")
 
 local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string? }
@@ -66,21 +67,16 @@ function ProjectAuthentication.Warn(
 	SetupInstructions.Guides(values, true)
 	values.organization_setup = if values.owner_type == "User"
 		then ""
-		else SetupInstructions.Render("repo/content/ci/projects-authorization/organization-setup.md", values)
+		else SetupInstructions.Render("projects.organization-setup", values)
 	local outcome = reason or "missing"
 	print(
 		`::warning::Projects authorization for {owner}: {outcome}. Configure/update {tokenName} or the configured App; see the job summary.`
 	)
-	local folder = "repo/content/ci/projects-authorization"
-	local template = Fs.readFile(`{folder}/{outcome}.md`) .. "\n\n" .. Fs.readFile(`{folder}/setup.md`)
+	local template = Responses.Template("projects." .. outcome) .. "\n\n" .. Responses.Template("projects.setup")
 	local text = template:gsub("{{([%w_]+)}}", function(key)
 		return values[key] or error(`Unknown Projects authorization template field {key}`, 0)
 	end)
-	local path = Process.env.GITHUB_STEP_SUMMARY
-	if path then
-		local current = if Fs.isFile(path) then Fs.readFile(path) else ""
-		Fs.writeFile(path, current .. "\n" .. text)
-	end
+	Responses.Record("authorization/projects/" .. owner, text)
 end
 function ProjectAuthentication.Read(): Supplied
 	local supplied: Supplied = {

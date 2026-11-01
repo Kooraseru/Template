@@ -50,6 +50,7 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Ou
 	end
 	local environment: { [string]: string } =
 		{ GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else "" }
+	environment.CI_COMPONENT = task.identity
 	if self.credentials and task.boundary == "privileged" then
 		for name, value in self.credentials:Environment(task.credentials) do
 			environment[name] = value

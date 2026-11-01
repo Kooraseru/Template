@@ -12,6 +12,7 @@ local Credentials = require("./credentials")
 local Workflow = require("./workflow")
 local ActionsLock = require("@workspace/dependencies/actions-lock")
 local TokenPermissions = require("./tokenPermissions")
+local Responses = require("./responses")
 
 local BranchRun = {}
 
@@ -152,13 +153,13 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end)
 	local url = `{server}/{repository}/actions?query=branch%3A{query}`
 	print(`::notice::Started CI execution on {branch}: {url}`)
-	local summary = Process.env.GITHUB_STEP_SUMMARY
-	if summary then
-		Fs.writeFile(
-			summary,
-			`Bootstrap handed the discovered graph to [CI Execution]({url}).\n\nSource commit: {sha}\n`
-		)
-	end
+	Responses.Write("start", {
+		color = "success",
+		result = "Bootstrap completed. CI Execution was started.",
+		selected_count = tostring(#tasks),
+		execution_url = url,
+		source_sha = sha,
+	})
 	Fs.writeFile("build/github/launch.json", Serde.encode("json", { branch = branch, source = sha, url = url }))
 	return true
 end

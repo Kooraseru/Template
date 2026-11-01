@@ -34,7 +34,7 @@ It uses GitHub's reported scope inventory when available; absent inventory,
 fine-grained permissions, and resource-level access remain unverified until
 the operation enforces them. Do not infer all grants from a token's presence.
 Missing credentials and rejected/insufficient access use separate result text
-under `repo/content/ci/projects-authorization/`, sharing one setup guide.
+under `repo/config/ci/responses/shared/projects-authorization/`, sharing one setup guide.
 
 CI installation code belongs in `dependencies/`. Lune's pin and checksums
 live in `repo/config/ci/dependencies/lune.toml`; its bootstrap script stays under
@@ -128,8 +128,12 @@ build component.
 `Bootstrap.new()`, `Bootstrap.Run(self)`, and returns `Bootstrap`. The launcher
 owns process startup, environment checks, and error-to-exit handling. Bootstrap
 delegates discovery, planning, execution, and reporting to collaborator classes.
-Keep Markdown summaries and other authored text under `repo/content/ci/`, such as
-`repo/content/ci/bootstrap-summary.md`; reporter classes supply runtime values and write the
+Keep response Markdown under `repo/config/ci/responses/`. Its `responses.toml`
+defines the CI Start and CI Execution roots, recursive child layout, reusable
+template associations, and color aliases. Only these workflow roots publish job
+summaries. Component jobs record fragments and upload them on completion or
+failure; the final reporting job assembles them and deduplicates shared guidance.
+Reporter classes supply runtime values and write the
 rendered artifact.
 
 `repo/content/docs/` is published GitHub Pages content. Do not add internal plans,

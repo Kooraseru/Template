@@ -1,5 +1,5 @@
 <details open>
-<summary>Use a classic PAT — personal account or organization</summary>
+<summary>Use a classic PAT - personal account or organization</summary>
 
 {{token_setup}}
 
