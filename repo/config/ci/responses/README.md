@@ -9,11 +9,10 @@ responses/
   responses.toml
   start/
     root.md              CI Start root
-    overview/root.md     child component
-    execution/root.md    handoff link
+    overview/root.md     CI Start summary and navigation buttons
   execution/
     root.md              CI Execution root
-    overview/root.md     child component
+    overview/root.md     CI Execution summary and navigation buttons
   shared/
     components/
       root.md            component tree
@@ -33,6 +32,12 @@ from scheduler identities, so this configuration is not a component inventory.
 
 `templates` associates reusable roles with Markdown paths. `labels` names result
 fragments. Paths are relative to this directory.
+
+`gradients` stores reusable two-color Shieldcn palettes. `buttons` associates a
+label, GitHub icon, URL field, and palette. Button image URLs are built by the
+response renderer from those records. Set `buttons.defaults.size` to `default`
+for the standard Shieldcn size. Add or change a button in TOML, then place its
+named `{{..._button}}` value in a response Markdown file.
 
 `colors` supports aliases and GitHub's native `github.note`, `github.tip`,
 `github.important`, `github.warning`, and `github.caution` references. These select

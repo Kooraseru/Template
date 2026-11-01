@@ -1,8 +1,8 @@
 <a name="response-{{index}}"></a>
 <details>
-<summary>{{label}}</summary>
+<summary><strong>{{label}}</strong></summary>
 
-Applies to: {{components}}
+<sub>Affected components: {{components}}</sub>
 
 {{markdown}}
 

@@ -2,4 +2,4 @@
 | --- | --- | --- |
 | [{{repository}}]({{repository_url}}) | `{{source_sha}}` | {{selected_count}} |
 
-[Open this run]({{run_url}})
+<p align="center">{{run_button}}&nbsp;&nbsp;{{execution_button}}</p>

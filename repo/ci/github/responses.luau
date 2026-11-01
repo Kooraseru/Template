@@ -74,6 +74,65 @@ local function color(name: string): (string, string)
 	return style[1], style[2]
 end
 
+local function htmlAttribute(value: string): string
+	return (value:gsub("&", "&amp;"):gsub('"', "&quot;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+end
+
+local function shieldcnButton(name: string, values: { [string]: string }, config: { [string]: unknown }): string
+	local buttons = Publication.Record(config.buttons)
+	local defaults = Publication.Record(buttons.defaults)
+	local button = Publication.Record(buttons[name])
+	local destination = Publication.Text(button.target)
+	local href = values[destination]
+	if not href or href == "" then
+		return ""
+	end
+
+	local label = Publication.Text(button.label)
+	local logo = Publication.Text(button.logo)
+	if not logo:match("^[%w:_%-]+$") then
+		error(`Invalid Shieldcn logo for button {name}`, 0)
+	end
+	local size = Publication.Text(button.size or defaults.size)
+	if size ~= "xs" and size ~= "sm" and size ~= "default" and size ~= "lg" then
+		error(`Invalid Shieldcn size for button {name}`, 0)
+	end
+	local variant = Publication.Text(button.variant or defaults.variant)
+	local logoColor = Publication.Text(button.logo_color or defaults.logo_color)
+	if not logoColor:match("^%x%x%x(%x%x%x)?$") then
+		error(`Invalid Shieldcn logo color for button {name}`, 0)
+	end
+
+	local rawGradients = config.gradients
+	if type(rawGradients) ~= "table" then
+		error("responses.toml: gradients must be a table", 0)
+	end
+	local gradients = rawGradients :: { [string]: unknown }
+	local rawPalette = gradients[Publication.Text(button.gradient)]
+	if type(rawPalette) ~= "table" then
+		error(`Shieldcn gradient for button {name} must contain two colors`, 0)
+	end
+	local palette = rawPalette :: { unknown }
+	if #palette ~= 2 then
+		error(`Shieldcn gradient for button {name} must contain two colors`, 0)
+	end
+	local first = Publication.Text(palette[1])
+	local second = Publication.Text(palette[2])
+	if not first:match("^%x%x%x%x%x%x$") or not second:match("^%x%x%x%x%x%x$") then
+		error(`Invalid Shieldcn gradient for button {name}`, 0)
+	end
+
+	local slug = label:gsub("_", "__"):gsub("%-", "--"):gsub("%s+", "_")
+	local image =
+		`https://shieldcn.dev/badge/{Publication.Encode(slug)}.svg?gradient={first}%2C{second}&size={Publication.Encode(
+			size
+		)}&logo={Publication.Encode(logo)}&logoColor={Publication.Encode(logoColor)}&variant={Publication.Encode(
+			variant
+		)}`
+	image = image:gsub("&", "&amp;")
+	return `<a href="{htmlAttribute(href)}"><img alt="{htmlAttribute(label)}" src="{image}"></a>`
+end
+
 function Responses.Prepare(): string
 	local component = Process.env.CI_COMPONENT or "bootstrap"
 	if not Contract.ValidIdentity(component) then
@@ -178,6 +237,17 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 		node.outcome = outcome
 		node.component = identity
 	end
+	local function needsAttention(node: Branch): boolean
+		if node.outcome then
+			return node.outcome ~= "passed" and node.outcome ~= "success"
+		end
+		for _, child in node.children do
+			if needsAttention(child) then
+				return true
+			end
+		end
+		return false
+	end
 	local function render(node: Branch): string
 		if node.outcome then
 			local links: { string } = {}
@@ -208,10 +278,13 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 		if node.name == "" then
 			return tableText .. (if tableText ~= "" and text ~= "" then "\n\n" else "") .. text
 		end
-		local markdown = Responses.Fill(
-			Responses.Template("components.group"),
-			{ name = node.name, rows = tableText, children = text }
-		)
+		local expanded = if needsAttention(node) then " open" else ""
+		local markdown = Responses.Fill(Responses.Template("components.group"), {
+			name = node.name,
+			rows = tableText,
+			children = text,
+			expanded = expanded,
+		})
 		return (markdown:gsub("\n+$", ""))
 	end
 	return render(tree)
@@ -234,6 +307,10 @@ function Responses.Render(
 	context.source_sha = context.source_sha or Process.env.CI_SOURCE_SHA or Process.env.GITHUB_SHA or "local"
 	context.run_url = context.run_url or base .. "/actions" .. (if run then "/runs/" .. run else "")
 	context.execution_url = context.execution_url or ""
+	context.run_button = shieldcnButton("run", context, config)
+	context.execution_button = shieldcnButton("execution", context, config)
+	context.artifacts_button = shieldcnButton("artifacts", context, config)
+	context.repository_button = shieldcnButton("repository", context, config)
 	context.selected_count = context.selected_count or tostring(#keys(outcomes or {}))
 	context.component_tree = componentTree(outcomes or {}, entries)
 	if context.color == "success" then
@@ -246,7 +323,25 @@ function Responses.Render(
 	end
 	context.status_marker, context.status_alert = color(context.color or "info")
 	context.result = context.result or "See the component results and next steps below."
+	context.result_block = if context.color == "success"
+		then context.result
+		else `> [!{context.status_alert}]\n> {context.result}`
 	local labels = Publication.Record(config.labels)
+	local attention: { string } = {}
+	for _, entry in entries do
+		if entry.color ~= "warning" and entry.color ~= "failure" then
+			continue
+		end
+		local label = entry.id
+		for _, selector in keys(labels) do
+			if Glob.Match(entry.id, selector) then
+				label = Publication.Text(labels[selector])
+				break
+			end
+		end
+		table.insert(attention, `- [{label}](#response-{entry.index})`)
+	end
+	context.attention = table.concat(attention, "\n")
 	local function render(node: { [string]: unknown }): string
 		if node.if_value and (context[Publication.Text(node.if_value)] or "") == "" then
 			return ""

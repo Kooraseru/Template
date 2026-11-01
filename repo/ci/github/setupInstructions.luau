@@ -130,7 +130,7 @@ function SetupInstructions.Values(
 			.. permissionQuery(organizationPermissions or {}),
 		apps_url = "https://github.com/settings/apps",
 		organization_apps_url = "https://github.com/organizations/" .. Publication.Encode(owner) .. "/settings/apps",
-		app_registration_permissions = table.concat(permissionRows, "\n   "),
+		app_registration_permissions = table.concat(permissionRows, "\n"),
 		secrets_url = base .. "/settings/secrets/actions",
 		variables_url = base .. "/settings/variables/actions",
 		actions_url = base .. "/actions" .. (if run and run:match("^%d+$") then "/runs/" .. run else ""),

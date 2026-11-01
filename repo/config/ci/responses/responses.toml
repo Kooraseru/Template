@@ -11,6 +11,48 @@ neutral = "github.note"
 info = "github.note"
 pending = "github.important"
 
+# Reusable Shieldcn gradients. Each array is [start, end] in hexadecimal.
+[gradients]
+bootstrap = ["60A5FA", "A78BFA"]
+execution = ["6366F1", "C084FC"]
+build = ["38BDF8", "2DD4BF"]
+validation = ["34D399", "A3E635"]
+packages = ["F87171", "FCD34D"]
+pages = ["2DD4BF", "60A5FA"]
+release = ["F472B6", "A78BFA"]
+failure = ["EF4444", "F97316"]
+
+# Button rendering defaults. Shieldcn supplies the image; this file owns its
+# accessible label, destination, icon, palette, and size.
+[buttons.defaults]
+size = "default"
+variant = "default"
+logo_color = "fff"
+
+[buttons.run]
+label = "Open this run"
+target = "run_url"
+logo = "github"
+gradient = "bootstrap"
+
+[buttons.execution]
+label = "Open CI Execution"
+target = "execution_url"
+logo = "githubactions"
+gradient = "execution"
+
+[buttons.artifacts]
+label = "Open this run and its artifacts"
+target = "run_url"
+logo = "githubactions"
+gradient = "execution"
+
+[buttons.repository]
+label = "Repository"
+target = "repository_url"
+logo = "github"
+gradient = "bootstrap"
+
 # Every node can have more children. Its Markdown receives {{children}}.
 # if_value hides a node when the named runtime value is empty.
 [responses.start]
@@ -20,16 +62,16 @@ markdown = "start/root.md"
 markdown = "start/overview/root.md"
 order = 10
 
-[responses.start.children.execution]
-markdown = "start/execution/root.md"
-if_value = "execution_url"
-order = 15
-
 [responses.start.children.details]
 markdown = "shared/records/root.md"
 records = "**"
 component = "bootstrap"
 order = 20
+
+[responses.start.children.attention]
+markdown = "shared/attention.md"
+if_value = "attention"
+order = 18
 
 [responses.start.children.components]
 markdown = "shared/components/root.md"
@@ -47,6 +89,11 @@ order = 10
 markdown = "shared/components/root.md"
 if_value = "component_tree"
 order = 20
+
+[responses.execution.children.attention]
+markdown = "shared/attention.md"
+if_value = "attention"
+order = 15
 
 [responses.execution.children.details]
 markdown = "shared/records/root.md"

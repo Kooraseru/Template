@@ -1,5 +1,5 @@
-<details open>
-<summary>{{name}}</summary>
+<details{{expanded}}>
+<summary><strong>{{name}}</strong></summary>
 
 {{rows}}
 

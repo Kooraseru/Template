@@ -1,5 +1,3 @@
-## Neutral reporting needs attention
-
 {{app_detection}}
 
 **Observed result:** {{status}}.
