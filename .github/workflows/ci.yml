@@ -37,12 +37,9 @@ jobs:
           CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
           CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
           CI_GITHUB_PROJECTS_TOKEN: ${{ secrets[steps.credentials.outputs.projects_token] }}
-        run: |
-          mkdir -p build/run/ci-start/logs
-          set -o pipefail
-          bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau 2>&1 | tee build/run/ci-start/logs/bootstrap.log
+        run: bash repo/ci/github/workflows/run-logged.sh ci-start bootstrap
       - name: Collect bootstrap output
-        if: ${{ always() }}
+        if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: ci-start

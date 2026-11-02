@@ -3,9 +3,9 @@
 
 -- Coordinate configured provider analyzers and expose one Problems-compatible result.
 local Contracts = require("@self/contracts")
-local PlanBuilder = require("@self/planBuilder")
-local ProviderDiscovery = require("@self/providerDiscovery")
-local ProviderRunner = require("@self/providerRunner")
+local PlanBuilder = require("@self/planning")
+local ProviderDiscovery = require("@self/providers/providerDiscovery")
+local ProviderRunner = require("@self/providers/providerRunner")
 local Serde = require("@lune/serde")
 
 local Preflight = {}

@@ -9,4 +9,4 @@
 default = "neutral"
 
 [skip.components]
-# "publish/packages" = "neutral"
+# "packages/publish" = "neutral"

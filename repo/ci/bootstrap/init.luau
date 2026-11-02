@@ -1,12 +1,12 @@
 -- repo/ci/bootstrap/init.luau
 --!strict
 
-local Executor = require("@self/executor")
-local Reporter = require("@self/reporter")
-local Preflight = require("./preflight")
-local BranchRun = require("@ci/github/branchRun")
-local Credentials = require("@ci/github/credentials")
-local TaskRunner = require("@ci/github/taskRunner")
+local Executor = require("@self/execution/executor")
+local Reporter = require("@self/outcomes/reporter")
+local Preflight = require("@ci/preflight")
+local BranchRun = require("@ci/github/branches/branchRun")
+local Credentials = require("@ci/github/authentication/credentials")
+local TaskRunner = require("@ci/github/workflows/taskRunner")
 local Publication = require("@ci/github/publication")
 
 local Bootstrap = {}

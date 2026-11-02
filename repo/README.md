@@ -72,7 +72,7 @@ The scheduler discovers component and provider packages from their owning
 directories. Adding a conforming package does not require a new central list.
 Component groupings are ordinary directories. A component has both
 `component.toml` and `init.luau`; its identity is its relative path, such as
-`publish/releases`. Component internals are private and are not discovered as
+`releases/publish`. Component internals are private and are not discovered as
 additional components. Consumer settings belong in `config/`; runtime code and
 component manifests are maintained as implementation.
 
@@ -108,6 +108,25 @@ builder. Application consumers, manifests, and artifact transfers must use the
 same paths. Keep diagnostic captures under the corresponding `run/<workflow>/logs/`
 and generated previews under `responses/`, rather than at the build root.
 The entire `build/` directory is ignored and can be removed before a fresh build.
+
+Run **CI: Run local workflows** from VS Code tasks, or run
+`bash dependencies/local-actions/run.sh`, to execute CI Start and then its
+generated CI Execution graph with `act`. Local runs use a private artifact store
+and the artifact actions supported by `act`; they skip GitHub publication,
+remote Check Runs, signing, and branch cleanup. Logs are saved under
+`build/run/local-actions/logs/`. GitHub-hosted workflows retain their configured
+publication and reporting behavior.
+
+VS Code tasks use `bash` from `PATH`; configure a POSIX-compatible Bash in the
+editor environment. On Windows, the Preflight extension also accepts
+`PREFLIGHT_BASH` or `MSYS2_ROOT` when its Bash installation is not on `PATH`.
+
+`github/project-plans/index.json` is a validated snapshot of the blueprints in
+`repo/config/projects/`. The read-only `projects/plan` component
+checks them on pushes, pull requests, and manual runs. It does not create GitHub
+Projects. The privileged `projects/sync` component depends on that validation,
+re-reads the source definitions, and reconciles the actual projects on pushes.
+Its result is recorded under `github/project-sync/`.
 
 Credential mappings contain **GitHub secret/variable names only**. Real tokens,
 passwords, and private keys stay in GitHub Secrets and must never be committed.

@@ -42,7 +42,7 @@ live in `repo/config/ci/dependencies/lune.toml`; its bootstrap script stays unde
 `repo/content/packages/packages.toml`. Keep CI tooling/configuration out of application
 `source/` so source globs do not distribute the pipeline itself.
 
-The template has separate `build/application` and `build/pages` components. The
+The template has separate `application/build` and `pages/build` components. The
 application component compiles sources through discovered hosts. Pages turns
 authored `repo/content/docs/` content into
 the static site artifact under `build/github/pages/`. Keep these responsibilities in

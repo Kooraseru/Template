@@ -1,12 +1,9 @@
 ---
-title: "{{tag:page_title}}"
+title: "Project"
 ---
 
-# {{tag:project_name}}
+# Project
 
-{{tag:landing_intro}}
+This repository builds Windows binaries and publishes this documentation site from repo/content/docs/.
 
-{{tag:landing_locale_organization}}
-
-{{tag:landing_fallback}}
-
+Edit the files in repo/content/docs/ to update this site.

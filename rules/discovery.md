@@ -10,7 +10,7 @@ Every CI component is a package directory with a public `init.luau` head:
 
 Ordinary directories group components recursively. A directory with either
 `component.toml` or `init.luau` declares a component and must contain both.
-Its relative path is its identity, such as `build/application`. Component
+Its relative path is its identity, such as `application/build`. Component
 internals remain private; discovery does not turn their implementation folders
 into components. Grouping folders may contain README.md and `.gitkeep` files.
 Other loose files, invalid identities, and case-ambiguous paths are errors.

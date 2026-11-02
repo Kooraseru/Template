@@ -1,2 +1,2 @@
---artifact-server-path=build/run/ci-execution/artifacts/act
+--artifact-server-path=build/run/local-actions/artifacts/act
 --pull=false

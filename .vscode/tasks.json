@@ -4,7 +4,7 @@
 		{
 			"label": "Preflight: Install workspace extension",
 			"type": "process",
-			"command": "C:\\msys64\\usr\\bin\\bash.exe",
+			"command": "bash",
 			"args": [".vscode/preflight/install.sh"],
 			"options": { "cwd": "${workspaceFolder}" },
 			"presentation": {
@@ -15,6 +15,15 @@
 				"clear": true
 			},
 			"runOptions": { "runOn": "folderOpen", "instanceLimit": 1 },
+			"problemMatcher": []
+		},
+		{
+			"label": "CI: Run local workflows",
+			"type": "process",
+			"command": "bash",
+			"args": ["dependencies/local-actions/run.sh"],
+			"options": { "cwd": "${workspaceFolder}" },
+			"runOptions": { "instanceLimit": 1 },
 			"problemMatcher": []
 		}
 	]

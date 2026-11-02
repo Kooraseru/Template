@@ -1,6 +1,6 @@
-# Aliases resolve to GitHub's native alert styles, never custom CSS.
-# GitHub surfaces choose their own theme colors. Alert styling depends on
-# the rendering surface; ordinary text does not support arbitrary colors.
+# Aliases resolve to semantic GitHub styles and matching solid status badge colors.
+# Native alerts can use status_alert in top-level templates. The centered
+# summary uses badges because alerts cannot be nested inside other elements.
 [colors]
 success = "github.tip"
 failure = "github.caution"
@@ -9,47 +9,53 @@ neutral = "github.note"
 info = "github.note"
 pending = "github.important"
 
-# Reusable Shieldcn gradients. Each array is [start, end] in hexadecimal.
-[gradients]
-bootstrap = ["60A5FA", "A78BFA"]
-execution = ["6366F1", "C084FC"]
-build = ["38BDF8", "2DD4BF"]
-validation = ["34D399", "A3E635"]
-packages = ["F87171", "FCD34D"]
-pages = ["2DD4BF", "60A5FA"]
-release = ["F472B6", "A78BFA"]
-failure = ["EF4444", "F97316"]
+# Resolved status styles select one solid palette color.
+[status_colors]
+"github.note" = "neutral"
+"github.tip" = "success"
+"github.important" = "pending"
+"github.warning" = "warning"
+"github.caution" = "failure"
 
-# Button rendering defaults. Shieldcn supplies the image; this file owns its
-# accessible label, destination, icon, palette, and size.
-[buttons.defaults]
-size = "default"
-variant = "default"
-logo_color = "fff"
+# Solid colors shared by every badge and navigation button.
+[palette]
+success = "6DBE93"
+failure = "D95D66"
+warning = "C98B36"
+neutral = "64748B"
+info = "5385B1"
+pending = "8B75B5"
+
+# One shared size, font, and padding; iconless badges use the secondary style.
+[badges]
+size = "sm"
+variant = "branded"
+iconless_variant = "secondary"
+logo_color = "FFFFFF"
 
 [buttons.run]
 label = "Open this run"
 target = "run_url"
 logo = "github"
-gradient = "bootstrap"
+color = "info"
 
 [buttons.execution]
 label = "Open CI Execution"
 target = "execution_url"
 logo = "githubactions"
-gradient = "execution"
+color = "pending"
 
 [buttons.artifacts]
 label = "Open this run and its artifacts"
 target = "run_url"
 logo = "githubactions"
-gradient = "execution"
+color = "pending"
 
 [buttons.repository]
 label = "Repository"
 target = "repository_url"
 logo = "github"
-gradient = "bootstrap"
+color = "info"
 
 # Every node can have more children. Its Markdown receives {{children}}.
 # if_value hides a node when the named runtime value is empty.

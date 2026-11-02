@@ -1,3 +1,4 @@
 # Keep CI scripts consistent with the formatter across Windows/Linux checkouts.
 *.luau text eol=lf
 *.sh text eol=lf
+*.toml text eol=lf

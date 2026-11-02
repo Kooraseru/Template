@@ -7,8 +7,9 @@
 5. Preserve security, provenance, and publication gates.
 6. Record deferred migrations explicitly. Do not report an unfinished refactor, skipped branch, or unavailable platform as verified.
 
-On Windows, use the configured MSYS2 Bash for repository commands and local
-hooks. Examples and instructions should use Bash.
+Use the configured Bash environment for repository commands and local hooks.
+On Windows, respect the selected MSYS2 or other POSIX environment and its native
+process boundaries. Examples and instructions should use Bash.
 
 ## Editor configuration changes
 

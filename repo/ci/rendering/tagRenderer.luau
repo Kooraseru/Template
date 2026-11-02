@@ -3,7 +3,7 @@
 
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
-local Glob = require("@ci/bootstrap/glob")
+local Glob = require("@ci/bootstrap/discovery/glob")
 
 const LOCALE_CONFIG = "repo/content/i18n/config.toml"
 

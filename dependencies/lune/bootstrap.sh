@@ -2,14 +2,18 @@
 
 set -euo pipefail
 
-script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="$(cd "$script_directory/../.." && pwd)"
-configuration="$root/repo/config/ci/dependencies/lune.toml"
+# Resolve the pinned dependency metadata from this script's location.
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+project_root="$(cd -- "$script_directory/../.." && pwd -P)"
+configuration="$project_root/repo/config/ci/dependencies/lune.toml"
 
+# Read the selected TOML field, accepting files checked out with CRLF endings.
 read_setting() {
 	local section=$1
 	local key=$2
 	awk -v wanted_section="[$section]" -v wanted_key="$key" '
+		# A Windows bind mount can expose CRLF configuration to Linux awk.
+		{ sub(/\r$/, "") }
 		$0 == wanted_section { active = 1; next }
 		/^\[/ { active = 0 }
 		active && $1 == wanted_key {
@@ -26,6 +30,7 @@ if [[ -z $version ]]; then
 	exit 2
 fi
 
+# Select the pinned archive for the active Bash and machine architecture.
 platform=""
 case "$(uname -s)" in
 	MINGW*|MSYS*|CYGWIN*) platform_os=windows ;;
@@ -67,13 +72,21 @@ binary_name=lune
 if [[ $platform_os == windows ]]; then
 	binary_name=lune.exe
 fi
-install_directory="$root/build/run/dependencies/artifacts/lune/$version"
+install_directory="$project_root/build/run/dependencies/artifacts/lune/$version"
 binary="$install_directory/$binary_name"
 
+# Download and verify the pinned archive before exposing its executable.
 install_lune() {
 	local archive="$install_directory/lune.zip"
+	local -a download_options=(
+		--silent
+		--show-error
+		--fail
+		--location
+		--retry 3
+	)
 	mkdir -p "$install_directory"
-	curl --silent --show-error --fail --location --retry 3 \
+	curl "${download_options[@]}" \
 		"https://github.com/lune-org/lune/releases/download/v$version/lune-$version-$platform.zip" \
 		--output "$archive"
 	if command -v sha256sum >/dev/null 2>&1; then
@@ -97,6 +110,7 @@ install_lune() {
 	fi
 }
 
+# Reuse only an installed executable that matches the configured version.
 ensure_lune() {
 	local actual_version=""
 	if [[ -f $binary ]]; then
@@ -112,6 +126,7 @@ ensure_lune() {
 	fi
 }
 
+# Install, expose, or invoke the pinned runtime according to the caller's request.
 case "${1:-}" in
 	--install)
 		ensure_lune

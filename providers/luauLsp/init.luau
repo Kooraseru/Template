@@ -4,7 +4,7 @@
 local Fs = require("@lune/fs")
 local Process = require("@lune/process")
 local Contracts = require("@ci/preflight/contracts")
-local WorkspaceFiles = require("@ci/preflight/workspaceFiles")
+local WorkspaceFiles = require("@ci/preflight/workspace/workspaceFiles")
 
 local LuauLspProvider = {}
 LuauLspProvider.__index = LuauLspProvider

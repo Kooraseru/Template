@@ -47,16 +47,13 @@ function isPreflightWorkspace(folder) {
 
 /** Prefer MSYS2 Bash on Windows while allowing normal Bash installations elsewhere. */
 function resolveBash() {
-	if (process.platform === "win32") {
-		const candidates = [
-			process.env.PREFLIGHT_BASH,
-			process.env.MSYS2_ROOT ? path.join(process.env.MSYS2_ROOT, "usr", "bin", "bash.exe") : undefined,
-			"C:\\msys64\\usr\\bin\\bash.exe",
-		];
-		for (const candidate of candidates) {
-			if (candidate && fs.existsSync(candidate)) {
-				return candidate;
-			}
+	if (process.env.PREFLIGHT_BASH) {
+		return process.env.PREFLIGHT_BASH;
+	}
+	if (process.platform === "win32" && process.env.MSYS2_ROOT) {
+		const executable = path.join(process.env.MSYS2_ROOT, "usr", "bin", "bash.exe");
+		if (fs.existsSync(executable)) {
+			return executable;
 		}
 	}
 	return "bash";
@@ -65,14 +62,13 @@ function resolveBash() {
 /** Resolve provider binaries and storage from the active VS Code extension profile. */
 function providerEnvironment(context) {
 	const environment = { ...process.env };
-	if (process.platform === "win32") {
-		const msysRoot = environment.MSYS2_ROOT || "C:\\msys64";
+	if (process.platform === "win32" && environment.MSYS2_ROOT) {
+		const msysRoot = environment.MSYS2_ROOT;
 		const shellBins = [path.join(msysRoot, "usr", "bin")];
 		if (fs.existsSync(path.join(msysRoot, "clangarm64", "bin"))) {
 			shellBins.unshift(path.join(msysRoot, "clangarm64", "bin"));
 			environment.MSYSTEM = environment.MSYSTEM || "CLANGARM64";
 		}
-		environment.MSYS2_ROOT = msysRoot;
 		environment.MSYS2_PATH_TYPE = environment.MSYS2_PATH_TYPE || "inherit";
 		environment.PATH = [...shellBins, environment.PATH || ""].join(path.delimiter);
 	}
@@ -92,6 +88,23 @@ function providerEnvironment(context) {
 		environment.PREFLIGHT_STYLUA_PATH = configuredStylua;
 	}
 	environment.PREFLIGHT_VSCODE_GLOBAL_STORAGE = path.dirname(context.globalStorageUri.fsPath);
+	if (process.platform === "win32") {
+		// WSL translates these native paths before the POSIX preflight process starts.
+		const mappings = (environment.WSLENV || "").split(":").filter(Boolean);
+		for (const name of ["PREFLIGHT_LUAU_LSP", "PREFLIGHT_STYLUA_PATH", "PREFLIGHT_VSCODE_GLOBAL_STORAGE"]) {
+			if (!environment[name]) {
+				continue;
+			}
+			const index = mappings.findIndex((entry) => entry.split("/")[0] === name);
+			if (index < 0) {
+				mappings.push(`${name}/p`);
+			} else {
+				const [, flags = ""] = mappings[index].split("/");
+				mappings[index] = `${name}/${flags.includes("p") ? flags : `${flags}p`}`;
+			}
+		}
+		environment.WSLENV = mappings.join(":");
+	}
 	return environment;
 }
 
@@ -380,7 +393,7 @@ function analyze(root, collection, state, status, workspaces) {
 	if (environment.USERPROFILE) {
 		environment.HOME = environment.USERPROFILE;
 	}
-	const child = childProcess.spawn(resolveBash(), ["repo/ci/preflight/watch.sh", "--once"], {
+	const child = childProcess.spawn(resolveBash(), ["repo/ci/preflight/watch/watch.sh", "--once"], {
 		cwd: root,
 		env: environment,
 		windowsHide: true,

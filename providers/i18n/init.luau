@@ -18,7 +18,7 @@ end
 
 function I18nProvider.Analyze(_self: I18nProvider, _context: Contracts.Context): Contracts.ProviderResult
 	local diagnostics: { Contracts.Diagnostic } = {}
-	local roots = { "repo/content/docs", "repo/content/files" }
+	local roots = { "repo/content/files" }
 	for _, malformed in TagRenderer.FindMalformed(roots) do
 		local diagnostic: Contracts.Diagnostic = {
 			path = malformed.path,

@@ -5,8 +5,8 @@
 local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 
-local Contract = require("@ci/bootstrap/contract")
-local Glob = require("@ci/bootstrap/glob")
+local Contract = require("@ci/bootstrap/contracts/contract")
+local Glob = require("@ci/bootstrap/discovery/glob")
 local Contracts = require("@ci/preflight/contracts")
 local Graph = require("./graph")
 local SourceScanner = require("./sourceScanner")
@@ -239,7 +239,7 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 	graph:AddNode("repo/ci/entry.luau")
 	for _, task in tasks do
 		plannedEntries[task.entry] = true
-		graph:AddEdge("repo/ci/bootstrap/executor.luau", task.invoker, "planned invocation")
+		graph:AddEdge("repo/ci/bootstrap/execution/executor.luau", task.invoker, "planned invocation")
 		graph:AddEdge(task.invoker, task.entry, "planned component entry")
 		for _, inputPattern in task.inputs do
 			local line, column, endColumn = contractValueLocation(task.contractFile, "inputs", inputPattern)
@@ -400,7 +400,7 @@ function Analyzer.Analyze(self: Analyzer, tasks: { Contract.Task }): Result
 						)
 					end
 				end
-			elseif path == "repo/ci/bootstrap/invoke.luau" then
+			elseif path == "repo/ci/bootstrap/execution/invoke.luau" then
 				for entry in plannedEntries do
 					graph:AddEdge(path, entry, "planned dynamic require")
 					table.insert(pending, entry)

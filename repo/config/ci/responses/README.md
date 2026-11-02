@@ -33,17 +33,25 @@ from scheduler identities, so this configuration is not a component inventory.
 `templates` associates reusable roles with Markdown paths. `labels` names result
 fragments. Paths are relative to this directory.
 
-`gradients` stores reusable two-color Shieldcn palettes. `buttons` associates a
-label, GitHub icon, URL field, and palette. Button image URLs are built by the
-response renderer from those records. Set `buttons.defaults.size` to `default`
-for the standard Shieldcn size. Add or change a button in TOML, then place its
-named `{{..._button}}` value in a response Markdown file.
+`palette` stores named solid hexadecimal colors. `buttons` associates a label,
+GitHub icon, URL field, and palette color. All buttons and status badges share
+`badges.size` and `badges.logo_color`. Buttons with icons use `badges.variant`
+(`branded`); badges without icons use `badges.iconless_variant` (`secondary`).
+Both use `sm` size. Width follows the label; height, typography, and
+padding use the same size everywhere. Add or change a button in TOML, then place
+its named `{{..._button}}` value in a response Markdown file.
 
-`colors` supports aliases and GitHub's native `github.note`, `github.tip`,
-`github.important`, `github.warning`, and `github.caution` references. These select
-native alert styles. GitHub controls the theme colors;
-arbitrary Markdown text colors are not supported. No emoji markers are added. Alert syntax stays readable as a
-blockquote on surfaces without alert rendering.
+`colors` supports aliases and the semantic references `github.note`, `github.tip`,
+`github.important`, `github.warning`, and `github.caution`. `status_colors` maps
+each resolved reference to a palette color. The summary, component outcomes,
+and detail headings display these colors as badges with readable alt text.
+`status_alert` remains available for templates that use top-level native alerts.
+The centered summary uses badges because GitHub alerts cannot be nested inside
+other elements. GitHub strips custom CSS text colors; no emoji markers are added.
+
+Root summaries center their text in an HTML container. Overview and component
+tables use explicit table and cell alignment so both the tables and their
+contents are centered. HTML table values are escaped by the renderer.
 
 Only the CI Start job and CI Execution's final reporting job write job summaries.
 Component jobs upload fragments even when they fail. Their logs and job results
