@@ -23,7 +23,7 @@ credential-name mappings, and optional branch bootstrap. `repo/ci/github/` may r
 the scheduler's validated tasks as native jobs and dependency links when an
 explicitly configured App/token can push workflow files. Generated workflows
 exist only on run branches. They are not an additional maintained component
-inventory. Without usable credentials the existing local scheduler runs the plan.
+inventory. Without usable credentials the existing local scheduler runs the plan. Once an App/token is acquired for native execution, launch failures stop bootstrap rather than silently running privileged work through the local scheduler.
 Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
 
@@ -162,8 +162,9 @@ downloaded or otherwise untrusted components.
 
 `repo/ci/preflight/` analyzes the plan produced by the existing component discovery
 and planner. It does not define per-component validators or repeat component
-contracts. The same analyzer runs before CI execution and through the live VS Code
-task, which publishes file diagnostics to the Problems panel. A module reference
+contracts. The full analyzer runs at bootstrap and through the live VS Code task, which
+publishes file diagnostics to the Problems panel. Native component and reporting
+jobs reconstruct and validate the task plan without rerunning provider analyzers. A module reference
 that cannot be resolved is an error; dynamic behavior the analyzer cannot prove is
 reported as unknown and does not claim runtime success.
 

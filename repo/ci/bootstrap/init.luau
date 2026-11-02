@@ -35,19 +35,26 @@ function Bootstrap.new(event: string): Bootstrap
 end
 
 function Bootstrap.Run(self: Bootstrap, preflightOnly: boolean?, component: string?, reportOnly: boolean?): ()
+	if component or reportOnly then
+		-- Native component and report jobs validate the plan without repeating editor analyzers.
+		local plan = self.preflight:Plan(self.event)
+		if not plan.available then
+			local diagnostic = plan.diagnostics[1]
+			error(if diagnostic then diagnostic.message else "CI component plan is unavailable", 0)
+		end
+		if component then
+			TaskRunner.Run(plan.tasks, self.event, component, self.credentials)
+		else
+			TaskRunner.Report(plan.tasks)
+		end
+		return
+	end
+
 	local preflight = self.preflight:Run(self.event)
 	if not preflight.passed then
 		error("preflight found unreachable or invalid execution paths", 0)
 	end
 	if preflightOnly then
-		return
-	end
-	if component then
-		TaskRunner.Run(preflight.tasks, self.event, component, self.credentials)
-		return
-	end
-	if reportOnly then
-		TaskRunner.Report(preflight.tasks)
 		return
 	end
 	if BranchRun.TryLaunch(preflight.tasks, self.event, self.credentials) then

@@ -23,7 +23,7 @@ local function git(arguments: { string }, cwd: string?, token: string?): string
 	})
 	if not result.ok then
 		-- Credential helpers and server errors are deliberately not echoed.
-		error("GitHub branch bootstrap Git operation failed", 0)
+		error(`GitHub branch bootstrap Git operation failed with exit code {result.code}`, 0)
 	end
 	return (result.stdout:gsub("%s+$", ""))
 end
@@ -53,10 +53,13 @@ local function launch(
 	Fs.writeDir("build/run/ci-start/artifacts")
 	Fs.writeFile("build/run/ci-start/artifacts/workflow.yml", yaml)
 	git({ "worktree", "add", "--detach", worktree, sha })
-	local ok = xpcall(function(): ()
+	local stage = "writing generated workflow"
+	local ok, failure = xpcall(function(): ()
 		Fs.writeDir(`{worktree}/.github/workflows`)
 		Fs.writeFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
+		stage = "locking generated workflow dependencies"
 		ActionsLock.Lock(worktree, ".github/workflows/ci-execution.yml")
+		stage = "committing generated workflow"
 		git({ "add", "--", ".github/workflows/ci-execution.yml", ".github/workflows/actions.lock" }, worktree)
 		git({
 			"-c",
@@ -70,6 +73,7 @@ local function launch(
 			"-m",
 			`CI execution graph for {sha}`,
 		}, worktree)
+		stage = "pushing the CI execution branch"
 		local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 		Process.env.CI_GIT_CREDENTIAL_HELPER = `{Process.cwd}/repo/ci/github/authentication/git-credential.sh`
 		git({
@@ -89,7 +93,7 @@ local function launch(
 	end
 	if not ok then
 		error(
-			"Branch launch failed; verify the configured credential's Contents and Workflows write permissions and repository rules",
+			`Native CI Execution launch failed while {stage}: {failure}`,
 			0
 		)
 	end
@@ -159,16 +163,13 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		return false
 	end
 	local branch = `{configuration.branchPrefix}{runId}-{attempt}`
-	local ok = xpcall(launch, tostring, tasks, event, repository, branch, sha, access)
+	local ok, failure = xpcall(launch, tostring, tasks, event, repository, branch, sha, access)
 	Authentication.Release(access)
 	if not ok then
 		if access.inspection then
 			TokenPermissions.Warn(configuration, "bootstrap_token", access.inspection, true)
 		end
-		print(
-			"::warning::Native job graph could not be launched. Verify the configured App/token and repository branch rules. Continuing with the Luau scheduler."
-		)
-		return false
+		error(`Native CI Execution could not be started: {failure}`, 0)
 	end
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local query = branch:gsub("([^%w_.~-])", function(character: string): string
