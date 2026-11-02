@@ -21,6 +21,13 @@ end
 
 -- This consumes the scheduler's validated tasks, not a second component list.
 function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string): string
+	if event == "pull_request" then
+		for _, task in tasks do
+			if task.boundary ~= "read" then
+				error(`Refusing privileged task {task.identity} in PR CI Execution`, 0)
+			end
+		end
+	end
 	-- act's local artifact server implements the v4 artifact protocol.
 	local uploadArtifact = if Process.env.ACT == "true"
 		then "actions/upload-artifact@v4"

@@ -18,14 +18,27 @@ jobs:
     name: gate
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+      # Forked PRs run the same local read-only validation without repository secrets.
+      - name: Resolve native execution credential names
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        id: credentials
+        run: bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
       - name: Validate pull request
         env:
           CI_EVENT: pull_request
+          GH_TOKEN: ${{ github.token }}
+          CI_GITHUB_APP_ID_SECRET: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_ID_VARIABLE: ${{ github.event.pull_request.head.repo.full_name == github.repository && vars[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_PRIVATE_KEY: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.app_private_key] || '' }}
+          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
         run: bash repo/ci/github/workflows/run-logged.sh ci-start gate
       - name: Collect validation output
         if: ${{ always() }}

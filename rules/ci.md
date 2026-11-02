@@ -13,11 +13,13 @@ implementation as executable contracts; they are not a second settings store.
 
 `.github/workflows/ci.yml` owns the source-push bootstrap job and a read-only
 `pull_request` job named `gate`. Both invoke the same `repo/ci/entry.luau`
-launcher through pinned Lune. Bootstrap resolves configured credential names
-and passes selected secrets only on source pushes. The PR gate supplies no
-publication credentials and uses the planner's event selection to execute
-nonprivileged components. The workflow does not maintain component lists,
-dependency plans, matrices, or build logic. The bootstrap discovers
+launcher through pinned Lune. Bootstrap resolves configured credential names.
+Internal PRs may use scoped App/bootstrap credentials to push a temporary native
+CI Execution workflow; the required `gate` check waits for its final result.
+Fork PRs receive no secrets and retain the local read-only scheduler. All PR
+execution selects only read-boundary components; publication and repository
+administration are forbidden regardless of manifest events. The workflow does
+not maintain component lists, dependency plans, matrices, or build logic. The bootstrap discovers
 components from `repo/ci/components/`, reads their TOML manifests, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.
 
@@ -29,6 +31,8 @@ exist only on run branches. They are not an additional maintained component
 inventory. Without usable credentials the existing local scheduler runs the plan. Once an App/token is acquired for native execution, launch failures stop bootstrap rather than silently running privileged work through the local scheduler.
 Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
+Generated branch pushes use Git's credential protocol with a temporary App
+installation token, without relying on a persistent `gh` login.
 
 Authorization declarations under `repo/config/ci/authorization/` associate
 classic scopes with `credential.role`. The shared scope auditor aggregates
