@@ -117,6 +117,13 @@ remote Check Runs, signing, and branch cleanup. Logs are saved under
 `build/run/local-actions/logs/`. GitHub-hosted workflows retain their configured
 publication and reporting behavior.
 
+PRs targeting `source` run a read-only bootstrap and the required `gate` check.
+Internal PRs can generate a separate native CI Execution graph using the
+configured GitHub App or bootstrap token. Gate depends on bootstrap's completed
+execution result; its success does not merely mean the graph was scheduled.
+Fork PRs use the read-only local scheduler without credentials. Neither PR mode
+selects privileged publication components.
+
 VS Code tasks use `bash` from `PATH`; configure a POSIX-compatible Bash in the
 editor environment. On Windows, the Preflight extension also accepts
 `PREFLIGHT_BASH` or `MSYS2_ROOT` when its Bash installation is not on `PATH`.

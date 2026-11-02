@@ -14,18 +14,31 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  gate:
-    name: gate
+  bootstrap_pr:
+    name: Starting bootstrap (pull request)
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate pull request
+      # Forked PRs run the same local read-only validation without repository secrets.
+      - name: Resolve native execution credential names
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        id: credentials
+        run: bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
+      - name: Start PR bootstrap and validate execution
         env:
           CI_EVENT: pull_request
+          GH_TOKEN: ${{ github.token }}
+          CI_GITHUB_APP_ID_SECRET: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_ID_VARIABLE: ${{ github.event.pull_request.head.repo.full_name == github.repository && vars[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_PRIVATE_KEY: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.app_private_key] || '' }}
+          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
         run: bash repo/ci/github/workflows/run-logged.sh ci-start gate
       - name: Collect validation output
         if: ${{ always() }}
@@ -39,7 +52,7 @@ jobs:
           if-no-files-found: ignore
 
   bootstrap:
-    name: Starting bootstrap
+    name: Starting bootstrap (source push)
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     permissions:
@@ -79,3 +92,21 @@ jobs:
             build/run/ci-start/artifacts/workflow.yml
             build/run/ci-execution/
           if-no-files-found: ignore
+
+  gate:
+    name: gate
+    needs: bootstrap_pr
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # The required check must fail if PR bootstrap or its native CI Execution fails.
+      - name: Require successful PR execution
+        env:
+          BOOTSTRAP_RESULT: ${{ needs.bootstrap_pr.result }}
+        run: |
+          if [[ "$BOOTSTRAP_RESULT" != "success" ]]; then
+            echo "::error::PR bootstrap or CI Execution concluded $BOOTSTRAP_RESULT"
+            exit 1
+          fi

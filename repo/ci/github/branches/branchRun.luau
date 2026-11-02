@@ -5,6 +5,7 @@ local Fs = require("@lune/fs")
 local Net = require("@lune/net")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
+local Task = require("@lune/task")
 local Contract = require("@ci/bootstrap/contracts/contract")
 local Authentication = require("@ci/github/authentication/authentication")
 local Configuration = require("@ci/github/configuration")
@@ -15,15 +16,43 @@ local TokenPermissions = require("@ci/github/authentication/tokenPermissions")
 local Responses = require("@ci/github/reporting/responses")
 
 local BranchRun = {}
+local PR_EXECUTION_TIMEOUT_SECONDS = 3600
+local PR_EXECUTION_START_TIMEOUT_SECONDS = 120
+local PR_EXECUTION_POLL_SECONDS = 8
+
+local function gitFailure(stderr: string): string
+	-- Classify failures without printing raw remote output that may contain credentials.
+	if stderr:find("could not read Username", 1, true) or stderr:find("Authentication failed", 1, true) then
+		return "Git HTTPS authentication failed; verify the scoped App/PAT token and credential helper"
+	end
+	if stderr:find("refusing to allow", 1, true) and stderr:find("workflow", 1, true) then
+		return "GitHub rejected workflow file writes; verify Workflows: write permission"
+	end
+	if stderr:find("GH013", 1, true) or stderr:find("protected branch", 1, true) then
+		return "GitHub rulesets or branch protection rejected the generated CI branch"
+	end
+	if stderr:find("Permission denied", 1, true) or stderr:find("403", 1, true) then
+		return "GitHub rejected repository write permission for the generated CI branch"
+	end
+	if stderr:find("non-fast-forward", 1, true) then
+		return "the generated CI branch already exists at an unexpected commit"
+	end
+	return "Git returned no recognized failure category; verify the App installation and generated branch restrictions"
+end
 
 local function git(arguments: { string }, cwd: string?, token: string?): string
 	local result = Process.exec("git", arguments, {
 		cwd = cwd,
-		env = if token then { GH_TOKEN = token, GIT_TERMINAL_PROMPT = "0" } else nil,
+		env = if token
+			then {
+				CI_GIT_BOOTSTRAP_TOKEN = token,
+				CI_GIT_SERVER_URL = Process.env.GITHUB_SERVER_URL or "https://github.com",
+				GIT_TERMINAL_PROMPT = "0",
+			}
+			else nil,
 	})
 	if not result.ok then
-		-- Credential helpers and server errors are deliberately not echoed.
-		error(`GitHub branch bootstrap Git operation failed with exit code {result.code}`, 0)
+		error(`GitHub branch bootstrap Git operation failed with exit code {result.code}: {gitFailure(result.stderr)}`, 0)
 	end
 	return (result.stdout:gsub("%s+$", ""))
 end
@@ -75,12 +104,11 @@ local function launch(
 		}, worktree)
 		stage = "pushing the CI execution branch"
 		local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
-		Process.env.CI_GIT_CREDENTIAL_HELPER = `{Process.cwd}/repo/ci/github/authentication/git-credential.sh`
 		git({
 			"-c",
 			"credential.helper=",
 			"-c",
-			'credential.helper=!bash "$CI_GIT_CREDENTIAL_HELPER"',
+			"credential.helper=!bash repo/ci/github/authentication/git-credential.sh",
 			"push",
 			"--porcelain",
 			`{server}/{repository}.git`,
@@ -97,6 +125,85 @@ local function launch(
 			0
 		)
 	end
+end
+
+local function waitForPullRequestExecution(repository: string, branch: string): ()
+	local token = Process.env.GH_TOKEN
+	if not token or token == "" then
+		error("PR gate needs the read-only GITHUB_TOKEN to observe native CI Execution", 0)
+	end
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+		return string.format("%%%02X", string.byte(character))
+	end)
+	local started = os.time()
+	local observedId: number? = nil
+	-- The required gate check must reflect the generated run, not merely its dispatch.
+	while os.time() - started < PR_EXECUTION_TIMEOUT_SECONDS do
+		local response = Net.request({
+			url = if observedId
+				then `{api}/repos/{repository}/actions/runs/{observedId}`
+				else `{api}/repos/{repository}/actions/runs?branch={encoded}&event=push&per_page=30`,
+			headers = {
+				Authorization = `Bearer {token}`,
+				Accept = "application/vnd.github+json",
+				["User-Agent"] = "Luau-CI-bootstrap",
+			},
+		})
+		if not response.ok then
+			error(`Cannot inspect native PR execution (HTTP {response.statusCode}); gate needs Actions: read`, 0)
+		end
+		local decoded: unknown = Serde.decode("json", response.body)
+		local runs: { any }
+		if observedId then
+			if type(decoded) ~= "table" or type(decoded.id) ~= "number" or decoded.id ~= observedId then
+				error("GitHub returned an invalid native PR execution run", 0)
+			end
+			runs = { decoded }
+		else
+			if type(decoded) ~= "table" or type(decoded.workflow_runs) ~= "table" then
+				error("GitHub returned an invalid workflow run list", 0)
+			end
+			runs = decoded.workflow_runs
+		end
+		for _, item in runs do
+			if type(item) ~= "table" then
+				continue
+			end
+			if not observedId then
+				local path = item.path
+				if type(path) ~= "string" or not path:find(".github/workflows/ci-execution.yml", 1, true) then
+					continue
+				end
+				if type(item.head_branch) ~= "string" or item.head_branch ~= branch then
+					continue
+				end
+				if type(item.id) ~= "number" then
+					continue
+				end
+				observedId = item.id
+				print(`::notice::PR gate is waiting for native CI Execution run {tostring(item.id)}`)
+			end
+			if item.status == "completed" then
+				if item.conclusion == "success" then
+					print(`::notice::Native PR execution passed: {tostring(item.html_url)}`)
+					return
+				end
+				error(`Native PR execution concluded {tostring(item.conclusion)}: {tostring(item.html_url)}`, 0)
+			end
+			break
+		end
+		if not observedId and os.time() - started >= PR_EXECUTION_START_TIMEOUT_SECONDS then
+			error("GitHub did not schedule CI Execution for the generated PR branch within two minutes", 0)
+		end
+		Task.wait(PR_EXECUTION_POLL_SECONDS)
+	end
+	error(
+		if observedId
+			then "Native PR execution did not finish within the gate timeout"
+			else "GitHub did not schedule CI Execution for the generated PR branch",
+		0
+	)
 end
 
 function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credentials: Credentials.Credentials): boolean
@@ -122,8 +229,19 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		print(`::notice::Generated local CI Execution workflow at {directory}/workflow.yml`)
 		return true
 	end
-	if Process.env.GITHUB_ACTIONS ~= "true" or Process.env.CI_GRAPH_RUN == "true" or event ~= "push" then
+	if
+		Process.env.GITHUB_ACTIONS ~= "true"
+		or Process.env.CI_GRAPH_RUN == "true"
+		or (event ~= "push" and event ~= "pull_request")
+	then
 		return false
+	end
+	if event == "pull_request" then
+		for _, task in tasks do
+			if task.boundary ~= "read" then
+				error(`PR native execution cannot include privileged component {task.identity}`, 0)
+			end
+		end
 	end
 	local configuration = Configuration.new()
 	credentials:Describe(configuration)
@@ -171,6 +289,9 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		end
 		error(`Native CI Execution could not be started: {failure}`, 0)
 	end
+	if event == "pull_request" then
+		waitForPullRequestExecution(repository, branch)
+	end
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local query = branch:gsub("([^%w_.~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
@@ -179,7 +300,9 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	print(`::notice::Started CI execution on {branch}: {url}`)
 	Responses.Write("start", {
 		color = "success",
-		result = "Bootstrap completed. CI Execution was started.",
+		result = if event == "pull_request"
+			then "PR gate passed after native CI Execution completed."
+			else "Bootstrap completed. CI Execution was started.",
 		selected_count = tostring(#tasks),
 		execution_url = url,
 		source_sha = sha,
