@@ -11,6 +11,10 @@ const FIELDS_QUERY =
 	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2{fields(first:100,after:$after){nodes{... on ProjectV2FieldCommon{id name dataType isIssueField} ... on ProjectV2SingleSelectField{options{id name color description}}} pageInfo{hasNextPage endCursor}}}}}]]
 const REPOSITORIES_QUERY =
 	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2{repositories(first:100,after:$after){nodes{id} pageInfo{hasNextPage endCursor}}}}}]]
+const VIEWS_QUERY =
+	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2{views(first:100,after:$after){nodes{id name layout filter} pageInfo{hasNextPage endCursor}}}}}]]
+const VISIBLE_FIELDS_QUERY =
+	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2View{configuration{visibleFields(first:100,after:$after){nodes{... on ProjectV2FieldCommon{id name}} pageInfo{hasNextPage endCursor}}}}}}]]
 const CUSTOM_TYPES =
 	{ TEXT = true, NUMBER = true, DATE = true, SINGLE_SELECT = true, MULTI_SELECT = true, ITERATION = true }
 
@@ -155,6 +159,100 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 	return changed
 end
 
+local function syncViews(projectId: string, desired: { Catalog.View }, query: Client.Query): boolean
+	local existing = connection(query, VIEWS_QUERY, { id = projectId }, function(data)
+		return Publication.Record(Publication.Record(data.node).views)
+	end)
+	local byName: { [string]: { [string]: unknown } } = {}
+	for _, view in existing do
+		local name = Publication.Text(view.name):lower()
+		if byName[name] then
+			error(`Ambiguous existing project view {name}`, 0)
+		end
+		byName[name] = view
+	end
+	local fields = connection(query, FIELDS_QUERY, { id = projectId }, function(data)
+		return Publication.Record(Publication.Record(data.node).fields)
+	end)
+	local fieldIds: { [string]: string } = {}
+	for _, field in fields do
+		local name = Publication.Text(field.name):lower()
+		if fieldIds[name] then
+			error(`Ambiguous field {name} in Project view configuration`, 0)
+		end
+		fieldIds[name] = Publication.Text(field.id)
+	end
+	local changed = false
+	for _, view in desired do
+		local current = byName[view.name:lower()]
+		local visibleIds: { string }? = nil
+		if view.visibleFields then
+			visibleIds = {}
+			for _, name in view.visibleFields do
+				local id = fieldIds[name:lower()]
+				if not id then
+					error(`Project view {view.name} requires missing field {name}`, 0)
+				end
+				table.insert(visibleIds, id)
+			end
+		end
+		local configuration = if visibleIds then { visibleFieldIds = visibleIds } else nil
+		if not current then
+			local result = query(
+				[[mutation($input:CreateProjectV2ViewInput!){createProjectV2View(input:$input){projectV2View{id}}}]],
+				{ input = { projectId = projectId, name = view.name, layout = view.layout, configuration = configuration } }
+			)
+			local created = Publication.Record(Publication.Record(result.createProjectV2View).projectV2View)
+			local id = Publication.Text(created.id)
+			-- The create mutation does not expose a filter input; apply it after creating the view.
+			if view.filter and view.filter ~= "" then
+				query(
+					[[mutation($input:UpdateProjectV2ViewInput!){updateProjectV2View(input:$input){projectV2View{id}}}]],
+					{ input = { viewId = id, filter = view.filter } }
+				)
+			end
+			print(`Created Project view {view.name}`)
+			changed = true
+			continue
+		end
+		local sameFields = true
+		if visibleIds then
+			local remote = connection(query, VISIBLE_FIELDS_QUERY, { id = Publication.Text(current.id) }, function(data)
+				return Publication.Record(Publication.Record(Publication.Record(data.node).configuration).visibleFields)
+			end)
+			if #remote ~= #visibleIds then
+				sameFields = false
+			else
+				for index, field in remote do
+					if field.id ~= visibleIds[index] then
+						sameFields = false
+						break
+					end
+				end
+			end
+		end
+		-- Omitted filters and field lists remain managed by the GitHub UI.
+		local filterDiffers = view.filter ~= nil and (current.filter or "") ~= view.filter
+		if current.layout ~= view.layout or filterDiffers or not sameFields then
+			query(
+				[[mutation($input:UpdateProjectV2ViewInput!){updateProjectV2View(input:$input){projectV2View{id}}}]],
+				{
+					input = {
+						viewId = Publication.Text(current.id),
+						layout = view.layout,
+						filter = view.filter,
+						configuration = if sameFields then nil else configuration,
+					},
+				}
+			)
+			print(`Updated Project view {view.name}`)
+			changed = true
+		end
+	end
+	-- Views have no repository-owned identity marker; leave undeclared views intact.
+	return changed
+end
+
 function ProjectSync.Owner(
 	repository: string,
 	owner: string,
@@ -246,6 +344,9 @@ function ProjectSync.Owner(
 			changed = true
 		end
 		if syncFields(id, project.fields, query) then
+			changed = true
+		end
+		if syncViews(id, project.views, query) then
 			changed = true
 		end
 		table.insert(receipts, { identity = project.identity, id = id, url = Publication.Text(current.url) })

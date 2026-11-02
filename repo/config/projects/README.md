@@ -1,14 +1,26 @@
 # Source-managed GitHub Projects
 
-Each direct folder defines one project through `project.toml` and its own
-`description.md`. Adding a valid folder includes it automatically; there is no central
-project list. Development tracks implementation and priorities; Planning tracks proposals and target dates.
+Each direct `.toml` file defines one Project. Its filename is the source identity,
+while `project.title` is the GitHub display name. Adding a valid file includes
+it automatically; there is no central project list. Each file owns the
+`[project]` section, a multiline `project.readme`, its `[[fields]]`, and
+multiple `[[views]]`.
 
 `projects/plan` validates definitions and emits a reviewable plan. `projects/sync`
 creates or reconciles projects, fields, single-select choices, repository links,
-and metadata. It preserves the IDs of retained options, so their existing item
+metadata, and views. It preserves the IDs of retained options, so their existing item
 values remain associated. It does not create issues, PRs, draft issues, or project
 items. Priority choices are defined here; issue priority is not inferred.
+
+Each `[[views]]` needs a unique `name` and a GitHub GraphQL layout:
+`TABLE_LAYOUT`, `BOARD_LAYOUT`, or `ROADMAP_LAYOUT`. Optional `filter` is
+a GitHub view filter expression. Optional `visible_fields` is an ordered list of
+field names defined in that Project plus the built-in `Title`. If either is omitted, GitHub's existing
+setting is preserved. Layout-specific grouping, sort order, roadmap dates,
+and view ordering cannot currently be written through the public view mutation.
+Unsupported keys fail validation. Existing undeclared views remain untouched;
+renaming a view creates a second view because GitHub exposes no stable
+repository-owned view identity.
 
 ## Authorization
 
@@ -38,7 +50,7 @@ configuration errors remain actual failures, not successful skips.
 ## Reconciliation boundary
 
 The owner defaults to the account from github.toml's repository path. Each project
-has a repository/folder management identity stored as a hidden README marker.
+has a repository/file management identity stored as a hidden README marker.
 Only projects carrying this repository's marker are adopted or pruned. Removing a
 blueprint closes matching managed projects for the configured owners, retaining
 all items. Unrelated personal/organization projects are not touched.
@@ -48,12 +60,11 @@ them can clear their corresponding project field values; retained options keep
 IDs. Native system fields and organization issue fields are not project-owned.
 GitHub's Status field is retained; declare its desired choices in the blueprint.
 Changing a field's data type fails clearly rather than deleting all its values to
-recreate it. Field/display/view ordering and automatic item movement are separate
-from the supported ordered single-select options.
+recreate it. Automatic item movement and layout-specific settings remain UI-owned.
 
 The public API does not expose every UI workflow/automation setting. Unsupported
-blueprint keys fail validation rather than pretending to apply them. Current
-support is TEXT, NUMBER, DATE, and SINGLE_SELECT fields with ordered options.
+blueprint keys fail validation rather than pretending to apply them. Supported
+field types are TEXT, NUMBER, DATE, and SINGLE_SELECT with ordered options.
 
 References:
 - https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/automating-projects-using-actions

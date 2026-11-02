@@ -244,9 +244,16 @@ Source configuration is authoritative for labels: remove every remote label not
 in repo/config/labels.toml after validating/upserting all declared entries. Do not
 carry exemptions for labels added by defaults or other automation.
 
-Project blueprints are discovered under repo/config/projects/*/. Source owns
-managed project structure; actual issue/PR records remain GitHub data. Projects
-use configured App/PAT roles and warn/skip on unavailable account permissions.
+Project blueprints are discovered under repo/config/projects/*.toml. Each file
+owns one managed project, its fields, and its named views. Source owns managed
+project structure; actual issue/PR records remain GitHub data. Projects use
+configured App/PAT roles and warn/skip on unavailable account permissions.
+Rulesets are likewise discovered from repo/config/rulesets/*.toml. PRs validate
+ruleset definitions read-only; source pushes reconcile matching-name rulesets
+only with App/PAT Administration: write permission. The source gate check has
+no administrative bypass; a separate update restriction permits administrators
+to merge by PR without bypassing the required check. Unknown remote rulesets
+and Project views are preserved.
 Do not confuse missing credentials with an unsupported integration.
 
 Optional integrations must be isolated. Attestations are best-effort and record

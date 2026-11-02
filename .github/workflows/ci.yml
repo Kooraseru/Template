@@ -66,6 +66,7 @@ jobs:
           CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
           CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
           CI_GITHUB_PROJECTS_TOKEN: ${{ secrets[steps.credentials.outputs.projects_token] }}
+          CI_GITHUB_RULESETS_TOKEN: ${{ secrets[steps.credentials.outputs.rulesets_token] }}
         run: bash repo/ci/github/workflows/run-logged.sh ci-start bootstrap
       - name: Collect bootstrap output
         if: ${{ always() && env.ACT != 'true' }}

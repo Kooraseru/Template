@@ -9,4 +9,7 @@
 default = "neutral"
 
 [skip.components]
-# "packages/publish" = "neutral"
+# Missing optional account/repository administration credentials are accepted skips.
+# Runtime errors after authorization still fail the component.
+"projects/sync" = "success"
+"rulesets/sync" = "success"

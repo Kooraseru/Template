@@ -18,6 +18,7 @@ const SECRET_ROLES: { [string]: string } = {
 	app_private_key = "CI_GITHUB_APP_PRIVATE_KEY",
 	bootstrap_token = "CI_GITHUB_BOOTSTRAP_TOKEN",
 	projects_token = "CI_GITHUB_PROJECTS_TOKEN",
+	rulesets_token = "CI_GITHUB_RULESETS_TOKEN",
 }
 
 function Credentials.new(): Credentials

@@ -2,6 +2,12 @@
 title = "Planning"
 description = "Proposals and milestones before implementation begins."
 public = false
+readme = """
+# Planning
+
+Collect proposals, assess their scope, and track planned delivery dates.
+Implementation work belongs on the Development project.
+"""
 
 [[fields]]
 name = "Status"
@@ -16,3 +22,18 @@ options = [
 [[fields]]
 name = "Target date"
 data_type = "DATE"
+
+[[views]]
+name = "Proposals"
+layout = "TABLE_LAYOUT"
+visible_fields = ["Title", "Status", "Target date"]
+
+[[views]]
+name = "Progress"
+layout = "BOARD_LAYOUT"
+visible_fields = ["Title", "Status", "Target date"]
+
+[[views]]
+name = "Roadmap"
+layout = "ROADMAP_LAYOUT"
+visible_fields = ["Title", "Status", "Target date"]

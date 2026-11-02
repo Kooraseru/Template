@@ -14,6 +14,7 @@ const COLORS =
 local ProjectCatalog = {}
 export type Option = { name: string, color: string, description: string }
 export type Field = { name: string, dataType: string, options: { Option }? }
+export type View = { name: string, layout: string, filter: string?, visibleFields: { string }? }
 export type Project = {
 	identity: string,
 	managementKey: string,
@@ -23,6 +24,7 @@ export type Project = {
 	public: boolean,
 	readme: string,
 	fields: { Field },
+	views: { View },
 }
 
 local function known(record: { [string]: unknown }, allowed: { [string]: boolean }, label: string): ()
@@ -94,6 +96,62 @@ local function fields(value: unknown, path: string): { Field }
 	return result
 end
 
+local function views(value: unknown, definitions: { Field }, path: string): { View }
+	if type(value) ~= "table" or #value == 0 then
+		error(`{path}: expected at least one [[views]] definition`, 0)
+	end
+	local result: { View } = {}
+	local names: { [string]: boolean } = {}
+	-- Title is a built-in Project field and can be selected without a [[fields]] entry.
+	local fieldNames: { [string]: boolean } = { title = true }
+	for _, field in definitions do
+		fieldNames[field.name:lower()] = true
+	end
+	for index, item in value do
+		if type(index) ~= "number" then
+			error(`{path}: views must be an array`, 0)
+		end
+		local entry = Publication.Record(item)
+		known(entry, { name = true, layout = true, filter = true, visible_fields = true }, path)
+		local name = text(entry.name, path)
+		local layout = text(entry.layout, path)
+		if names[name:lower()] then
+			error(`{path}: duplicate view {name}`, 0)
+		end
+		names[name:lower()] = true
+		if layout ~= "TABLE_LAYOUT" and layout ~= "BOARD_LAYOUT" and layout ~= "ROADMAP_LAYOUT" then
+			error(`{path}: unsupported view layout {layout}`, 0)
+		end
+		local filter: string? = nil
+		if entry.filter ~= nil then
+			if type(entry.filter) ~= "string" then
+				error(`{path}: view {name} filter must be text`, 0)
+			end
+			filter = entry.filter
+		end
+		local visibleFields: { string }? = nil
+		if entry.visible_fields ~= nil then
+			if type(entry.visible_fields) ~= "table" then
+				error(`{path}: view {name} visible_fields must be an array`, 0)
+			end
+			visibleFields = {}
+			local chosen: { [string]: boolean } = {}
+			for key, field in entry.visible_fields do
+				if type(key) ~= "number" or type(field) ~= "string" then
+					error(`{path}: view {name} visible_fields must contain names`, 0)
+				end
+				if not fieldNames[field:lower()] or chosen[field:lower()] then
+					error(`{path}: view {name} references unknown or repeated field {field}`, 0)
+				end
+				chosen[field:lower()] = true
+				table.insert(visibleFields, field)
+			end
+		end
+		table.insert(result, { name = name, layout = layout, filter = filter, visibleFields = visibleFields })
+	end
+	return result
+end
+
 function ProjectCatalog.Read(): { Project }
 	local configuration = Configuration.new()
 	local repository = configuration:ResolveRepository(configuration.repository)
@@ -103,23 +161,19 @@ function ProjectCatalog.Read(): { Project }
 	end
 	local result: { Project } = {}
 	local seen: { [string]: boolean } = {}
-	for _, directory in Glob.Find(`{ROOT}/*`) do
-		if directory == `{ROOT}/README.md` or directory == `{ROOT}/.gitkeep` then
-			continue
-		end
-		local identity = directory:match("([^/]+)$")
-		if not identity or not identity:match("^[%w][%w_-]*$") or not Fs.isDir(directory) then
-			error(`{directory}: expected a project folder`, 0)
+	for _, path in Glob.Find(`{ROOT}/*.toml`) do
+		local identity = path:match("/([%w_-]+)%.toml$")
+		if not identity or not identity:match("^[%w][%w_-]*$") or not Fs.isFile(path) then
+			error(`{path}: expected a project TOML file`, 0)
 		end
 		if seen[identity:lower()] then
 			error(`Duplicate project identity: {identity}`, 0)
 		end
 		seen[identity:lower()] = true
-		local path = `{directory}/project.toml`
 		local root = Publication.Record(Serde.decode("toml", Fs.readFile(path)))
-		known(root, { project = true, fields = true }, path)
+		known(root, { project = true, fields = true, views = true }, path)
 		local project = Publication.Record(root.project)
-		known(project, { owner = true, title = true, description = true, public = true }, path)
+		known(project, { owner = true, title = true, description = true, readme = true, public = true }, path)
 		local owner = if project.owner ~= nil
 			then configuration:ResolveOwner(text(project.owner, path))
 			else defaultOwner
@@ -127,10 +181,14 @@ function ProjectCatalog.Read(): { Project }
 		if type(public) ~= "boolean" then
 			error(`{path}: project.public must be boolean`, 0)
 		end
-		local readme = Fs.readFile(`{directory}/description.md`)
-		if not readme:find("%S") then
-			error(`{directory}: description.md must describe the project`, 0)
+		local readme = project.readme
+		if type(readme) ~= "string" then
+			error(`{path}: project.readme must be text`, 0)
 		end
+		if not readme:find("%S") then
+			error(`{path}: project.readme must describe the project`, 0)
+		end
+		local definitions = fields(root.fields, path)
 		table.insert(result, {
 			identity = identity,
 			managementKey = `{repository}:{identity}`,
@@ -139,7 +197,8 @@ function ProjectCatalog.Read(): { Project }
 			description = text(project.description, path),
 			public = public,
 			readme = readme,
-			fields = fields(root.fields, path),
+			fields = definitions,
+			views = views(root.views, definitions, path),
 		})
 	end
 	return result
