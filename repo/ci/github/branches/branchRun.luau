@@ -137,11 +137,13 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local started = os.time()
-	local observed = false
+	local observedId: number? = nil
 	-- The required gate check must reflect the generated run, not merely its dispatch.
 	while os.time() - started < PR_EXECUTION_TIMEOUT_SECONDS do
 		local response = Net.request({
-			url = `{api}/repos/{repository}/actions/runs?branch={encoded}&event=push&per_page=30`,
+			url = if observedId
+				then `{api}/repos/{repository}/actions/runs/{observedId}`
+				else `{api}/repos/{repository}/actions/runs?branch={encoded}&event=push&per_page=30`,
 			headers = {
 				Authorization = `Bearer {token}`,
 				Accept = "application/vnd.github+json",
@@ -152,23 +154,35 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			error(`Cannot inspect native PR execution (HTTP {response.statusCode}); gate needs Actions: read`, 0)
 		end
 		local decoded: unknown = Serde.decode("json", response.body)
-		if type(decoded) ~= "table" or type(decoded.workflow_runs) ~= "table" then
-			error("GitHub returned an invalid workflow run list", 0)
+		local runs: { any }
+		if observedId then
+			if type(decoded) ~= "table" or type(decoded.id) ~= "number" or decoded.id ~= observedId then
+				error("GitHub returned an invalid native PR execution run", 0)
+			end
+			runs = { decoded }
+		else
+			if type(decoded) ~= "table" or type(decoded.workflow_runs) ~= "table" then
+				error("GitHub returned an invalid workflow run list", 0)
+			end
+			runs = decoded.workflow_runs
 		end
-		for _, item in decoded.workflow_runs do
+		for _, item in runs do
 			if type(item) ~= "table" then
 				continue
 			end
-			local path = item.path
-			if type(path) ~= "string" or not path:find(".github/workflows/ci-execution.yml", 1, true) then
-				continue
-			end
-			if type(item.head_branch) ~= "string" or item.head_branch ~= branch then
-				continue
-			end
-			if not observed then
+			if not observedId then
+				local path = item.path
+				if type(path) ~= "string" or not path:find(".github/workflows/ci-execution.yml", 1, true) then
+					continue
+				end
+				if type(item.head_branch) ~= "string" or item.head_branch ~= branch then
+					continue
+				end
+				if type(item.id) ~= "number" then
+					continue
+				end
+				observedId = item.id
 				print(`::notice::PR gate is waiting for native CI Execution run {tostring(item.id)}`)
-				observed = true
 			end
 			if item.status == "completed" then
 				if item.conclusion == "success" then
@@ -179,13 +193,13 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			end
 			break
 		end
-		if not observed and os.time() - started >= PR_EXECUTION_START_TIMEOUT_SECONDS then
+		if not observedId and os.time() - started >= PR_EXECUTION_START_TIMEOUT_SECONDS then
 			error("GitHub did not schedule CI Execution for the generated PR branch within two minutes", 0)
 		end
 		Task.wait(PR_EXECUTION_POLL_SECONDS)
 	end
 	error(
-		if observed
+		if observedId
 			then "Native PR execution did not finish within the gate timeout"
 			else "GitHub did not schedule CI Execution for the generated PR branch",
 		0
