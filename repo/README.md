@@ -128,5 +128,12 @@ Projects. The privileged `projects/sync` component depends on that validation,
 re-reads the source definitions, and reconciles the actual projects on pushes.
 Its result is recorded under `github/project-sync/`.
 
+Project blueprints are individual TOML files with fields and multiple views;
+see `repo/config/projects/README.md` for supported view properties.
+Repository rulesets use the same flat-file convention under
+`repo/config/rulesets/`. The read-only `rulesets/plan` validates rulesets on
+PRs, and `rulesets/sync` uses separate Administration: write authorization on
+source pushes. Neither system creates Project items or issues.
+
 Credential mappings contain **GitHub secret/variable names only**. Real tokens,
 passwords, and private keys stay in GitHub Secrets and must never be committed.

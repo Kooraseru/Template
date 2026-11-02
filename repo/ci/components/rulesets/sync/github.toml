@@ -1,0 +1,5 @@
+# Rulesets require separate Administration: write authorization, not GITHUB_TOKEN.
+steps = []
+
+[permissions]
+contents = "read"

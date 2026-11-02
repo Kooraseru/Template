@@ -3,19 +3,48 @@ name: CI Start Workflow
 on:
   push:
     branches: [source]
+  pull_request:
+    branches: [source]
 
 permissions:
-  contents: write
-  issues: write
+  contents: read
 
 concurrency:
-  group: ci-source
-  cancel-in-progress: false
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  gate:
+    name: gate
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate pull request
+        env:
+          CI_EVENT: pull_request
+        run: bash repo/ci/github/workflows/run-logged.sh ci-start gate
+      - name: Collect validation output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-pr-gate
+          path: |
+            build/run/ci-start/logs/
+            build/run/ci-start/responses/
+            build/run/ci-execution/
+          if-no-files-found: ignore
+
   bootstrap:
     name: Starting bootstrap
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -37,6 +66,7 @@ jobs:
           CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
           CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
           CI_GITHUB_PROJECTS_TOKEN: ${{ secrets[steps.credentials.outputs.projects_token] }}
+          CI_GITHUB_RULESETS_TOKEN: ${{ secrets[steps.credentials.outputs.rulesets_token] }}
         run: bash repo/ci/github/workflows/run-logged.sh ci-start bootstrap
       - name: Collect bootstrap output
         if: ${{ always() && env.ACT != 'true' }}

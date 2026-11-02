@@ -1,0 +1,28 @@
+# The CI gate has no bypass, even for administrators.
+[ruleset]
+name = "Source requires pull requests and CI"
+target = "branch"
+enforcement = "active"
+include = ["refs/heads/source"]
+exclude = []
+
+[[rules]]
+type = "deletion"
+
+[[rules]]
+type = "non_fast_forward"
+
+[[rules]]
+type = "pull_request"
+[rules.parameters]
+dismiss_stale_reviews_on_push = false
+require_code_owner_review = false
+required_approving_review_count = 0
+required_review_thread_resolution = false
+require_last_push_approval = false
+
+[[rules]]
+type = "required_status_checks"
+[rules.parameters]
+strict_required_status_checks_policy = false
+required_status_checks = [{ context = "gate", integration_id = 15368 }]

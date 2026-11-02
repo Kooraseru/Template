@@ -11,10 +11,13 @@ implementation as executable contracts; they are not a second settings store.
 
 ## One workflow, one entry point
 
-`.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
-invokes the executable `repo/ci/entry.luau` launcher. It resolves configured
-credential names and passes the selected secrets to bootstrap. It does not maintain component
-lists, dependency plans, matrices, or build logic. The bootstrap discovers
+`.github/workflows/ci.yml` owns the source-push bootstrap job and a read-only
+`pull_request` job named `gate`. Both invoke the same `repo/ci/entry.luau`
+launcher through pinned Lune. Bootstrap resolves configured credential names
+and passes selected secrets only on source pushes. The PR gate supplies no
+publication credentials and uses the planner's event selection to execute
+nonprivileged components. The workflow does not maintain component lists,
+dependency plans, matrices, or build logic. The bootstrap discovers
 components from `repo/ci/components/`, reads their TOML manifests, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.
 
@@ -23,7 +26,7 @@ credential-name mappings, and optional branch bootstrap. `repo/ci/github/` may r
 the scheduler's validated tasks as native jobs and dependency links when an
 explicitly configured App/token can push workflow files. Generated workflows
 exist only on run branches. They are not an additional maintained component
-inventory. Without usable credentials the existing local scheduler runs the plan.
+inventory. Without usable credentials the existing local scheduler runs the plan. Once an App/token is acquired for native execution, launch failures stop bootstrap rather than silently running privileged work through the local scheduler.
 Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
 
@@ -162,8 +165,9 @@ downloaded or otherwise untrusted components.
 
 `repo/ci/preflight/` analyzes the plan produced by the existing component discovery
 and planner. It does not define per-component validators or repeat component
-contracts. The same analyzer runs before CI execution and through the live VS Code
-task, which publishes file diagnostics to the Problems panel. A module reference
+contracts. The full analyzer runs at bootstrap and through the live VS Code task, which
+publishes file diagnostics to the Problems panel. Native component and reporting
+jobs reconstruct and validate the task plan without rerunning provider analyzers. A module reference
 that cannot be resolved is an error; dynamic behavior the analyzer cannot prove is
 reported as unknown and does not claim runtime success.
 
@@ -240,9 +244,16 @@ Source configuration is authoritative for labels: remove every remote label not
 in repo/config/labels.toml after validating/upserting all declared entries. Do not
 carry exemptions for labels added by defaults or other automation.
 
-Project blueprints are discovered under repo/config/projects/*/. Source owns
-managed project structure; actual issue/PR records remain GitHub data. Projects
-use configured App/PAT roles and warn/skip on unavailable account permissions.
+Project blueprints are discovered under repo/config/projects/*.toml. Each file
+owns one managed project, its fields, and its named views. Source owns managed
+project structure; actual issue/PR records remain GitHub data. Projects use
+configured App/PAT roles and warn/skip on unavailable account permissions.
+Rulesets are likewise discovered from repo/config/rulesets/*.toml. PRs validate
+ruleset definitions read-only; source pushes reconcile matching-name rulesets
+only with App/PAT Administration: write permission. The source gate check has
+no administrative bypass; a separate update restriction permits administrators
+to merge by PR without bypassing the required check. Unknown remote rulesets
+and Project views are preserved.
 Do not confuse missing credentials with an unsupported integration.
 
 Optional integrations must be isolated. Attestations are best-effort and record

@@ -27,6 +27,8 @@ app_private_key = "CI_APP_PRIVATE_KEY"
 bootstrap_token = "CI_PROJECTS_TOKEN"
 # This is the GitHub Actions SECRET NAME, never the token value.
 projects_token = "CI_PROJECTS_TOKEN"
+# Rulesets need a separate repository Administration: write credential.
+rulesets_token = "CI_RULESETS_TOKEN"
 # release_token = "MY_RELEASE_SECRET"
 # organization_token = "MY_ORGANIZATION_SECRET"
 

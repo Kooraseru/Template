@@ -49,8 +49,12 @@ function Preflight.new(): Preflight
 	return setmetatable(fields, Preflight)
 end
 
+function Preflight.Plan(self: Preflight, event: string): PlanBuilder.Plan
+	return self.planBuilder:Build(event)
+end
+
 function Preflight.Run(self: Preflight, event: string): Result
-	local plan = self.planBuilder:Build(event)
+	local plan = self:Plan(event)
 	local packages, discoveryDiagnostics = self.providerDiscovery:Discover()
 	local diagnostics: { Contracts.Diagnostic } = {}
 	for _, diagnostic in plan.diagnostics do
