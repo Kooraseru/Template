@@ -14,7 +14,7 @@ local Credentials = require("./credentials")
 local SkipPolicy = require("@ci/bootstrap/skipPolicy")
 local Responses = require("./responses")
 
-const ARTIFACT_ROOT = "build/github/artifacts"
+const ARTIFACT_ROOT = "build/run/ci-execution/artifacts"
 
 local TaskRunner = {}
 

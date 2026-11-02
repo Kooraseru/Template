@@ -68,6 +68,9 @@ function PackageRecords.Read(): Records
 		end
 	end
 	local policy = ConflictPolicy.Parse(settings.on_existing, `{ROOT}/packages.toml`)
+	if not Fs.metadata(RECORD_ROOT).exists then
+		return { entries = {}, onExisting = policy }
+	end
 	if not Fs.isDir(RECORD_ROOT) then
 		error(`Missing package record directory: {RECORD_ROOT}`, 0)
 	end

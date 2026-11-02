@@ -28,7 +28,7 @@ Declare deliverable globs in the release configuration:
 
 ```toml
 [release]
-assets = ["build/*.exe"]
+assets = ["build/run/ci-execution/artifacts/application/*.exe"]
 ```
 
 The current template builds Windows fixture executables; these are attached as

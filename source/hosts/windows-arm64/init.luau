@@ -3,11 +3,12 @@
 
 -- Host-specific build entry. This implementation owns its compiler and image.
 local Process = require("@lune/process")
+local Fs = require("@lune/fs")
 
 const DOCKER_OPTIONS: Process.ExecOptions = { stdio = "inherit" }
 const IMAGE = "template-windows-arm64"
 const COMPILER = "aarch64-w64-mingw32-clang"
-const OUTPUT = "build/windows-arm64.exe"
+const OUTPUT = "build/run/ci-execution/artifacts/application/windows-arm64.exe"
 
 local function runDocker(arguments: { string }): Process.ExecResult
 	local result = Process.exec("docker", arguments, DOCKER_OPTIONS)
@@ -18,6 +19,7 @@ local function runDocker(arguments: { string }): Process.ExecResult
 end
 
 return function()
+	Fs.writeDir("build/run/ci-execution/artifacts/application")
 	runDocker({
 		"build",
 		"--file",

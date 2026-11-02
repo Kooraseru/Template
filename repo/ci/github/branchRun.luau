@@ -41,7 +41,7 @@ local function launch(
 	if not runId or not runId:match("^%d+$") or not attempt:match("^%d+$") then
 		error("GitHub branch bootstrap requires a valid run ID and attempt", 0)
 	end
-	local worktree = `build/github/worktree-{runId}-{attempt}`
+	local worktree = `build/run/ci-start/artifacts/worktree-{runId}-{attempt}`
 	if Fs.metadata(worktree).exists then
 		error("Refusing to reuse an existing bootstrap worktree", 0)
 	end
@@ -50,8 +50,8 @@ local function launch(
 		error("github.bootstrap.branch_prefix produced an invalid branch", 0)
 	end
 	local yaml = Workflow.Render(tasks, sha, branch, event)
-	Fs.writeDir("build/github")
-	Fs.writeFile("build/github/workflow.yml", yaml)
+	Fs.writeDir("build/run/ci-start/artifacts")
+	Fs.writeFile("build/run/ci-start/artifacts/workflow.yml", yaml)
 	git({ "worktree", "add", "--detach", worktree, sha })
 	local ok = xpcall(function(): ()
 		Fs.writeDir(`{worktree}/.github/workflows`)
@@ -160,7 +160,11 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		execution_url = url,
 		source_sha = sha,
 	})
-	Fs.writeFile("build/github/launch.json", Serde.encode("json", { branch = branch, source = sha, url = url }))
+	Fs.writeDir("build/run/ci-start/responses")
+	Fs.writeFile(
+		"build/run/ci-start/responses/launch.json",
+		Serde.encode("json", { branch = branch, source = sha, url = url })
+	)
 	return true
 end
 

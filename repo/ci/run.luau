@@ -7,9 +7,9 @@ local Process = require("@lune/process")
 type Executables = { [string]: string }
 
 const EXECUTABLES: Executables = {
-	["--windows-amd"] = "build/windows-amd.exe",
-	["--windows-arm64"] = "build/windows-arm64.exe",
-	["--windows-intel"] = "build/windows-intel.exe",
+	["--windows-amd"] = "build/run/ci-execution/artifacts/application/windows-amd.exe",
+	["--windows-arm64"] = "build/run/ci-execution/artifacts/application/windows-arm64.exe",
+	["--windows-intel"] = "build/run/ci-execution/artifacts/application/windows-intel.exe",
 }
 
 local variant = Process.args[1]

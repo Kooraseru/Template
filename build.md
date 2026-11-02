@@ -3,8 +3,6 @@
 
 # CI Start
 
-[![Version + CI](https://shieldcn.dev/group/github/release/Kooraseru/Template+github/ci/Kooraseru/Template.svg?variant=outline)](https://github.com/Kooraseru/Template)
-
 </div>
 
 Bootstrap started CI Execution.
@@ -28,8 +26,6 @@ Bootstrap started CI Execution.
 <div align="center">
 
 # CI Execution
-
-[![Version + CI](https://shieldcn.dev/group/github/release/Kooraseru/Template+github/ci/Kooraseru/Template.svg?variant=outline)](https://github.com/Kooraseru/Template)
 
 </div>
 

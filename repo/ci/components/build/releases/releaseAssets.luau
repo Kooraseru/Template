@@ -44,7 +44,7 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 				error("Unsafe release asset glob", 0)
 			end
 		end
-		if Glob.Overlaps(pattern, "build/repo/**") then
+		if Glob.Overlaps(pattern, "build/github/**") then
 			error("Release assets must select build deliverables outside generated repository content", 0)
 		end
 		local count = 0

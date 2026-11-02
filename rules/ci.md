@@ -45,7 +45,7 @@ live in `repo/config/ci/dependencies/lune.toml`; its bootstrap script stays unde
 The template has separate `build/application` and `build/pages` components. The
 application component compiles sources through discovered hosts. Pages turns
 authored `repo/content/docs/` content into
-the static site artifact under `build/repo/pages/`. Keep these responsibilities in
+the static site artifact under `build/github/pages/`. Keep these responsibilities in
 their respective component packages.
 
 Every component is a directory with `component.toml` for declarative metadata
@@ -83,7 +83,7 @@ process, then calls its `Run` method.
 provides = ["build.completed"]
 requires = []
 inputs = ["source/main.c", "source/hosts/*/init.luau"]
-outputs = ["build/*.exe"]
+outputs = ["build/run/ci-execution/artifacts/application/*.exe"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"
 enabled = true
@@ -118,7 +118,7 @@ them there instead of repeating their names.
 
 The `pages` package keeps Markdown conversion in `markdownRenderer.luau`,
 static file copying in `staticAssetCopier.luau`, and output-tree assembly in
-`siteBuilder.luau`. These stages produce `build/repo/pages/`; the hosting workflow
+`siteBuilder.luau`. These stages produce `build/github/pages/`; the hosting workflow
 consumes that artifact separately. Do not put Pages rendering in the source
 build component.
 
@@ -149,7 +149,7 @@ planning succeeds. Optional native execution uses that same task plan and its
 dependency edges.
 
 Keep page rendering, static asset copying, site assembly, and external hosting
-as separate responsibilities. The `pages` component produces `build/repo/pages/`;
+as separate responsibilities. The `pages` component produces `build/github/pages/`;
 deploying that artifact is handled by the publication component and the native Pages adapter, using the run-provided token and environment protections.
 
 Each implementation runs in a fresh Lune child process so module cache and

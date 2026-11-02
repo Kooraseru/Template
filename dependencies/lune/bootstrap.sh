@@ -67,7 +67,7 @@ binary_name=lune
 if [[ $platform_os == windows ]]; then
 	binary_name=lune.exe
 fi
-install_directory="$root/build/tools/lune/$version"
+install_directory="$root/build/run/dependencies/artifacts/lune/$version"
 binary="$install_directory/$binary_name"
 
 install_lune() {

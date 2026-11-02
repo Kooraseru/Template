@@ -58,8 +58,8 @@ local function appAccess(
 	local message = base64url(Serde.encode("json", { alg = "RS256", typ = "JWT" }))
 		.. "."
 		.. base64url(Serde.encode("json", { iat = now - 60, exp = now + 540, iss = id }))
-	Fs.writeDir("build/github")
-	local messagePath = "build/github/app-request.jwt-message"
+	Fs.writeDir("build/run/ci-start/artifacts")
+	local messagePath = "build/run/ci-start/artifacts/app-request.jwt-message"
 	Fs.writeFile(messagePath, message)
 	-- Only the public JWT claims touch disk. The private key is passed on stdin.
 	local ok, signature = xpcall(Process.exec, tostring, "openssl", {

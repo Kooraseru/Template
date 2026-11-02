@@ -5,6 +5,6 @@ inputs = [
   "source/hosts/*/Dockerfile",
   "source/hosts/*/init.luau",
 ]
-outputs = ["build/*.exe"]
+outputs = ["build/run/ci-execution/artifacts/application/*.exe"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

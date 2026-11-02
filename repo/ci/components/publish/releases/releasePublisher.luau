@@ -53,7 +53,7 @@ function ReleasePublisher.Publish(
 		if notes:find("..", 1, true) or notes:sub(1, 1) == "/" or notes:find("\\", 1, true) then
 			error("Unsafe staged release notes path", 0)
 		end
-		body = Fs.readFile(`build/repo/releases/{notes}`)
+		body = Fs.readFile(`build/github/releases/{notes}`)
 	end
 	if entry.previousTag then
 		local previousTag = Publication.Text(entry.previousTag)

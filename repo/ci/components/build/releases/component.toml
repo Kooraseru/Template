@@ -1,6 +1,6 @@
 provides = ["releases.generated"]
 requires = ["build.completed"]
 inputs = ["repo/content/releases/releases.toml", "repo/content/releases/records/**"]
-outputs = ["build/repo/releases/**"]
+outputs = ["build/github/releases/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

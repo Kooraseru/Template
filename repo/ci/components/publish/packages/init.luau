@@ -15,12 +15,12 @@ function Component.new(): Component
 end
 
 function Component.Run(_self: Component, _context: { event: string }): string?
-	local index = Publication.Record(Serde.decode("json", Fs.readFile("build/repo/packages/index.json")))
+	local index = Publication.Record(Serde.decode("json", Fs.readFile("build/github/packages/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged packages")
 	print(`GitHub Packages existing-version policy: {policy}`)
 	-- GitHub Packages is separate from Releases and release attachments.
 	-- Unconfigured sample outputs exercise staging without inventing a registry format.
-	for _, value in Publication.ReadIndex("build/repo/packages/index.json", "packages") do
+	for _, value in Publication.ReadIndex("build/github/packages/index.json", "packages") do
 		local package = Publication.Record(value)
 		local name = Publication.Text(package.name)
 		if not package.format or not package.repository or not package.version then

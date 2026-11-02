@@ -5,7 +5,7 @@ on_existing = "replace"
 source = "HEAD"
 notes = "10.1.2026.md"
 # Attach compiled outputs as downloadable release assets (not GitHub Packages).
-assets = ["build/*.exe"]
+assets = ["build/run/ci-execution/artifacts/application/*.exe"]
 
 [release.channels.prerelease]
 prerelease = true

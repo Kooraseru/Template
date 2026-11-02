@@ -31,8 +31,8 @@ function ReleaseAssetPublisher.Read(value: unknown): { Asset }
 			error("Duplicate or unsafe release asset name", 0)
 		end
 		names[name:lower()] = true
-		if not path:match("^build/repo/releases/[%w_./%-]+$") or path:find("..", 1, true) then
-			error("Release asset must be a staged file under build/repo/releases/", 0)
+		if not path:match("^build/github/releases/[%w_./%-]+$") or path:find("..", 1, true) then
+			error("Release asset must be a staged file under build/github/releases/", 0)
 		end
 		if Fs.metadata(path).kind ~= "file" then
 			error(`Missing staged release asset: {path}`, 0)

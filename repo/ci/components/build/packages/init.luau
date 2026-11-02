@@ -14,8 +14,8 @@ function Component.new(): Component
 	return setmetatable({ builder = PackageBuilder.new() }, Component)
 end
 
-function Component.Run(self: Component, _context: { event: string }): ()
-	self.builder:Run()
+function Component.Run(self: Component, _context: { event: string }): string?
+	return self.builder:Run()
 end
 
 return Component

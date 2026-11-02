@@ -1,6 +1,7 @@
 "use strict";
 
 const childProcess = require("node:child_process");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const vscode = require("vscode");
@@ -12,15 +13,35 @@ const STYLUA_FORMAT_COMMAND = "preflight.styluaFormatDocument";
 const STYLUA_CONFIG = "repo/config/luau/stylua/.stylua.toml";
 const DIAGNOSTIC_PATTERN = /^(.*):(\d+):(\d+):(\d+)(?::(\d+))?: (error|warning|info): ([^:]+): (.*)$/;
 const DIAGNOSTIC_PREFIX = "::diagnostic::";
+const PREFLIGHT_INPUTS = [
+	"repo/ci/preflight/**",
+	"repo/config/ci/preflight/**",
+	"providers/**",
+	"dependencies/lune/**",
+	".vscode/preflight/**",
+];
+
+function isPreflightInput(relativePath) {
+	const normalized = relativePath.split(path.sep).join("/");
+	return PREFLIGHT_INPUTS.some((pattern) => {
+		const prefix = pattern.replace(/\/\*\*$/, "");
+		return normalized === prefix || normalized.startsWith(`${prefix}/`);
+	});
+}
+
+function extensionCodeHash(extensionPath) {
+	return crypto.createHash("sha256").update(fs.readFileSync(path.join(extensionPath, "extension.js"))).digest("hex");
+}
 
 /** Return true when a workspace folder exposes this repository's Preflight interface. */
 function isPreflightWorkspace(folder) {
 	const root = folder.uri.fsPath;
 	return (
 		fs.existsSync(path.join(root, "repo", "ci", "preflight", "init.luau")) &&
-		fs.existsSync(path.join(root, "repo", "ci", "dependencies", "lune", "bootstrap.sh")) &&
+		fs.existsSync(path.join(root, "dependencies", "lune", "bootstrap.sh")) &&
 		fs.existsSync(path.join(root, "repo", "ci", "entry.luau")) &&
-		fs.existsSync(path.join(root, "repo", "ci", "preflight", "providers"))
+		fs.existsSync(path.join(root, "providers")) &&
+		fs.existsSync(path.join(root, "repo", "config", "ci", "preflight"))
 	);
 }
 
@@ -280,10 +301,71 @@ function publishOutput(output, exitCode, root, collection, state) {
 		collection.set(uri, entries);
 	}
 	state.uris = new Set(grouped.keys());
+	const diagnostics = [...grouped.values()].flatMap(({ entries }) => entries);
+	const errors = diagnostics.filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Error).length;
+	const warnings = diagnostics.filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Warning).length;
+	const information = diagnostics.filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Information).length;
+	state.outcome = { errors, warnings, information, failed: exitCode !== 0 };
+}
+
+/** Show the aggregate state of every attached workspace in VS Code's status bar. */
+function updateStatus(status, workspaces) {
+	const states = [...workspaces.values()];
+	if (status.reloadPending) {
+		status.text = "$(warning) Preflight: Reload required";
+		status.tooltip = "Preflight was updated. Click to reload this VS Code window and activate the update.";
+		status.command = "preflight.promptReload";
+		status.show();
+		return;
+	}
+	status.command = "preflight.analyze";
+	if (states.length === 0) {
+		status.hide();
+		return;
+	}
+	if (states.some((state) => state.process)) {
+		status.text = "$(sync~spin) Preflight: Checking";
+		status.tooltip = "Preflight is analyzing workspace files and configured providers.";
+		status.backgroundColor = undefined;
+		status.show();
+		return;
+	}
+	if (states.some((state) => state.timer || state.pending)) {
+		status.text = "$(clock) Preflight: Queued";
+		status.tooltip = "Preflight will rerun after the current workspace changes settle.";
+		status.backgroundColor = undefined;
+		status.show();
+		return;
+	}
+	const outcomes = states.map((state) => state.outcome).filter(Boolean);
+	if (outcomes.length !== states.length) {
+		status.text = "$(sync~spin) Preflight: Starting";
+		status.tooltip = "Preflight is starting for this workspace.";
+		status.show();
+		return;
+	}
+	const errors = outcomes.reduce((total, outcome) => total + outcome.errors, 0);
+	const warnings = outcomes.reduce((total, outcome) => total + outcome.warnings, 0);
+	const information = outcomes.reduce((total, outcome) => total + outcome.information, 0);
+	const failed = outcomes.some((outcome) => outcome.failed);
+	if (failed || errors > 0) {
+		status.text = `$(error) Preflight: ${errors || "Run failed"}`;
+		status.tooltip = `${errors} error(s), ${warnings} warning(s), ${information} information finding(s). Click to run Preflight again.`;
+	} else if (warnings > 0) {
+		status.text = `$(warning) Preflight: ${warnings} warning${warnings === 1 ? "" : "s"}`;
+		status.tooltip = `${warnings} warning(s), ${information} information finding(s). Click to run Preflight again.`;
+	} else if (information > 0) {
+		status.text = `$(info) Preflight: Ready (${information})`;
+		status.tooltip = `${information} information finding(s). Click to run Preflight again.`;
+	} else {
+		status.text = "$(check) Preflight: Ready";
+		status.tooltip = "No Preflight findings. Click to run Preflight again.";
+	}
+	status.show();
 }
 
 /** Run one Preflight process for a root and schedule one follow-up if files changed during it. */
-function analyze(root, collection, state) {
+function analyze(root, collection, state, status, workspaces) {
 	if (state.disposed) {
 		return;
 	}
@@ -291,6 +373,8 @@ function analyze(root, collection, state) {
 		state.pending = true;
 		return;
 	}
+	state.outcome = undefined;
+	updateStatus(status, workspaces);
 
 	const environment = { ...state.providerEnvironment, CI_EVENT: "workflow_dispatch" };
 	if (environment.USERPROFILE) {
@@ -302,6 +386,7 @@ function analyze(root, collection, state) {
 		windowsHide: true,
 	});
 	state.process = child;
+	updateStatus(status, workspaces);
 	let output = "";
 	child.stdout.setEncoding("utf8").on("data", (chunk) => {
 		output += chunk;
@@ -318,24 +403,27 @@ function analyze(root, collection, state) {
 			return;
 		}
 		publishOutput(output, exitCode ?? 1, root, collection, state);
+		updateStatus(status, workspaces);
 		if (state.pending && !state.disposed) {
 			state.pending = false;
-			analyze(root, collection, state);
+			analyze(root, collection, state, status, workspaces);
 		}
 	});
 }
 
 /** Debounce filesystem and document-save notifications before invoking Preflight. */
-function schedule(root, collection, state) {
+function schedule(root, collection, state, status, workspaces) {
 	if (state.disposed) {
 		return;
 	}
 	if (state.timer) {
 		clearTimeout(state.timer);
 	}
+	state.outcome = undefined;
+	updateStatus(status, workspaces);
 	state.timer = setTimeout(() => {
 		state.timer = undefined;
-		analyze(root, collection, state);
+		analyze(root, collection, state, status, workspaces);
 	}, DEBOUNCE_MS);
 }
 
@@ -347,6 +435,9 @@ function disposeState(state) {
 	state.disposed = true;
 	if (state.timer) {
 		clearTimeout(state.timer);
+	}
+	if (state.reloadTimer) {
+		clearInterval(state.reloadTimer);
 	}
 	if (state.process) {
 		state.process.kill();
@@ -360,6 +451,13 @@ function disposeState(state) {
 async function activate(context) {
 	const collection = vscode.languages.createDiagnosticCollection(OWNER);
 	const workspaces = new Map();
+	const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+	status.reloadPending = false;
+	status.command = "preflight.analyze";
+	status.text = "$(sync~spin) Preflight: Starting";
+	status.tooltip = "Preflight is loading its configured providers.";
+	status.show();
+	context.subscriptions.push(status);
 	const activations = PROVIDER_EXTENSIONS.map(async (identifier) => {
 		const extension = vscode.extensions.getExtension(identifier);
 		if (extension && !extension.isActive) {
@@ -369,6 +467,54 @@ async function activate(context) {
 	await Promise.allSettled(activations);
 	const environment = providerEnvironment(context);
 	registerStyluaActions(context, environment);
+	const loadedCodeHash = extensionCodeHash(context.extensionPath);
+	const promptedReloadHashes = new Set();
+
+	async function promptForReload() {
+		const choice = await vscode.window.showInformationMessage(
+			"Preflight was updated. Reload this VS Code window to activate the update.",
+			"Reload Window",
+			"Later",
+		);
+		if (choice === "Reload Window") {
+			await vscode.commands.executeCommand("workbench.action.reloadWindow");
+		}
+	}
+
+	async function checkReloadMarker(root) {
+		const marker = path.join(root, "build", "run", "preflight-extension", "artifacts", "preflight-reload-required.sha256");
+		if (!fs.existsSync(marker)) {
+			return;
+		}
+		let requestedHash;
+		try {
+			requestedHash = fs.readFileSync(marker, "utf8").trim();
+		} catch {
+			return;
+		}
+		if (!requestedHash) return;
+		if (requestedHash === loadedCodeHash) {
+			try { fs.unlinkSync(marker); } catch {}
+			status.reloadPending = false;
+			updateStatus(status, workspaces);
+			return;
+		}
+		status.reloadPending = true;
+		updateStatus(status, workspaces);
+		const promptKey = `preflight.reloadPrompted.${requestedHash}`;
+		if (promptedReloadHashes.has(requestedHash) || context.globalState.get(promptKey)) return;
+		promptedReloadHashes.add(requestedHash);
+		await context.globalState.update(promptKey, true);
+		await promptForReload();
+	}
+
+	context.subscriptions.push(vscode.commands.registerCommand("preflight.promptReload", async () => {
+		const root = [...workspaces.keys()][0];
+		if (!root) return;
+		const marker = path.join(vscode.Uri.parse(root).fsPath, "build", "run", "preflight-extension", "artifacts", "preflight-reload-required.sha256");
+		if (!fs.existsSync(marker)) return;
+		await promptForReload();
+	}));
 
 	function attach(folder) {
 		if (!isPreflightWorkspace(folder) || workspaces.has(folder.uri.toString())) {
@@ -382,22 +528,36 @@ async function activate(context) {
 			pending: false,
 			timer: undefined,
 			uris: new Set(),
+			outcome: undefined,
 			disposed: false,
 			disposables: [],
+			reloadTimer: undefined,
 		};
 		workspaces.set(folder.uri.toString(), state);
 
-		const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "**/*"));
+		const watchers = PREFLIGHT_INPUTS.map((pattern) =>
+			vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, pattern)),
+		);
 		const changed = (uri) => {
 			const relative = path.relative(root, uri.fsPath).split(path.sep).join("/");
-			if (/(^|\/)(\.git|build|node_modules)(\/|$)/.test(relative)) {
+			if (!isPreflightInput(relative)) {
 				return;
 			}
-			schedule(root, collection, state);
+			schedule(root, collection, state, status, workspaces);
 		};
-		state.disposables.push(watcher, watcher.onDidChange(changed), watcher.onDidCreate(changed), watcher.onDidDelete(changed));
+		for (const watcher of watchers) {
+			state.disposables.push(
+				watcher,
+				watcher.onDidChange(changed),
+				watcher.onDidCreate(changed),
+				watcher.onDidDelete(changed),
+			);
+		}
 		context.subscriptions.push({ dispose: () => disposeState(state) });
-		analyze(root, collection, state);
+		state.reloadTimer = setInterval(() => void checkReloadMarker(root), 1000);
+		void checkReloadMarker(root);
+		updateStatus(status, workspaces);
+		analyze(root, collection, state, status, workspaces);
 	}
 
 	function detach(folder) {
@@ -411,6 +571,7 @@ async function activate(context) {
 			collection.delete(vscode.Uri.parse(uri));
 		}
 		workspaces.delete(key);
+		updateStatus(status, workspaces);
 	}
 
 	for (const folder of vscode.workspace.workspaceFolders || []) {
@@ -429,9 +590,11 @@ async function activate(context) {
 		vscode.workspace.onDidSaveTextDocument((document) => {
 			const folder = vscode.workspace.getWorkspaceFolder(document.uri);
 			if (folder) {
+				const relative = path.relative(folder.uri.fsPath, document.uri.fsPath);
+				if (!isPreflightInput(relative)) return;
 				const state = workspaces.get(folder.uri.toString());
 				if (state) {
-					schedule(folder.uri.fsPath, collection, state);
+					schedule(folder.uri.fsPath, collection, state, status, workspaces);
 				}
 			}
 		}),
@@ -439,7 +602,7 @@ async function activate(context) {
 			for (const folder of vscode.workspace.workspaceFolders || []) {
 				const state = workspaces.get(folder.uri.toString());
 				if (state) {
-					schedule(folder.uri.fsPath, collection, state);
+					schedule(folder.uri.fsPath, collection, state, status, workspaces);
 				}
 			}
 		}),

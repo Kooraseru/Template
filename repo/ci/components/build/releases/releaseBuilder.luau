@@ -9,7 +9,7 @@ local ReleaseAssets = require("./releaseAssets")
 
 const CONFIG_PATH = "repo/content/releases/releases.toml"
 const RECORD_ROOT = "repo/content/releases/records"
-const OUTPUT_ROOT = "build/repo/releases"
+const OUTPUT_ROOT = "build/github/releases"
 
 type ReleaseRecord = {
 	assetPatterns: unknown,
@@ -265,7 +265,7 @@ function ReleaseBuilder.new(): ReleaseBuilder
 	return setmetatable({}, ReleaseBuilder)
 end
 
-function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
+function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 	local records, policy = decodeRecords()
 	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
 	if outputMetadata.kind == "symlink" then
@@ -275,8 +275,12 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 	elseif outputMetadata.exists then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
+	if #records == 0 then
+		print("Releases skipped: no release records")
+		return "skipped"
+	end
 	ensureDirectory("build")
-	ensureDirectory("build/repo")
+	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
 	local index: { ReleaseIndexEntry } = {}
@@ -310,6 +314,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): ()
 
 	Fs.writeFile(`{OUTPUT_ROOT}/index.json`, Serde.encode("json", { onExisting = policy, releases = index }))
 	print(`Staged {#records} release records into {OUTPUT_ROOT}`)
+	return nil
 end
 
 return ReleaseBuilder

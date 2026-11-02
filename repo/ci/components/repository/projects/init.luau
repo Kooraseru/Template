@@ -74,9 +74,9 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			changed = true
 		end
 	end
-	Fs.writeDir("build/repo/project-sync")
+	Fs.writeDir("build/github/project-sync")
 	Fs.writeFile(
-		"build/repo/project-sync/index.json",
+		"build/github/project-sync/index.json",
 		Serde.encode("json", { applied = not skipped, projects = receipts })
 	)
 	if skipped or not changed then

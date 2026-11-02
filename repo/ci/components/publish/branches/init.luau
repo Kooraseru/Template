@@ -33,7 +33,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 	end
 	local status, details = Publication.Request("GET", `repos/{repository}`)
 	Publication.RequireSuccess(status, "Read default branch")
-	for _, directory in Glob.Find("build/repo/branches/*") do
+	for _, directory in Glob.Find("build/github/branches/*") do
 		if not Fs.isDir(directory) then
 			error("Expected a generated branch directory", 0)
 		end

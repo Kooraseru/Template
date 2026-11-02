@@ -5,7 +5,7 @@ local Fs = require("@lune/fs")
 local Serde = require("@lune/serde")
 local PackageRecords = require("./packageRecords")
 
-const OUTPUT_ROOT = "build/repo/packages"
+const OUTPUT_ROOT = "build/github/packages"
 
 local PackageBuilder = {}
 PackageBuilder.__index = PackageBuilder
@@ -27,7 +27,7 @@ function PackageBuilder.new(): PackageBuilder
 	return setmetatable({}, PackageBuilder)
 end
 
-function PackageBuilder.Run(_self: PackageBuilder): ()
+function PackageBuilder.Run(_self: PackageBuilder): string?
 	local records = PackageRecords.Read()
 	local metadata = Fs.metadata(OUTPUT_ROOT)
 	if metadata.kind == "symlink" then
@@ -37,8 +37,12 @@ function PackageBuilder.Run(_self: PackageBuilder): ()
 	elseif metadata.exists then
 		error(`Expected directory: {OUTPUT_ROOT}`, 0)
 	end
+	if #records.entries == 0 then
+		print("Packages skipped: no package records")
+		return "skipped"
+	end
 	ensureDirectory("build")
-	ensureDirectory("build/repo")
+	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 	local index: { PackageRecords.Entry } = {}
 	for _, entry in records.entries do
@@ -68,6 +72,7 @@ function PackageBuilder.Run(_self: PackageBuilder): ()
 		Serde.encode("json", { onExisting = records.onExisting, packages = index })
 	)
 	print(`Staged {#index} package records into {OUTPUT_ROOT}`)
+	return nil
 end
 
 return PackageBuilder

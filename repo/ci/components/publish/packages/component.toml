@@ -1,6 +1,6 @@
 provides = ["packages.publication-checked"]
 requires = ["packages.generated"]
-inputs = ["build/repo/packages/**"]
+inputs = ["build/github/packages/**"]
 outputs = []
 events = ["push"]
 boundary = "privileged"

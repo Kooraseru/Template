@@ -7,8 +7,8 @@ local Process = require("@lune/process")
 local Responses = require("./responses")
 local Publication = require("./publication")
 
-const ROOT = "build/repo/attestations"
-const SUBJECTS = "build/repo/attestations/subjects"
+const ROOT = "build/github/attestations"
+const SUBJECTS = "build/github/attestations/subjects"
 
 local Attestations = {}
 
@@ -39,7 +39,7 @@ function Attestations.Prepare(): boolean
 	end
 	local seen: { [string]: boolean } = {}
 	local subjects: { { name: string, digest: string, path: string } } = {}
-	for _, value in Publication.ReadIndex("build/repo/releases/index.json", "releases") do
+	for _, value in Publication.ReadIndex("build/github/releases/index.json", "releases") do
 		local release = Publication.Record(value)
 		local assets = release.assets
 		if assets == nil then
@@ -55,7 +55,7 @@ function Attestations.Prepare(): boolean
 			local digest = Publication.Text(asset.digest)
 			if
 				not name:match("^[%w][%w_.%-]*$")
-				or not path:match("^build/repo/releases/[%w_./%-]+$")
+				or not path:match("^build/github/releases/[%w_./%-]+$")
 				or path:find("..", 1, true)
 			then
 				error("Unsafe attestation subject", 0)
@@ -109,7 +109,7 @@ function Attestations.Options(): ()
 	for _, value in subjects do
 		local asset = Publication.Record(value)
 		local path = Publication.Text(asset.path)
-		if not path:match("^build/repo/attestations/subjects/[%w_./%-]+$") or path:find("..", 1, true) then
+		if not path:match("^build/github/attestations/subjects/[%w_./%-]+$") or path:find("..", 1, true) then
 			error("Unsafe prepared attestation path", 0)
 		end
 		if Publication.Text(asset.digest) ~= "sha256:" .. Serde.hash("sha256", Fs.readFile(path)) then

@@ -8,7 +8,7 @@ local TagRenderer = require("@ci/rendering/tagRenderer")
 
 const CONFIG_PATH = "repo/config/github.toml"
 const CONTENT_ROOT = "repo/content/files"
-const OUTPUT_ROOT = "build/repo/branches"
+const OUTPUT_ROOT = "build/github/branches"
 
 local BranchBuilder = {}
 BranchBuilder.__index = BranchBuilder
@@ -176,7 +176,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
 	ensureDirectory("build")
-	ensureDirectory("build/repo")
+	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
 	local defaultLocale = TagRenderer.DefaultLocale()

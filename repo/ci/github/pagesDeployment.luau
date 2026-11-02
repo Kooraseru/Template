@@ -21,11 +21,11 @@ function PagesDeployment.Prepare(): boolean
 	if details.build_type ~= "workflow" then
 		error("Pages publication requires Settings > Pages > Source = GitHub Actions", 0)
 	end
-	if not Fs.isFile("build/repo/pages/index.html") then
+	if not Fs.isFile("build/github/pages/index.html") then
 		print("::warning::Pages deployment skipped: no completed site artifact is available")
 		return false
 	end
-	Publication.Output("path", "build/repo/pages")
+	Publication.Output("path", "build/github/pages")
 	Publication.Output("enabled", "true")
 	return true
 end

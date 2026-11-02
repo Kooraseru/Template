@@ -9,7 +9,7 @@ local MarkdownRenderer = require("./markdownRenderer")
 local StaticAssetCopier = require("./staticAssetCopier")
 
 const DOCUMENTATION_ROOT = "repo/content/docs"
-const OUTPUT_ROOT = "build/repo/pages"
+const OUTPUT_ROOT = "build/github/pages"
 
 local SiteBuilder = {}
 SiteBuilder.__index = SiteBuilder
@@ -94,7 +94,7 @@ function SiteBuilder.Run(self: SiteBuilder): ()
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
 	ensureDirectory("build")
-	ensureDirectory("build/repo")
+	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
 	renderTree(self, DOCUMENTATION_ROOT, OUTPUT_ROOT)

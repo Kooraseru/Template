@@ -10,7 +10,7 @@ local Configuration = require("./configuration")
 local Publication = require("./publication")
 
 const ROOT = "repo/config/ci/responses"
-const RECORDS = "build/github/responses"
+const RECORDS = "build/run/ci-execution/responses"
 
 local Responses = {}
 local written = false
@@ -19,11 +19,7 @@ type Entry = { id: string, markdown: string, components: { [string]: boolean }, 
 type Branch = { name: string, children: { [string]: Branch }, outcome: string?, component: string }
 
 local function configuration(): { [string]: unknown }
-	local config = Publication.Record(Serde.decode("toml", Fs.readFile(`{ROOT}/responses.toml`)))
-	if config.version ~= 1 then
-		error("responses.toml: version must be 1", 0)
-	end
-	return config
+	return Publication.Record(Serde.decode("toml", Fs.readFile(`{ROOT}/responses.toml`)))
 end
 
 local function read(path: string): string
@@ -99,7 +95,7 @@ local function shieldcnButton(name: string, values: { [string]: string }, config
 	end
 	local variant = Publication.Text(button.variant or defaults.variant)
 	local logoColor = Publication.Text(button.logo_color or defaults.logo_color)
-	if not logoColor:match("^%x%x%x(%x%x%x)?$") then
+	if not logoColor:match("^%x%x%x$") and not logoColor:match("^%x%x%x%x%x%x$") then
 		error(`Invalid Shieldcn logo color for button {name}`, 0)
 	end
 
@@ -410,6 +406,9 @@ end
 
 function Responses.Write(root: string, values: { [string]: string }, outcomes: { [string]: string }?): ()
 	local markdown = Responses.Render(root, values, outcomes)
+	local directory = if root == "start" then "build/run/ci-start/responses" else RECORDS
+	Fs.writeDir(directory)
+	Fs.writeFile(`{directory}/{root}.md`, markdown)
 	local path = Process.env.GITHUB_STEP_SUMMARY
 	if path then
 		Fs.writeFile(path, markdown)

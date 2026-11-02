@@ -15,8 +15,8 @@ function Component.new(): Component
 	return setmetatable(fields, Component)
 end
 
-function Component.Run(self: Component, _context: { event: string }): ()
-	self.releaseBuilder:Run()
+function Component.Run(self: Component, _context: { event: string }): string?
+	return self.releaseBuilder:Run()
 end
 
 return Component

@@ -1,5 +1,3 @@
-version = 1
-
 # Aliases resolve to GitHub's native alert styles, never custom CSS.
 # GitHub surfaces choose their own theme colors. Alert styling depends on
 # the rendering surface; ordinary text does not support arbitrary colors.

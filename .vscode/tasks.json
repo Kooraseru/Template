@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Preflight: Install workspace extension",
+			"type": "process",
+			"command": "C:\\msys64\\usr\\bin\\bash.exe",
+			"args": [".vscode/preflight/install.sh"],
+			"options": { "cwd": "${workspaceFolder}" },
+			"presentation": {
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"runOptions": { "runOn": "folderOpen", "instanceLimit": 1 },
+			"problemMatcher": []
+		}
+	]
+}

@@ -14,6 +14,12 @@ local function appendStep(steps: { Step }, step: Step): ()
 	table.insert(steps, step)
 end
 
+local function logged(command: string, name: string): string
+	return "mkdir -p build/run/ci-execution/logs\nset -o pipefail\n"
+		.. command
+		.. ` 2>&1 | tee build/run/ci-execution/logs/{name}.log`
+end
+
 function Workflow.JobId(identity: string): string
 	return "component_" .. Contract.Key(identity)
 end
@@ -49,7 +55,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				appendStep(steps, {
 					name = `Receive {dependency} outputs`,
 					uses = "actions/download-artifact@v8",
-					with = { name = `ci-{Contract.Key(dependency)}`, path = "build/github/artifacts" },
+					with = { name = `ci-{Contract.Key(dependency)}`, path = "build/run/ci-execution/artifacts" },
 				})
 			end
 		end
@@ -81,7 +87,10 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 					CI_PUBLISH_PAGES = "${{ vars.CI_PUBLISH_PAGES }}",
 				}
 				else nil,
-			run = `bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --component {task.identity}`,
+			run = logged(
+				`bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --component {task.identity}`,
+				Contract.Key(task.identity)
+			),
 		})
 		local runStep = steps[#steps]
 		if #credentialRoles > 0 then
@@ -98,7 +107,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				uses = "actions/upload-artifact@v7",
 				with = {
 					name = `ci-{Contract.Key(task.identity)}`,
-					path = `build/github/artifacts/{Contract.Key(task.identity)}.tar`,
+					path = `build/run/ci-execution/artifacts/{Contract.Key(task.identity)}.tar`,
 					["if-no-files-found"] = "error",
 				},
 			})
@@ -118,12 +127,22 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 		NativeJob.Configure(task.identity, task.boundary, steps, job)
 		appendStep(steps, {
+			name = "Collect component logs",
+			["if"] = "${{ always() }}",
+			uses = "actions/upload-artifact@v7",
+			with = {
+				name = `ci-logs-{Contract.Key(task.identity)}`,
+				path = "build/run/ci-execution/logs/",
+				["if-no-files-found"] = "ignore",
+			},
+		})
+		appendStep(steps, {
 			name = "Collect response fragments",
 			["if"] = "${{ always() }}",
 			uses = "actions/upload-artifact@v7",
 			with = {
 				name = `ci-response-{Contract.Key(task.identity)}`,
-				path = "build/github/responses/",
+				path = "build/run/ci-execution/responses/",
 				["if-no-files-found"] = "ignore",
 			},
 		})
@@ -150,7 +169,11 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				name = "Receive component response fragments",
 				id = "responses",
 				uses = "actions/download-artifact@v8",
-				with = { pattern = "ci-response-*", ["merge-multiple"] = true, path = "build/github/responses" },
+				with = {
+					pattern = "ci-response-*",
+					["merge-multiple"] = true,
+					path = "build/run/ci-execution/responses",
+				},
 			},
 			{
 				name = "Report component results",
@@ -159,7 +182,17 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 					CI_JOB_RESULTS = "${{ toJSON(needs) }}",
 					CI_RESPONSE_DOWNLOAD_OUTCOME = "${{ steps.responses.outcome }}",
 				},
-				run = "bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --report",
+				run = logged("bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --report", "report"),
+			},
+			{
+				name = "Collect final report and logs",
+				["if"] = "${{ always() }}",
+				uses = "actions/upload-artifact@v7",
+				with = {
+					name = "ci-report",
+					path = "build/run/ci-execution/responses/execution.md\nbuild/run/ci-execution/logs/",
+					["if-no-files-found"] = "ignore",
+				},
 			},
 		},
 	}

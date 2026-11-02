@@ -76,8 +76,38 @@ Component groupings are ordinary directories. A component has both
 additional components. Consumer settings belong in `config/`; runtime code and
 component manifests are maintained as implementation.
 
-`repo/` is editable input. `build/repo/` contains generated repository output.
+`repo/` is editable input. `build/github/` contains generated repository output.
 Edit a root-document template in `repo/content/files/`, not its generated copy.
+
+Generated output follows this layout (folders appear only when used):
+
+```text
+build/
+  github/
+    branches/<branch>/
+    packages/<package>/
+    releases/<version>/
+    pages/
+    project-plans/
+    project-sync/
+    attestations/
+  run/
+    ci-execution/
+      artifacts/application/   compiled application files
+      artifacts/*.tar          component output transfers
+      responses/               response fragments and execution.md
+      logs/                    component and report logs
+    ci-start/                  bootstrap artifacts, responses, and logs
+    dependencies/artifacts/    downloaded CI tools
+    preflight-extension/artifacts/  local VSIX and installation stamps
+```
+
+Package and release staging skips when there are no records. Disabled components
+produce no output on a fresh run; Pages output is created by the enabled Pages
+builder. Application consumers, manifests, and artifact transfers must use the
+same paths. Keep diagnostic captures under the corresponding `run/<workflow>/logs/`
+and generated previews under `responses/`, rather than at the build root.
+The entire `build/` directory is ignored and can be removed before a fresh build.
 
 Credential mappings contain **GitHub secret/variable names only**. Real tokens,
 passwords, and private keys stay in GitHub Secrets and must never be committed.

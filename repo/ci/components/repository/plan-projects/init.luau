@@ -15,9 +15,9 @@ end
 
 function Component.Run(_self: Component, _context: { event: string }): ()
 	local projects = ProjectCatalog.Read()
-	Fs.writeDir("build/repo/project-plans")
+	Fs.writeDir("build/github/project-plans")
 	Fs.writeFile(
-		"build/repo/project-plans/index.json",
+		"build/github/project-plans/index.json",
 		Serde.encode("json", {
 			projects = projects,
 			applied = false,
