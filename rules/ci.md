@@ -11,11 +11,12 @@ implementation as executable contracts; they are not a second settings store.
 
 ## One workflow, one entry point
 
-`.github/workflows/ci.yml` owns the source-push bootstrap job and a read-only
-`pull_request` job named `gate`. Both invoke the same `repo/ci/entry.luau`
-launcher through pinned Lune. Bootstrap resolves configured credential names.
-Internal PRs may use scoped App/bootstrap credentials to push a temporary native
-CI Execution workflow; the required `gate` check waits for its final result.
+`.github/workflows/ci.yml` owns separate source-push and read-only PR bootstrap
+jobs. Both invoke the same `repo/ci/entry.luau` launcher through pinned Lune.
+The required `gate` job depends on the PR bootstrap's final result, so failed
+execution cannot produce a passing required check. Bootstrap resolves configured
+credential names. Internal PRs may use scoped App/bootstrap credentials to push
+a temporary native CI Execution workflow and wait for its final result.
 Fork PRs receive no secrets and retain the local read-only scheduler. All PR
 execution selects only read-boundary components; publication and repository
 administration are forbidden regardless of manifest events. The workflow does
@@ -33,6 +34,8 @@ Credentials are stored in GitHub; configuration contains secret/variable names
 only. Never embed actual tokens or private keys in code or TOML.
 Generated branch pushes use Git's credential protocol with a temporary App
 installation token, without relying on a persistent `gh` login.
+The administrator update bypass in `repo/config/rulesets/source-admin.toml`
+does not bypass the separate PR and CI requirements in `source-gate.toml`.
 
 Authorization declarations under `repo/config/ci/authorization/` associate
 classic scopes with `credential.role`. The shared scope auditor aggregates
