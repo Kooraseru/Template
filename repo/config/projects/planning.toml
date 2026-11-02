@@ -36,4 +36,4 @@ visible_fields = ["Title", "Status", "Target date"]
 [[views]]
 name = "Roadmap"
 layout = "ROADMAP_LAYOUT"
-visible_fields = ["Title", "Status", "Target date"]
+# Roadmap columns are configured in GitHub, not through visible_fields.
