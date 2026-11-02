@@ -11,10 +11,13 @@ implementation as executable contracts; they are not a second settings store.
 
 ## One workflow, one entry point
 
-`.github/workflows/ci.yml` owns one bootstrap job. It installs pinned Lune and
-invokes the executable `repo/ci/entry.luau` launcher. It resolves configured
-credential names and passes the selected secrets to bootstrap. It does not maintain component
-lists, dependency plans, matrices, or build logic. The bootstrap discovers
+`.github/workflows/ci.yml` owns the source-push bootstrap job and a read-only
+`pull_request` job named `gate`. Both invoke the same `repo/ci/entry.luau`
+launcher through pinned Lune. Bootstrap resolves configured credential names
+and passes selected secrets only on source pushes. The PR gate supplies no
+publication credentials and uses the planner's event selection to execute
+nonprivileged components. The workflow does not maintain component lists,
+dependency plans, matrices, or build logic. The bootstrap discovers
 components from `repo/ci/components/`, reads their TOML manifests, orders them by
 declared capability dependencies, invokes them, and reports their outcomes.
 
