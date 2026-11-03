@@ -14,10 +14,12 @@ items. Priority choices are defined here; issue priority is not inferred.
 
 Each `[[views]]` needs a unique `name` and a GitHub GraphQL layout:
 `TABLE_LAYOUT`, `BOARD_LAYOUT`, or `ROADMAP_LAYOUT`. Optional `filter` is
-a GitHub view filter expression. Optional `visible_fields` is an ordered list of
-field names defined in that Project plus the built-in `Title`. If either is omitted, GitHub's existing
-setting is preserved. Layout-specific grouping, sort order, roadmap dates,
-and view ordering cannot currently be written through the public view mutation.
+a GitHub view filter expression. For table and board views only, optional
+`visible_fields` is an ordered list of field names from that Project and the
+built-in `Title`. Roadmap views do not support `visible_fields` through the API.
+Omitting either supported setting preserves GitHub's existing value.
+Layout-specific grouping, sort order, roadmap dates, and view ordering cannot
+currently be written through the public view mutation.
 Unsupported keys fail validation. Existing undeclared views remain untouched;
 renaming a view creates a second view because GitHub exposes no stable
 repository-owned view identity.

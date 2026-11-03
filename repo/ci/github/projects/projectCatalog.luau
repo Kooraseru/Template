@@ -122,6 +122,9 @@ local function views(value: unknown, definitions: { Field }, path: string): { Vi
 		if layout ~= "TABLE_LAYOUT" and layout ~= "BOARD_LAYOUT" and layout ~= "ROADMAP_LAYOUT" then
 			error(`{path}: unsupported view layout {layout}`, 0)
 		end
+		if layout == "ROADMAP_LAYOUT" and entry.visible_fields ~= nil then
+			error(`{path}: view {name} cannot define visible_fields for ROADMAP_LAYOUT`, 0)
+		end
 		local filter: string? = nil
 		if entry.filter ~= nil then
 			if type(entry.filter) ~= "string" then
