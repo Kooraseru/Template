@@ -180,7 +180,8 @@ local function headerBadges(root: string, status: string, repository: string, co
 	}
 	local description = if status == "failure" then "failed"
 		else if status == "success" then "success"
-		else if status == "warning" or status == "pending" then "pending"
+		else if status == "warning" then "warning"
+		else if status == "pending" then "pending"
 		else if status == "cancelled" then "cancelled" else "unknown"
 	local dot = if status == "failure" then "failure_dot"
 		else if status == "success" then "success_dot"
@@ -498,17 +499,20 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 				.. table.concat(rows, "\n")
 				.. "\n</tbody>\n</table>"
 			else ""
-		local notesText = table.concat(notes, "\n\n")
-		local childrenText = table.concat(children, "\n\n")
+		local sections: { string } = {}
+		for _, section in { tableText, table.concat(notes, "\n\n"), table.concat(children, "\n\n") } do
+			if section ~= "" then
+				table.insert(sections, section)
+			end
+		end
+		local content = table.concat(sections, "\n\n")
 		if node.name == "" then
-			return (table.concat({ tableText, notesText, childrenText }, "\n\n"):gsub("^%s+", ""):gsub("%s+$", ""))
+			return content
 		end
 		local rendered = Responses.Fill(Responses.Template("components.group"), {
 			name = htmlAttribute(node.name),
-			rows = tableText,
-			notes = notesText,
-			children = childrenText,
-			expanded = if needsAttention(node) then " open" else "",
+			content = content,
+			expanded = if (start and node.name == "bootstrap") or needsAttention(node) then " open" else "",
 		})
 		return (rendered:gsub("\n+$", ""))
 	end
