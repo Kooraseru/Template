@@ -9,10 +9,20 @@ local Configuration = require("@ci/github/configuration")
 local RulesetCatalog = require("@ci/github/rulesets/rulesetCatalog")
 local RulesetSync = require("@ci/github/rulesets/rulesetSync")
 local TokenPermissions = require("@ci/github/authentication/tokenPermissions")
+local Responses = require("@ci/github/reporting/responses")
 
 local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
+
+local function report(configuration: Configuration.Configuration, state: string, diagnostic: string, selectedColor: string): ()
+	local markdown = Responses.Fill(Responses.Template("rulesets.authorization"), {
+		state = state,
+		diagnostic = diagnostic,
+		token_name = configuration.credentials.rulesets_token or "<github.credentials.rulesets_token>",
+	})
+	Responses.Record("authorization/rulesets", markdown, selectedColor)
+end
 
 function Component.new(): Component
 	return setmetatable({}, Component)
@@ -48,16 +58,18 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 	end
 	if not access then
 		local secret = configuration.credentials.rulesets_token or "<github.credentials.rulesets_token>"
-		print(
-			`::warning::Rulesets sync skipped: configure App Administration: write or a token secret named {secret} with repository Administration: write. PR validation remains available.`
-		)
+		local problem = `No App or {secret} credential with repository Administration: write was available.`
+		print(`::warning::Rulesets sync skipped: {problem} PR validation remains available.`)
+		report(configuration, "Skipped: authorization unavailable", problem, "warning")
 		return "skipped"
 	end
 	local ok, receipts, changed = pcall(RulesetSync.Sync, repository, access.token, definitions)
 	Authentication.Release(access)
 	if not ok then
-		-- A supplied but unusable credential is a real error, never a successful reconciliation.
-		error(tostring(receipts), 0)
+		-- Rejected API changes must remain failures and include a reviewable permissions record.
+		local problem = tostring(receipts)
+		report(configuration, "Failed: GitHub rejected the ruleset operation", problem, "failure")
+		error(problem, 0)
 	end
 	Fs.writeDir("build/github/ruleset-sync")
 	Fs.writeFile(

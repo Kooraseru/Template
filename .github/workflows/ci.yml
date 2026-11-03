@@ -14,9 +14,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  bootstrap_pr:
-    name: Starting bootstrap (pull request)
-    if: ${{ github.event_name == 'pull_request' }}
+  gate:
+    name: gate
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,63 +25,29 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      # Forked PRs run the same local read-only validation without repository secrets.
-      - name: Resolve native execution credential names
-        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-        id: credentials
-        run: bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
-      - name: Start PR bootstrap and validate execution
-        env:
-          CI_EVENT: pull_request
-          GH_TOKEN: ${{ github.token }}
-          CI_GITHUB_APP_ID_SECRET: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.app_id] || '' }}
-          CI_GITHUB_APP_ID_VARIABLE: ${{ github.event.pull_request.head.repo.full_name == github.repository && vars[steps.credentials.outputs.app_id] || '' }}
-          CI_GITHUB_APP_PRIVATE_KEY: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.app_private_key] || '' }}
-          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ github.event.pull_request.head.repo.full_name == github.repository && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
-        run: bash repo/ci/github/workflows/run-logged.sh ci-start gate
-      - name: Collect validation output
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-pr-gate
-          path: |
-            build/run/ci-start/logs/
-            build/run/ci-start/responses/
-            build/run/ci-execution/
-          if-no-files-found: ignore
-
-  bootstrap:
-    name: Starting bootstrap (source push)
-    if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+      # The bootstrap reads credential names from github.toml for both events.
       - name: Resolve credential names
         id: credentials
         run: bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
+      # Source pushes and trusted PRs use the same entry point with event-specific execution boundaries.
       - name: Start bootstrap
         env:
           CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
-          CI_PUBLISH_RELEASES: ${{ vars.CI_PUBLISH_RELEASES }}
-          CI_PUBLISH_PACKAGES: ${{ vars.CI_PUBLISH_PACKAGES }}
-          CI_PUBLISH_BRANCHES: ${{ vars.CI_PUBLISH_BRANCHES }}
-          CI_PUBLISH_PAGES: ${{ vars.CI_PUBLISH_PAGES }}
-          CI_GITHUB_APP_ID_SECRET: ${{ secrets[steps.credentials.outputs.app_id] }}
-          CI_GITHUB_APP_ID_VARIABLE: ${{ vars[steps.credentials.outputs.app_id] }}
-          CI_GITHUB_APP_PRIVATE_KEY: ${{ secrets[steps.credentials.outputs.app_private_key] }}
-          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ secrets[steps.credentials.outputs.bootstrap_token] }}
-          CI_GITHUB_PROJECTS_TOKEN: ${{ secrets[steps.credentials.outputs.projects_token] }}
-          CI_GITHUB_RULESETS_TOKEN: ${{ secrets[steps.credentials.outputs.rulesets_token] }}
+          CI_PUBLISH_RELEASES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_RELEASES || '' }}
+          CI_PUBLISH_PACKAGES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_PACKAGES || '' }}
+          CI_PUBLISH_BRANCHES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_BRANCHES || '' }}
+          CI_PUBLISH_PAGES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_PAGES || '' }}
+          CI_GITHUB_APP_ID_SECRET: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_ID_VARIABLE: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_PRIVATE_KEY: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.app_private_key] || '' }}
+          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
+          CI_GITHUB_PROJECTS_TOKEN: ${{ github.event_name == 'push' && secrets[steps.credentials.outputs.projects_token] || '' }}
+          CI_GITHUB_RULESETS_TOKEN: ${{ github.event_name == 'push' && secrets[steps.credentials.outputs.rulesets_token] || '' }}
         run: bash repo/ci/github/workflows/run-logged.sh ci-start bootstrap
+      # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output
-        if: ${{ always() && env.ACT != 'true' }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: ci-start
@@ -92,21 +57,3 @@ jobs:
             build/run/ci-start/artifacts/workflow.yml
             build/run/ci-execution/
           if-no-files-found: ignore
-
-  gate:
-    name: gate
-    needs: bootstrap_pr
-    if: ${{ always() && github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      # The required check must fail if PR bootstrap or its native CI Execution fails.
-      - name: Require successful PR execution
-        env:
-          BOOTSTRAP_RESULT: ${{ needs.bootstrap_pr.result }}
-        run: |
-          if [[ "$BOOTSTRAP_RESULT" != "success" ]]; then
-            echo "::error::PR bootstrap or CI Execution concluded $BOOTSTRAP_RESULT"
-            exit 1
-          fi

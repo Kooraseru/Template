@@ -9,6 +9,38 @@ local RulesetCatalog = require("@ci/github/rulesets/rulesetCatalog")
 local RulesetSync = {}
 export type Receipt = { identity: string, id: number }
 
+-- Report only the API's validation fields, not the complete request or authorization headers.
+local function diagnostic(body: string): string
+	local ok, decoded = pcall(Serde.decode, "json", body)
+	if not ok or type(decoded) ~= "table" then
+		return ""
+	end
+	local parts: { string } = {}
+	local function append(value: unknown): ()
+		if type(value) ~= "string" or value == "" then
+			return
+		end
+		local cleaned = value:gsub("[%c]", " "):sub(1, 240)
+		table.insert(parts, cleaned)
+	end
+	append(decoded.message)
+	if type(decoded.errors) == "table" then
+		for _, entry in decoded.errors do
+			if type(entry) == "table" then
+				append(entry.field)
+				append(entry.code)
+				append(entry.message)
+			elseif type(entry) == "string" then
+				append(entry)
+			end
+			if #parts >= 8 then
+				break
+			end
+		end
+	end
+	return if #parts > 0 then ": " .. table.concat(parts, "; "):sub(1, 900) else ""
+end
+
 local function request(
 	token: string,
 	method: Net.HttpMethod,
@@ -28,10 +60,10 @@ local function request(
 		body = if body ~= nil then Serde.encode("json", body) else nil,
 	})
 	if response.statusCode == 401 or response.statusCode == 403 then
-		error(`Rulesets API rejected Administration: write authorization (HTTP {response.statusCode})`, 0)
+		error(`Rulesets API rejected Administration: write authorization (HTTP {response.statusCode}){diagnostic(response.body)}`, 0)
 	end
 	if response.statusCode < 200 or response.statusCode >= 300 then
-		error(`Rulesets API {method} failed (HTTP {response.statusCode})`, 0)
+		error(`Rulesets API {method} failed (HTTP {response.statusCode}){diagnostic(response.body)}`, 0)
 	end
 	local result: unknown = if response.body ~= "" then Serde.decode("json", response.body) else {}
 	return response.statusCode, result
@@ -99,11 +131,13 @@ function RulesetSync.Sync(
 			end
 			local _, detail = request(token, "GET", `{prefix}/{id}`)
 			if not matches(detail, definition) then
+				print(`::notice::Applying ruleset update {ruleset.identity} (ID {id})`)
 				request(token, "PUT", `{prefix}/{id}`, definition)
 				changed = true
 				print(`Updated managed ruleset {ruleset.identity}`)
 			end
 		else
+			print(`::notice::Creating managed ruleset {ruleset.identity}`)
 			local _, created = request(token, "POST", prefix, definition)
 			local data = Publication.Record(created)
 			id = data.id :: number
