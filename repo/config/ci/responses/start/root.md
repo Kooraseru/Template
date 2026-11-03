@@ -1,10 +1,7 @@
-<div align="center">
-<h1>CI Start</h1>
+<h1 align="center">CI Start</h1>
 
-<p align="center">{{status_marker}}</p>
+<p align="center">{{header_badges}}</p>
 
 {{result_block}}
 
 {{children}}
-
-</div>

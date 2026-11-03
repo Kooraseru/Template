@@ -233,9 +233,50 @@ local function outcomeColor(outcome: string): string
 	return "neutral"
 end
 
-local function componentTree(outcomes: { [string]: string }, entries: { Entry }): string
+-- Keep Markdown diagnostics outside table cells where GitHub can wrap them naturally.
+local function readableNotes(markdown: string): string
+	local lines: { string } = {}
+	local fenced = false
+	local tick = string.char(96)
+	for line in (markdown .. "\n"):gmatch("(.-)\n") do
+		if line:match("^%s*" .. tick .. tick .. tick) then
+			fenced = not fenced
+		elseif not fenced then
+			line = line:gsub("%*%*([^*\n]-)%*%*", "%1"):gsub("<strong>(.-)</strong>", "%1")
+			line = line:gsub("^%s*#+%s+(.-)%s*$", "%1")
+			local pieces: { string } = {}
+			local inCode = false
+			local start = 1
+			for index = 1, #line do
+				if line:sub(index, index) == tick then
+					local part = line:sub(start, index - 1)
+					if not inCode then
+						part = part:gsub("(CI_[A-Z0-9_]+)", tick .. "%1" .. tick)
+						part = part:gsub("(GITHUB_TOKEN)", tick .. "%1" .. tick)
+					end
+					table.insert(pieces, part)
+					table.insert(pieces, tick)
+					inCode = not inCode
+					start = index + 1
+				end
+			end
+			local rest = line:sub(start)
+			if not inCode then
+				rest = rest:gsub("(CI_[A-Z0-9_]+)", tick .. "%1" .. tick)
+				rest = rest:gsub("(GITHUB_TOKEN)", tick .. "%1" .. tick)
+			end
+			table.insert(pieces, rest)
+			line = table.concat(pieces)
+		end
+		table.insert(lines, line)
+	end
+	return (table.concat(lines, "\n"):gsub("\n+$", ""))
+end
+
+local function componentTree(outcomes: { [string]: string }, entries: { Entry }, start: boolean, status: string): string
 	local tree: Branch = { name = "", children = {}, component = "" }
-	for identity, outcome in outcomes do
+	local assigned: { [string]: boolean } = {}
+	local function insert(identity: string, outcome: string): ()
 		local node = tree
 		for segment in identity:gmatch("[^/]+") do
 			if not node.children[segment] then
@@ -244,11 +285,39 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 			node = node.children[segment]
 		end
 		node.outcome = outcome
-		node.component = identity
+		node.component = if start and identity == "bootstrap/auth" then "bootstrap" else identity
+		assigned[node.component] = true
 	end
+	if start then
+		insert("bootstrap/auth", if status == "failure" then "failed" else if status == "warning" then "warning" else "passed")
+	end
+	for identity, outcome in outcomes do
+		if identity == "bootstrap" and start then
+			insert("bootstrap/auth", outcome)
+		else
+			insert(identity, outcome)
+		end
+	end
+	for _, entry in entries do
+		for identity in entry.components do
+			if not assigned[identity] then
+				insert(identity, "reported")
+			end
+		end
+	end
+	local labels = Publication.Record(configuration().labels)
+	local anchors: { [number]: boolean } = {}
 	local function needsAttention(node: Branch): boolean
 		if node.outcome then
-			return node.outcome ~= "passed" and node.outcome ~= "success"
+			if node.outcome ~= "passed" and node.outcome ~= "success" then
+				return true
+			end
+			for _, entry in entries do
+				if entry.components[node.component] and (entry.color == "failure" or entry.color == "warning") then
+					return true
+				end
+			end
+			return false
 		end
 		for _, child in node.children do
 			if needsAttention(child) then
@@ -257,53 +326,84 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 		end
 		return false
 	end
-	local function render(node: Branch): string
-		if node.outcome then
-			local links: { string } = {}
-			for _, entry in entries do
-				if entry.components[node.component] then
-					table.insert(links, `<a href="#response-{entry.index}">details {entry.index}</a>`)
+	local function renderLeaf(node: Branch): (string, string)
+		local attachments: { string } = {}
+		local count = 0
+		for _, entry in entries do
+			if not entry.components[node.component] then
+				continue
+			end
+			count += 1
+			local label = entry.id
+			for _, selector in keys(labels) do
+				if Glob.Match(entry.id, selector) then
+					label = Publication.Text(labels[selector])
+					break
 				end
 			end
-			-- Keep status badges short and put any outcome explanation in Additional Notes.
-			local label, explanation = node.outcome:match("^(.-) %((.+)%)$")
-			local marker = color(outcomeColor(node.outcome), label or node.outcome)
-			if explanation then
-				table.insert(links, htmlAttribute(explanation))
+			local anchor = ""
+			if not anchors[entry.index] then
+				anchor = "<a id=\"response-" .. tostring(entry.index) .. "\"></a>"
+				anchors[entry.index] = true
 			end
-			local markdown = Responses.Fill(Responses.Template("components.component"), {
-				name = htmlAttribute(node.name),
-				outcome = htmlAttribute(node.outcome),
-				status_marker = marker,
-				details_links = table.concat(links, ", "),
-			})
-			return (markdown:gsub("\n+$", ""))
+			table.insert(attachments, Responses.Fill(Responses.Template("records.record"), {
+				anchor = anchor,
+				label = htmlAttribute(label),
+				component = htmlAttribute(node.name),
+				markdown = readableNotes(entry.markdown),
+			}))
 		end
-		local children: { string } = {}
+		local display, explanation = (node.outcome or "reported"):match("^(.-) %((.+)%)$")
+		local note = if explanation then htmlAttribute(explanation) else ""
+		if count > 0 then
+			note ..= (if note ~= "" then "; " else "") .. tostring(count) .. (if count == 1 then " attachment below" else " attachments below")
+		end
+		if note == "" then
+			note = "No additional notes"
+		end
+		local result = Responses.Fill(Responses.Template("components.component"), {
+			name = htmlAttribute(node.name),
+			status_marker = color(outcomeColor(node.outcome or "reported"), display or node.outcome or "reported"),
+			details_links = note,
+		})
+		return (result:gsub("\n+$", "")), table.concat(attachments, "\n\n")
+	end
+	local function renderGroup(node: Branch): string
 		local rows: { string } = {}
+		local notes: { string } = {}
+		local children: { string } = {}
 		for _, name in keys(node.children) do
 			local child = node.children[name]
-			table.insert(if child.outcome then rows else children, render(child))
+			if child.outcome then
+				local row, details = renderLeaf(child)
+				table.insert(rows, row)
+				if details ~= "" then
+					table.insert(notes, details)
+				end
+			else
+				table.insert(children, renderGroup(child))
+			end
 		end
-		local text = table.concat(children, "\n\n")
 		local tableText = if #rows > 0
-			then '<table align="center">\n<thead><tr><th align="center">Component/Attachment</th><th align="center">Outcome</th><th align="center">Additional Notes</th></tr></thead>\n<tbody>\n'
+			then '<table width="100%">\n<thead><tr><th align="left" width="19%">Component / Attachment</th><th align="center" width="15%">Outcome</th><th align="left" width="66%">Additional notes</th></tr></thead>\n<tbody>\n'
 				.. table.concat(rows, "\n")
 				.. "\n</tbody>\n</table>"
 			else ""
+		local notesText = table.concat(notes, "\n\n")
+		local childrenText = table.concat(children, "\n\n")
 		if node.name == "" then
-			return tableText .. (if tableText ~= "" and text ~= "" then "\n\n" else "") .. text
+			return (table.concat({ tableText, notesText, childrenText }, "\n\n"):gsub("^%s+", ""):gsub("%s+$", ""))
 		end
-		local expanded = if needsAttention(node) then " open" else ""
-		local markdown = Responses.Fill(Responses.Template("components.group"), {
-			name = node.name,
+		local rendered = Responses.Fill(Responses.Template("components.group"), {
+			name = htmlAttribute(node.name),
 			rows = tableText,
-			children = text,
-			expanded = expanded,
+			notes = notesText,
+			children = childrenText,
+			expanded = if needsAttention(node) then " open" else "",
 		})
-		return (markdown:gsub("\n+$", ""))
+		return (rendered:gsub("\n+$", ""))
 	end
-	return render(tree)
+	return renderGroup(tree)
 end
 
 function Responses.Render(
@@ -329,15 +429,17 @@ function Responses.Render(
 	context.artifacts_button = shieldcnButton("artifacts", context, config)
 	context.repository_button = shieldcnButton("repository", context, config)
 	context.selected_count = context.selected_count or tostring(#keys(outcomes or {}))
-	context.component_tree = componentTree(outcomes or {}, entries)
 	if context.color == "success" then
 		for _, entry in entries do
-			if entry.color == "failure" or entry.color == "warning" then
-				context.color = "warning"
+			if entry.color == "failure" then
+				context.color = "failure"
 				break
+			elseif entry.color == "warning" then
+				context.color = "warning"
 			end
 		end
 	end
+	context.component_tree = componentTree(outcomes or {}, entries, root == "start", context.color or "info")
 	context.status_marker, context.status_alert = color(context.color or "info")
 	context.result = context.result or "See the component results and next steps below."
 	-- Native alerts cannot be nested inside the centered summary container.
@@ -389,41 +491,7 @@ function Responses.Render(
 				table.insert(renderedChildren, child)
 			end
 		end
-		local renderedRecords: { string } = {}
-		if node.records then
-			local pattern = Publication.Text(node.records)
-			for _, entry in entries do
-				if
-					not Glob.Match(entry.id, pattern)
-					or (node.component and not entry.components[Publication.Text(node.component)])
-				then
-					continue
-				end
-				local label = entry.id
-				for _, selector in keys(labels) do
-					if Glob.Match(entry.id, selector) then
-						label = Publication.Text(labels[selector])
-						break
-					end
-				end
-				local marker = color(entry.color)
-				table.insert(
-					renderedRecords,
-					Responses.Fill(Responses.Template("records.record"), {
-						index = tostring(entry.index),
-						status_marker = marker,
-						label = label,
-						components = table.concat(keys(entry.components), ", "),
-						markdown = entry.markdown,
-					})
-				)
-			end
-			if #renderedRecords == 0 and #renderedChildren == 0 then
-				return ""
-			end
-		end
 		localValues.children = table.concat(renderedChildren, "\n\n")
-		localValues.records = table.concat(renderedRecords, "\n\n")
 		local markdown = Responses.Fill(read(Publication.Text(node.markdown)), localValues)
 		return (markdown:gsub("\n+$", ""))
 	end

@@ -19,11 +19,14 @@ responses/
       group/root.md      reusable grouping layout
       component/root.md  reusable leaf layout
     records/
-      root.md            details and next steps
-      record/root.md     one deduplicated result
+      record/root.md     per-component collapsible diagnostic
     authorization/       credential instructions and evidence
     projects-authorization/
 ```
+
+Each component owns its diagnostic attachments. They render in collapsible sections
+below its full-width results table, never inside table cells. Component identities
+still come from the validated scheduler; there is no additional inventory.
 
 Markdown receives named `{{values}}`. A node receives its rendered `{{children}}`.
 A `records` glob selects collected response fragments; identical fragments are
