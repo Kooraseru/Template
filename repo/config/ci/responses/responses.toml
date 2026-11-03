@@ -137,10 +137,12 @@ order = 30
 "projects.insufficient" = "shared/projects-authorization/insufficient.md"
 "projects.setup" = "shared/projects-authorization/setup.md"
 "projects.organization-setup" = "shared/projects-authorization/organization-setup.md"
+"rulesets.authorization" = "shared/rulesets-authorization/permissions.md"
 
 [labels]
 "authorization/check-runs" = "Enable neutral reporting"
 "authorization/token" = "Update credential permissions"
+"authorization/rulesets" = "Ruleset permissions and API diagnostic"
 "authorization/projects/**" = "Authorize Projects synchronization"
 "publication/attestations" = "Artifact provenance"
 "execution/error" = "Execution stopped"

@@ -1,9 +1,13 @@
-<a name="response-{{index}}"></a>
+<tr>
+<td align="center">{{status_marker}}</td>
+<td>
+<a id="response-{{index}}"></a>
 <details>
-<summary>{{status_marker}} <strong>{{label}}</strong></summary>
-
-<sub>Affected components: {{components}}</sub>
+<summary><strong>{{label}}</strong></summary>
 
 {{markdown}}
 
 </details>
+</td>
+<td>{{components}}</td>
+</tr>

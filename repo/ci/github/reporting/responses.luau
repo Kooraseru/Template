@@ -396,6 +396,8 @@ function Responses.Render(
 					end
 				end
 				local marker = color(entry.color)
+				-- Compact badges keep the attachment table readable on GitHub.
+				marker = marker:gsub("<img ", '<img height="20" ', 1)
 				table.insert(
 					renderedRecords,
 					Responses.Fill(Responses.Template("records.record"), {
