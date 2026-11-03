@@ -26,12 +26,26 @@ neutral = "64748B"
 info = "5385B1"
 pending = "8B75B5"
 
-# One shared size, font, and padding; iconless badges use the secondary style.
+# Individual CI header badge colors; runner, result, and artifact SVGs render separately.
+[header]
+runner_ubuntu = "C65335"
+runner_windows = "0078D4"
+runner_macos = "62666B"
+runner_other = "6F42C1"
+status_background = "24292F"
+artifacts_background = "A36F21"
+success_dot = "3FB950"
+failure_dot = "F85149"
+pending_dot = "D29922"
+neutral_dot = "8B949E"
+
+# Shared default size and foreground color apply to all status and navigation badges.
 [badges]
-size = "sm"
+size = "default"
 variant = "branded"
-iconless_variant = "secondary"
+iconless_variant = "branded"
 logo_color = "FFFFFF"
+text_color = "FFFFFF"
 
 [buttons.run]
 label = "Open this run"
@@ -66,12 +80,6 @@ markdown = "start/root.md"
 markdown = "start/overview/root.md"
 order = 10
 
-[responses.start.children.details]
-markdown = "shared/records/root.md"
-records = "**"
-component = "bootstrap"
-order = 20
-
 [responses.start.children.attention]
 markdown = "shared/attention.md"
 if_value = "attention"
@@ -99,13 +107,6 @@ markdown = "shared/attention.md"
 if_value = "attention"
 order = 15
 
-[responses.execution.children.details]
-markdown = "shared/records/root.md"
-records = "**"
-order = 30
-
-# Template roles are separate from component inventories. Components are still
-# discovered by the Luau scheduler; these associations only control presentation.
 [templates]
 "components.group" = "shared/components/group/root.md"
 "components.component" = "shared/components/component/root.md"

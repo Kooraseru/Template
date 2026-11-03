@@ -2,6 +2,7 @@
 --!strict
 
 local Fs = require("@lune/fs")
+local Net = require("@lune/net")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Glob = require("@ci/bootstrap/discovery/glob")
@@ -63,14 +64,18 @@ local function badge(label: string, colorName: string, logo: string?, config: { 
 	end
 	local variant = Publication.Text(if logo then defaults.variant else defaults.iconless_variant)
 	local logoColor = Publication.Text(defaults.logo_color)
+	local textColor = Publication.Text(defaults.text_color)
 	if not logoColor:match("^%x%x%x$") and not logoColor:match("^%x%x%x%x%x%x$") then
 		error("Invalid shared Shieldcn logo color", 0)
+	end
+	if not textColor:match("^%x%x%x%x%x%x$") then
+		error("Invalid shared Shieldcn text color", 0)
 	end
 	local slug = label:gsub("_", "__"):gsub("%-", "--"):gsub("%s+", "_")
 	local image =
 		`https://shieldcn.dev/badge/{Publication.Encode(slug)}.svg?variant={Publication.Encode(variant)}&color={background}&size={Publication.Encode(
 			size
-		)}&logoColor={logoColor}`
+		)}&logoColor={logoColor}&labelTextColor={textColor}`
 	if logo then
 		if not logo:match("^[%w:_%-]+$") then
 			error("Invalid Shieldcn logo", 0)
@@ -78,6 +83,116 @@ local function badge(label: string, colorName: string, logo: string?, config: { 
 		image ..= `&logo={Publication.Encode(logo)}`
 	end
 	return `<img alt="{htmlAttribute(label)}" src="{htmlAttribute(image)}">`
+end
+
+-- Header badges are independent SVGs; the status dot does not recolor the background.
+local function headerColor(palette: { [string]: unknown }, name: string): string
+	local value = Publication.Text(palette[name])
+	if not value:match("^%x%x%x%x%x%x$") then
+		error("Invalid CI header color: " .. name, 0)
+	end
+	return value
+end
+
+local function headerBadge(
+	label: string,
+	value: string,
+	background: string,
+	icon: string,
+	iconColor: string,
+	iconSize: number?
+): string
+	local function segment(text: string): string
+		return (text:gsub("_", "__"):gsub("%-", "--"):gsub("%s+", "_"))
+	end
+	local slug = if label == ""
+		then segment(value) .. "-" .. background
+		else segment(label) .. "-" .. segment(value) .. "-" .. background
+	local image = "https://shieldcn.dev/badge/" .. Publication.Encode(slug)
+		.. ".svg?variant=default&size=default&color=" .. background
+		.. "&logo=" .. Publication.Encode(icon) .. "&logoColor=" .. iconColor
+	if iconSize then
+		image ..= "&iconSize=" .. tostring(iconSize)
+	end
+	return '<img alt="' .. htmlAttribute((if label == "" then "" else label .. " ") .. value)
+		.. '" src="' .. htmlAttribute(image) .. '">'
+end
+
+local function artifactCount(repository: string): string
+	local supplied = Process.env.CI_ARTIFACT_COUNT
+	if supplied and supplied:match("^%d+$") then
+		return supplied
+	end
+	local run = Process.env.GITHUB_RUN_ID
+	local token = Process.env.GH_TOKEN
+	if Process.env.ACT == "true" or Process.env.GITHUB_ACTIONS ~= "true" or not run or not run:match("^%d+$")
+		or not token or token == "" then
+		return "?"
+	end
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local ok, result = pcall(function()
+		return Net.request({
+			url = api .. "/repos/" .. repository .. "/actions/runs/" .. run .. "/artifacts?per_page=1",
+			headers = {
+				Authorization = "Bearer " .. token,
+				Accept = "application/vnd.github+json",
+				["User-Agent"] = "Luau-CI-report",
+			},
+		})
+	end)
+	if not ok or not result.ok then
+		print("::warning::Unable to read workflow artifact count; reporting it as unknown")
+		return "?"
+	end
+	local decodedOk, decoded = pcall(function()
+		return Serde.decode("json", result.body)
+	end)
+	if decodedOk and type(decoded) == "table" and type(decoded.total_count) == "number"
+		and decoded.total_count >= 0 and decoded.total_count % 1 == 0 then
+		-- The final ci-report bundle is uploaded immediately after this summary is written.
+		return tostring(decoded.total_count + 1)
+	end
+	print("::warning::GitHub returned an invalid artifact count; reporting it as unknown")
+	return "?"
+end
+
+local function headerBadges(root: string, status: string, repository: string, config: { [string]: unknown }): string
+	local palette = Publication.Record(config.header)
+	local os = Process.env.RUNNER_OS or ""
+	local name = Process.env.CI_RUNNER_LABEL
+	local runnerColor = "runner_other"
+	local icon = "lu:Server"
+	if name == "ubuntu-latest" or (not name and os == "Linux") then
+		name = name or "ubuntu-latest"
+		runnerColor = "runner_ubuntu"
+		icon = "ubuntu"
+	elseif name == "windows-latest" or (not name and os == "Windows") then
+		name = name or "windows-latest"
+		runnerColor = "runner_windows"
+		icon = "windows"
+	elseif name == "macos-latest" or (not name and os == "macOS") then
+		name = name or "macos-latest"
+		runnerColor = "runner_macos"
+		icon = "apple"
+	end
+	name = name or "runner unknown"
+	local badges = {
+		headerBadge("", name, headerColor(palette, runnerColor), icon, "FFFFFF"),
+	}
+	local description = if status == "failure" then "failed"
+		else if status == "success" then "success"
+		else if status == "warning" then "warning"
+		else if status == "pending" then "pending"
+		else if status == "cancelled" then "cancelled" else "unknown"
+	local dot = if status == "failure" then "failure_dot"
+		else if status == "success" then "success_dot"
+		else if status == "warning" or status == "pending" then "pending_dot"
+		else "neutral_dot"
+	table.insert(badges, headerBadge("CI", description, headerColor(palette, "status_background"), "ri:FaCircle", headerColor(palette, dot), 10))
+	if root == "execution" then
+		table.insert(badges, headerBadge("artifacts", artifactCount(repository), headerColor(palette, "artifacts_background"), "lu:Package", "FFFFFF"))
+	end
+	return table.concat(badges, "&nbsp;&nbsp;")
 end
 
 local function color(name: string, label: string?): (string, string)
@@ -229,9 +344,50 @@ local function outcomeColor(outcome: string): string
 	return "neutral"
 end
 
-local function componentTree(outcomes: { [string]: string }, entries: { Entry }): string
+-- Keep Markdown diagnostics outside table cells where GitHub can wrap them naturally.
+local function readableNotes(markdown: string): string
+	local lines: { string } = {}
+	local fenced = false
+	local tick = string.char(96)
+	for line in (markdown .. "\n"):gmatch("(.-)\n") do
+		if line:match("^%s*" .. tick .. tick .. tick) then
+			fenced = not fenced
+		elseif not fenced then
+			line = line:gsub("%*%*([^*\n]-)%*%*", "%1"):gsub("<strong>(.-)</strong>", "%1")
+			line = line:gsub("^%s*#+%s+(.-)%s*$", "%1")
+			local pieces: { string } = {}
+			local inCode = false
+			local start = 1
+			for index = 1, #line do
+				if line:sub(index, index) == tick then
+					local part = line:sub(start, index - 1)
+					if not inCode then
+						part = part:gsub("(CI_[A-Z0-9_]+)", tick .. "%1" .. tick)
+						part = part:gsub("(GITHUB_TOKEN)", tick .. "%1" .. tick)
+					end
+					table.insert(pieces, part)
+					table.insert(pieces, tick)
+					inCode = not inCode
+					start = index + 1
+				end
+			end
+			local rest = line:sub(start)
+			if not inCode then
+				rest = rest:gsub("(CI_[A-Z0-9_]+)", tick .. "%1" .. tick)
+				rest = rest:gsub("(GITHUB_TOKEN)", tick .. "%1" .. tick)
+			end
+			table.insert(pieces, rest)
+			line = table.concat(pieces)
+		end
+		table.insert(lines, line)
+	end
+	return (table.concat(lines, "\n"):gsub("\n+$", ""))
+end
+
+local function componentTree(outcomes: { [string]: string }, entries: { Entry }, start: boolean, status: string): string
 	local tree: Branch = { name = "", children = {}, component = "" }
-	for identity, outcome in outcomes do
+	local assigned: { [string]: boolean } = {}
+	local function insert(identity: string, outcome: string): ()
 		local node = tree
 		for segment in identity:gmatch("[^/]+") do
 			if not node.children[segment] then
@@ -240,11 +396,39 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 			node = node.children[segment]
 		end
 		node.outcome = outcome
-		node.component = identity
+		node.component = if start and identity == "bootstrap/auth" then "bootstrap" else identity
+		assigned[node.component] = true
 	end
+	if start then
+		insert("bootstrap/auth", if status == "failure" then "failed" else if status == "warning" then "warning" else "passed")
+	end
+	for identity, outcome in outcomes do
+		if identity == "bootstrap" and start then
+			insert("bootstrap/auth", outcome)
+		else
+			insert(identity, outcome)
+		end
+	end
+	for _, entry in entries do
+		for identity in entry.components do
+			if not assigned[identity] then
+				insert(identity, "reported")
+			end
+		end
+	end
+	local labels = Publication.Record(configuration().labels)
+	local anchors: { [number]: boolean } = {}
 	local function needsAttention(node: Branch): boolean
 		if node.outcome then
-			return node.outcome ~= "passed" and node.outcome ~= "success"
+			if node.outcome ~= "passed" and node.outcome ~= "success" then
+				return true
+			end
+			for _, entry in entries do
+				if entry.components[node.component] and (entry.color == "failure" or entry.color == "warning") then
+					return true
+				end
+			end
+			return false
 		end
 		for _, child in node.children do
 			if needsAttention(child) then
@@ -253,48 +437,87 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 		end
 		return false
 	end
-	local function render(node: Branch): string
-		if node.outcome then
-			local links: { string } = {}
-			for _, entry in entries do
-				if entry.components[node.component] then
-					table.insert(links, `<a href="#response-{entry.index}">details {entry.index}</a>`)
+	local function renderLeaf(node: Branch): (string, string)
+		local attachments: { string } = {}
+		local count = 0
+		for _, entry in entries do
+			if not entry.components[node.component] then
+				continue
+			end
+			count += 1
+			local label = entry.id
+			for _, selector in keys(labels) do
+				if Glob.Match(entry.id, selector) then
+					label = Publication.Text(labels[selector])
+					break
 				end
 			end
-			local marker = color(outcomeColor(node.outcome), node.outcome)
-			local markdown = Responses.Fill(Responses.Template("components.component"), {
-				name = htmlAttribute(node.name),
-				outcome = htmlAttribute(node.outcome),
-				status_marker = marker,
-				details_links = table.concat(links, ", "),
-			})
-			return (markdown:gsub("\n+$", ""))
+			local anchor = ""
+			if not anchors[entry.index] then
+				anchor = "<a id=\"response-" .. tostring(entry.index) .. "\"></a>"
+				anchors[entry.index] = true
+			end
+			table.insert(attachments, Responses.Fill(Responses.Template("records.record"), {
+				anchor = anchor,
+				label = htmlAttribute(label),
+				component = htmlAttribute(node.name),
+				markdown = readableNotes(entry.markdown),
+			}))
 		end
-		local children: { string } = {}
+		local display, explanation = (node.outcome or "reported"):match("^(.-) %((.+)%)$")
+		local note = if explanation then htmlAttribute(explanation) else ""
+		if count > 0 then
+			note ..= (if note ~= "" then "; " else "") .. tostring(count) .. (if count == 1 then " attachment below" else " attachments below")
+		end
+		if note == "" then
+			note = "No additional notes"
+		end
+		local result = Responses.Fill(Responses.Template("components.component"), {
+			name = htmlAttribute(node.name),
+			status_marker = color(outcomeColor(node.outcome or "reported"), display or node.outcome or "reported"),
+			details_links = note,
+		})
+		return (result:gsub("\n+$", "")), table.concat(attachments, "\n\n")
+	end
+	local function renderGroup(node: Branch): string
 		local rows: { string } = {}
+		local notes: { string } = {}
+		local children: { string } = {}
 		for _, name in keys(node.children) do
 			local child = node.children[name]
-			table.insert(if child.outcome then rows else children, render(child))
+			if child.outcome then
+				local row, details = renderLeaf(child)
+				table.insert(rows, row)
+				if details ~= "" then
+					table.insert(notes, details)
+				end
+			else
+				table.insert(children, renderGroup(child))
+			end
 		end
-		local text = table.concat(children, "\n\n")
 		local tableText = if #rows > 0
-			then '<table align="center">\n<thead><tr><th align="center">Component</th><th align="center">Outcome</th><th align="center">Details</th></tr></thead>\n<tbody>\n'
+			then '<table width="100%">\n<thead><tr><th align="left" width="19%">Component / Attachment</th><th align="center" width="15%">Outcome</th><th align="left" width="66%">Additional notes</th></tr></thead>\n<tbody>\n'
 				.. table.concat(rows, "\n")
 				.. "\n</tbody>\n</table>"
 			else ""
-		if node.name == "" then
-			return tableText .. (if tableText ~= "" and text ~= "" then "\n\n" else "") .. text
+		local sections: { string } = {}
+		for _, section in { tableText, table.concat(notes, "\n\n"), table.concat(children, "\n\n") } do
+			if section ~= "" then
+				table.insert(sections, section)
+			end
 		end
-		local expanded = if needsAttention(node) then " open" else ""
-		local markdown = Responses.Fill(Responses.Template("components.group"), {
-			name = node.name,
-			rows = tableText,
-			children = text,
-			expanded = expanded,
+		local content = table.concat(sections, "\n\n")
+		if node.name == "" then
+			return content
+		end
+		local rendered = Responses.Fill(Responses.Template("components.group"), {
+			name = htmlAttribute(node.name),
+			content = content,
+			expanded = if (start and node.name == "bootstrap") or needsAttention(node) then " open" else "",
 		})
-		return (markdown:gsub("\n+$", ""))
+		return (rendered:gsub("\n+$", ""))
 	end
-	return render(tree)
+	return renderGroup(tree)
 end
 
 function Responses.Render(
@@ -320,15 +543,18 @@ function Responses.Render(
 	context.artifacts_button = shieldcnButton("artifacts", context, config)
 	context.repository_button = shieldcnButton("repository", context, config)
 	context.selected_count = context.selected_count or tostring(#keys(outcomes or {}))
-	context.component_tree = componentTree(outcomes or {}, entries)
 	if context.color == "success" then
 		for _, entry in entries do
-			if entry.color == "failure" or entry.color == "warning" then
-				context.color = "warning"
+			if entry.color == "failure" then
+				context.color = "failure"
 				break
+			elseif entry.color == "warning" then
+				context.color = "warning"
 			end
 		end
 	end
+	context.component_tree = componentTree(outcomes or {}, entries, root == "start", context.color or "info")
+	context.header_badges = headerBadges(root, context.color or "info", repository, config)
 	context.status_marker, context.status_alert = color(context.color or "info")
 	context.result = context.result or "See the component results and next steps below."
 	-- Native alerts cannot be nested inside the centered summary container.
@@ -350,8 +576,8 @@ function Responses.Render(
 				break
 			end
 		end
-		-- Next-step links use the same image-backed button styling as run navigation.
-		local button = badge(label, entry.color, "github", config):gsub("<img ", '<img height="24" ', 1)
+		-- Next-step links use the shared badge height and text color.
+		local button = badge(label, entry.color, "github", config)
 		table.insert(attention, `<a href="#response-{entry.index}">{button}</a>`)
 	end
 	context.attention = table.concat(attention, " ")
@@ -380,43 +606,7 @@ function Responses.Render(
 				table.insert(renderedChildren, child)
 			end
 		end
-		local renderedRecords: { string } = {}
-		if node.records then
-			local pattern = Publication.Text(node.records)
-			for _, entry in entries do
-				if
-					not Glob.Match(entry.id, pattern)
-					or (node.component and not entry.components[Publication.Text(node.component)])
-				then
-					continue
-				end
-				local label = entry.id
-				for _, selector in keys(labels) do
-					if Glob.Match(entry.id, selector) then
-						label = Publication.Text(labels[selector])
-						break
-					end
-				end
-				local marker = color(entry.color)
-				-- Compact badges keep the attachment table readable on GitHub.
-				marker = marker:gsub("<img ", '<img height="20" ', 1)
-				table.insert(
-					renderedRecords,
-					Responses.Fill(Responses.Template("records.record"), {
-						index = tostring(entry.index),
-						status_marker = marker,
-						label = label,
-						components = table.concat(keys(entry.components), ", "),
-						markdown = entry.markdown,
-					})
-				)
-			end
-			if #renderedRecords == 0 and #renderedChildren == 0 then
-				return ""
-			end
-		end
 		localValues.children = table.concat(renderedChildren, "\n\n")
-		localValues.records = table.concat(renderedRecords, "\n\n")
 		local markdown = Responses.Fill(read(Publication.Text(node.markdown)), localValues)
 		return (markdown:gsub("\n+$", ""))
 	end

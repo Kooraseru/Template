@@ -1,16 +1,6 @@
-<table width="100%">
-<thead>
-<tr>
-<th align="left">
 <details{{expanded}}>
-<summary><strong>{{name}}</strong></summary>
+<summary><code>{{name}}</code></summary>
 
-{{rows}}
-
-{{children}}
+{{content}}
 
 </details>
-</th>
-</tr>
-</thead>
-</table>
