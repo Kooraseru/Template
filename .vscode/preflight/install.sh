@@ -25,7 +25,12 @@ if ! command -v npx >/dev/null 2>&1; then
     exit 1
 fi
 
-npx_entrypoint="$(dirname -- "$(realpath -- "$(command -v npx)")")/npx-cli.js"
+npx_path="$(realpath -- "$(command -v npx)")"
+if [[ ${npx_path##*/} == "npx-cli.js" ]]; then
+    npx_entrypoint="$npx_path"
+else
+    npx_entrypoint="$(dirname -- "$npx_path")/node_modules/npm/bin/npx-cli.js"
+fi
 if [[ ! -f $npx_entrypoint ]]; then
     printf 'Preflight setup cannot find npm CLI JavaScript at %s\n' "$npx_entrypoint" >&2
     exit 1
@@ -47,19 +52,12 @@ if [[ -f $stamp ]]; then
     read -r previous_hash < "$stamp"
 fi
 
-# Resolve this window's extension copy, including the WSL server profile.
+# Resolve the extension copy reported by this VS Code CLI. A matching WSL copy
+# must not hide a stale local copy, because the local window may load that one.
 installed_extension_path() {
     local candidate
     local candidate_hash
-    local server_root
     candidate="$(code --locate-extension "$extension_id" 2>/dev/null || true)"
-    candidate_hash="$(node "$helper" installed-hash "$candidate")"
-    if [[ $candidate_hash == "$extension_code_hash" ]]; then
-        printf '%s\n' "$candidate"
-        return 0
-    fi
-    server_root="${VSCODE_AGENT_FOLDER:-${HOME}/.vscode-server}"
-    candidate="$server_root/extensions/$extension_id-$extension_version"
     candidate_hash="$(node "$helper" installed-hash "$candidate")"
     if [[ $candidate_hash == "$extension_code_hash" ]]; then
         printf '%s\n' "$candidate"
@@ -68,9 +66,16 @@ installed_extension_path() {
     return 1
 }
 
-
 if [[ -n $installed && $previous_hash == "$extension_hash" ]] && installed_extension_path >/dev/null; then
-    printf '%s\n' 'Preflight setup: extension is current; no reload is needed.'
+    if [[ -f $reload_marker ]]; then
+        read -r requested_hash < "$reload_marker" || requested_hash=""
+        if [[ $requested_hash != "$extension_code_hash" ]]; then
+            printf '%s\n' "$extension_code_hash" > "$reload_marker"
+        fi
+        printf '%s\n' 'Preflight setup: extension is installed; reload is still required to activate it.'
+    else
+        printf '%s\n' 'Preflight setup: extension is current; no reload is needed.'
+    fi
     exit 0
 fi
 
@@ -83,7 +88,7 @@ printf '%s\n' 'Preflight setup: installing the workspace VSIX.'
 code --install-extension "$vsix" --force
 installed_path="$(installed_extension_path || true)"
 if [[ -z $installed_path ]]; then
-    printf '%s\n' 'Preflight setup error: VS Code did not install the workspace extension code. Check that this VS Code CLI belongs to the open window.' >&2
+    printf '%s\n' 'Preflight setup error: VS Code CLI did not update the extension copy it reports. Check that this CLI belongs to the open window.' >&2
     exit 1
 fi
 printf '%s\n' "$extension_hash" > "$stamp"

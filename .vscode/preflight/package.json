@@ -1,8 +1,8 @@
 {
   "name": "preflight-diagnostics",
   "displayName": "Preflight Diagnostics",
-  "description": "Publishes repository Preflight findings to the VS Code Problems panel.",
-  "version": "0.1.1",
+  "description": "Streams repository diagnostics to the VS Code Problems panel.",
+  "version": "0.1.6",
   "publisher": "kooraseru",
   "repository": {
     "type": "git",

@@ -3,6 +3,7 @@
 
 -- Coordinate configured provider analyzers and expose one Problems-compatible result.
 local Contracts = require("@self/contracts")
+local Diagnostics = require("@self/diagnostics")
 local PlanBuilder = require("@self/planning")
 local ProviderDiscovery = require("@self/providers/providerDiscovery")
 local ProviderRunner = require("@self/providers/providerRunner")
@@ -25,21 +26,6 @@ type Fields = {
 
 export type Preflight = setmetatable<Fields, typeof(Preflight)>
 
-local function sortDiagnostics(diagnostics: { Contracts.Diagnostic }): ()
-	table.sort(diagnostics, function(left: Contracts.Diagnostic, right: Contracts.Diagnostic): boolean
-		if left.path ~= right.path then
-			return left.path < right.path
-		end
-		if left.line ~= right.line then
-			return left.line < right.line
-		end
-		if left.column ~= right.column then
-			return left.column < right.column
-		end
-		return left.message < right.message
-	end)
-end
-
 function Preflight.new(): Preflight
 	local fields: Fields = {
 		planBuilder = PlanBuilder.new(),
@@ -54,29 +40,27 @@ function Preflight.Plan(self: Preflight, event: string): PlanBuilder.Plan
 end
 
 function Preflight.Run(self: Preflight, event: string): Result
+	print("::preflight-start::")
+	local diagnosticTable = Diagnostics.new(function(snapshot: { Contracts.Diagnostic })
+		print(`::diagnostics::{Serde.encode("json", snapshot)}`)
+	end)
+
 	local plan = self:Plan(event)
+	diagnosticTable:Replace("planning", plan.diagnostics)
 	local packages, discoveryDiagnostics = self.providerDiscovery:Discover()
-	local diagnostics: { Contracts.Diagnostic } = {}
-	for _, diagnostic in plan.diagnostics do
-		table.insert(diagnostics, diagnostic)
-	end
-	for _, diagnostic in discoveryDiagnostics do
-		table.insert(diagnostics, diagnostic)
-	end
+	diagnosticTable:Replace("discovery", discoveryDiagnostics)
 
 	local context: Contracts.Context = {
 		event = event,
 		planAvailable = plan.available,
 		tasks = plan.tasks,
 	}
-	for _, diagnostic in self.providerRunner:Run(packages, context) do
-		table.insert(diagnostics, diagnostic)
-	end
-
-	sortDiagnostics(diagnostics)
+	self.providerRunner:Run(packages, context, function(owner: string, entries: { Contracts.Diagnostic })
+		diagnosticTable:Replace(owner, entries)
+	end)
+	local diagnostics = diagnosticTable:Snapshot()
 	local passed = true
 	for _, diagnostic in diagnostics do
-		print(`::diagnostic::{Serde.encode("json", diagnostic)}`)
 		if diagnostic.severity == "error" then
 			passed = false
 		end

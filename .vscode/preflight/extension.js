@@ -3,6 +3,7 @@
 const childProcess = require("node:child_process");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
+const http = require("node:http");
 const path = require("node:path");
 const vscode = require("vscode");
 
@@ -11,8 +12,11 @@ const DEBOUNCE_MS = 500;
 const PROVIDER_EXTENSIONS = ["JohnnyMorganz.luau-lsp", "JohnnyMorganz.stylua"];
 const STYLUA_FORMAT_COMMAND = "preflight.styluaFormatDocument";
 const STYLUA_CONFIG = "repo/config/luau/stylua/.stylua.toml";
+const PROBLEMS_DIRECTORY = path.join("build", "run", "editor-problems");
+const PROBLEMS_ENDPOINT = "endpoint.json";
 const DIAGNOSTIC_PATTERN = /^(.*):(\d+):(\d+):(\d+)(?::(\d+))?: (error|warning|info): ([^:]+): (.*)$/;
 const DIAGNOSTIC_PREFIX = "::diagnostic::";
+const DIAGNOSTICS_SNAPSHOT_PREFIX = "::diagnostics::";
 const PREFLIGHT_INPUTS = [
 	"repo/ci/preflight/**",
 	"repo/config/ci/preflight/**",
@@ -33,6 +37,145 @@ function extensionCodeHash(extensionPath) {
 	return crypto.createHash("sha256").update(fs.readFileSync(path.join(extensionPath, "extension.js"))).digest("hex");
 }
 
+function sameWorkspacePath(left, right) {
+	const leftPath = path.resolve(left);
+	const rightPath = path.resolve(right);
+	return process.platform === "win32"
+		? leftPath.toLowerCase() === rightPath.toLowerCase()
+		: leftPath === rightPath;
+}
+
+function collectProblems(root) {
+	const diagnostics = [];
+	for (const [uri, entries] of vscode.languages.getDiagnostics()) {
+		const folder = vscode.workspace.getWorkspaceFolder(uri);
+		if (!folder || !sameWorkspacePath(folder.uri.fsPath, root)) continue;
+		const relativePath = uri.scheme === "file"
+			? path.relative(root, uri.fsPath).split(path.sep).join("/")
+			: uri.toString();
+		for (const diagnostic of entries) {
+			const code = diagnostic.code && typeof diagnostic.code === "object" ? diagnostic.code.value : diagnostic.code;
+			diagnostics.push({
+				path: relativePath,
+				line: diagnostic.range.start.line + 1,
+				column: diagnostic.range.start.character + 1,
+				severity: ["error", "warning", "information", "hint"][diagnostic.severity] || "unknown",
+				source: diagnostic.source || "",
+				code: code === undefined || code === null ? "" : String(code),
+				message: diagnostic.message,
+			});
+		}
+	}
+	diagnostics.sort((left, right) =>
+		left.path.localeCompare(right.path) || left.line - right.line || left.column - right.column,
+	);
+	return diagnostics;
+}
+
+function waitForDiagnosticsQuiet(maxWaitMs = 5000, quietMs = 500) {
+	return new Promise((resolve) => {
+		let quietTimer;
+		const finish = () => {
+			clearTimeout(quietTimer);
+			clearTimeout(maxTimer);
+			subscription.dispose();
+			resolve();
+		};
+		const resetQuietTimer = () => {
+			clearTimeout(quietTimer);
+			quietTimer = setTimeout(finish, quietMs);
+		};
+		const subscription = vscode.languages.onDidChangeDiagnostics(resetQuietTimer);
+		const maxTimer = setTimeout(finish, maxWaitMs);
+		resetQuietTimer();
+	});
+}
+
+async function startProblemsBridge(workspaces) {
+	const token = crypto.randomBytes(32).toString("hex");
+	const manifests = new Map();
+	const server = http.createServer((request, response) => {
+		if (request.method !== "POST" || request.url !== "/problems") {
+			response.writeHead(404).end();
+			return;
+		}
+		if (request.socket.remoteAddress !== "127.0.0.1" && request.socket.remoteAddress !== "::ffff:127.0.0.1") {
+			response.writeHead(403).end();
+			return;
+		}
+		if (request.headers.authorization !== `Bearer ${token}`) {
+			response.writeHead(401).end();
+			return;
+		}
+		let body = "";
+		request.setEncoding("utf8");
+		request.on("data", (chunk) => {
+			body += chunk;
+			if (body.length > 4096) {
+				response.writeHead(413).end();
+				request.destroy();
+			}
+		});
+		request.on("end", async () => {
+			try {
+				const input = JSON.parse(body || "{}");
+				const root = typeof input.root === "string" ? input.root : "";
+				const folder = (vscode.workspace.workspaceFolders || []).find((candidate) =>
+					sameWorkspacePath(candidate.uri.fsPath, root),
+				);
+				if (!folder || !workspaces.has(folder.uri.toString())) {
+					response.writeHead(404).end();
+					return;
+				}
+				if (input.phase === "after") await waitForDiagnosticsQuiet();
+				const snapshot = {
+					root: folder.uri.fsPath,
+					capturedAt: new Date().toISOString(),
+					diagnostics: collectProblems(folder.uri.fsPath),
+				};
+				response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(snapshot));
+			} catch (error) {
+				response.writeHead(500, { "content-type": "application/json" }).end(JSON.stringify({ error: error.message }));
+			}
+		});
+	});
+
+	await new Promise((resolve, reject) => {
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", resolve);
+	});
+	const address = server.address();
+	if (!address || typeof address === "string") {
+		server.close();
+		throw new Error("Could not resolve the local Problems API address.");
+	}
+	const publish = (root) => {
+		const directory = path.join(root, PROBLEMS_DIRECTORY);
+		const endpointPath = path.join(directory, PROBLEMS_ENDPOINT);
+		fs.mkdirSync(directory, { recursive: true });
+		const temporaryPath = `${endpointPath}.${process.pid}.tmp`;
+		fs.writeFileSync(temporaryPath, JSON.stringify({ port: address.port, token }), { mode: 0o600 });
+		fs.renameSync(temporaryPath, endpointPath);
+		manifests.set(root, endpointPath);
+	};
+	const unpublish = (root) => {
+		const endpointPath = manifests.get(root);
+		if (!endpointPath) return;
+		try {
+			fs.unlinkSync(endpointPath);
+		} catch {}
+		manifests.delete(root);
+	};
+	return {
+		publish,
+		unpublish,
+		dispose() {
+			for (const root of manifests.keys()) unpublish(root);
+			server.close();
+		},
+	};
+}
+
 /** Return true when a workspace folder exposes this repository's Preflight interface. */
 function isPreflightWorkspace(folder) {
 	const root = folder.uri.fsPath;
@@ -45,28 +188,53 @@ function isPreflightWorkspace(folder) {
 	);
 }
 
-/** Prefer MSYS2 Bash on Windows while allowing normal Bash installations elsewhere. */
+/** Resolve the repository's MSYS2 Bash without falling back to Windows' WSL launcher. */
+function resolveMsysRoot() {
+	if (process.env.MSYS2_ROOT) {
+		return process.env.MSYS2_ROOT.replaceAll("\\", "/").replace(/\/+$/, "");
+	}
+	if (process.platform === "win32") {
+		const systemDrive = path.win32.parse(process.execPath).root;
+		const candidate = path.win32.join(systemDrive, "msys64");
+		if (fs.existsSync(path.win32.join(candidate, "usr", "bin", "bash.exe"))) {
+			return candidate.replaceAll("\\", "/");
+		}
+	}
+	return undefined;
+}
+
 function resolveBash() {
 	if (process.env.PREFLIGHT_BASH) {
 		return process.env.PREFLIGHT_BASH;
 	}
-	if (process.platform === "win32" && process.env.MSYS2_ROOT) {
-		const executable = path.join(process.env.MSYS2_ROOT, "usr", "bin", "bash.exe");
-		if (fs.existsSync(executable)) {
+	if (process.platform === "win32") {
+		const root = resolveMsysRoot();
+		const executable = root ? `${root}/usr/bin/bash.exe` : undefined;
+		if (executable && fs.existsSync(executable)) {
 			return executable;
 		}
+		throw new Error("Preflight could not find MSYS2 Bash. Set MSYS2_ROOT or PREFLIGHT_BASH.");
 	}
 	return "bash";
+}
+
+/** Pass workspace paths to MSYS2 in its POSIX form. */
+function msysPath(value) {
+	const windowsPath = value.match(/^([A-Za-z]):[\\/](.*)$/);
+	if (!windowsPath) {
+		return value.replaceAll("\\", "/");
+	}
+	return `/${windowsPath[1].toLowerCase()}/${windowsPath[2].replaceAll("\\", "/")}`;
 }
 
 /** Resolve provider binaries and storage from the active VS Code extension profile. */
 function providerEnvironment(context) {
 	const environment = { ...process.env };
-	if (process.platform === "win32" && environment.MSYS2_ROOT) {
-		const msysRoot = environment.MSYS2_ROOT;
-		const shellBins = [path.join(msysRoot, "usr", "bin")];
-		if (fs.existsSync(path.join(msysRoot, "clangarm64", "bin"))) {
-			shellBins.unshift(path.join(msysRoot, "clangarm64", "bin"));
+	const msysRoot = process.platform === "win32" ? resolveMsysRoot() : undefined;
+	if (msysRoot) {
+		const shellBins = [`${msysRoot}/usr/bin`];
+		if (fs.existsSync(`${msysRoot}/clangarm64/bin`)) {
+			shellBins.unshift(`${msysRoot}/clangarm64/bin`);
 			environment.MSYSTEM = environment.MSYSTEM || "CLANGARM64";
 		}
 		environment.MSYS2_PATH_TYPE = environment.MSYS2_PATH_TYPE || "inherit";
@@ -88,23 +256,6 @@ function providerEnvironment(context) {
 		environment.PREFLIGHT_STYLUA_PATH = configuredStylua;
 	}
 	environment.PREFLIGHT_VSCODE_GLOBAL_STORAGE = path.dirname(context.globalStorageUri.fsPath);
-	if (process.platform === "win32") {
-		// WSL translates these native paths before the POSIX preflight process starts.
-		const mappings = (environment.WSLENV || "").split(":").filter(Boolean);
-		for (const name of ["PREFLIGHT_LUAU_LSP", "PREFLIGHT_STYLUA_PATH", "PREFLIGHT_VSCODE_GLOBAL_STORAGE"]) {
-			if (!environment[name]) {
-				continue;
-			}
-			const index = mappings.findIndex((entry) => entry.split("/")[0] === name);
-			if (index < 0) {
-				mappings.push(`${name}/p`);
-			} else {
-				const [, flags = ""] = mappings[index].split("/");
-				mappings[index] = `${name}/${flags.includes("p") ? flags : `${flags}p`}`;
-			}
-		}
-		environment.WSLENV = mappings.join(":");
-	}
 	return environment;
 }
 
@@ -204,7 +355,9 @@ function registerStyluaActions(context, environment) {
 /** Convert one machine-readable Preflight output line to a VS Code diagnostic. */
 function parseDiagnostic(line, root) {
 	let record;
-	if (line.startsWith(DIAGNOSTIC_PREFIX)) {
+	if (typeof line !== "string") {
+		record = line;
+	} else if (line.startsWith(DIAGNOSTIC_PREFIX)) {
 		try {
 			record = JSON.parse(line.slice(DIAGNOSTIC_PREFIX.length));
 		} catch {
@@ -285,11 +438,11 @@ function runnerDiagnostic(root, message) {
 	return { uri, diagnostic };
 }
 
-/** Parse structured findings and replace only the diagnostics owned by this workspace run. */
-function publishOutput(output, exitCode, root, collection, state) {
+/** Replace this workspace's Problems with the latest Preflight diagnostic table. */
+function publishDiagnostics(records, root, collection, state) {
 	const grouped = new Map();
-	for (const line of output.split(/\r?\n/)) {
-		const parsed = parseDiagnostic(line, root);
+	for (const record of records) {
+		const parsed = parseDiagnostic(record, root);
 		if (!parsed) {
 			continue;
 		}
@@ -297,12 +450,6 @@ function publishOutput(output, exitCode, root, collection, state) {
 		const diagnostics = grouped.get(key) || { uri: parsed.uri, entries: [] };
 		diagnostics.entries.push(parsed.diagnostic);
 		grouped.set(key, diagnostics);
-	}
-
-	if (exitCode !== 0 && grouped.size === 0) {
-		const detail = output.split(/\r?\n/).find((line) => line.trim() !== "") || `Preflight exited with status ${exitCode}`;
-		const fallback = runnerDiagnostic(root, `Preflight could not complete: ${detail}`);
-		grouped.set(fallback.uri.toString(), { uri: fallback.uri, entries: [fallback.diagnostic] });
 	}
 
 	for (const previous of state.uris) {
@@ -318,7 +465,44 @@ function publishOutput(output, exitCode, root, collection, state) {
 	const errors = diagnostics.filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Error).length;
 	const warnings = diagnostics.filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Warning).length;
 	const information = diagnostics.filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Information).length;
-	state.outcome = { errors, warnings, information, failed: exitCode !== 0 };
+	state.outcome = { errors, warnings, information, failed: false };
+}
+
+/** Apply one streamed runner record, replacing the panel as the diagnostic table changes. */
+function processOutputLine(line, root, collection, state) {
+	if (line === "::preflight-start::") {
+		for (const uri of state.uris) collection.delete(vscode.Uri.parse(uri));
+		state.uris = new Set();
+		state.legacyDiagnostics = [];
+		state.receivedSnapshot = false;
+		state.outcome = undefined;
+		return;
+	}
+	if (line.startsWith(DIAGNOSTICS_SNAPSHOT_PREFIX)) {
+		try {
+			const decoded = JSON.parse(line.slice(DIAGNOSTICS_SNAPSHOT_PREFIX.length));
+			state.receivedSnapshot = true;
+			publishDiagnostics(Array.isArray(decoded) ? decoded : [], root, collection, state);
+		} catch (error) {
+			state.streamError = `Preflight emitted an invalid diagnostics snapshot: ${error.message}`;
+		}
+		return;
+	}
+	const parsed = parseDiagnostic(line, root);
+	if (parsed) {
+		state.receivedSnapshot = true;
+		state.legacyDiagnostics.push({
+			path: path.relative(root, parsed.uri.fsPath).split(path.sep).join("/"),
+			line: parsed.diagnostic.range.start.line + 1,
+			column: parsed.diagnostic.range.start.character + 1,
+			endColumn: parsed.diagnostic.range.end.character + 1,
+			endLine: parsed.diagnostic.range.end.line + 1,
+			severity: ["error", "warning", "info"][parsed.diagnostic.severity],
+			source: parsed.diagnostic.source,
+			message: parsed.diagnostic.message,
+		});
+		publishDiagnostics(state.legacyDiagnostics, root, collection, state);
+	}
 }
 
 /** Show the aggregate state of every attached workspace in VS Code's status bar. */
@@ -393,29 +577,46 @@ function analyze(root, collection, state, status, workspaces) {
 	if (environment.USERPROFILE) {
 		environment.HOME = environment.USERPROFILE;
 	}
-	const child = childProcess.spawn(resolveBash(), ["repo/ci/preflight/watch/watch.sh", "--once"], {
+	const watcher = msysPath(path.join(root, "repo", "ci", "preflight", "watch", "watch.sh"));
+	const child = childProcess.spawn(resolveBash(), [watcher, "--once"], {
 		cwd: root,
 		env: environment,
 		windowsHide: true,
 	});
 	state.process = child;
+	state.receivedSnapshot = false;
+	state.legacyDiagnostics = [];
+	state.streamError = undefined;
 	updateStatus(status, workspaces);
 	let output = "";
-	child.stdout.setEncoding("utf8").on("data", (chunk) => {
+	let pendingLine = "";
+	const consumeChunk = (chunk) => {
 		output += chunk;
-	});
-	child.stderr.setEncoding("utf8").on("data", (chunk) => {
-		output += chunk;
-	});
+		const lines = `${pendingLine}${chunk}`.split(/\r?\n/);
+		pendingLine = lines.pop() || "";
+		for (const line of lines) processOutputLine(line, root, collection, state);
+	};
+	child.stdout.setEncoding("utf8").on("data", consumeChunk);
+	child.stderr.setEncoding("utf8").on("data", consumeChunk);
 	child.on("error", (error) => {
 		output += `${error.message}\n`;
+		pendingLine += `${error.message}\n`;
 	});
 	child.on("close", (exitCode) => {
+		if (pendingLine) processOutputLine(pendingLine, root, collection, state);
 		state.process = undefined;
 		if (state.disposed) {
 			return;
 		}
-		publishOutput(output, exitCode ?? 1, root, collection, state);
+		if (!state.receivedSnapshot && (exitCode ?? 1) !== 0) {
+			const detail = output.split(/\r?\n/).find((line) => line.trim() !== "") || `Preflight exited with status ${exitCode}`;
+			const fallback = runnerDiagnostic(root, state.streamError || `Preflight could not complete: ${detail}`);
+			collection.set(fallback.uri, [fallback.diagnostic]);
+			state.uris.add(fallback.uri.toString());
+			state.outcome = { errors: 1, warnings: 0, information: 0, failed: true };
+		} else if (state.outcome) {
+			state.outcome.failed = (exitCode ?? 1) !== 0;
+		}
 		updateStatus(status, workspaces);
 		if (state.pending && !state.disposed) {
 			state.pending = false;
@@ -464,6 +665,13 @@ function disposeState(state) {
 async function activate(context) {
 	const collection = vscode.languages.createDiagnosticCollection(OWNER);
 	const workspaces = new Map();
+	let problemsBridge;
+	try {
+		problemsBridge = await startProblemsBridge(workspaces);
+	} catch (error) {
+		console.error(`Could not start the local VS Code Problems API: ${error.message}`);
+		problemsBridge = { publish() {}, unpublish() {}, dispose() {} };
+	}
 	const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
 	status.reloadPending = false;
 	status.command = "preflight.analyze";
@@ -547,6 +755,7 @@ async function activate(context) {
 			reloadTimer: undefined,
 		};
 		workspaces.set(folder.uri.toString(), state);
+		problemsBridge.publish(root);
 
 		const watchers = PREFLIGHT_INPUTS.map((pattern) =>
 			vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, pattern)),
@@ -580,6 +789,7 @@ async function activate(context) {
 			return;
 		}
 		disposeState(state);
+		problemsBridge.unpublish(folder.uri.fsPath);
 		for (const uri of state.uris) {
 			collection.delete(vscode.Uri.parse(uri));
 		}
@@ -591,6 +801,7 @@ async function activate(context) {
 		attach(folder);
 	}
 	context.subscriptions.push(
+		{ dispose: () => problemsBridge.dispose() },
 		collection,
 		vscode.workspace.onDidChangeWorkspaceFolders((event) => {
 			for (const folder of event.removed) {

@@ -12,3 +12,7 @@ execution phases or ordering.
 Preflight implementations live in the repository-root `providers/` directory;
 CI tool installation implementations live in the repository-root `dependencies/`.
 Their settings remain under `repo/config/ci/`.
+
+Preflight creates its diagnostic table before planning, then replaces the table
+snapshot as planning, discovery, and each provider finish. The VS Code extension
+streams those snapshots into its diagnostic collection while the run continues.

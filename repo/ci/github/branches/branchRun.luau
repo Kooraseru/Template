@@ -52,7 +52,10 @@ local function git(arguments: { string }, cwd: string?, token: string?): string
 			else nil,
 	})
 	if not result.ok then
-		error(`GitHub branch bootstrap Git operation failed with exit code {result.code}: {gitFailure(result.stderr)}`, 0)
+		error(
+			`GitHub branch bootstrap Git operation failed with exit code {result.code}: {gitFailure(result.stderr)}`,
+			0
+		)
 	end
 	return (result.stdout:gsub("%s+$", ""))
 end
@@ -83,7 +86,7 @@ local function launch(
 	Fs.writeFile("build/run/ci-start/artifacts/workflow.yml", yaml)
 	git({ "worktree", "add", "--detach", worktree, sha })
 	local stage = "writing generated workflow"
-	local ok, failure = xpcall(function(): ()
+	local ok, failure = (xpcall :: any)(function(): ()
 		Fs.writeDir(`{worktree}/.github/workflows`)
 		Fs.writeFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
 		stage = "locking generated workflow dependencies"
@@ -120,10 +123,7 @@ local function launch(
 		print("::warning::Could not remove the temporary bootstrap worktree")
 	end
 	if not ok then
-		error(
-			`Native CI Execution launch failed while {stage}: {failure}`,
-			0
-		)
+		error(`Native CI Execution launch failed while {stage}: {failure}`, 0)
 	end
 end
 
@@ -164,7 +164,7 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			if type(decoded) ~= "table" or type(decoded.workflow_runs) ~= "table" then
 				error("GitHub returned an invalid workflow run list", 0)
 			end
-			runs = decoded.workflow_runs
+			runs = decoded.workflow_runs :: { any }
 		end
 		for _, item in runs do
 			if type(item) ~= "table" then
@@ -281,7 +281,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		return false
 	end
 	local branch = `{configuration.branchPrefix}{runId}-{attempt}`
-	local ok, failure = xpcall(launch, tostring, tasks, event, repository, branch, sha, access)
+	local ok, failure = (xpcall :: any)(launch, tostring, tasks, event, repository, branch, sha, access)
 	Authentication.Release(access)
 	if not ok then
 		if access.inspection then

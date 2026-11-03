@@ -47,6 +47,7 @@ local function encodeRequestBody(value: unknown): string
 	if type(value) ~= "table" then
 		return encoded
 	end
+	local request = value :: { [string]: unknown }
 	local function replaceEmptyArray(field: string): ()
 		local original = '"' .. field .. '":{}'
 		local replacement = '"' .. field .. '":[]'
@@ -56,15 +57,17 @@ local function encodeRequestBody(value: unknown): string
 		end
 		encoded = converted
 	end
-	local bypass = value.bypass_actors
+	local bypass = request.bypass_actors
 	if type(bypass) == "table" and next(bypass) == nil then
 		replaceEmptyArray("bypass_actors")
 	end
-	local conditions = value.conditions
+	local conditions = request.conditions
 	if type(conditions) == "table" then
-		local refName = conditions.ref_name
+		local conditionRecord = conditions :: { [string]: unknown }
+		local refName = conditionRecord.ref_name
 		if type(refName) == "table" then
-			local exclude = refName.exclude
+			local refNameRecord = refName :: { [string]: unknown }
+			local exclude = refNameRecord.exclude
 			if type(exclude) == "table" and next(exclude) == nil then
 				replaceEmptyArray("exclude")
 			end
@@ -73,12 +76,7 @@ local function encodeRequestBody(value: unknown): string
 	return encoded
 end
 
-local function request(
-	token: string,
-	method: Net.HttpMethod,
-	path: string,
-	body: unknown?
-): (number, unknown)
+local function request(token: string, method: Net.HttpMethod, path: string, body: unknown?): (number, unknown)
 	local response = Net.request({
 		url = `https://api.github.com/{path}`,
 		method = method,
@@ -92,7 +90,12 @@ local function request(
 		body = if body ~= nil then encodeRequestBody(body) else nil,
 	})
 	if response.statusCode == 401 or response.statusCode == 403 then
-		error(`Rulesets API rejected Administration: write authorization (HTTP {response.statusCode}){diagnostic(response.body)}`, 0)
+		error(
+			`Rulesets API rejected Administration: write authorization (HTTP {response.statusCode}){diagnostic(
+				response.body
+			)}`,
+			0
+		)
 	end
 	if response.statusCode < 200 or response.statusCode >= 300 then
 		error(`Rulesets API {method} failed (HTTP {response.statusCode}){diagnostic(response.body)}`, 0)
@@ -108,12 +111,11 @@ local function matches(actual: unknown, desired: unknown): boolean
 	if type(actual) ~= "table" then
 		return false
 	end
+	local desiredRecord = desired :: { [string]: unknown }
+	local actualRecord = actual :: { [string]: unknown }
 	-- GitHub may add server-owned response fields; only compare declared properties.
-	if #actual ~= #desired then
-		return false
-	end
-	for key, value in desired do
-		if not matches(actual[key], value) then
+	for key, value in desiredRecord do
+		if not matches(actualRecord[key], value) then
 			return false
 		end
 	end
