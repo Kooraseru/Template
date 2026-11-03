@@ -26,12 +26,11 @@ neutral = "64748B"
 info = "5385B1"
 pending = "8B75B5"
 
-# Uniform badge height and text color apply to all status and navigation badges.
+# Shared default size and foreground color apply to all status and navigation badges.
 [badges]
-size = "sm"
-height = 24
+size = "default"
 variant = "branded"
-iconless_variant = "secondary"
+iconless_variant = "branded"
 logo_color = "FFFFFF"
 text_color = "FFFFFF"
 

@@ -64,28 +64,24 @@ local function badge(label: string, colorName: string, logo: string?, config: { 
 	local variant = Publication.Text(if logo then defaults.variant else defaults.iconless_variant)
 	local logoColor = Publication.Text(defaults.logo_color)
 	local textColor = Publication.Text(defaults.text_color)
-	local height = defaults.height
 	if not logoColor:match("^%x%x%x$") and not logoColor:match("^%x%x%x%x%x%x$") then
 		error("Invalid shared Shieldcn logo color", 0)
 	end
 	if not textColor:match("^%x%x%x%x%x%x$") then
 		error("Invalid shared Shieldcn text color", 0)
 	end
-	if type(height) ~= "number" or height < 12 or height > 48 or height % 1 ~= 0 then
-		error("Invalid shared Shieldcn badge height", 0)
-	end
 	local slug = label:gsub("_", "__"):gsub("%-", "--"):gsub("%s+", "_")
 	local image =
 		`https://shieldcn.dev/badge/{Publication.Encode(slug)}.svg?variant={Publication.Encode(variant)}&color={background}&size={Publication.Encode(
 			size
-		)}&height={height}&logoColor={logoColor}&labelTextColor={textColor}`
+		)}&logoColor={logoColor}&labelTextColor={textColor}`
 	if logo then
 		if not logo:match("^[%w:_%-]+$") then
 			error("Invalid Shieldcn logo", 0)
 		end
 		image ..= `&logo={Publication.Encode(logo)}`
 	end
-	return `<img height="{height}" alt="{htmlAttribute(label)}" src="{htmlAttribute(image)}">`
+	return `<img alt="{htmlAttribute(label)}" src="{htmlAttribute(image)}">`
 end
 
 local function color(name: string, label: string?): (string, string)
