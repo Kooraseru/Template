@@ -41,6 +41,38 @@ local function diagnostic(body: string): string
 	return if #parts > 0 then ": " .. table.concat(parts, "; "):sub(1, 900) else ""
 end
 
+-- Lune encodes an empty Luau table as {}, even when GitHub requires a JSON array.
+local function encodeRequestBody(value: unknown): string
+	local encoded = Serde.encode("json", value)
+	if type(value) ~= "table" then
+		return encoded
+	end
+	local function replaceEmptyArray(field: string): ()
+		local original = '"' .. field .. '":{}'
+		local replacement = '"' .. field .. '":[]'
+		local converted, count = encoded:gsub(original, replacement, 1)
+		if count ~= 1 then
+			error(`Rulesets API payload is missing expected empty array {field}`, 0)
+		end
+		encoded = converted
+	end
+	local bypass = value.bypass_actors
+	if type(bypass) == "table" and next(bypass) == nil then
+		replaceEmptyArray("bypass_actors")
+	end
+	local conditions = value.conditions
+	if type(conditions) == "table" then
+		local refName = conditions.ref_name
+		if type(refName) == "table" then
+			local exclude = refName.exclude
+			if type(exclude) == "table" and next(exclude) == nil then
+				replaceEmptyArray("exclude")
+			end
+		end
+	end
+	return encoded
+end
+
 local function request(
 	token: string,
 	method: Net.HttpMethod,
@@ -57,7 +89,7 @@ local function request(
 			["X-GitHub-Api-Version"] = "2022-11-28",
 			["User-Agent"] = "Luau-CI-rulesets",
 		},
-		body = if body ~= nil then Serde.encode("json", body) else nil,
+		body = if body ~= nil then encodeRequestBody(body) else nil,
 	})
 	if response.statusCode == 401 or response.statusCode == 403 then
 		error(`Rulesets API rejected Administration: write authorization (HTTP {response.statusCode}){diagnostic(response.body)}`, 0)
