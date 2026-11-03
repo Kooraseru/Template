@@ -61,6 +61,8 @@ remain independent of this presentation layer.
 The CI header uses independent Shieldcn badges at default size. The runner badge
 uses the actual job operating system (or `CI_RUNNER_LABEL` when explicitly set),
 the status uses a fixed charcoal background and a conclusion-colored circle,
-and CI Execution reads its available artifact count from the current GitHub
-Actions run. The reporting job requests Actions: read for that lookup. If the
-count is unavailable, it displays `?` rather than fabricating a total.
+and CI Execution reads the current workflow artifact count through the GitHub
+Actions API and includes the known final `ci-report` upload. The reporting job
+requests Actions: read for that lookup. If the API is unavailable, the badge
+shows `?` rather than claiming an unverified total. A failed final upload can
+leave that projected count one higher than the eventual artifact inventory.

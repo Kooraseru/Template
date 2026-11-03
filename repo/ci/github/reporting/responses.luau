@@ -149,7 +149,8 @@ local function artifactCount(repository: string): string
 	end)
 	if decodedOk and type(decoded) == "table" and type(decoded.total_count) == "number"
 		and decoded.total_count >= 0 and decoded.total_count % 1 == 0 then
-		return tostring(decoded.total_count)
+		-- The final ci-report bundle is uploaded immediately after this summary is written.
+		return tostring(decoded.total_count + 1)
 	end
 	print("::warning::GitHub returned an invalid artifact count; reporting it as unknown")
 	return "?"
