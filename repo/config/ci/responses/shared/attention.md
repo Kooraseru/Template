@@ -1,3 +1,3 @@
 ### Next steps
 
-{{attention}}
+<p align="center">{{attention}}</p>

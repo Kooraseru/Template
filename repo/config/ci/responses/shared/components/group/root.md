@@ -1,3 +1,7 @@
+<table width="100%">
+<thead>
+<tr>
+<th align="left">
 <details{{expanded}}>
 <summary><strong>{{name}}</strong></summary>
 
@@ -6,3 +10,7 @@
 {{children}}
 
 </details>
+</th>
+</tr>
+</thead>
+</table>

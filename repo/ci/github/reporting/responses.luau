@@ -350,9 +350,11 @@ function Responses.Render(
 				break
 			end
 		end
-		table.insert(attention, `- [{label}](#response-{entry.index})`)
+		-- Next-step links use the same image-backed button styling as run navigation.
+		local button = badge(label, entry.color, "github", config):gsub("<img ", '<img height="24" ', 1)
+		table.insert(attention, `<a href="#response-{entry.index}">{button}</a>`)
 	end
-	context.attention = table.concat(attention, "\n")
+	context.attention = table.concat(attention, " ")
 	local function render(node: { [string]: unknown }): string
 		if node.if_value and (context[Publication.Text(node.if_value)] or "") == "" then
 			return ""
