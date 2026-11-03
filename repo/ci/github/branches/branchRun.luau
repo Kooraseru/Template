@@ -232,7 +232,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	if
 		Process.env.GITHUB_ACTIONS ~= "true"
 		or Process.env.CI_GRAPH_RUN == "true"
-		or (event ~= "push" and event ~= "pull_request")
+		or (event ~= "push" and event ~= "pull_request" and event ~= "workflow_dispatch")
 	then
 		return false
 	end

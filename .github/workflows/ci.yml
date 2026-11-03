@@ -5,6 +5,7 @@ on:
     branches: [source]
   pull_request:
     branches: [source]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,7 +30,7 @@ jobs:
       - name: Resolve credential names
         id: credentials
         run: bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
-      # Source pushes and trusted PRs use the same entry point with event-specific execution boundaries.
+      # Source pushes, manual runs, and trusted PRs share the entry point and preserve event-specific boundaries.
       - name: Start bootstrap
         env:
           CI_EVENT: ${{ github.event_name }}
@@ -38,10 +39,10 @@ jobs:
           CI_PUBLISH_PACKAGES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_PACKAGES || '' }}
           CI_PUBLISH_BRANCHES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_BRANCHES || '' }}
           CI_PUBLISH_PAGES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_PAGES || '' }}
-          CI_GITHUB_APP_ID_SECRET: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.app_id] || '' }}
-          CI_GITHUB_APP_ID_VARIABLE: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && vars[steps.credentials.outputs.app_id] || '' }}
-          CI_GITHUB_APP_PRIVATE_KEY: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.app_private_key] || '' }}
-          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
+          CI_GITHUB_APP_ID_SECRET: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_ID_VARIABLE: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) && vars[steps.credentials.outputs.app_id] || '' }}
+          CI_GITHUB_APP_PRIVATE_KEY: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.app_private_key] || '' }}
+          CI_GITHUB_BOOTSTRAP_TOKEN: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
           CI_GITHUB_PROJECTS_TOKEN: ${{ github.event_name == 'push' && secrets[steps.credentials.outputs.projects_token] || '' }}
           CI_GITHUB_RULESETS_TOKEN: ${{ github.event_name == 'push' && secrets[steps.credentials.outputs.rulesets_token] || '' }}
         run: bash repo/ci/github/workflows/run-logged.sh ci-start bootstrap
