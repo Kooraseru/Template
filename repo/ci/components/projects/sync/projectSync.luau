@@ -200,7 +200,14 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		if not current then
 			local result = query(
 				[[mutation($input:CreateProjectV2ViewInput!){createProjectV2View(input:$input){projectV2View{id}}}]],
-				{ input = { projectId = projectId, name = view.name, layout = view.layout, configuration = configuration } }
+				{
+					input = {
+						projectId = projectId,
+						name = view.name,
+						layout = view.layout,
+						configuration = configuration,
+					},
+				}
 			)
 			local created = Publication.Record(Publication.Record(result.createProjectV2View).projectV2View)
 			local id = Publication.Text(created.id)

@@ -5,28 +5,45 @@ set -uo pipefail
 project_root="$(git rev-parse --show-toplevel)"
 cd "$project_root"
 
-# Preserve paths supplied by the VS Code extension across nested MSYS2 Bash processes.
+# Preserve provider paths supplied by the VS Code extension for the Lune child process.
 export PREFLIGHT_LUAU_LSP PREFLIGHT_STYLUA_PATH PREFLIGHT_VSCODE_GLOBAL_STORAGE
 
+# Stream each diagnostic table snapshot while retaining output for startup failures.
 run_preflight() {
-	local output
-	local status
-	output="$(CI_EVENT=workflow_dispatch; export CI_EVENT; source dependencies/lune/bootstrap.sh run repo/ci/entry.luau --preflight-only 2>&1)"
-	status=$?
-
-	if ((status == 0)); then
-		if [[ -n $output ]]; then
-			printf '%s\n' "$output"
-		fi
+	local output_file
+	local runner_status
+	local -a pipeline_status
+	output_file="$(mktemp "${TMPDIR:-/tmp}/preflight.XXXXXX")" || return 1
+	(
+		CI_EVENT=workflow_dispatch
+		export CI_EVENT
+		source dependencies/lune/bootstrap.sh run repo/ci/entry.luau --preflight-only
+	) 2>&1 \
+		| tee "$output_file" \
+		| while IFS= read -r line || [[ -n $line ]]; do
+		case "$line" in
+			::preflight-start::*|::diagnostics::*|::diagnostic::*)
+				printf '%s\n' "$line"
+				;;
+		esac
+	done
+	pipeline_status=("${PIPESTATUS[@]}")
+	runner_status="${pipeline_status[0]:-1}"
+	if ((runner_status == 0)); then
+		rm -f -- "$output_file"
 		return 0
 	fi
 
+	# Turn failures that occur before the diagnostic engine starts into one actionable finding.
 	local diagnostic_count
-	diagnostic_count="$(printf '%s\n' "$output" | grep -Ec '^::diagnostic::|^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): ' || true)"
+	diagnostic_count="$(grep -Ec '^::diagnostics::|^::diagnostic::|^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): ' "$output_file" || true)"
 	if ((diagnostic_count > 0)); then
-		printf '%s\n' "$output" | grep -E '^::diagnostic::|^[^:]+:[0-9]+:[0-9]+:[0-9]+: (error|warning|info): '
-		return "$status"
+		rm -f -- "$output_file"
+		return "$runner_status"
 	fi
+	local output
+	output="$(cat -- "$output_file")"
+	rm -f -- "$output_file"
 
 	local runtime_version
 	runtime_version="$(bash dependencies/lune/bootstrap.sh --version 2>/dev/null | head -n 1)"
@@ -44,7 +61,7 @@ run_preflight() {
 		first_error="${first_error:-Preflight exited before producing diagnostics}"
 		printf 'repo/ci/entry.luau:1:1:2: error: Preflight failed with %s: %s\n' "$runtime_version" "$first_error"
 	fi
-	return "$status"
+	return "$runner_status"
 }
 
 if [[ ${1:-} == "--once" ]]; then
@@ -53,6 +70,7 @@ if [[ ${1:-} == "--once" ]]; then
 fi
 
 snapshot() {
+	# Ignore generated output and Git metadata when detecting workspace changes.
 	find . \( -path './.git' -o -path './build' \) -prune -o -type f -print0 \
 		| sort -z \
 		| xargs -0 sha256sum \

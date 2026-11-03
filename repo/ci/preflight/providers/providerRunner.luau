@@ -28,7 +28,8 @@ end
 function ProviderRunner.Run(
 	self: ProviderRunner,
 	packages: { Contracts.ProviderPackage },
-	context: Contracts.Context
+	context: Contracts.Context,
+	onUpdate: (string, { Contracts.Diagnostic }) -> ()
 ): { Contracts.Diagnostic }
 	local providerEntries = Glob.Find("providers/*/init.luau")
 	local diagnostics: { Contracts.Diagnostic } = {}
@@ -39,11 +40,14 @@ function ProviderRunner.Run(
 			"configured provider entries do not match discovered provider packages"
 		)
 	end
+	onUpdate("provider-catalog", diagnostics)
 	for _, package in packages do
 		if not package.enabled then
+			onUpdate(package.provider, {})
 			continue
 		end
 
+		local owned: { Contracts.Diagnostic } = {}
 		local ok, failure = xpcall(function(): boolean
 			if #providerEntries == 0 then
 				error("no provider entry modules were discovered", 0)
@@ -62,18 +66,19 @@ function ProviderRunner.Run(
 			local result = provider:Analyze(context)
 			for _, diagnostic in result.diagnostics do
 				diagnostic.source = package.provider
-				table.insert(diagnostics, diagnostic)
+				table.insert(owned, diagnostic)
 			end
 			return true
 		end, tostring)
 
 		if not ok then
-			appendDiagnostic(
-				diagnostics,
-				`{package.directory}/init.luau`,
-				`{package.provider} provider failed: {failure}`
-			)
+			appendDiagnostic(owned, `{package.directory}/init.luau`, `{package.provider} provider failed: {failure}`)
 		end
+		for _, diagnostic in owned do
+			diagnostic.source = package.provider
+			table.insert(diagnostics, diagnostic)
+		end
+		onUpdate(package.provider, owned)
 	end
 	return diagnostics
 end

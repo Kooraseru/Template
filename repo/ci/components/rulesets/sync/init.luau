@@ -15,7 +15,12 @@ local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
-local function report(configuration: Configuration.Configuration, state: string, diagnostic: string, selectedColor: string): ()
+local function report(
+	configuration: Configuration.Configuration,
+	state: string,
+	diagnostic: string,
+	selectedColor: string
+): ()
 	local markdown = Responses.Fill(Responses.Template("rulesets.authorization"), {
 		state = state,
 		diagnostic = diagnostic,
@@ -42,9 +47,10 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 
 	-- Administration: write is not part of the ordinary read-only or publication GITHUB_TOKEN.
 	if appId and appId ~= "" and privateKey and privateKey ~= "" then
-		local ok, result = pcall(Authentication.AppAccess, appId, privateKey, repository, { administration = "write" })
+		local ok, result =
+			pcall(Authentication.AppAccess, appId, privateKey, repository, { administration = "write" }, nil)
 		if ok then
-			access = result
+			access = result :: Authentication.Access
 		else
 			print("::warning::GitHub App could not obtain repository Administration: write for rulesets")
 		end
@@ -53,7 +59,8 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		local required = TokenPermissions.Required(configuration, { "rulesets_token" }, "rulesets_token")
 		local inspection = TokenPermissions.Inspect(token, required)
 		if inspection.state ~= "invalid" and inspection.state ~= "insufficient" then
-			access = { token = token, temporary = false, inspection = inspection }
+			local tokenAccess: Authentication.Access = { token = token, temporary = false, inspection = inspection }
+			access = tokenAccess
 		end
 	end
 	if not access then
@@ -63,8 +70,9 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		report(configuration, "Skipped: authorization unavailable", problem, "warning")
 		return "skipped"
 	end
-	local ok, receipts, changed = pcall(RulesetSync.Sync, repository, access.token, definitions)
-	Authentication.Release(access)
+	local authorizedAccess = access :: Authentication.Access
+	local ok, receipts, changed = pcall(RulesetSync.Sync, repository, authorizedAccess.token, definitions)
+	Authentication.Release(authorizedAccess)
 	if not ok then
 		-- Rejected API changes must remain failures and include a reviewable permissions record.
 		local problem = tostring(receipts)
@@ -72,10 +80,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		error(problem, 0)
 	end
 	Fs.writeDir("build/github/ruleset-sync")
-	Fs.writeFile(
-		"build/github/ruleset-sync/index.json",
-		Serde.encode("json", { applied = true, rulesets = receipts })
-	)
+	Fs.writeFile("build/github/ruleset-sync/index.json", Serde.encode("json", { applied = true, rulesets = receipts }))
 	if not changed then
 		print("All managed GitHub rulesets already match their source definitions")
 	end

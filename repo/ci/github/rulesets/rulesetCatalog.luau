@@ -103,7 +103,12 @@ function RulesetCatalog.Read(): { Ruleset }
 			known(actor, { actor_id = true, actor_type = true, bypass_mode = true }, path)
 			local actorType = Publication.Text(actor.actor_type)
 			local mode = Publication.Text(actor.bypass_mode)
-			if actorType ~= "RepositoryRole" and actorType ~= "Integration" and actorType ~= "User" and actorType ~= "Team" then
+			if
+				actorType ~= "RepositoryRole"
+				and actorType ~= "Integration"
+				and actorType ~= "User"
+				and actorType ~= "Team"
+			then
 				error(`{path}: unsupported bypass actor type {actorType}`, 0)
 			end
 			if type(actor.actor_id) ~= "number" or actor.actor_id < 0 or actor.actor_id % 1 ~= 0 then

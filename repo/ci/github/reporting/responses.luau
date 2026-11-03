@@ -108,14 +108,22 @@ local function headerBadge(
 	local slug = if label == ""
 		then segment(value) .. "-" .. background
 		else segment(label) .. "-" .. segment(value) .. "-" .. background
-	local image = "https://shieldcn.dev/badge/" .. Publication.Encode(slug)
-		.. ".svg?variant=default&size=default&color=" .. background
-		.. "&logo=" .. Publication.Encode(icon) .. "&logoColor=" .. iconColor
+	local image = "https://shieldcn.dev/badge/"
+		.. Publication.Encode(slug)
+		.. ".svg?variant=default&size=default&color="
+		.. background
+		.. "&logo="
+		.. Publication.Encode(icon)
+		.. "&logoColor="
+		.. iconColor
 	if iconSize then
 		image ..= "&iconSize=" .. tostring(iconSize)
 	end
-	return '<img alt="' .. htmlAttribute((if label == "" then "" else label .. " ") .. value)
-		.. '" src="' .. htmlAttribute(image) .. '">'
+	return '<img alt="'
+		.. htmlAttribute((if label == "" then "" else label .. " ") .. value)
+		.. '" src="'
+		.. htmlAttribute(image)
+		.. '">'
 end
 
 local function artifactCount(repository: string): string
@@ -125,8 +133,14 @@ local function artifactCount(repository: string): string
 	end
 	local run = Process.env.GITHUB_RUN_ID
 	local token = Process.env.GH_TOKEN
-	if Process.env.ACT == "true" or Process.env.GITHUB_ACTIONS ~= "true" or not run or not run:match("^%d+$")
-		or not token or token == "" then
+	if
+		Process.env.ACT == "true"
+		or Process.env.GITHUB_ACTIONS ~= "true"
+		or not run
+		or not run:match("^%d+$")
+		or not token
+		or token == ""
+	then
 		return "?"
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
@@ -147,8 +161,13 @@ local function artifactCount(repository: string): string
 	local decodedOk, decoded = pcall(function()
 		return Serde.decode("json", result.body)
 	end)
-	if decodedOk and type(decoded) == "table" and type(decoded.total_count) == "number"
-		and decoded.total_count >= 0 and decoded.total_count % 1 == 0 then
+	if
+		decodedOk
+		and type(decoded) == "table"
+		and type(decoded.total_count) == "number"
+		and decoded.total_count >= 0
+		and decoded.total_count % 1 == 0
+	then
 		-- The final ci-report bundle is uploaded immediately after this summary is written.
 		return tostring(decoded.total_count + 1)
 	end
@@ -179,18 +198,42 @@ local function headerBadges(root: string, status: string, repository: string, co
 	local badges = {
 		headerBadge("", name, headerColor(palette, runnerColor), icon, "FFFFFF"),
 	}
-	local description = if status == "failure" then "failed"
-		else if status == "success" then "success"
-		else if status == "warning" then "warning"
-		else if status == "pending" then "pending"
-		else if status == "cancelled" then "cancelled" else "unknown"
-	local dot = if status == "failure" then "failure_dot"
-		else if status == "success" then "success_dot"
-		else if status == "warning" or status == "pending" then "pending_dot"
-		else "neutral_dot"
-	table.insert(badges, headerBadge("CI", description, headerColor(palette, "status_background"), "ri:FaCircle", headerColor(palette, dot), 10))
+	local description = if status == "failure"
+		then "failed"
+		else if status == "success"
+			then "success"
+			else if status == "warning"
+				then "warning"
+				else if status == "pending"
+					then "pending"
+					else if status == "cancelled" then "cancelled" else "unknown"
+	local dot = if status == "failure"
+		then "failure_dot"
+		else if status == "success"
+			then "success_dot"
+			else if status == "warning" or status == "pending" then "pending_dot" else "neutral_dot"
+	table.insert(
+		badges,
+		headerBadge(
+			"CI",
+			description,
+			headerColor(palette, "status_background"),
+			"ri:FaCircle",
+			headerColor(palette, dot),
+			10
+		)
+	)
 	if root == "execution" then
-		table.insert(badges, headerBadge("artifacts", artifactCount(repository), headerColor(palette, "artifacts_background"), "lu:Package", "FFFFFF"))
+		table.insert(
+			badges,
+			headerBadge(
+				"artifacts",
+				artifactCount(repository),
+				headerColor(palette, "artifacts_background"),
+				"lu:Package",
+				"FFFFFF"
+			)
+		)
 	end
 	return table.concat(badges, "&nbsp;&nbsp;")
 end
@@ -400,7 +443,10 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		assigned[node.component] = true
 	end
 	if start then
-		insert("bootstrap/auth", if status == "failure" then "failed" else if status == "warning" then "warning" else "passed")
+		insert(
+			"bootstrap/auth",
+			if status == "failure" then "failed" else if status == "warning" then "warning" else "passed"
+		)
 	end
 	for identity, outcome in outcomes do
 		if identity == "bootstrap" and start then
@@ -454,20 +500,25 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 			end
 			local anchor = ""
 			if not anchors[entry.index] then
-				anchor = "<a id=\"response-" .. tostring(entry.index) .. "\"></a>"
+				anchor = '<a id="response-' .. tostring(entry.index) .. '"></a>'
 				anchors[entry.index] = true
 			end
-			table.insert(attachments, Responses.Fill(Responses.Template("records.record"), {
-				anchor = anchor,
-				label = htmlAttribute(label),
-				component = htmlAttribute(node.name),
-				markdown = readableNotes(entry.markdown),
-			}))
+			table.insert(
+				attachments,
+				Responses.Fill(Responses.Template("records.record"), {
+					anchor = anchor,
+					label = htmlAttribute(label),
+					component = htmlAttribute(node.name),
+					markdown = readableNotes(entry.markdown),
+				})
+			)
 		end
 		local display, explanation = (node.outcome or "reported"):match("^(.-) %((.+)%)$")
 		local note = if explanation then htmlAttribute(explanation) else ""
 		if count > 0 then
-			note ..= (if note ~= "" then "; " else "") .. tostring(count) .. (if count == 1 then " attachment below" else " attachments below")
+			note ..= (if note ~= "" then "; " else "") .. tostring(count) .. (if count == 1
+				then " attachment below"
+				else " attachments below")
 		end
 		if note == "" then
 			note = "No additional notes"
