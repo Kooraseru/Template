@@ -2,7 +2,7 @@
 
 <table>
 <thead>
-<tr><th align="center">Status</th><th>Attachment</th><th>Affected components</th></tr>
+<tr><th align="center">Component/Attachment</th><th align="center">Outcome</th><th align="center">Additional Notes</th></tr>
 </thead>
 <tbody>
 {{records}}

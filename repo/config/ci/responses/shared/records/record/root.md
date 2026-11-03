@@ -1,6 +1,5 @@
 <tr>
-<td align="center">{{status_marker}}</td>
-<td>
+<td align="center">
 <a id="response-{{index}}"></a>
 <details>
 <summary><strong>{{label}}</strong></summary>
@@ -9,5 +8,6 @@
 
 </details>
 </td>
-<td>{{components}}</td>
+<td align="center">{{status_marker}}</td>
+<td align="center">{{components}}</td>
 </tr>

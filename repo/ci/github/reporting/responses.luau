@@ -63,21 +63,29 @@ local function badge(label: string, colorName: string, logo: string?, config: { 
 	end
 	local variant = Publication.Text(if logo then defaults.variant else defaults.iconless_variant)
 	local logoColor = Publication.Text(defaults.logo_color)
+	local textColor = Publication.Text(defaults.text_color)
+	local height = defaults.height
 	if not logoColor:match("^%x%x%x$") and not logoColor:match("^%x%x%x%x%x%x$") then
 		error("Invalid shared Shieldcn logo color", 0)
+	end
+	if not textColor:match("^%x%x%x%x%x%x$") then
+		error("Invalid shared Shieldcn text color", 0)
+	end
+	if type(height) ~= "number" or height < 12 or height > 48 or height % 1 ~= 0 then
+		error("Invalid shared Shieldcn badge height", 0)
 	end
 	local slug = label:gsub("_", "__"):gsub("%-", "--"):gsub("%s+", "_")
 	local image =
 		`https://shieldcn.dev/badge/{Publication.Encode(slug)}.svg?variant={Publication.Encode(variant)}&color={background}&size={Publication.Encode(
 			size
-		)}&logoColor={logoColor}`
+		)}&height={height}&logoColor={logoColor}&labelTextColor={textColor}`
 	if logo then
 		if not logo:match("^[%w:_%-]+$") then
 			error("Invalid Shieldcn logo", 0)
 		end
 		image ..= `&logo={Publication.Encode(logo)}`
 	end
-	return `<img alt="{htmlAttribute(label)}" src="{htmlAttribute(image)}">`
+	return `<img height="{height}" alt="{htmlAttribute(label)}" src="{htmlAttribute(image)}">`
 end
 
 local function color(name: string, label: string?): (string, string)
@@ -261,7 +269,12 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 					table.insert(links, `<a href="#response-{entry.index}">details {entry.index}</a>`)
 				end
 			end
-			local marker = color(outcomeColor(node.outcome), node.outcome)
+			-- Keep status badges short and put any outcome explanation in Additional Notes.
+			local label, explanation = node.outcome:match("^(.-) %((.+)%)$")
+			local marker = color(outcomeColor(node.outcome), label or node.outcome)
+			if explanation then
+				table.insert(links, htmlAttribute(explanation))
+			end
 			local markdown = Responses.Fill(Responses.Template("components.component"), {
 				name = htmlAttribute(node.name),
 				outcome = htmlAttribute(node.outcome),
@@ -278,7 +291,7 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry })
 		end
 		local text = table.concat(children, "\n\n")
 		local tableText = if #rows > 0
-			then '<table align="center">\n<thead><tr><th align="center">Component</th><th align="center">Outcome</th><th align="center">Details</th></tr></thead>\n<tbody>\n'
+			then '<table align="center">\n<thead><tr><th align="center">Component/Attachment</th><th align="center">Outcome</th><th align="center">Additional Notes</th></tr></thead>\n<tbody>\n'
 				.. table.concat(rows, "\n")
 				.. "\n</tbody>\n</table>"
 			else ""
@@ -350,8 +363,8 @@ function Responses.Render(
 				break
 			end
 		end
-		-- Next-step links use the same image-backed button styling as run navigation.
-		local button = badge(label, entry.color, "github", config):gsub("<img ", '<img height="24" ', 1)
+		-- Next-step links use the shared badge height and text color.
+		local button = badge(label, entry.color, "github", config)
 		table.insert(attention, `<a href="#response-{entry.index}">{button}</a>`)
 	end
 	context.attention = table.concat(attention, " ")
@@ -398,8 +411,6 @@ function Responses.Render(
 					end
 				end
 				local marker = color(entry.color)
-				-- Compact badges keep the attachment table readable on GitHub.
-				marker = marker:gsub("<img ", '<img height="20" ', 1)
 				table.insert(
 					renderedRecords,
 					Responses.Fill(Responses.Template("records.record"), {

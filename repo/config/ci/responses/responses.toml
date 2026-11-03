@@ -26,12 +26,14 @@ neutral = "64748B"
 info = "5385B1"
 pending = "8B75B5"
 
-# One shared size, font, and padding; iconless badges use the secondary style.
+# Uniform badge height and text color apply to all status and navigation badges.
 [badges]
 size = "sm"
+height = 24
 variant = "branded"
 iconless_variant = "secondary"
 logo_color = "FFFFFF"
+text_color = "FFFFFF"
 
 [buttons.run]
 label = "Open this run"
