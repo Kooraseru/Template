@@ -59,3 +59,10 @@ contents are centered. HTML table values are escaped by the renderer.
 Only the CI Start job and CI Execution's final reporting job write job summaries.
 Component jobs upload fragments even when they fail. Their logs and job results
 remain independent of this presentation layer.
+
+The CI header uses independent Shieldcn badges at default size. The runner badge
+uses the actual job operating system (or `CI_RUNNER_LABEL` when explicitly set),
+the status uses a fixed charcoal background and a conclusion-colored circle,
+and CI Execution reads its available artifact count from the current GitHub
+Actions run. The reporting job requests Actions: read for that lookup. If the
+count is unavailable, it displays `?` rather than fabricating a total.

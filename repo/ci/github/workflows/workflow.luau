@@ -177,6 +177,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	end
 	jobs.report = {
 		name = "CI result",
+		permissions = { contents = "read", actions = "read" },
 		env = { CI_COMPONENT = "response" },
 		["runs-on"] = "ubuntu-latest",
 		needs = if #jobIds > 0 then jobIds else nil,
@@ -203,6 +204,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				env = {
 					CI_JOB_RESULTS = "${{ toJSON(needs) }}",
 					CI_RESPONSE_DOWNLOAD_OUTCOME = "${{ steps.responses.outcome }}",
+					GH_TOKEN = "${{ github.token }}",
 				},
 				run = "bash repo/ci/github/workflows/run-logged.sh ci-execution report --report",
 			},

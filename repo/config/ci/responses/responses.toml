@@ -26,6 +26,19 @@ neutral = "64748B"
 info = "5385B1"
 pending = "8B75B5"
 
+# Individual CI header badge colors; runner, result, and artifact SVGs render separately.
+[header]
+runner_ubuntu = "C65335"
+runner_windows = "0078D4"
+runner_macos = "62666B"
+runner_other = "6F42C1"
+status_background = "24292F"
+artifacts_background = "A36F21"
+success_dot = "3FB950"
+failure_dot = "F85149"
+pending_dot = "D29922"
+neutral_dot = "8B949E"
+
 # Shared default size and foreground color apply to all status and navigation badges.
 [badges]
 size = "default"

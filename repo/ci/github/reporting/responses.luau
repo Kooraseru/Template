@@ -2,6 +2,7 @@
 --!strict
 
 local Fs = require("@lune/fs")
+local Net = require("@lune/net")
 local Process = require("@lune/process")
 local Serde = require("@lune/serde")
 local Glob = require("@ci/bootstrap/discovery/glob")
@@ -82,6 +83,114 @@ local function badge(label: string, colorName: string, logo: string?, config: { 
 		image ..= `&logo={Publication.Encode(logo)}`
 	end
 	return `<img alt="{htmlAttribute(label)}" src="{htmlAttribute(image)}">`
+end
+
+-- Header badges are independent SVGs; the status dot does not recolor the background.
+local function headerColor(palette: { [string]: unknown }, name: string): string
+	local value = Publication.Text(palette[name])
+	if not value:match("^%x%x%x%x%x%x$") then
+		error("Invalid CI header color: " .. name, 0)
+	end
+	return value
+end
+
+local function headerBadge(
+	label: string,
+	value: string,
+	background: string,
+	icon: string,
+	iconColor: string,
+	iconSize: number?
+): string
+	local function segment(text: string): string
+		return (text:gsub("_", "__"):gsub("%-", "--"):gsub("%s+", "_"))
+	end
+	local slug = if label == ""
+		then segment(value) .. "-" .. background
+		else segment(label) .. "-" .. segment(value) .. "-" .. background
+	local image = "https://shieldcn.dev/badge/" .. Publication.Encode(slug)
+		.. ".svg?variant=default&size=default&color=" .. background
+		.. "&logo=" .. Publication.Encode(icon) .. "&logoColor=" .. iconColor
+	if iconSize then
+		image ..= "&iconSize=" .. tostring(iconSize)
+	end
+	return '<img alt="' .. htmlAttribute((if label == "" then "" else label .. " ") .. value)
+		.. '" src="' .. htmlAttribute(image) .. '">'
+end
+
+local function artifactCount(repository: string): string
+	local supplied = Process.env.CI_ARTIFACT_COUNT
+	if supplied and supplied:match("^%d+$") then
+		return supplied
+	end
+	local run = Process.env.GITHUB_RUN_ID
+	local token = Process.env.GH_TOKEN
+	if Process.env.ACT == "true" or Process.env.GITHUB_ACTIONS ~= "true" or not run or not run:match("^%d+$")
+		or not token or token == "" then
+		return "?"
+	end
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local ok, result = pcall(function()
+		return Net.request({
+			url = api .. "/repos/" .. repository .. "/actions/runs/" .. run .. "/artifacts?per_page=1",
+			headers = {
+				Authorization = "Bearer " .. token,
+				Accept = "application/vnd.github+json",
+				["User-Agent"] = "Luau-CI-report",
+			},
+		})
+	end)
+	if not ok or not result.ok then
+		print("::warning::Unable to read workflow artifact count; reporting it as unknown")
+		return "?"
+	end
+	local decodedOk, decoded = pcall(function()
+		return Serde.decode("json", result.body)
+	end)
+	if decodedOk and type(decoded) == "table" and type(decoded.total_count) == "number"
+		and decoded.total_count >= 0 and decoded.total_count % 1 == 0 then
+		return tostring(decoded.total_count)
+	end
+	print("::warning::GitHub returned an invalid artifact count; reporting it as unknown")
+	return "?"
+end
+
+local function headerBadges(root: string, status: string, repository: string, config: { [string]: unknown }): string
+	local palette = Publication.Record(config.header)
+	local os = Process.env.RUNNER_OS or ""
+	local name = Process.env.CI_RUNNER_LABEL
+	local runnerColor = "runner_other"
+	local icon = "lu:Server"
+	if name == "ubuntu-latest" or (not name and os == "Linux") then
+		name = name or "ubuntu-latest"
+		runnerColor = "runner_ubuntu"
+		icon = "ubuntu"
+	elseif name == "windows-latest" or (not name and os == "Windows") then
+		name = name or "windows-latest"
+		runnerColor = "runner_windows"
+		icon = "windows"
+	elseif name == "macos-latest" or (not name and os == "macOS") then
+		name = name or "macos-latest"
+		runnerColor = "runner_macos"
+		icon = "apple"
+	end
+	name = name or "runner unknown"
+	local badges = {
+		headerBadge("", name, headerColor(palette, runnerColor), icon, "FFFFFF"),
+	}
+	local description = if status == "failure" then "failed"
+		else if status == "success" then "success"
+		else if status == "warning" or status == "pending" then "pending"
+		else if status == "cancelled" then "cancelled" else "unknown"
+	local dot = if status == "failure" then "failure_dot"
+		else if status == "success" then "success_dot"
+		else if status == "warning" or status == "pending" then "pending_dot"
+		else "neutral_dot"
+	table.insert(badges, headerBadge("CI", description, headerColor(palette, "status_background"), "ri:FaCircle", headerColor(palette, dot), 10))
+	if root == "execution" then
+		table.insert(badges, headerBadge("artifacts", artifactCount(repository), headerColor(palette, "artifacts_background"), "lu:Package", "FFFFFF"))
+	end
+	return table.concat(badges, "&nbsp;&nbsp;")
 end
 
 local function color(name: string, label: string?): (string, string)
@@ -440,6 +549,7 @@ function Responses.Render(
 		end
 	end
 	context.component_tree = componentTree(outcomes or {}, entries, root == "start", context.color or "info")
+	context.header_badges = headerBadges(root, context.color or "info", repository, config)
 	context.status_marker, context.status_alert = color(context.color or "info")
 	context.result = context.result or "See the component results and next steps below."
 	-- Native alerts cannot be nested inside the centered summary container.
