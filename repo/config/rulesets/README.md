@@ -1,10 +1,10 @@
 # Source-managed repository rulesets
 
-Each direct `.toml` file defines one managed repository ruleset. The filename
-is its source identity. `[ruleset]` declares its GitHub name, branch/tag target,
-enforcement, and included/excluded refs. `[[rules]]` declares its native REST
-rule type and optional `[rules.parameters]`. `[[bypass_actors]]` declares
-actor IDs, types, and bypass modes.
+Each direct `.json` file defines one managed repository ruleset. The filename
+is its source identity. The `ruleset` object declares its GitHub name, branch/tag
+target, enforcement, and included/excluded refs. The `rules` array declares
+native REST rule types and optional `parameters`; `bypass_actors` declares actor
+IDs, types, and bypass modes.
 
 `rulesets/plan` validates configurations without touching GitHub. On pushes
 to source, `rulesets/sync` reconciles rulesets of matching names with the
@@ -19,9 +19,10 @@ repository Administration: write. A classic PAT needs the `repo` scope.
 Without an authorized credential, sync explicitly skips; plan/PR validation
 continues. Once authorized, API errors are failures, never successful skips.
 
-`source-gate.toml` requires PRs and the `gate` check with no bypass.
-`source-admin.toml` separately restricts updates to administrative actors
-that can bypass the update rule *through pull requests*. No ruleset overrides
-another ruleset's required checks.
+`source-gate.json` requires PRs and the `gate` check with no bypass.
+`source-admin.json` is a disabled tombstone for the former administrator-only
+update restriction. Keep it disabled until it is safely retired from the remote
+ruleset catalog. The active PR and CI gate remains the only source branch rule
+that blocks merges. No ruleset overrides another ruleset's required checks.
 
 Reference: https://docs.github.com/en/rest/repos/rules

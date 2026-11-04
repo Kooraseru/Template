@@ -26,3 +26,8 @@ description = "Documentation improvements or corrections."
 name = "needs triage"
 color = "fbca04"
 description = "Awaiting initial review and classification."
+
+[[labels]]
+name = "roadmap"
+color = "0e8a16"
+description = "Approved for the public release roadmap view."

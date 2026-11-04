@@ -3,11 +3,13 @@
 Repository support lives under `repo/`; see `repo/README.md` for ownership rules.
 Keep editable CI settings under configuration and authored records with their
 owning content. CI implementations and manifests are maintained as code.
-Editable CI policies, provider settings, dependency pins, and authorization
-requirements live under `repo/config/ci/`. Preflight implementations are discovered
-under `providers/` and load matching settings by identity from
-`repo/config/ci/preflight/`. Component manifests and native adapters remain beside
-implementation as executable contracts; they are not a second settings store.
+Editable CI policies, dependency pins, and authorization requirements live under
+`repo/config/ci/`. VS Code recommends the standalone Preflight extension through
+`.vscode/extensions.json`; `repo/config/ci/preflight.json` describes the workflow
+graph for its analysis API. The `.vscode/settings.json` path setting points the
+extension to this plan. Keep CI component discovery and planning in the bootstrap.
+Component manifests and native adapters remain beside implementation as
+executable contracts; they are not a second settings store.
 
 ## One workflow, one entry point
 
@@ -168,16 +170,6 @@ a component counts as passed. Failed or blocked dependencies fail the run.
 Discovered code must come from the checked-out repository; do not execute
 downloaded or otherwise untrusted components.
 
-## Preflight reachability
-
-`repo/ci/preflight/` analyzes the plan produced by the existing component discovery
-and planner. It does not define per-component validators or repeat component
-contracts. The full analyzer runs at bootstrap and through the live VS Code task, which
-publishes file diagnostics to the Problems panel. Native component and reporting
-jobs reconstruct and validate the task plan without rerunning provider analyzers. A module reference
-that cannot be resolved is an error; dynamic behavior the analyzer cannot prove is
-reported as unknown and does not claim runtime success.
-
 ## Source formats and verification
 
 Repository-owned CI uses YAML, TOML, and Luau. Python and Node.js are not CI
@@ -204,10 +196,6 @@ Both `packages.on_existing` and `release.on_existing` accept `skip`, `fail`, and
 must enforce destination capabilities and protection rules, and must not silently
 fall back or delete/recreate an immutable publication. Package registry adapters
 remain separate from compilation and staging.
-
-Preflight may recognize a generated input from the declared outputs of a planned
-dependency before files exist. This is a projection of the scheduler's contract;
-execution must still check that the producer actually created its outputs.
 
 A component that performs no work returns `"skipped"` from `Run`; normal
 completion returns nil. The isolated invoker transports skip with its reserved

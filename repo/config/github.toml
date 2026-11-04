@@ -40,4 +40,5 @@ source = ["source/**"]
 # Publication runs automatically for enabled, configured components.
 # Optionally disable with CI_PUBLISH_RELEASES/BRANCHES/PACKAGES=false
 # in GitHub Actions variables. Pages follows Settings > Pages unless
-# CI_PUBLISH_PAGES=false.
+# CI_PUBLISH_PAGES=false. Milestone synchronization can be disabled with
+# CI_PUBLISH_MILESTONES=false.

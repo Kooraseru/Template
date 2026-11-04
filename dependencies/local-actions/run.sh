@@ -7,6 +7,7 @@ project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 artifact_store="$project_root/build/run/local-actions/artifacts/act-$(date +%s)-$$"
 log_directory="$project_root/build/run/local-actions/logs"
 start_workflow="$project_root/.github/workflows/ci.yml"
+local_start_workflow="$project_root/build/run/local-actions/artifacts/ci.yml"
 execution_workflow="$project_root/build/run/ci-start/artifacts/workflow.yml"
 execution_event="$project_root/build/run/ci-start/artifacts/event.json"
 
@@ -36,8 +37,12 @@ fi
 mkdir -p "$log_directory" "$artifact_store"
 cd "$project_root"
 
+# The local artifact server in act supports the v4 upload protocol.
+sed 's#actions/upload-artifact@v7#actions/upload-artifact@v4#g' \
+	"$start_workflow" > "$local_start_workflow"
+
 printf '%s\n' 'Running CI Start locally...'
-act push "${act_options[@]}" --workflows "$start_workflow" 2>&1 | tee "$log_directory/ci-start.log"
+act push "${act_options[@]}" --workflows "$local_start_workflow" 2>&1 | tee "$log_directory/ci-start.log"
 
 # CI Start writes the execution graph and event used by the second run.
 if [[ ! -f $execution_workflow || ! -f $execution_event ]]; then

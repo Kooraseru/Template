@@ -51,16 +51,16 @@ function RulesetCatalog.Read(): { Ruleset }
 	local result: { Ruleset } = {}
 	local identities: { [string]: boolean } = {}
 	local names: { [string]: boolean } = {}
-	for _, path in Glob.Find(`{ROOT}/*.toml`) do
-		local identity = path:match("/([%w_-]+)%.toml$")
+	for _, path in Glob.Find(`{ROOT}/*.json`) do
+		local identity = path:match("/([%w_-]+)%.json$")
 		if not identity or not Fs.isFile(path) then
-			error(`{path}: expected a ruleset TOML file`, 0)
+			error(`{path}: expected a ruleset JSON file`, 0)
 		end
 		if identities[identity:lower()] then
 			error(`{path}: duplicate ruleset identity`, 0)
 		end
 		identities[identity:lower()] = true
-		local root = Publication.Record(Serde.decode("toml", Fs.readFile(path)))
+		local root = Publication.Record(Serde.decode("json", Fs.readFile(path)))
 		known(root, { ruleset = true, bypass_actors = true, rules = true }, path)
 		local definition = Publication.Record(root.ruleset)
 		known(definition, { name = true, target = true, enforcement = true, include = true, exclude = true }, path)

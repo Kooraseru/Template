@@ -52,7 +52,7 @@ on_existing = "replace"
   otherwise fail explicitly. It does not authorize automatic delete/recreate.
 
 GitHub Packages and GitHub Releases are separate. Releases use
-`../releases/releases.toml` and have their own top-level `release.on_existing`.
+`../releases/releases.json` and have their own top-level `release.on_existing`.
 Descriptions are staged for a registry adapter to consume; this template does not
 claim to update a remote package description without an installed adapter.
 

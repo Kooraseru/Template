@@ -1,0 +1,6 @@
+# GitHub milestones use the repository Issues API.
+steps = []
+
+[permissions]
+contents = "read"
+issues = "write"

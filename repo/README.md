@@ -10,9 +10,9 @@ repo/
     github.toml           repository paths, aliases, credential names, branch policy
     luau/                 shared editor/analyzer/formatter settings
     docker/               local Actions/Docker runner settings
-    ci/                   editable CI policies, provider settings, and tool pins
+    ci/                   editable CI policies and tool pins
+      preflight.json      workspace plan consumed by the recommended extension
       execution.toml      default and per-component runtime skip policy
-      preflight/          settings matched to discovered analyzer identities
       dependencies/       CI runtime/tool versions and checksums
       authorization/      requested App permissions and classic PAT scopes
       responses/          two root responses, templates, layout, and color mappings
@@ -22,7 +22,7 @@ repo/
     i18n/                 translations and locale settings
       files/              translations of content/files
       docs/               translations of documentation pages
-    releases/             GitHub Release records and notes
+    releases/             GitHub Release records (JSON) and notes
     packages/             GitHub Packages declarations and staging fixtures
   ci/
     entry.luau            executable CI entrypoint
@@ -31,14 +31,13 @@ repo/
       build/              application, package, page, and release preparation
       publish/            publication and provenance components
       repository/         branch generation and GitHub resource synchronization
-    preflight/            plan analysis and diagnostics
     github/               optional native Actions job visualization
     rendering/            shared content rendering implementation
 ```
 
-`providers/` and `dependencies/` are siblings of `repo/` at the repository root.
-They own validator and CI tool installation implementations. Their editable
-settings live in `repo/config/ci/preflight/` and `repo/config/ci/dependencies/`.
+`dependencies/` is a sibling of `repo/` at the repository root and owns CI tool
+installation implementations. Its editable settings live in
+`repo/config/ci/dependencies/`.
 
 ## Where configuration belongs
 
@@ -47,29 +46,26 @@ Editable CI settings belong in `repo/config/ci/`; implementation belongs in
 and remain with that code. Content records stay with their owning content.
 
 - `repo/content/i18n/config.toml` defines supported locales and their names.
-- `repo/content/releases/releases.toml` defines release records and commit/tag data.
+- `repo/content/releases/releases.json` defines release records and commit/tag data.
 - `repo/content/packages/packages.toml` owns shared GitHub Packages policy; each `packages/records/*/` folder owns its `package.toml` and `description.md`.
 - `repo/config/ci/components.toml` enables or disables discovered components.
 - `repo/ci/components/**/component.toml` declares a component's execution contract.
-- `repo/config/ci/preflight/*.toml` configures each discovered analyzer.
 - `repo/config/ci/dependencies/lune.toml` pins and verifies the runtime needed to
   start Luau. It does not declare application dependencies.
-
-For example, the i18n validator's configuration enables validation; the content
-locale configuration defines the languages being validated. They have different
-owners and do not duplicate one another.
 
 ## Entry points and generated output
 
 `.github/`, `.vscode/`, `.codex/`, and `.luaurc` remain at the locations their
 platforms expect. They point into this directory rather than duplicating pipeline
 definitions. The existing `@ci` import alias resolves to `repo/ci/`.
-The VS Code Problems-panel integration lives in `.vscode/preflight/`; the
-preflight engine lives under `repo/ci/preflight/` and discovers analyzers from
-the repository-root `providers/` directory.
+VS Code recommends the standalone `Kooraseru-Hub/Preflight` extension through
+`.vscode/extensions.json`. Its workspace plan is
+`repo/config/ci/preflight.json`, selected through the documented VS Code setting.
+The extension publishes diagnostics from all active VS Code language providers through its
+documented local API; the local Codex hook reads that API before and after edits.
 
-The scheduler discovers component and provider packages from their owning
-directories. Adding a conforming package does not require a new central list.
+The scheduler discovers component packages from their owning directories.
+Adding a conforming component does not require a new central list.
 Component groupings are ordinary directories. A component has both
 `component.toml` and `init.luau`; its identity is its relative path, such as
 `releases/publish`. Component internals are private and are not discovered as
@@ -99,7 +95,6 @@ build/
       logs/                    component and report logs
     ci-start/                  bootstrap artifacts, responses, and logs
     dependencies/artifacts/    downloaded CI tools
-    preflight-extension/artifacts/  local VSIX and installation stamps
 ```
 
 Package and release staging skips when there are no records. Disabled components
@@ -124,9 +119,8 @@ execution result; its success does not merely mean the graph was scheduled.
 Fork PRs use the read-only local scheduler without credentials. Neither PR mode
 selects privileged publication components.
 
-VS Code tasks use `bash` from `PATH`; configure a POSIX-compatible Bash in the
-editor environment. On Windows, the Preflight extension also accepts
-`PREFLIGHT_BASH` or `MSYS2_ROOT` when its Bash installation is not on `PATH`.
+VS Code tasks use `bash` from `PATH`; configure MSYS2 Bash in the editor
+environment on Windows.
 
 `github/project-plans/index.json` is a validated snapshot of the blueprints in
 `repo/config/projects/`. The read-only `projects/plan` component

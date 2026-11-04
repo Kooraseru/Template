@@ -1,7 +1,7 @@
 # CI implementation
 
 Consumers edit repository settings under `repo/config/`. This directory contains
-the scheduler, component implementations, GitHub adapters, and preflight engine.
+the scheduler, component implementations, and GitHub adapters.
 
 `components/` supports ordinary grouping folders. Each component owns
 `component.toml`, `init.luau`, private implementation modules, and an optional
@@ -9,10 +9,7 @@ the scheduler, component implementations, GitHub adapters, and preflight engine.
 Capabilities in the manifest define dependencies; grouping does not impose
 execution phases or ordering.
 
-Preflight implementations live in the repository-root `providers/` directory;
-CI tool installation implementations live in the repository-root `dependencies/`.
-Their settings remain under `repo/config/ci/`.
-
-Preflight creates its diagnostic table before planning, then replaces the table
-snapshot as planning, discovery, and each provider finish. The VS Code extension
-streams those snapshots into its diagnostic collection while the run continues.
+The standalone Preflight VS Code extension is recommended in
+`.vscode/extensions.json`. It reads `repo/config/ci/preflight.json` and publishes diagnostics
+from all active VS Code language providers. CI component discovery and dependency
+planning remain owned by `bootstrap/` and `components/`.

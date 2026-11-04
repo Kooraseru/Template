@@ -95,6 +95,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 					CI_PUBLISH_PACKAGES = "${{ vars.CI_PUBLISH_PACKAGES }}",
 					CI_PUBLISH_BRANCHES = "${{ vars.CI_PUBLISH_BRANCHES }}",
 					CI_PUBLISH_PAGES = "${{ vars.CI_PUBLISH_PAGES }}",
+					CI_PUBLISH_MILESTONES = "${{ vars.CI_PUBLISH_MILESTONES }}",
 				}
 				else nil,
 			run = `bash repo/ci/github/workflows/run-logged.sh ci-execution {Contract.Key(task.identity)} --component {task.identity}`,

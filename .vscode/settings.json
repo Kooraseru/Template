@@ -7,6 +7,7 @@
   "luau-lsp.sourcemap.enabled": false,
   "luau-lsp.sourcemap.autogenerate": false,
   "luau-lsp.server.baseLuaurc": ".luaurc",
+  "preflight.planFile": "repo/config/ci/preflight.json",
   "[luau]": {
     "editor.defaultFormatter": "JohnnyMorganz.stylua",
     "editor.formatOnSave": false,
