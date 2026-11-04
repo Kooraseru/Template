@@ -260,9 +260,23 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 	for _, view in desired do
 		declared[view.name:lower()] = true
 	end
+	local retainedViewId: string? = nil
+	if #desired == 0 and #existing > 0 then
+		local retainedName: string? = nil
+		for _, current in existing do
+			local name = Publication.Text(current.name)
+			if retainedName == nil or name:lower() < retainedName:lower() then
+				retainedName = name
+				retainedViewId = Publication.Text(current.id)
+			end
+		end
+		print(
+			`::notice::GitHub requires every Project to keep a view; no views are declared, so retaining {retainedName} and removing only the other views`
+		)
+	end
 	for _, current in existing do
 		local name = Publication.Text(current.name)
-		if declared[name:lower()] then
+		if declared[name:lower()] or (retainedViewId ~= nil and current.id == retainedViewId) then
 			continue
 		end
 		query(
