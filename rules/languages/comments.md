@@ -30,6 +30,13 @@ ceremonial banners and repeated headings in tiny files. Use stable terms from th
 When a workaround is temporary, name the exit condition and its owner; a bare
 `TODO` is not a migration plan.
 
+For complex functions, place comments at meaningful processing boundaries.
+Identify non-obvious validation, normalization, transformation, and output phases
+where a maintainer would otherwise need to infer the contract from the code.
+Separate distinct phases with blank lines, keep related statements together, and
+extract an independent responsibility when that makes the flow easier to follow.
+Do not use a target comment count or write comments that merely narrate syntax.
+
 For exported APIs, unusual mathematics, indexed traversal, and security/FFI
 boundaries, the applicable language standard may require Rustdoc or stronger
 local comments. See [Rust comments](rust/language/comments.md).

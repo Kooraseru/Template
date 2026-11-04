@@ -8,6 +8,7 @@
   "aliases": {
     "ci": "./repo/ci",
     "workspace": ".",
-    "lune": "~/.lune/.typedefs/0.11.1/"
+    "lune": "~/.lune/.typedefs/0.11.1/",
+    "std": "./repo/config/luau/lute/typedefs/std"
   }
 }

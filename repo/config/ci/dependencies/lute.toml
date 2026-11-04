@@ -1,0 +1,7 @@
+# Pin Lute so local editor diagnostics and CI use the same lint engine.
+[lute]
+version = "1.0.0"
+
+[lute.checksums]
+linux-x86_64 = "de7a6dab06b21df572c49257ec24a4cf1ecd54fb854de856aa377a1188255c95"
+windows-x86_64 = "4f5de7cb1844d0df4e5796ad08d485ce7b6c35f7ba8d54046c7e7a12e7c28d92"

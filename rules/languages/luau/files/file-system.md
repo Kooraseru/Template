@@ -24,6 +24,8 @@ Keep required path labels and Luau directives such as `--!strict` as
 single-line headers; they are metadata, not explanatory comments.
 
 Use role headers only when they improve scanning. A tiny file does not need decorative structure.
+For nontrivial modules, use the common role headers to separate the declarations
+that are present. Do not add empty headers just to complete a template.
 
 Preferred phase order:
 
@@ -115,6 +117,23 @@ return Text
 ```
 
 Tiny modules can omit role headers when the structure is obvious.
+
+## Executable code and declarative data
+
+Use Luau to implement behavior. Use JSON for structured data, schemas, inventories,
+and metadata; use TOML for human-maintained configuration. Keep a single
+authoritative source for each data contract and do not duplicate its values in
+Luau.
+
+Luau tables remain appropriate for runtime state, intermediate values, and small
+lookup structures whose contents are part of the algorithm. Move large static
+tables out of source when they only enumerate configuration properties, accepted
+values, or other declarative facts. A linter may report likely candidates as
+warnings; it must not claim that every literal table is misplaced.
+
+When a schema is moved to JSON, code must validate input against that schema.
+Keeping a JSON schema that no runtime or tooling reads only relocates the source
+of truth and is not a valid migration.
 
 ## Headers
 

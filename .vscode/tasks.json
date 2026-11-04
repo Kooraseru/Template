@@ -4,10 +4,29 @@
 		{
 			"label": "CI: Run local workflows",
 			"type": "process",
-			"command": "bash",
-			"args": ["dependencies/local-actions/run.sh"],
+			"command": "C:/msys64/usr/bin/bash.exe",
+			"args": ["-lc", "cd \"$(cygpath -u '${workspaceFolder}')\" && dependencies/local-actions/run.sh"],
 			"options": { "cwd": "${workspaceFolder}" },
 			"runOptions": { "instanceLimit": 1 },
+			"problemMatcher": []
+		},
+		{
+			"label": "Lute: Install pinned runtime",
+			"type": "process",
+			"command": "C:/msys64/usr/bin/bash.exe",
+			"args": ["-lc", "cd \"$(cygpath -u '${workspaceFolder}')\" && dependencies/lute/bootstrap.sh --install"],
+			"options": { "cwd": "${workspaceFolder}" },
+			"problemMatcher": []
+		},
+		{
+			"label": "Lute: Lint Luau",
+			"type": "process",
+			"command": "C:/msys64/usr/bin/bash.exe",
+			"args": [
+				"-lc",
+				"cd \"$(cygpath -u '${workspaceFolder}')\" && dependencies/lute/bootstrap.sh lint --config repo/config/luau/lute/.config.luau --json repo/ci repo/config/luau/lute/rules"
+			],
+			"options": { "cwd": "${workspaceFolder}" },
 			"problemMatcher": []
 		}
 	]

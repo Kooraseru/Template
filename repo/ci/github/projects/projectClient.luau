@@ -1,31 +1,38 @@
 -- repo/ci/github/projects/projectClient.luau
 --!strict
 
+local Fs = require("@lune/fs")
 local Net = require("@lune/net")
 local Serde = require("@lune/serde")
 local Publication = require("@ci/github/publication")
 
+const QUERY_PATH = "repo/ci/components/projects/sync/query.graphql"
+
 local ProjectClient = {}
 ProjectClient.__index = ProjectClient
-export type Query = (query: string, variables: { [string]: unknown }) -> { [string]: unknown }
-type Fields = { token: string }
+export type Query = (operation: string, variables: { [string]: unknown }) -> { [string]: unknown }
+type Fields = { document: string, token: string }
 export type ProjectClient = setmetatable<Fields, typeof(ProjectClient)>
 
 function ProjectClient.new(token: string): ProjectClient
-	local fields: Fields = { token = token }
+	local fields: Fields = { document = Fs.readFile(QUERY_PATH), token = token }
 	return setmetatable(fields, ProjectClient)
 end
 
 function ProjectClient.Query(
 	self: ProjectClient,
-	query: string,
+	operation: string,
 	variables: { [string]: unknown }
 ): { [string]: unknown }
 	local response = Net.request({
 		url = "https://api.github.com/graphql",
 		method = "POST",
 		headers = { Authorization = `Bearer {self.token}`, ["Content-Type"] = "application/json" },
-		body = Serde.encode("json", { query = query, variables = variables }),
+		body = Serde.encode("json", {
+			query = self.document,
+			operationName = operation,
+			variables = variables,
+		}),
 	})
 	if response.statusCode == 401 or response.statusCode == 403 then
 		error("PROJECT_AUTH: Projects API rejected the credential or permissions", 0)

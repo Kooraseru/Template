@@ -1,6 +1,6 @@
 provides = ["github.projects.synced"]
 requires = ["github.projects.planned"]
-inputs = ["repo/config/projects/**", "repo/config/github.toml", "repo/config/ci/authorization/**", "repo/config/ci/responses/**", "build/github/project-plans/**"]
+inputs = ["repo/config/projects/**", "repo/config/github.toml", "repo/config/ci/authorization/**", "repo/config/ci/responses/**", "build/github/project-plans/**", "repo/ci/components/projects/sync/query.graphql"]
 outputs = ["build/github/project-sync/**"]
 events = ["push"]
 boundary = "privileged"

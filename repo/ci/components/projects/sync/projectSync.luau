@@ -5,16 +5,6 @@ local Publication = require("@ci/github/publication")
 local Catalog = require("@ci/github/projects/projectCatalog")
 local Client = require("@ci/github/projects/projectClient")
 
-const OWNER_QUERY =
-	[[query($login:String!,$after:String){repositoryOwner(login:$login){id ... on User{projectsV2(first:100,after:$after){nodes{id title readme shortDescription public closed url} pageInfo{hasNextPage endCursor}}} ... on Organization{projectsV2(first:100,after:$after){nodes{id title readme shortDescription public closed url} pageInfo{hasNextPage endCursor}}}}}]]
-const FIELDS_QUERY =
-	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2{fields(first:100,after:$after){nodes{... on ProjectV2FieldCommon{id name dataType isIssueField} ... on ProjectV2SingleSelectField{options{id name color description}}} pageInfo{hasNextPage endCursor}}}}}]]
-const REPOSITORIES_QUERY =
-	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2{repositories(first:100,after:$after){nodes{id} pageInfo{hasNextPage endCursor}}}}}]]
-const VIEWS_QUERY =
-	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2{views(first:100,after:$after){nodes{id name layout filter} pageInfo{hasNextPage endCursor}}}}}]]
-const VISIBLE_FIELDS_QUERY =
-	[[query($id:ID!,$after:String){node(id:$id){... on ProjectV2View{configuration{visibleFields(first:100,after:$after){nodes{... on ProjectV2FieldCommon{id name}} pageInfo{hasNextPage endCursor}}}}}}]]
 const CUSTOM_TYPES =
 	{ TEXT = true, NUMBER = true, DATE = true, SINGLE_SELECT = true, MULTI_SELECT = true, ITERATION = true }
 
@@ -34,7 +24,7 @@ end
 
 local function connection(
 	query: Client.Query,
-	document: string,
+	operation: string,
 	variables: { [string]: unknown },
 	select: ({ [string]: unknown }) -> { [string]: unknown }
 ): { { [string]: unknown } }
@@ -42,7 +32,7 @@ local function connection(
 	local cursor: unknown = nil
 	repeat
 		variables.after = cursor
-		local data = select(query(document, variables))
+		local data = select(query(operation, variables))
 		for _, node in array(data.nodes, "nodes") do
 			table.insert(result, node)
 		end
@@ -60,7 +50,7 @@ local function connection(
 end
 
 local function syncFields(projectId: string, desired: { Catalog.Field }, query: Client.Query): boolean
-	local existing = connection(query, FIELDS_QUERY, { id = projectId }, function(data)
+	local existing = connection(query, "Fields", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).fields)
 	end)
 	local byName: { [string]: { [string]: unknown } } = {}
@@ -121,25 +111,19 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 			end
 		end
 		if not current then
-			query(
-				[[mutation($input:CreateProjectV2FieldInput!){createProjectV2Field(input:$input){projectV2Field{... on ProjectV2FieldCommon{id}}}}]],
-				{
-					input = {
-						projectId = projectId,
-						name = field.name,
-						dataType = field.dataType,
-						singleSelectOptions = options,
-					},
-				}
-			)
+			query("CreateField", {
+				input = {
+					projectId = projectId,
+					name = field.name,
+					dataType = field.dataType,
+					singleSelectOptions = options,
+				},
+			})
 			changed = true
 		elseif current.name ~= field.name or not sameOptions then
-			query(
-				[[mutation($input:UpdateProjectV2FieldInput!){updateProjectV2Field(input:$input){projectV2Field{... on ProjectV2FieldCommon{id}}}}]],
-				{
-					input = { fieldId = Publication.Text(current.id), name = field.name, singleSelectOptions = options },
-				}
-			)
+			query("UpdateField", {
+				input = { fieldId = Publication.Text(current.id), name = field.name, singleSelectOptions = options },
+			})
 			changed = true
 		end
 	end
@@ -150,17 +134,14 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 		if declared[name:lower()] or not CUSTOM_TYPES[dataType] or field.isIssueField == true or name == "Status" then
 			continue
 		end
-		query(
-			[[mutation($input:DeleteProjectV2FieldInput!){deleteProjectV2Field(input:$input){clientMutationId}}]],
-			{ input = { fieldId = Publication.Text(field.id) } }
-		)
+		query("DeleteField", { input = { fieldId = Publication.Text(field.id) } })
 		changed = true
 	end
 	return changed
 end
 
 local function syncViews(projectId: string, desired: { Catalog.View }, query: Client.Query): boolean
-	local existing = connection(query, VIEWS_QUERY, { id = projectId }, function(data)
+	local existing = connection(query, "Views", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).views)
 	end)
 	local byName: { [string]: { [string]: unknown } } = {}
@@ -171,7 +152,7 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		end
 		byName[name] = view
 	end
-	local fields = connection(query, FIELDS_QUERY, { id = projectId }, function(data)
+	local fields = connection(query, "Fields", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).fields)
 	end)
 	local fieldIds: { [string]: string } = {}
@@ -198,25 +179,19 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		end
 		local configuration = if visibleIds then { visibleFieldIds = visibleIds } else nil
 		if not current then
-			local result = query(
-				[[mutation($input:CreateProjectV2ViewInput!){createProjectV2View(input:$input){projectV2View{id}}}]],
-				{
-					input = {
-						projectId = projectId,
-						name = view.name,
-						layout = view.layout,
-						configuration = configuration,
-					},
-				}
-			)
+			local result = query("CreateView", {
+				input = {
+					projectId = projectId,
+					name = view.name,
+					layout = view.layout,
+					configuration = configuration,
+				},
+			})
 			local created = Publication.Record(Publication.Record(result.createProjectV2View).projectV2View)
 			local id = Publication.Text(created.id)
 			-- The create mutation does not expose a filter input; apply it after creating the view.
 			if view.filter and view.filter ~= "" then
-				query(
-					[[mutation($input:UpdateProjectV2ViewInput!){updateProjectV2View(input:$input){projectV2View{id}}}]],
-					{ input = { viewId = id, filter = view.filter } }
-				)
+				query("UpdateView", { input = { viewId = id, filter = view.filter } })
 			end
 			print(`Created Project view {view.name}`)
 			changed = true
@@ -224,7 +199,7 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		end
 		local sameFields = true
 		if visibleIds then
-			local remote = connection(query, VISIBLE_FIELDS_QUERY, { id = Publication.Text(current.id) }, function(data)
+			local remote = connection(query, "VisibleFields", { id = Publication.Text(current.id) }, function(data)
 				return Publication.Record(Publication.Record(Publication.Record(data.node).configuration).visibleFields)
 			end)
 			if #remote ~= #visibleIds then
@@ -241,17 +216,14 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		-- Omitted filters and field lists remain managed by the GitHub UI.
 		local filterDiffers = view.filter ~= nil and (current.filter or "") ~= view.filter
 		if current.layout ~= view.layout or filterDiffers or not sameFields then
-			query(
-				[[mutation($input:UpdateProjectV2ViewInput!){updateProjectV2View(input:$input){projectV2View{id}}}]],
-				{
-					input = {
-						viewId = Publication.Text(current.id),
-						layout = view.layout,
-						filter = view.filter,
-						configuration = if sameFields then nil else configuration,
-					},
-				}
-			)
+			query("UpdateView", {
+				input = {
+					viewId = Publication.Text(current.id),
+					layout = view.layout,
+					filter = view.filter,
+					configuration = if sameFields then nil else configuration,
+				},
+			})
 			print(`Updated Project view {view.name}`)
 			changed = true
 		end
@@ -279,10 +251,7 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		if declared[name:lower()] or (retainedViewId ~= nil and current.id == retainedViewId) then
 			continue
 		end
-		query(
-			[[mutation($input:DeleteProjectV2ViewInput!){deleteProjectV2View(input:$input){clientMutationId}}]],
-			{ input = { viewId = Publication.Text(current.id) } }
-		)
+		query("DeleteView", { input = { viewId = Publication.Text(current.id) } })
 		print(`Removed undeclared Project view {name}`)
 		changed = true
 	end
@@ -296,7 +265,7 @@ function ProjectSync.Owner(
 	query: Client.Query
 ): ({ Receipt }, boolean)
 	local ownerId: string? = nil
-	local existing = connection(query, OWNER_QUERY, { login = owner }, function(data)
+	local existing = connection(query, "Owner", { login = owner }, function(data)
 		local account = Publication.Record(data.repositoryOwner)
 		ownerId = Publication.Text(account.id)
 		return Publication.Record(account.projectsV2)
@@ -308,10 +277,7 @@ function ProjectSync.Owner(
 	if not repositoryOwner or not repositoryName then
 		error("Invalid Projects repository path", 0)
 	end
-	local repoData = query(
-		[[query($owner:String!,$name:String!){repository(owner:$owner,name:$name){id}}]],
-		{ owner = repositoryOwner, name = repositoryName }
-	)
+	local repoData = query("Repository", { owner = repositoryOwner, name = repositoryName })
 	local repositoryId = Publication.Text(Publication.Record(repoData.repository).id)
 	local desiredKeys: { [string]: boolean } = {}
 	local receipts: { Receipt } = {}
@@ -332,10 +298,9 @@ function ProjectSync.Owner(
 			end
 		end
 		if not current then
-			local created =
-				query([[mutation($input:CreateProjectV2Input!){createProjectV2(input:$input){projectV2{id url}}}]], {
-					input = { ownerId = ownerId, title = project.title, repositoryId = repositoryId },
-				})
+			local created = query("CreateProject", {
+				input = { ownerId = ownerId, title = project.title, repositoryId = repositoryId },
+			})
 			current = Publication.Record(Publication.Record(created.createProjectV2).projectV2)
 			changed = true
 		end
@@ -351,7 +316,7 @@ function ProjectSync.Owner(
 			or current.public ~= project.public
 			or current.closed ~= false
 		then
-			query([[mutation($input:UpdateProjectV2Input!){updateProjectV2(input:$input){projectV2{id}}}]], {
+			query("UpdateProject", {
 				input = {
 					projectId = id,
 					title = project.title,
@@ -363,7 +328,7 @@ function ProjectSync.Owner(
 			})
 			changed = true
 		end
-		local repositories = connection(query, REPOSITORIES_QUERY, { id = id }, function(data)
+		local repositories = connection(query, "Repositories", { id = id }, function(data)
 			return Publication.Record(Publication.Record(data.node).repositories)
 		end)
 		local linked = false
@@ -373,10 +338,7 @@ function ProjectSync.Owner(
 			end
 		end
 		if not linked then
-			query(
-				[[mutation($input:LinkProjectV2ToRepositoryInput!){linkProjectV2ToRepository(input:$input){clientMutationId}}]],
-				{ input = { projectId = id, repositoryId = repositoryId } }
-			)
+			query("LinkRepository", { input = { projectId = id, repositoryId = repositoryId } })
 			changed = true
 		end
 		if syncFields(id, project.fields, query) then
@@ -409,10 +371,7 @@ function ProjectSync.Owner(
 		if syncViews(projectId, {}, query) then
 			changed = true
 		end
-		query(
-			[[mutation($input:UpdateProjectV2Input!){updateProjectV2(input:$input){projectV2{id}}}]],
-			{ input = { projectId = projectId, closed = true } }
-		)
+		query("UpdateProject", { input = { projectId = projectId, closed = true } })
 		print(`Closed undeclared managed Project {Publication.Text(project.id)}; its items were retained`)
 		changed = true
 	end

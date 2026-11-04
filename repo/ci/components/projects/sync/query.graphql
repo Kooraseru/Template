@@ -1,0 +1,126 @@
+query Owner($login: String!, $after: String) {
+	repositoryOwner(login: $login) {
+		id
+		... on User {
+			projectsV2(first: 100, after: $after) {
+				nodes {
+					id
+					title
+					readme
+					shortDescription
+					public
+					closed
+					url
+				}
+				pageInfo { hasNextPage endCursor }
+			}
+		}
+		... on Organization {
+			projectsV2(first: 100, after: $after) {
+				nodes {
+					id
+					title
+					readme
+					shortDescription
+					public
+					closed
+					url
+				}
+				pageInfo { hasNextPage endCursor }
+			}
+		}
+	}
+}
+
+query Fields($id: ID!, $after: String) {
+	node(id: $id) {
+		... on ProjectV2 {
+			fields(first: 100, after: $after) {
+				nodes {
+					... on ProjectV2FieldCommon { id name dataType isIssueField }
+					... on ProjectV2SingleSelectField { options { id name color description } }
+				}
+				pageInfo { hasNextPage endCursor }
+			}
+		}
+	}
+}
+
+query Repositories($id: ID!, $after: String) {
+	node(id: $id) {
+		... on ProjectV2 {
+			repositories(first: 100, after: $after) {
+				nodes { id }
+				pageInfo { hasNextPage endCursor }
+			}
+		}
+	}
+}
+
+query Views($id: ID!, $after: String) {
+	node(id: $id) {
+		... on ProjectV2 {
+			views(first: 100, after: $after) {
+				nodes { id name layout filter }
+				pageInfo { hasNextPage endCursor }
+			}
+		}
+	}
+}
+
+query VisibleFields($id: ID!, $after: String) {
+	node(id: $id) {
+		... on ProjectV2View {
+			configuration {
+				visibleFields(first: 100, after: $after) {
+					nodes { ... on ProjectV2FieldCommon { id name } }
+					pageInfo { hasNextPage endCursor }
+				}
+			}
+		}
+	}
+}
+
+mutation CreateField($input: CreateProjectV2FieldInput!) {
+	createProjectV2Field(input: $input) {
+		projectV2Field { ... on ProjectV2FieldCommon { id } }
+	}
+}
+
+mutation UpdateField($input: UpdateProjectV2FieldInput!) {
+	updateProjectV2Field(input: $input) {
+		projectV2Field { ... on ProjectV2FieldCommon { id } }
+	}
+}
+
+mutation DeleteField($input: DeleteProjectV2FieldInput!) {
+	deleteProjectV2Field(input: $input) { clientMutationId }
+}
+
+mutation CreateView($input: CreateProjectV2ViewInput!) {
+	createProjectV2View(input: $input) { projectV2View { id } }
+}
+
+mutation UpdateView($input: UpdateProjectV2ViewInput!) {
+	updateProjectV2View(input: $input) { projectV2View { id } }
+}
+
+mutation DeleteView($input: DeleteProjectV2ViewInput!) {
+	deleteProjectV2View(input: $input) { clientMutationId }
+}
+
+query Repository($owner: String!, $name: String!) {
+	repository(owner: $owner, name: $name) { id }
+}
+
+mutation CreateProject($input: CreateProjectV2Input!) {
+	createProjectV2(input: $input) { projectV2 { id url } }
+}
+
+mutation UpdateProject($input: UpdateProjectV2Input!) {
+	updateProjectV2(input: $input) { projectV2 { id } }
+}
+
+mutation LinkRepository($input: LinkProjectV2ToRepositoryInput!) {
+	linkProjectV2ToRepository(input: $input) { clientMutationId }
+}
