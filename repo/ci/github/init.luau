@@ -14,7 +14,6 @@ local GitHub = {}
 function GitHub.Run(): ()
 	local argumentIndex = if Process.args[1] == "--" then 2 else 1
 	local argument = Process.args[argumentIndex]
-	local preflightOnly = argument == "--preflight-only"
 	local component = if argument == "--component" then Process.args[argumentIndex + 1] else nil
 	local reportOnly = argument == "--report"
 	local credentialNames = argument == "--credential-names"
@@ -24,7 +23,6 @@ function GitHub.Run(): ()
 	local attestationReport = argument == "--attestation-report"
 	if
 		argument
-		and not preflightOnly
 		and not component
 		and not reportOnly
 		and not credentialNames
@@ -34,7 +32,7 @@ function GitHub.Run(): ()
 		and not attestationReport
 	then
 		error(
-			"expected --preflight-only, --component <identity>, --report, --credential-names, --cleanup-branch, --pages-options, --attestation-options, --attestation-report, or no arguments",
+			"expected --component <identity>, --report, --credential-names, --cleanup-branch, --pages-options, --attestation-options, --attestation-report, or no arguments",
 			0
 		)
 	end
@@ -42,7 +40,7 @@ function GitHub.Run(): ()
 	local event: string
 	if configuredEvent then
 		event = configuredEvent
-	elseif preflightOnly or credentialNames then
+	elseif credentialNames then
 		event = "workflow_dispatch"
 	else
 		print("::error::CI_EVENT is required")
@@ -73,14 +71,13 @@ function GitHub.Run(): ()
 		if component then
 			Responses.Prepare()
 		end
-		Bootstrap.new(event):Run(preflightOnly, component, reportOnly)
+		Bootstrap.new(event):Run(component, reportOnly)
 		return true
 	end, tostring)
 	if not ok then
 		print(`::error::{problem}`)
 		if
-			not preflightOnly
-			and not credentialNames
+			not credentialNames
 			and not Responses.Written()
 			and (Process.env.CI_GRAPH_RUN ~= "true" or reportOnly)
 		then

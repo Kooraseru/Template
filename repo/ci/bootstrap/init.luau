@@ -3,7 +3,9 @@
 
 local Executor = require("@self/execution/executor")
 local Reporter = require("@self/outcomes/reporter")
-local Preflight = require("@ci/preflight")
+local Discovery = require("@self/discovery")
+local Planner = require("@self/planning")
+local Contract = require("@self/contracts/contract")
 local BranchRun = require("@ci/github/branches/branchRun")
 local Credentials = require("@ci/github/authentication/credentials")
 local TaskRunner = require("@ci/github/workflows/taskRunner")
@@ -16,7 +18,8 @@ type BootstrapFields = {
 	event: string,
 	executor: Executor.Executor,
 	reporter: Reporter.Reporter,
-	preflight: Preflight.Preflight,
+	discovery: Discovery.Discovery,
+	planner: Planner.Planner,
 	credentials: Credentials.Credentials,
 }
 
@@ -28,41 +31,35 @@ function Bootstrap.new(event: string): Bootstrap
 		event = event,
 		executor = Executor.new(credentials),
 		reporter = Reporter.new(),
-		preflight = Preflight.new(),
+		discovery = Discovery.new(),
+		planner = Planner.new(),
 		credentials = credentials,
 	}
 	return setmetatable(fields, Bootstrap)
 end
 
-function Bootstrap.Run(self: Bootstrap, preflightOnly: boolean?, component: string?, reportOnly: boolean?): ()
+function Bootstrap.BuildPlan(self: Bootstrap): { Contract.Task }
+	local components = self.discovery:Discover()
+	return self.planner:Resolve(components, self.event)
+end
+
+function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?): ()
+	local tasks = self:BuildPlan()
 	if component or reportOnly then
-		-- Native component and report jobs validate the plan without repeating editor analyzers.
-		local plan = self.preflight:Plan(self.event)
-		if not plan.available then
-			local diagnostic = plan.diagnostics[1]
-			error(if diagnostic then diagnostic.message else "CI component plan is unavailable", 0)
-		end
 		if component then
-			TaskRunner.Run(plan.tasks, self.event, component, self.credentials)
+			TaskRunner.Run(tasks, self.event, component, self.credentials)
 		else
-			TaskRunner.Report(plan.tasks)
+			TaskRunner.Report(tasks)
 		end
 		return
 	end
 
-	local preflight = self.preflight:Run(self.event)
-	if not preflight.passed then
-		error("preflight found unreachable or invalid execution paths", 0)
-	end
-	if preflightOnly then
-		return
-	end
-	if BranchRun.TryLaunch(preflight.tasks, self.event, self.credentials) then
+	if BranchRun.TryLaunch(tasks, self.event, self.credentials) then
 		Publication.Output("delegated", "true")
 		return
 	end
-	local result = self.executor:Execute(preflight.tasks, self.event)
-	self.reporter:Report(result.outcomes, #preflight.tasks)
+	local result = self.executor:Execute(tasks, self.event)
+	self.reporter:Report(result.outcomes, #tasks)
 	if not result.passed then
 		error("one or more discovered CI components failed or were blocked", 0)
 	end

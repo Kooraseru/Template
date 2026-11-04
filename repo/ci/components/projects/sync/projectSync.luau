@@ -256,7 +256,22 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 			changed = true
 		end
 	end
-	-- Views have no repository-owned identity marker; leave undeclared views intact.
+	local declared: { [string]: boolean } = {}
+	for _, view in desired do
+		declared[view.name:lower()] = true
+	end
+	for _, current in existing do
+		local name = Publication.Text(current.name)
+		if declared[name:lower()] then
+			continue
+		end
+		query(
+			[[mutation($input:DeleteProjectV2ViewInput!){deleteProjectV2View(input:$input){clientMutationId}}]],
+			{ input = { viewId = Publication.Text(current.id) } }
+		)
+		print(`Removed undeclared Project view {name}`)
+		changed = true
+	end
 	return changed
 end
 
@@ -376,9 +391,13 @@ function ProjectSync.Owner(
 		if desiredKeys[marker] then
 			continue
 		end
+		local projectId = Publication.Text(project.id)
+		if syncViews(projectId, {}, query) then
+			changed = true
+		end
 		query(
 			[[mutation($input:UpdateProjectV2Input!){updateProjectV2(input:$input){projectV2{id}}}]],
-			{ input = { projectId = Publication.Text(project.id), closed = true } }
+			{ input = { projectId = projectId, closed = true } }
 		)
 		print(`Closed undeclared managed Project {Publication.Text(project.id)}; its items were retained`)
 		changed = true

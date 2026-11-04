@@ -7,7 +7,7 @@ local Serde = require("@lune/serde")
 local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
 local ReleaseAssets = require("./releaseAssets")
 
-const CONFIG_PATH = "repo/content/releases/releases.toml"
+const CONFIG_PATH = "repo/content/releases/releases.json"
 const RECORD_ROOT = "repo/content/releases/records"
 const OUTPUT_ROOT = "build/github/releases"
 
@@ -132,25 +132,19 @@ local function resolveReference(reference: string, label: string): string
 end
 
 local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
-	local configuration = Serde.decode("toml", Fs.readFile(CONFIG_PATH))
+	local configuration = Serde.decode("json", Fs.readFile(CONFIG_PATH))
 	if type(configuration) ~= "table" or type(configuration.release) ~= "table" then
 		error(`{CONFIG_PATH}: expected a [release] table`, 0)
 	end
 	local shared = configuration.release
-	local formatSelection = shared.format
-	local format = if type(formatSelection) == "table" then formatSelection.type else nil
-	local formats = shared.formats
-	local channels = shared.channels
-	if type(format) ~= "string" or type(formats) ~= "table" or type(formats[format]) ~= "table" then
-		error(`{CONFIG_PATH}: release.format must select a configured [release.formats.<format>] table`, 0)
+	local format = shared.format
+	if type(format) ~= "string" then
+		error(`{CONFIG_PATH}: release.format must be a version format name`, 0)
 	end
-	if type(channels) ~= "table" then
-		error(`{CONFIG_PATH}: configure release channels under [release.channels.<name>]`, 0)
-	end
-	local options = formats[format]
-	local entries = options.entries
+	local options = shared
+	local entries = shared.entries
 	if type(entries) ~= "table" then
-		error(`{CONFIG_PATH}: release format {format} requires an entries array`, 0)
+		error(`{CONFIG_PATH}: release.entries must be an array`, 0)
 	end
 	local sharedSource = shared.source
 	if sharedSource ~= nil and type(sharedSource) ~= "string" then
@@ -173,7 +167,6 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		end
 		local version = value.version
 		local tag = value.tag or version
-		local channel = value.channel
 		local commit = value.source
 		if type(version) ~= "string" or not validVersion(format, version, options) then
 			error(`{CONFIG_PATH}: {format} release entry {index} has an invalid version`, 0)
@@ -185,8 +178,9 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		if not validTag.ok then
 			error(`{CONFIG_PATH}: release {version} has an invalid Git tag {tag}`, 0)
 		end
-		if type(channel) ~= "string" or type(channels[channel]) ~= "table" then
-			error(`{CONFIG_PATH}: release {version} selects undeclared channel {tostring(channel)}`, 0)
+		local prerelease = value.prerelease
+		if type(prerelease) ~= "boolean" then
+			error(`{CONFIG_PATH}: release {version} prerelease must be a boolean`, 0)
 		end
 		if versions[version] then
 			error(`{CONFIG_PATH}: duplicate release version {version}`, 0)
@@ -215,17 +209,13 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 			end
 			previousTag = notesStart
 		end
-		local prerelease = channels[channel].prerelease
-		if prerelease ~= nil and type(prerelease) ~= "boolean" then
-			error(`{CONFIG_PATH}: channel {channel} prerelease must be a boolean`, 0)
-		end
 		versions[version] = true
 		table.insert(records, {
 			version = version,
 			tag = tag,
 			type = format,
-			channel = channel,
-			prerelease = prerelease == true,
+			channel = if prerelease then "prerelease" else "release",
+			prerelease = prerelease,
 			commit = resolvedCommit,
 			previousTag = previousTag,
 			notes = sharedNotes,

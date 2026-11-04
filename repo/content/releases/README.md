@@ -1,10 +1,13 @@
 # Release publication policy
 
-`releases.toml` owns release records, source commits, and shared policy:
+`releases.json` owns release records, source commits, and shared policy:
 
-```toml
-[release]
-on_existing = "replace"
+```json
+{
+  "release": {
+    "on_existing": "replace"
+  }
+}
 ```
 
 The policy applies when either the Git tag or the GitHub Release already exists:
@@ -22,13 +25,61 @@ earlier successful tag update can remain; the log reports that possibility.
 
 GitHub Packages has its own records and policy in `../packages/`.
 
+## Planned release milestones
+
+Keep future release planning in the separate `release.planned` array in
+`releases.json`. These entries are synchronized to GitHub repository
+milestones and are never staged or published as releases. Contributors can
+assign pull requests to a milestone from GitHub.
+
+```json
+{
+  "release": {
+    "planned": [{
+      "version": "0.2.0",
+      "status": "planned",
+      "due_on": "2027-01-15T00:00:00Z",
+      "description": "Next planned release"
+    }]
+  }
+}
+```
+
+Publishable releases use the same `release` object, with format settings and
+entries together:
+
+```json
+{
+  "release": {
+    "format": "semver",
+    "prerelease_identifier": "pre",
+    "allow_build_metadata": false,
+    "entries": [{
+      "version": "0.1.0",
+      "prerelease": false,
+      "previous_tag": "beginning"
+    }]
+  }
+}
+```
+
+Milestones match by exact version title. Synchronization creates missing
+milestones and updates only the declared fields (`status` controls open/closed
+state). `released` closes a matching existing milestone and does not create one
+if it is missing. Removing an entry never deletes or modifies its GitHub milestone.
+Milestone synchronization runs on source pushes and requires the workflow's
+`issues: write` permission; local runs validate the plan but skip remote writes.
+
 ## Compiled downloads
 
 Declare deliverable globs in the release configuration:
 
-```toml
-[release]
-assets = ["build/run/ci-execution/artifacts/application/*.exe"]
+```json
+{
+  "release": {
+    "assets": ["build/run/ci-execution/artifacts/application/*.exe"]
+  }
+}
 ```
 
 The current template builds Windows fixture executables; these are attached as

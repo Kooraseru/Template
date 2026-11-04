@@ -1,0 +1,19 @@
+{
+  "ruleset": {
+    "name": "Only administrators merge source",
+    "target": "branch",
+    "enforcement": "disabled",
+    "include": ["refs/heads/source"],
+    "exclude": []
+  },
+  "bypass_actors": [
+    {
+      "actor_id": 5,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "pull_request"
+    }
+  ],
+  "rules": [
+    { "type": "update" }
+  ]
+}

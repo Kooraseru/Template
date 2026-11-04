@@ -97,8 +97,11 @@ local function fields(value: unknown, path: string): { Field }
 end
 
 local function views(value: unknown, definitions: { Field }, path: string): { View }
-	if type(value) ~= "table" or #value == 0 then
-		error(`{path}: expected at least one [[views]] definition`, 0)
+	if value == nil then
+		return {}
+	end
+	if type(value) ~= "table" then
+		error(`{path}: views must be an array`, 0)
 	end
 	local result: { View } = {}
 	local names: { [string]: boolean } = {}
@@ -164,19 +167,23 @@ function ProjectCatalog.Read(): { Project }
 	end
 	local result: { Project } = {}
 	local seen: { [string]: boolean } = {}
-	for _, path in Glob.Find(`{ROOT}/*.toml`) do
-		local identity = path:match("/([%w_-]+)%.toml$")
+	for _, path in Glob.Find(`{ROOT}/**/project.json`) do
+		local directory = path:match("^(.*)/project%.json$")
+		if not directory then
+			error(`{path}: expected project.json inside a project folder`, 0)
+		end
+		local identity = directory:match("([^/]+)$")
 		if not identity or not identity:match("^[%w][%w_-]*$") or not Fs.isFile(path) then
-			error(`{path}: expected a project TOML file`, 0)
+			error(`{path}: expected a project folder containing project.json`, 0)
 		end
 		if seen[identity:lower()] then
 			error(`Duplicate project identity: {identity}`, 0)
 		end
 		seen[identity:lower()] = true
-		local root = Publication.Record(Serde.decode("toml", Fs.readFile(path)))
+		local root = Publication.Record(Serde.decode("json", Fs.readFile(path)))
 		known(root, { project = true, fields = true, views = true }, path)
 		local project = Publication.Record(root.project)
-		known(project, { owner = true, title = true, description = true, readme = true, public = true }, path)
+		known(project, { owner = true, title = true, description = true, readme_file = true, public = true }, path)
 		local owner = if project.owner ~= nil
 			then configuration:ResolveOwner(text(project.owner, path))
 			else defaultOwner
@@ -184,14 +191,16 @@ function ProjectCatalog.Read(): { Project }
 		if type(public) ~= "boolean" then
 			error(`{path}: project.public must be boolean`, 0)
 		end
-		local readme = project.readme
-		if type(readme) ~= "string" then
-			error(`{path}: project.readme must be text`, 0)
+		local readmeFile = text(project.readme_file, path)
+		if not readmeFile:match("^[%w_.-]+$") then
+			error(`{path}: project.readme_file must name a file in its project folder`, 0)
 		end
+		local readme = Fs.readFile(`{directory}/{readmeFile}`)
 		if not readme:find("%S") then
 			error(`{path}: project.readme must describe the project`, 0)
 		end
 		local definitions = fields(root.fields, path)
+		local configuredViews = views(root.views, definitions, path)
 		table.insert(result, {
 			identity = identity,
 			managementKey = `{repository}:{identity}`,
@@ -201,7 +210,7 @@ function ProjectCatalog.Read(): { Project }
 			public = public,
 			readme = readme,
 			fields = definitions,
-			views = views(root.views, definitions, path),
+			views = configuredViews,
 		})
 	end
 	return result
