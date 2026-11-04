@@ -63,5 +63,16 @@
         }
       ]
     }
+  ],
+  "views": [
+    {
+      "name": "Development",
+      "layout": "TABLE_LAYOUT",
+      "visible_fields": ["Title", "Status", "Priority"]
+    },
+    {
+      "name": "Roadmap",
+      "layout": "ROADMAP_LAYOUT"
+    }
   ]
 }
