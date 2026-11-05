@@ -1,6 +1,0 @@
-provides = ["branches.generated"]
-requires = []
-inputs = ["repo/config/github.toml", "source/**", "repo/content/**"]
-outputs = ["build/github/branches/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"

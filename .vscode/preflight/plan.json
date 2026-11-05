@@ -1,0 +1,27 @@
+{
+	"steps": [
+		{
+			"id": "bootstrap-and-component-plan",
+			"needs": [],
+			"inputs": [
+				".github/workflows/ci.yml",
+				".github/ci/entry.luau",
+				".github/ci/bootstrap/**",
+				".github/ci/components/**/component.toml"
+			],
+			"outputs": []
+		},
+		{
+			"id": "component-execution",
+			"needs": ["bootstrap-and-component-plan"],
+			"inputs": [".github/ci/components/**/init.luau"],
+			"outputs": ["build/run/ci-execution/artifacts/**"]
+		},
+		{
+			"id": "workflow-reporting",
+			"needs": ["component-execution"],
+			"inputs": [".github/automation/responses/**"],
+			"outputs": ["build/run/ci-execution/responses/**"]
+		}
+	]
+}

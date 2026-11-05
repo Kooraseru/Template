@@ -7,18 +7,24 @@
   "luau-lsp.sourcemap.enabled": false,
   "luau-lsp.sourcemap.autogenerate": false,
   "luau-lsp.server.baseLuaurc": ".luaurc",
-  "preflight.planFile": "repo/config/ci/preflight.json",
-  "mandolin.luteExecPath": "${workspaceFolder}/build/run/dependencies/artifacts/lute/1.0.0/lute.exe",
-  "mandolin.lintConfigPath": "${workspaceFolder}/repo/config/luau/lute/.config.luau",
+  "preflight.planFile": ".vscode/preflight/plan.json",
+  "mandolin.luteExecPath": "../../../build/run/dependencies/lute/1.0.1-nightly.20261104/lute.exe",
+  "mandolin.foremanTomlPath": ".vscode/luau/lute/foreman.toml",
+  "mandolin.lintConfigPath": ".vscode/luau/lute/config.luau",
+  "stylua.configPath": ".vscode/luau/stylua/.stylua.toml",
   "json.schemas": [
     {
-      "fileMatch": ["repo/config/projects/**/project.json"],
-      "url": "./repo/config/projects/project.schema.json"
+      "fileMatch": [".github/work/projects/**/project.json"],
+      "url": "./.github/work/projects/project.schema.json"
     }
   ],
   "[luau]": {
     "editor.defaultFormatter": "JohnnyMorganz.stylua",
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "never",
+      "source.organizeImports": "never"
+    },
     "editor.insertSpaces": false,
     "editor.tabSize": 4
   },

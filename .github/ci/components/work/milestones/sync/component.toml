@@ -1,0 +1,6 @@
+provides = ["github.milestones.synced"]
+requires = ["github.milestones.planned"]
+inputs = [".github/work/milestones/records/**", ".github/targets.toml", "build/github/milestones/**"]
+outputs = ["build/github/milestone-sync/**"]
+events = ["push"]
+boundary = "privileged"

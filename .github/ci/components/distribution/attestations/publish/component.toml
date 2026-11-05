@@ -1,0 +1,6 @@
+provides = ["attestations.prepared"]
+requires = ["releases.generated"]
+inputs = [".github/distribution/attestations.toml", ".github/automation/responses/**", "build/github/releases/**"]
+outputs = ["build/github/attestations/**"]
+events = ["push"]
+boundary = "privileged"

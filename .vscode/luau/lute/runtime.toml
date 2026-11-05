@@ -1,0 +1,10 @@
+# Verify the Lute version pinned by the adjacent Foreman manifest.
+[lute.checksums]
+linux-x86_64 = "adfc6547080f79b9a0e9b88458564b197f82931ad0484f372cb7ad20f679e846"
+linux-aarch64 = "32659ec8cffaadf6a2d14ab39942bd6eb694990f455f793c212e974c8878f811"
+windows-x86_64 = "ae92b5d2af1efb2e1405cab93169ffe3beefd9a5bc185c086ac3211a91f74727"
+
+[lute.executables]
+linux-x86_64 = "234ff06b1141f05efe8077f6be82e6846c0538c5e17879e11732e241f43d4396"
+linux-aarch64 = "3652abf87cebb4af3c0df6156ab0b78891b8ff5ca1e7ea13d85e3c897ed7f13c"
+windows-x86_64 = "c4e70790a4ccb86d32cfd723d66fc8e9f03c89c429d64093f93cf46b2ae49def"

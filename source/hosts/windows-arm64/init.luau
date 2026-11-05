@@ -18,7 +18,9 @@ local function runDocker(arguments: { string }): Process.ExecResult
 	return result
 end
 
-return function()
+local Host = {}
+
+function Host.Build(): ()
 	Fs.writeDir("build/run/ci-execution/artifacts/application")
 	runDocker({
 		"build",
@@ -49,3 +51,5 @@ return function()
 	runDocker({ "cp", `{containerId}:/tmp/windows-arm64.exe`, OUTPUT })
 	runDocker({ "rm", containerId })
 end
+
+return Host

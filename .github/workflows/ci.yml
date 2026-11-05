@@ -26,10 +26,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      # The bootstrap reads credential names from github.toml for both events.
+      # The bootstrap reads credential names from targets.toml for both events.
       - name: Resolve credential names
         id: credentials
-        run: bash dependencies/lune/bootstrap.sh run repo/ci/entry.luau --credential-names
+        run: bash .github/ci/tooling/lune/bootstrap.sh run .github/ci/entry.luau --credential-names
       # Source pushes, manual runs, and trusted PRs share the entry point and preserve event-specific boundaries.
       - name: Start bootstrap
         env:
@@ -45,7 +45,7 @@ jobs:
           CI_GITHUB_BOOTSTRAP_TOKEN: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
           CI_GITHUB_PROJECTS_TOKEN: ${{ github.event_name == 'push' && secrets[steps.credentials.outputs.projects_token] || '' }}
           CI_GITHUB_RULESETS_TOKEN: ${{ github.event_name == 'push' && secrets[steps.credentials.outputs.rulesets_token] || '' }}
-        run: bash repo/ci/github/workflows/run-logged.sh ci-start bootstrap
+        run: bash .github/ci/integrations/github/workflows/run-logged.sh ci-start bootstrap
       # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output
         if: ${{ always() }}

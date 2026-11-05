@@ -1,6 +1,0 @@
-provides = ["github.milestones.synced"]
-requires = ["github.milestones.planned"]
-inputs = ["repo/content/releases/releases.json", "repo/config/github.toml", "build/github/milestones/**"]
-outputs = ["build/github/milestone-sync/**"]
-events = ["push"]
-boundary = "privileged"
