@@ -1,3 +1,4 @@
+-- .github/ci/components/work/milestones/sync/init.luau
 --!strict
 
 local Fs = require("@lune/fs")

@@ -1,3 +1,4 @@
+-- .vscode/luau/luau-lsp/standard.d.luau
 --!strict
 
 --[[

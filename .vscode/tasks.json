@@ -2,48 +2,6 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Diagnostics: Workspace",
-			"type": "process",
-			"command": "node",
-			"args": [
-				"${workspaceFolder}/.vscode/preflight/workspace-diagnostics.js",
-				"C:/msys64/usr/bin/bash.exe"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"presentation": {
-				"echo": false,
-				"reveal": "never",
-				"focus": false,
-				"panel": "dedicated",
-				"showReuseMessage": false
-			},
-			"isBackground": true,
-			"runOptions": {
-				"runOn": "folderOpen",
-				"instanceLimit": 1
-			},
-			"problemMatcher": {
-				"owner": "workspace-diagnostics",
-				"source": "Workspace diagnostics",
-				"fileLocation": "absolute",
-				"pattern": {
-					"regexp": "^(.*):(\\d+):(\\d+): (error|warning): (.*)$",
-					"file": 1,
-					"line": 2,
-					"column": 3,
-					"severity": 4,
-					"message": 5
-				},
-				"background": {
-					"activeOnStart": true,
-					"beginsPattern": "^WORKSPACE_DIAGNOSTICS_BEGIN$",
-					"endsPattern": "^WORKSPACE_DIAGNOSTICS_END$"
-				}
-			}
-		},
-		{
 			"label": "CI: Run local workflows",
 			"type": "process",
 			"command": "C:/msys64/usr/bin/bash.exe",

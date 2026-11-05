@@ -1,3 +1,4 @@
+-- .github/ci/integrations/github/resources/milestones/milestoneCatalog.luau
 --!strict
 
 local Fs = require("@lune/fs")

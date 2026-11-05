@@ -1,4 +1,4 @@
--- /.github/ci/tooling/pandoc/init.luau
+-- .github/ci/tooling/pandoc/init.luau
 --!strict
 
 local Process = require("@lune/process")

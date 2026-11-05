@@ -1,8 +1,11 @@
+-- .vscode/luau/lute/config.luau
+--!strict
+
 -- Share the same custom rules between Mandolin diagnostics and local/CI Lute runs.
 return {
 	lute = {
 		lint = {
-			rulepaths = { "../../../rules/luau/declarative-data" },
+			rulepaths = { "../../../rules/languages/luau/declarative-data" },
 			ignores = {
 				"build/**",
 				"build/run/dependencies/**",
