@@ -1,0 +1,7 @@
+{
+  "name": "template-workspace-tools",
+  "private": true,
+  "dependencies": {
+    "preflight": "https://codeload.github.com/Kooraseru-Hub/Preflight/tar.gz/a862ebdcb784a4e396224eb39c458ec7c864a4b1"
+  }
+}
