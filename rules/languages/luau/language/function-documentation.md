@@ -46,3 +46,5 @@ Use tags supported by the tooling when they apply: `@deprecated version` and `@s
 Moonwave-style tags are documentation metadata, not a substitute for Luau types or runtime validation. Avoid `any` in the implementation just because the comment names a concrete type.
 
 References: [luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) and [Moonwave tags](https://eryn.io/moonwave/docs/TagList/).
+
+For single-line LuaCATS annotations, use the triple-dash form. See the [annotation shape validator](function-documentation/README.md) for enforced cases. Moonwave block documentation remains supported.
