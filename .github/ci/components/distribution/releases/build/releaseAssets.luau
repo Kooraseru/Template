@@ -1,9 +1,9 @@
 -- .github/ci/components/distribution/releases/build/releaseAssets.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Process = require("@lute/process")
+local Hash = require("@formats/hash")
 local Glob = require("@ci/bootstrap/discovery/glob")
 
 local ReleaseAssets = {}
@@ -20,7 +20,7 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 	if #patterns == 0 then
 		return assets
 	end
-	local head = Process.exec("git", { "rev-parse", "HEAD" })
+	local head = Process.run({ "git",  "rev-parse", "HEAD" })
 	if not head.ok or head.stdout:gsub("%s+$", "") ~= commit then
 		error(
 			"Release assets must come from the checked-out release source commit; refusing to attach another commit's binaries",
@@ -49,11 +49,11 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 		end
 		local count = 0
 		for _, path in Glob.Find(pattern) do
-			local metadata = Fs.metadata(path)
-			if metadata.kind == "dir" then
+			local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
+			if metadata == "dir" then
 				continue
 			end
-			if metadata.kind ~= "file" then
+			if metadata ~= "file" then
 				error(`Release asset is not a regular file: {path}`, 0)
 			end
 			count += 1
@@ -66,13 +66,13 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 				error(`Duplicate or unsafe release asset filename: {path}`, 0)
 			end
 			names[name:lower()] = true
-			Fs.writeDir(directory)
+			Fs.createDirectory(directory, { makeParents = true })
 			local destination = `{directory}/{name}`
 			Fs.copy(path, destination)
 			local asset: Asset = {
 				name = name,
 				path = destination,
-				digest = "sha256:" .. Serde.hash("sha256", Fs.readFile(destination)),
+				digest = "sha256:" .. Hash.sha256(Fs.readFileToString(destination)),
 			}
 			table.insert(assets, asset)
 		end

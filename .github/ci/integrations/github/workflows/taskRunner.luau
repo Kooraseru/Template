@@ -1,9 +1,9 @@
 -- .github/ci/integrations/github/workflows/taskRunner.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
+local Process = require("@lute/process")
 local Contract = require("@ci/bootstrap/contracts/contract")
 local Executor = require("@ci/bootstrap/execution/executor")
 local Glob = require("@ci/bootstrap/discovery/glob")
@@ -14,12 +14,12 @@ local Credentials = require("@ci/integrations/github/authentication/credentials"
 local SkipPolicy = require("@ci/bootstrap/outcomes/skipPolicy")
 local Responses = require("@ci/integrations/github/reporting/responses")
 
-const ARTIFACT_ROOT = "build/run/ci-execution/artifacts"
+local ARTIFACT_ROOT = "build/run/ci-execution/artifacts"
 
 local TaskRunner = {}
 
-local function command(arguments: { string }, input: string?): string
-	local result = Process.exec("tar", arguments, { stdio = { stdin = input } })
+local function command(arguments: { string }): string
+	local result = Process.run({ "tar", table.unpack(arguments) })
 	if not result.ok then
 		error("Unable to transfer component outputs with tar", 0)
 	end
@@ -75,12 +75,12 @@ local function bundle(task: Contract.Task): ()
 		end
 	end
 	table.sort(paths)
-	Fs.writeDir(ARTIFACT_ROOT)
+	Fs.createDirectory(ARTIFACT_ROOT, { makeParents = true })
 	local archive = `{ARTIFACT_ROOT}/{Contract.Key(task.identity)}.tar`
-	command(
-		{ "-cf", archive, "--no-recursion", "--null", "--files-from", "-" },
-		table.concat(paths, "\0") .. (if #paths > 0 then "\0" else "")
-	)
+	local manifest = `{ARTIFACT_ROOT}/files-{Process.pid()}.txt`
+	Fs.writeStringToFile(manifest, table.concat(paths, "\0") .. (if #paths > 0 then "\0" else ""))
+	command({ "-cf", archive, "--no-recursion", "--null", "--files-from", manifest })
+	Fs.remove(manifest)
 	validateArchive(archive, task)
 end
 
@@ -110,7 +110,7 @@ function TaskRunner.Run(
 			continue
 		end
 		local archive = `{ARTIFACT_ROOT}/{Contract.Key(dependency)}.tar`
-		if not Fs.isFile(archive) then
+		if not Fs.exists(archive) or Fs.type(archive) ~= "file" then
 			error(`{identity}: missing dependency artifact {dependency}`, 0)
 		end
 		validateArchive(archive, provider)
@@ -150,7 +150,7 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 	if not encoded then
 		error("CI_JOB_RESULTS is missing", 0)
 	end
-	local decoded: unknown = Serde.decode("json", encoded)
+	local decoded: unknown = Json.decode(encoded)
 	if type(decoded) ~= "table" then
 		error("CI_JOB_RESULTS must contain a job-result object", 0)
 	end

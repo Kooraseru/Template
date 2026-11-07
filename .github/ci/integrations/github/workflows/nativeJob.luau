@@ -1,8 +1,8 @@
 -- .github/ci/integrations/github/workflows/nativeJob.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
 local Publication = require("@ci/integrations/github/publication")
 
 local NativeJob = {}
@@ -36,10 +36,10 @@ end
 -- Component-owned native adapters are data, never another component inventory.
 function NativeJob.Configure(identity: string, boundary: string, steps: { Step }, job: { [string]: unknown }): ()
 	local path = `.github/ci/components/{identity}/repository.toml`
-	if not Fs.isFile(path) then
+	if not Fs.exists(path) or Fs.type(path) ~= "file" then
 		return
 	end
-	local configuration = Publication.Record(Serde.decode("toml", Fs.readFile(path)))
+	local configuration = Publication.Record(Toml.decode(Fs.readFileToString(path)))
 	for field in configuration do
 		if field ~= "permissions" and field ~= "environment" and field ~= "steps" then
 			error(`{path}: unsupported native job field {field}`, 0)

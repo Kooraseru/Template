@@ -1,2 +1,0 @@
-[tools]
-lute = { source = "luau-lang/lute", version = "=1.0.1-nightly.20261104" }

@@ -1,12 +1,12 @@
 -- .github/ci/integrations/github/resources/projects/projectClient.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Net = require("@lune/net")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
+local Net = require("@lute/net/client")
 local Publication = require("@ci/integrations/github/publication")
 
-const QUERY_PATH = ".github/ci/components/work/projects/sync/query.graphql"
+local QUERY_PATH = ".github/ci/components/work/projects/sync/query.graphql"
 
 local ProjectClient = {}
 ProjectClient.__index = ProjectClient
@@ -15,7 +15,7 @@ type Fields = { document: string, token: string }
 export type ProjectClient = setmetatable<Fields, typeof(ProjectClient)>
 
 function ProjectClient.new(token: string): ProjectClient
-	local fields: Fields = { document = Fs.readFile(QUERY_PATH), token = token }
+	local fields: Fields = { document = Fs.readFileToString(QUERY_PATH), token = token }
 	return setmetatable(fields, ProjectClient)
 end
 
@@ -24,21 +24,20 @@ function ProjectClient.Query(
 	operation: string,
 	variables: { [string]: unknown }
 ): { [string]: unknown }
-	local response = Net.request({
-		url = "https://api.github.com/graphql",
+	local response = Net.request("https://api.github.com/graphql", {
 		method = "POST",
 		headers = { Authorization = `Bearer {self.token}`, ["Content-Type"] = "application/json" },
-		body = Serde.encode("json", {
+		body = Json.encode({
 			query = self.document,
 			operationName = operation,
 			variables = variables,
 		}),
 	})
-	if response.statusCode == 401 or response.statusCode == 403 then
+	if response.status == 401 or response.status == 403 then
 		error("PROJECT_AUTH: Projects API rejected the credential or permissions", 0)
 	end
-	Publication.RequireSuccess(response.statusCode, "Projects GraphQL request")
-	local result = Publication.Record(Serde.decode("json", response.body))
+	Publication.RequireSuccess(response.status, "Projects GraphQL request")
+	local result = Publication.Record(Json.decode(response.body))
 	local errors = result.errors
 	if type(errors) == "table" and #errors > 0 then
 		local first: { [string]: unknown } = {}

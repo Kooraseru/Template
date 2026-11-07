@@ -1,11 +1,11 @@
 -- .github/ci/bootstrap/execution/invoke.luau
 --!strict
 
-local Process = require("@lune/process")
+local Process = require("@lute/process")
 local Outcome = require("@ci/bootstrap/outcomes/outcome")
 local Contract = require("@ci/bootstrap/contracts/contract")
 
-const COMPONENTS_MODULE_PREFIX = "@ci/components"
+local COMPONENTS_MODULE_PREFIX = "@ci/components"
 
 type ComponentInstance = {
 	Run: (self: ComponentInstance, context: { event: string }) -> unknown,
@@ -16,8 +16,8 @@ type ComponentClass = {
 }
 
 -- The trusted coordinator inspects component contracts without executing them.
-local entry = Process.args[1]
-local event = Process.args[2]
+local entry = Process.args[2]
+local event = Process.args[3]
 if not entry then
 	error("invalid CI component entry", 0)
 end

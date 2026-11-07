@@ -1,17 +1,16 @@
 -- .github/ci/integrations/github/resources/milestones/milestoneSync.luau
 --!strict
 
-local Net = require("@lune/net")
-local Serde = require("@lune/serde")
+local Net = require("@lute/net/client")
+local Json = require("@formats/json")
 local Publication = require("@ci/integrations/github/publication")
 local Catalog = require("@ci/integrations/github/resources/milestones/milestoneCatalog")
 
 local MilestoneSync = {}
 export type Receipt = { version: string, id: number, state: string }
 
-local function request(token: string, method: Net.HttpMethod, path: string, body: unknown?): (number, unknown)
-	local response = Net.request({
-		url = `https://api.github.com/{path}`,
+local function request(token: string, method: string, path: string, body: unknown?): (number, unknown)
+	local response = Net.request(`https://api.github.com/{path}`, {
 		method = method,
 		headers = {
 			Authorization = `Bearer {token}`,
@@ -20,15 +19,15 @@ local function request(token: string, method: Net.HttpMethod, path: string, body
 			["X-GitHub-Api-Version"] = "2022-11-28",
 			["User-Agent"] = "Luau-CI-milestones",
 		},
-		body = if body ~= nil then Serde.encode("json", body) else nil,
+		body = if body ~= nil then Json.encode(body) else nil,
 	})
-	if response.statusCode == 401 or response.statusCode == 403 then
-		error(`Milestones API rejected Issues: write authorization (HTTP {response.statusCode})`, 0)
+	if response.status == 401 or response.status == 403 then
+		error(`Milestones API rejected Issues: write authorization (HTTP {response.status})`, 0)
 	end
-	if response.statusCode < 200 or response.statusCode >= 300 then
-		error(`Milestones API {method} failed (HTTP {response.statusCode})`, 0)
+	if response.status < 200 or response.status >= 300 then
+		error(`Milestones API {method} failed (HTTP {response.status})`, 0)
 	end
-	return response.statusCode, if response.body ~= "" then Serde.decode("json", response.body) else {}
+	return response.status, if response.body ~= "" then Json.decode(response.body) else {}
 end
 
 local function body(milestone: Catalog.Milestone): { [string]: unknown }

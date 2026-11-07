@@ -2,7 +2,7 @@
 --!strict
 
 local PagesDeployment = require("@ci/integrations/github/publication/pagesDeployment")
-local Process = require("@lune/process")
+local Process = require("@lute/process")
 
 local Component = {}
 Component.__index = Component

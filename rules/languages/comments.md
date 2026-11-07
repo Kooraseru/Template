@@ -1,43 +1,25 @@
 # Comments and documentation
 
-Comments explain the information a maintainer cannot reliably infer from the
-nearby syntax. **For complex logic, phase and invariant comments are required,**
-not merely suggested. Write them for ownership, intent, constraints, assumptions,
-failure modes, ordering, side effects, lifecycle, accessibility, security,
-compatibility, and unusual performance costs. A comment should help someone
-decide whether a change is safe.
+Comments explain the information a maintainer cannot reliably infer from the nearby syntax. **For complex logic, phase and invariant comments are required,** not merely suggested. Write them for ownership, intent, constraints, assumptions, failure modes, ordering, side effects, lifecycle, accessibility, security, compatibility, and unusual performance costs. A comment should help someone decide whether a change is safe.
 
 ## Placement
 
-- Put a short file-level comment at the top only when the file's role is not
-  evident from its name and location. State what it owns, not a slogan.
-- Put a comment beside the rule or operation it explains. A distant overview
-  does not replace a local explanation for a surprising condition.
-- Document public contracts at their declaration: inputs, outputs, important
-  constraints, side effects, and caller obligations. Use the language's native
-  documentation form where one exists.
-- Keep data-field documentation close to the field or schema. Describe groups
-  and invariants; do not annotate every obvious leaf.
-- For generated files, identify the generator and editable source. Do not put
-  the only explanation in generated output.
+- Put a short file-level comment at the top only when the file's role is not evident from its name and location. State what it owns, not a slogan.
+- Put a comment beside the rule or operation it explains. A distant overview does not replace a local explanation for a surprising condition.
+- Document public contracts at their declaration: inputs, outputs, important constraints, side effects, and caller obligations. Use the language's native documentation form where one exists.
+- For Luau, use [Moonwave-compatible function documentation](luau/language/function-documentation.md) when a function has a meaningful public contract.
+- Keep data-field documentation close to the field or schema. Describe groups and invariants; do not annotate every obvious leaf.
+- For generated files, identify the generator and editable source. Do not put the only explanation in generated output.
 
 ## Content
 
-Explain **why** a rule exists or **what must remain true**. Do not paraphrase a
-function name, selector, element, or assignment. Clear, concise section markers
-are encouraged in long multi-phase routines when they improve navigation; avoid
-ceremonial banners and repeated headings in tiny files. Use stable terms from the module's contract.
-When a workaround is temporary, name the exit condition and its owner; a bare
-`TODO` is not a migration plan.
+Explain **why** a rule exists or **what must remain true**. Do not paraphrase a function name, selector, element, or assignment. Clear, concise section markers are encouraged in long multi-phase routines when they improve navigation; avoid ceremonial banners and repeated headings in tiny files. Use stable terms from the module's contract. When a workaround is temporary, name the exit condition and its owner; a bare `TODO` is not a migration plan.
 
-For exported APIs, unusual mathematics, indexed traversal, and security/FFI
-boundaries, the applicable language standard may require Rustdoc or stronger
-local comments. See [Rust comments](rust/language/comments.md).
+For exported APIs, unusual mathematics, indexed traversal, and security/FFI boundaries, the applicable language standard may require Rustdoc or stronger local comments. See [Rust comments](low-level-languages/rust/language/comments.md).
 
-Keep comments accurate when behavior changes. Delete comments that no longer
-describe the code. Cite an external source beside the behavior it influenced
-when that source is needed to understand the design; prefer specifications and
-official documentation. Do not paste long external text into comments.
+Keep comments accurate when behavior changes. Delete comments that no longer describe the code. Cite an external source beside the behavior it influenced when that source is needed to understand the design; prefer specifications and official documentation. Do not paste long external text into comments.
+
+Do not insert artificial line breaks merely to keep comments under a fixed column count. Break paragraphs where the meaning or structure calls for it.
 
 ## Examples
 
@@ -64,4 +46,3 @@ Hollow:
 ```css
 /* Project card styles. */
 ```
-

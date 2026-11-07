@@ -1,8 +1,8 @@
 -- .github/ci/integrations/github/resources/rulesets/rulesetSync.luau
 --!strict
 
-local Net = require("@lune/net")
-local Serde = require("@lune/serde")
+local Net = require("@lute/net/client")
+local Json = require("@formats/json")
 local Publication = require("@ci/integrations/github/publication")
 local RulesetCatalog = require("@ci/integrations/github/resources/rulesets/rulesetCatalog")
 
@@ -11,10 +11,11 @@ export type Receipt = { identity: string, id: number }
 
 -- Report only the API's validation fields, not the complete request or authorization headers.
 local function diagnostic(body: string): string
-	local ok, decoded = pcall(Serde.decode, "json", body)
+	local ok, decoded = pcall(Json.decode, body)
 	if not ok or type(decoded) ~= "table" then
 		return ""
 	end
+	local decodedRecord = decoded :: { [string]: unknown }
 	local parts: { string } = {}
 	local function append(value: unknown): ()
 		if type(value) ~= "string" or value == "" then
@@ -23,13 +24,14 @@ local function diagnostic(body: string): string
 		local cleaned = value:gsub("[%c]", " "):sub(1, 240)
 		table.insert(parts, cleaned)
 	end
-	append(decoded.message)
-	if type(decoded.errors) == "table" then
-		for _, entry in decoded.errors do
+	append(decodedRecord.message)
+	if type(decodedRecord.errors) == "table" then
+		for _, entry in decodedRecord.errors do
 			if type(entry) == "table" then
-				append(entry.field)
-				append(entry.code)
-				append(entry.message)
+				local entryRecord = entry :: { [string]: unknown }
+				append(entryRecord.field)
+				append(entryRecord.code)
+				append(entryRecord.message)
 			elseif type(entry) == "string" then
 				append(entry)
 			end
@@ -41,9 +43,9 @@ local function diagnostic(body: string): string
 	return if #parts > 0 then ": " .. table.concat(parts, "; "):sub(1, 900) else ""
 end
 
--- Lune encodes an empty Luau table as {}, even when GitHub requires a JSON array.
+-- The JSON encoder represents an empty Luau table as {}, even when GitHub requires a JSON array.
 local function encodeRequestBody(value: unknown): string
-	local encoded = Serde.encode("json", value)
+	local encoded = Json.encode(value)
 	if type(value) ~= "table" then
 		return encoded
 	end
@@ -76,9 +78,8 @@ local function encodeRequestBody(value: unknown): string
 	return encoded
 end
 
-local function request(token: string, method: Net.HttpMethod, path: string, body: unknown?): (number, unknown)
-	local response = Net.request({
-		url = `https://api.github.com/{path}`,
+local function request(token: string, method: string, path: string, body: unknown?): (number, unknown)
+	local response = Net.request(`https://api.github.com/{path}`, {
 		method = method,
 		headers = {
 			Authorization = `Bearer {token}`,
@@ -89,19 +90,19 @@ local function request(token: string, method: Net.HttpMethod, path: string, body
 		},
 		body = if body ~= nil then encodeRequestBody(body) else nil,
 	})
-	if response.statusCode == 401 or response.statusCode == 403 then
+	if response.status == 401 or response.status == 403 then
 		error(
-			`Rulesets API rejected Administration: write authorization (HTTP {response.statusCode}){diagnostic(
+			`Rulesets API rejected Administration: write authorization (HTTP {response.status}){diagnostic(
 				response.body
 			)}`,
 			0
 		)
 	end
-	if response.statusCode < 200 or response.statusCode >= 300 then
-		error(`Rulesets API {method} failed (HTTP {response.statusCode}){diagnostic(response.body)}`, 0)
+	if response.status < 200 or response.status >= 300 then
+		error(`Rulesets API {method} failed (HTTP {response.status}){diagnostic(response.body)}`, 0)
 	end
-	local result: unknown = if response.body ~= "" then Serde.decode("json", response.body) else {}
-	return response.statusCode, result
+	local result: unknown = if response.body ~= "" then Json.decode(response.body) else {}
+	return response.status, result
 end
 
 local function matches(actual: unknown, desired: unknown): boolean

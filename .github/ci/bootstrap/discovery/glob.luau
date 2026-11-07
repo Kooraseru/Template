@@ -1,7 +1,7 @@
 -- .github/ci/bootstrap/discovery/glob.luau
 --!strict
 
-local Fs = require("@lune/fs")
+local Fs = require("@std/fs")
 
 local Glob = {}
 
@@ -88,28 +88,33 @@ function Glob.Find(pattern: string, root: string?): { string }
 
 	local function visit(relative: string)
 		local absolute = if relative == "" then base else `{base}/{relative}`
+		if not Fs.exists(absolute) then
+			return
+		end
 		local metadata = Fs.metadata(absolute)
-		if metadata.kind == "symlink" then
+		if metadata.type == "link" then
 			error(`symlink in glob scope: {relative}`, 0)
 		end
 		if relative ~= "" and Glob.Match(relative, pattern) then
 			table.insert(results, relative)
 		end
-		if metadata.kind ~= "dir" then
+		if metadata.type ~= "dir" then
 			return
 		end
 		if maxDepth and #split(relative) >= maxDepth then
 			return
 		end
-		local children = Fs.readDir(absolute)
-		table.sort(children)
+		local children = Fs.listDirectory(absolute)
+		table.sort(children, function(left: Fs.DirectoryEntry, right: Fs.DirectoryEntry): boolean
+			return left.name < right.name
+		end)
 		for _, child in children do
-			visit(if relative == "" then child else `{relative}/{child}`)
+			visit(if relative == "" then child.name else `{relative}/{child.name}`)
 		end
 	end
 
 	local absolute = if start == "" then base else `{base}/{start}`
-	if Fs.metadata(absolute).exists then
+	if Fs.exists(absolute) then
 		visit(start)
 	end
 	table.sort(results)

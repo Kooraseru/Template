@@ -2,7 +2,7 @@
 --!strict
 
 -- Copy a documentation asset without changing its relative site path.
-local Fs = require("@lune/fs")
+local Fs = require("@std/fs")
 
 local StaticAssetCopier = {}
 StaticAssetCopier.__index = StaticAssetCopier
@@ -13,7 +13,7 @@ function StaticAssetCopier.new(): StaticAssetCopier
 	return setmetatable({}, StaticAssetCopier)
 end
 
-function StaticAssetCopier.Copy(self: StaticAssetCopier, source: string, destination: string): ()
+function StaticAssetCopier.Copy(_self: StaticAssetCopier, source: string, destination: string): ()
 	Fs.copy(source, destination)
 end
 

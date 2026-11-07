@@ -2,7 +2,7 @@
 --!strict
 
 local Attestations = require("@ci/integrations/github/publication/attestations")
-local Process = require("@lune/process")
+local Process = require("@lute/process")
 
 local Component = {}
 Component.__index = Component

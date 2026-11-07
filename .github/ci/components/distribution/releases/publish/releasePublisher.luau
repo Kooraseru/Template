@@ -1,7 +1,7 @@
 -- .github/ci/components/distribution/releases/publish/releasePublisher.luau
 --!strict
 
-local Fs = require("@lune/fs")
+local Fs = require("@std/fs")
 local Publication = require("@ci/integrations/github/publication")
 local ConflictPolicy = require("@ci/integrations/github/publication/conflictPolicy")
 local ReleaseAssetPublisher = require("./releaseAssetPublisher")
@@ -53,7 +53,7 @@ function ReleasePublisher.Publish(
 		if notes:find("..", 1, true) or notes:sub(1, 1) == "/" or notes:find("\\", 1, true) then
 			error("Unsafe staged release notes path", 0)
 		end
-		body = Fs.readFile(`build/github/releases/{notes}`)
+		body = Fs.readFileToString(`build/github/releases/{notes}`)
 	end
 	if entry.previousTag then
 		local previousTag = Publication.Text(entry.previousTag)

@@ -1,9 +1,10 @@
 -- .github/ci/integrations/github/authentication/setupInstructions.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
+local Toml = require("@formats/toml")
+local Process = require("@lute/process")
 local Configuration = require("@ci/integrations/github/configuration")
 local Publication = require("@ci/integrations/github/publication")
 local Responses = require("@ci/integrations/github/reporting/responses")
@@ -12,11 +13,11 @@ local SetupInstructions = {}
 
 local function ownerType(owner: string): string
 	local path = Process.env.GITHUB_EVENT_PATH
-	if not path or not Fs.isFile(path) then
+	if not path or not Fs.exists(path) or Fs.type(path) ~= "file" then
 		return "Unknown"
 	end
 	local ok, event = pcall(function(): unknown
-		return Serde.decode("json", Fs.readFile(path))
+		return Json.decode(Fs.readFileToString(path))
 	end)
 	if
 		ok
@@ -73,7 +74,7 @@ function SetupInstructions.Values(
 	local base = "https://github.com/" .. repository
 	local repoPermissions = table.clone(repositoryPermissions or {})
 	local function mergeRepository(path: string): ()
-		local root = Publication.Record(Serde.decode("toml", Fs.readFile(path)))
+		local root = Publication.Record(Toml.decode(Fs.readFileToString(path)))
 		for name, access in Publication.Record(Publication.Record(root.app).repository) do
 			if repoPermissions[name] ~= "write" then
 				repoPermissions[name] = Publication.Text(access)
@@ -83,7 +84,7 @@ function SetupInstructions.Values(
 	if configuration.enabled then
 		mergeRepository(".github/automation/authorization/bootstrap.toml")
 	end
-	local execution = Publication.Record(Serde.decode("toml", Fs.readFile(".github/automation/execution.toml")))
+	local execution = Publication.Record(Toml.decode(Fs.readFileToString(".github/automation/execution.toml")))
 	local skip = Publication.Record(execution.skip)
 	local neutral = skip.default == "neutral"
 	for _, conclusion in Publication.Record(skip.components) do

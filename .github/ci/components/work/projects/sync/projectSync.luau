@@ -5,7 +5,7 @@ local Publication = require("@ci/integrations/github/publication")
 local Catalog = require("@ci/integrations/github/resources/projects/projectCatalog")
 local Client = require("@ci/integrations/github/resources/projects/projectClient")
 
-const CUSTOM_TYPES =
+local CUSTOM_TYPES =
 	{ TEXT = true, NUMBER = true, DATE = true, SINGLE_SELECT = true, MULTI_SELECT = true, ITERATION = true }
 
 local ProjectSync = {}

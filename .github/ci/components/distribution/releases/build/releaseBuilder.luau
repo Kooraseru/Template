@@ -1,16 +1,16 @@
 -- .github/ci/components/distribution/releases/build/releaseBuilder.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Process = require("@lute/process")
+local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local ConflictPolicy = require("@ci/integrations/github/publication/conflictPolicy")
 local ReleaseAssets = require("./releaseAssets")
 
-const CONFIG_PATH = ".github/distribution/releases/settings.json"
-const RECORD_ROOT = ".github/distribution/releases"
-const OUTPUT_ROOT = "build/github/releases"
+local CONFIG_PATH = ".github/distribution/releases/settings.json"
+local RECORD_ROOT = ".github/distribution/releases"
+local OUTPUT_ROOT = "build/github/releases"
 
 type ReleaseRecord = {
 	assetPatterns: unknown,
@@ -36,7 +36,7 @@ type ReleaseIndexEntry = {
 	notes: string?,
 }
 
-type ReleaseInput = { path: string, directory: string, sequence: number, value: any }
+type ReleaseInput = { path: string, directory: string, sequence: number, value: { [string]: unknown } }
 
 local ReleaseBuilder = {}
 ReleaseBuilder.__index = ReleaseBuilder
@@ -47,18 +47,18 @@ local requireCommit: (string, string) -> ()
 local safeNotesPath: (string) -> string
 
 local function ensureDirectory(path: string): ()
-	local metadata = Fs.metadata(path)
-	if metadata.kind == "symlink" then
+	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
+	if metadata == "link" then
 		error(`refusing to write through a symlink: {path}`, 0)
 	end
-	if not metadata.exists then
-		Fs.writeDir(path)
-	elseif metadata.kind ~= "dir" then
+	if metadata == nil then
+		Fs.createDirectory(path, { makeParents = true })
+	elseif metadata ~= "dir" then
 		error(`expected a directory at {path}`, 0)
 	end
 end
 
-local function validVersion(versionType: string, version: string, options: { [string]: any }): boolean
+local function validVersion(versionType: string, version: string, options: { [string]: unknown }): boolean
 	if versionType == "marketing" then
 		return version ~= "" and not version:find("[/\\\\:]", 1) and not version:find("..", 1, true)
 	elseif versionType == "sequential" then
@@ -125,7 +125,7 @@ local function validVersion(versionType: string, version: string, options: { [st
 end
 
 local function resolveReference(reference: string, label: string): string
-	local result = Process.exec("git", { "rev-parse", "--verify", reference .. "^{commit}" })
+	local result = Process.run({ "git",  "rev-parse", "--verify", reference .. "^{commit}" })
 	if not result.ok then
 		error(`{CONFIG_PATH}: unable to resolve {label} Git reference {reference}`, 0)
 	end
@@ -135,11 +135,11 @@ local function resolveReference(reference: string, label: string): string
 end
 
 local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
-	local configuration = Serde.decode("json", Fs.readFile(CONFIG_PATH))
+	local configuration = Json.record(Json.decode(Fs.readFileToString(CONFIG_PATH)))
 	if type(configuration) ~= "table" or type(configuration.release) ~= "table" then
 		error(`{CONFIG_PATH}: expected a [release] table`, 0)
 	end
-	local shared = configuration.release
+	local shared = Json.record(configuration.release)
 	local format = shared.format
 	if type(format) ~= "string" then
 		error(`{CONFIG_PATH}: release.format must be a version format name`, 0)
@@ -155,11 +155,11 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	local sequences: { [number]: boolean } = {}
 	local entries: { ReleaseInput } = {}
 	for _, directory in Glob.Find(`{RECORD_ROOT}/*`) do
-		local metadata = Fs.metadata(directory)
-		if metadata.kind == "symlink" then
+		local metadata = (if Fs.exists(directory) then Fs.type(directory) else nil)
+		if metadata == "link" then
 			error(`{directory}: release records cannot be symlinks`, 0)
 		end
-		if not Fs.isDir(directory) then
+		if not (Fs.exists(directory) and Fs.type(directory) == "dir") then
 			continue
 		end
 		local identity = directory:match("([^/]+)$")
@@ -167,10 +167,10 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 			error(`{directory}: invalid release record directory name`, 0)
 		end
 		local path = `{directory}/release.json`
-		if not Fs.isFile(path) or Fs.metadata(path).kind == "symlink" then
+		if not (Fs.exists(path) and Fs.type(path) == "file") or (if Fs.exists(path) then Fs.type(path) else nil) == "link" then
 			error(`{path}: expected a regular release record`, 0)
 		end
-		local value = Serde.decode("json", Fs.readFile(path))
+		local value = Json.record(Json.decode(Fs.readFileToString(path)))
 		if type(value) ~= "table" then
 			error(`{path}: expected a release object`, 0)
 		end
@@ -199,7 +199,7 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		if type(tag) ~= "string" or tag == "" then
 			error(`{CONFIG_PATH}: release {version} tag must be a nonempty string`, 0)
 		end
-		local validTag = Process.exec("git", { "check-ref-format", `refs/tags/{tag}` })
+		local validTag = Process.run({ "git",  "check-ref-format", `refs/tags/{tag}` })
 		if not validTag.ok then
 			error(`{CONFIG_PATH}: release {version} has an invalid Git tag {tag}`, 0)
 		end
@@ -228,7 +228,7 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		elseif notesStart ~= nil and notesStart ~= "beginning" then
 			if
 				type(notesStart) ~= "string"
-				or not Process.exec("git", { "check-ref-format", `refs/tags/{notesStart}` }).ok
+				or not Process.run({ "git",  "check-ref-format", `refs/tags/{notesStart}` }).ok
 			then
 				error(`{CONFIG_PATH}: release {version} has an invalid previous_tag`, 0)
 			end
@@ -262,7 +262,7 @@ requireCommit = function(commit: string, label: string): ()
 	if #commit ~= 40 or not commit:match("^%x+$") then
 		error(`{CONFIG_PATH}: {label} must be a full 40-character commit SHA`, 0)
 	end
-	local result = Process.exec("git", { "cat-file", "-t", commit })
+	local result = Process.run({ "git",  "cat-file", "-t", commit })
 	if not result.ok or result.stdout:gsub("%s+$", "") ~= "commit" then
 		error(`{CONFIG_PATH}: {label} is not present in the checked-out Git history: {commit}`, 0)
 	end
@@ -278,7 +278,7 @@ safeNotesPath = function(notes: string): string
 		end
 	end
 	local source = `{RECORD_ROOT}/{notes}`
-	if not Fs.isFile(source) or Fs.metadata(source).kind == "symlink" then
+	if not (Fs.exists(source) and Fs.type(source) == "file") or (if Fs.exists(source) then Fs.type(source) else nil) == "link" then
 		error(`{CONFIG_PATH}: release notes do not exist as a regular file: {source}`, 0)
 	end
 	return source
@@ -290,12 +290,12 @@ end
 
 function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 	local records, policy = decodeRecords()
-	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
-	if outputMetadata.kind == "symlink" then
+	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
-	elseif outputMetadata.kind == "dir" then
-		Fs.removeDir(OUTPUT_ROOT)
-	elseif outputMetadata.exists then
+	elseif outputMetadata == "dir" then
+		Fs.removeDirectory(OUTPUT_ROOT, { recursive = true })
+	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
 	if #records == 0 then
@@ -331,11 +331,11 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 			previousTag = release.previousTag,
 			notes = notesOutput,
 		}
-		Fs.writeFile(`{releaseDirectory}/release.json`, Serde.encode("json", entry))
+		Fs.writeStringToFile(`{releaseDirectory}/release.json`, Json.encode(entry))
 		table.insert(index, entry)
 	end
 
-	Fs.writeFile(`{OUTPUT_ROOT}/index.json`, Serde.encode("json", { onExisting = policy, releases = index }))
+	Fs.writeStringToFile(`{OUTPUT_ROOT}/index.json`, Json.encode({ onExisting = policy, releases = index }))
 	print(`Staged {#records} release records into {OUTPUT_ROOT}`)
 	return nil
 end

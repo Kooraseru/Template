@@ -1,10 +1,11 @@
 -- .github/ci/bootstrap/outcomes/skipPolicy.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Net = require("@lune/net")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Net = require("@lute/net/client")
+local Process = require("@lute/process")
+local Toml = require("@formats/toml")
+local Json = require("@formats/json")
 local Authentication = require("@ci/integrations/github/authentication/authentication")
 local Configuration = require("@ci/integrations/github/configuration")
 local Credentials = require("@ci/integrations/github/authentication/credentials")
@@ -30,7 +31,7 @@ end
 
 local function neutralCheckPermissions(): { [string]: string }
 	local path = ".github/automation/authorization/check-runs.toml"
-	local decoded = record(Serde.decode("toml", Fs.readFile(path)))
+	local decoded = record(Toml.decode(Fs.readFileToString(path)))
 	for field in decoded do
 		if field ~= "app" then
 			error(`{path}: unknown authorization section {tostring(field)}`, 0)
@@ -57,7 +58,7 @@ local function neutralCheckPermissions(): { [string]: string }
 end
 
 function SkipPolicy.Conclusion(identity: string): string
-	local decoded = record(Serde.decode("toml", Fs.readFile(".github/automation/execution.toml")))
+	local decoded = record(Toml.decode(Fs.readFileToString(".github/automation/execution.toml")))
 	for field in decoded do
 		if field ~= "skip" then
 			error(`Unknown CI execution setting {tostring(field)}`, 0)
@@ -156,8 +157,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
 	local run = Process.env.GITHUB_RUN_ID or "local"
-	local response = Net.request({
-		url = `{api}/repos/{repository}/check-runs`,
+	local response = Net.request(`{api}/repos/{repository}/check-runs`, {
 		method = "POST",
 		headers = {
 			Authorization = `Bearer {access.token}`,
@@ -166,7 +166,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 			["X-GitHub-Api-Version"] = "2022-11-28",
 			["User-Agent"] = "Luau-CI-bootstrap",
 		},
-		body = Serde.encode("json", {
+		body = Json.encode({
 			name = `CI skip: {identity}`,
 			head_sha = sha,
 			status = "completed",
@@ -180,11 +180,11 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 	})
 	Authentication.Release(access)
 	if not response.ok then
-		if response.statusCode == 401 or response.statusCode == 403 or response.statusCode == 404 then
-			warnAuthorization(identity, `Check Run access rejected (HTTP {response.statusCode})`, "configured")
+		if response.status == 401 or response.status == 403 or response.status == 404 then
+			warnAuthorization(identity, `Check Run access rejected (HTTP {response.status})`, "configured")
 		end
 		error(
-			`Could not create neutral Check Run for {identity} (HTTP {response.statusCode}); verify App installation and Checks: write permission`,
+			`Could not create neutral Check Run for {identity} (HTTP {response.status}); verify App installation and Checks: write permission`,
 			0
 		)
 	end

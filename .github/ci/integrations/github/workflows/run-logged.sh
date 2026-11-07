@@ -23,4 +23,4 @@ fi
 # Stream the component output to its log and preserve the CI process status.
 log_directory="build/run/$workflow_name/logs"
 mkdir -p "$log_directory"
-bash .github/ci/tooling/lune/bootstrap.sh run .github/ci/entry.luau "$@" 2>&1 | tee "$log_directory/$log_name.log"
+node dependencies/packages/dependencyLoader/index.ts --exec luau.lute run .github/ci/entry.luau "$@" 2>&1 | tee "$log_directory/$log_name.log"

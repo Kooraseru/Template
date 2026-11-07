@@ -36,7 +36,7 @@ export type Task = {
 	needs: { string },
 }
 
-const TASK_INVOKER = ".github/ci/bootstrap/execution/invoke.luau"
+local TASK_INVOKER = ".github/ci/bootstrap/execution/invoke.luau"
 
 --# Constants
 

@@ -1,0 +1,24 @@
+{
+  "languageMode": "strict",
+  "lint": {
+    "*": true
+  },
+  "lintErrors": true,
+  "typeErrors": true,
+  "aliases": {
+    "workspace": "../../..",
+    "dependencies": "@workspace/dependencies",
+
+    "ci": "@workspace/.github/ci",
+    "tooling": "@workspace/tooling",
+    "build": "@workspace/build/run",
+
+    // Internal dependencies/tooling
+    "ruleLinter": "@dependencies/packages/ruleLinter",
+    "formats": "@dependencies/packages/dataFormats",
+
+    // External dependencies
+    "lute": "@workspace/build/dependencies/types/lute",
+    "std": "@lute/std"
+  }
+}

@@ -1,19 +1,21 @@
 -- .github/ci/integrations/github/publication/attestations.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
-local Process = require("@lune/process")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
+local Toml = require("@formats/toml")
+local Hash = require("@formats/hash")
+local Process = require("@lute/process")
 local Responses = require("@ci/integrations/github/reporting/responses")
 local Publication = require("@ci/integrations/github/publication")
 
-const ROOT = "build/github/attestations"
-const SUBJECTS = "build/github/attestations/subjects"
+local ROOT = "build/github/attestations"
+local SUBJECTS = "build/github/attestations/subjects"
 
 local Attestations = {}
 
 function Attestations.Enabled(): boolean
-	local root = Publication.Record(Serde.decode("toml", Fs.readFile(".github/distribution/attestations.toml")))
+	local root = Publication.Record(Toml.decode(Fs.readFileToString(".github/distribution/attestations.toml")))
 	local settings = Publication.Record(root.attestations)
 	for field in settings do
 		if field ~= "mode" then
@@ -31,11 +33,11 @@ function Attestations.Prepare(): boolean
 		print("Attestations skipped: disabled by repository configuration")
 		return false
 	end
-	if Fs.metadata(ROOT).kind == "symlink" then
+	if Fs.exists(ROOT) and Fs.type(ROOT) == "link" then
 		error("Refusing symlink attestation output directory", 0)
 	end
-	if Fs.isDir(ROOT) then
-		Fs.removeDir(ROOT)
+	if Fs.exists(ROOT) and Fs.type(ROOT) == "dir" then
+		Fs.removeDirectory(ROOT, { recursive = true })
 	end
 	local seen: { [string]: boolean } = {}
 	local subjects: { { name: string, digest: string, path: string } } = {}
@@ -60,8 +62,8 @@ function Attestations.Prepare(): boolean
 			then
 				error("Unsafe attestation subject", 0)
 			end
-			local bytes = Fs.readFile(path)
-			if digest ~= "sha256:" .. Serde.hash("sha256", bytes) then
+			local bytes = Fs.readFileToString(path)
+			if digest ~= "sha256:" .. Hash.sha256(bytes) then
 				error(`Attestation subject checksum mismatch: {name}`, 0)
 			end
 			local key = digest .. ":" .. name
@@ -70,9 +72,9 @@ function Attestations.Prepare(): boolean
 			end
 			seen[key] = true
 			local directory = `{SUBJECTS}/{digest:sub(8)}`
-			Fs.writeDir(directory)
+			Fs.createDirectory(directory, { makeParents = true })
 			local destination = `{directory}/{name}`
-			Fs.writeFile(destination, bytes)
+			Fs.writeStringToFile(destination, bytes)
 			table.insert(subjects, { name = name, digest = digest, path = destination })
 		end
 	end
@@ -86,7 +88,7 @@ function Attestations.Prepare(): boolean
 		)
 		return false
 	end
-	Fs.writeFile(`{ROOT}/intent.json`, Serde.encode("json", { mode = "best_effort", subjects = subjects }))
+	Fs.writeStringToFile(`{ROOT}/intent.json`, Json.encode({ mode = "best_effort", subjects = subjects }))
 	print(`Prepared {#subjects} verified provenance subjects; signing is handled by the native attestation adapter`)
 	return true
 end
@@ -100,11 +102,11 @@ function Attestations.Options(): ()
 	if not Attestations.Enabled() then
 		return
 	end
-	if not Fs.isFile(`{ROOT}/intent.json`) then
+	if not Fs.exists(`{ROOT}/intent.json`) or Fs.type(`{ROOT}/intent.json`) ~= "file" then
 		print("Attestations skipped: no prepared subject set is available")
 		return
 	end
-	local intent = Publication.Record(Serde.decode("json", Fs.readFile(`{ROOT}/intent.json`)))
+	local intent = Publication.Record(Json.decode(Fs.readFileToString(`{ROOT}/intent.json`)))
 	local subjects = intent.subjects
 	if type(subjects) ~= "table" or #subjects == 0 then
 		print("Attestations skipped: empty subject set")
@@ -116,7 +118,7 @@ function Attestations.Options(): ()
 		if not path:match("^build/github/attestations/subjects/[%w_./%-]+$") or path:find("..", 1, true) then
 			error("Unsafe prepared attestation path", 0)
 		end
-		if Publication.Text(asset.digest) ~= "sha256:" .. Serde.hash("sha256", Fs.readFile(path)) then
+		if Publication.Text(asset.digest) ~= "sha256:" .. Hash.sha256(Fs.readFileToString(path)) then
 			error("Prepared attestation subject changed after staging", 0)
 		end
 	end
@@ -127,7 +129,7 @@ function Attestations.Options(): ()
 	if not repository or not workflow or not runId then
 		error("Attestation signing requires GitHub workflow context", 0)
 	end
-	local head = Process.exec("git", { "rev-parse", "HEAD" })
+	local head = Process.run({ "git", "rev-parse", "HEAD" })
 	local sha = head.stdout:gsub("%s+$", "")
 	local expected = Process.env.CI_SOURCE_SHA or Process.env.GITHUB_SHA
 	if not head.ok or #sha ~= 40 or not sha:match("^%x+$") or sha ~= expected then
@@ -165,7 +167,7 @@ function Attestations.Options(): ()
 		metadata = { invocationId = `{server}/{repository}/actions/runs/{runId}/attempts/{attempt}` },
 	}
 	local predicate = { buildDefinition = buildDefinition, runDetails = runDetails }
-	Fs.writeFile(`{ROOT}/predicate.json`, Serde.encode("json", predicate))
+	Fs.writeStringToFile(`{ROOT}/predicate.json`, Json.encode(predicate))
 	Publication.Output("predicate_path", `{ROOT}/predicate.json`)
 	Publication.Output("subject_path", `{SUBJECTS}/**/*`)
 	Publication.Output("enabled", "true")

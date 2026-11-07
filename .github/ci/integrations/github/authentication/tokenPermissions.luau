@@ -1,10 +1,10 @@
 -- .github/ci/integrations/github/authentication/tokenPermissions.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Net = require("@lune/net")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
+local Net = require("@lute/net/client")
+local Process = require("@lute/process")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Configuration = require("@ci/integrations/github/configuration")
 local Publication = require("@ci/integrations/github/publication")
@@ -35,7 +35,7 @@ function TokenPermissions.Required(
 	end
 	local scopes: { [string]: boolean } = {}
 	for _, path in Glob.Find(".github/automation/authorization/*.toml") do
-		local root = Publication.Record(Serde.decode("toml", Fs.readFile(path)))
+		local root = Publication.Record(Toml.decode(Fs.readFileToString(path)))
 		local declaration = root.credential
 		if declaration == nil then
 			if root.classic ~= nil then
@@ -86,7 +86,7 @@ local function covers(granted: { [string]: boolean }, required: string): boolean
 		or (required == "public_repo" and granted.repo == true)
 end
 
-function TokenPermissions.Evaluate(status: number, headers: Net.HttpHeaderMap, required: { string }): Inspection
+function TokenPermissions.Evaluate(status: number, headers: { [string]: string }, required: { string }): Inspection
 	local result: Inspection = { state = "unverified", required = required, missing = {} }
 	if status == 401 then
 		result.state = "invalid"
@@ -124,24 +124,23 @@ function TokenPermissions.Evaluate(status: number, headers: Net.HttpHeaderMap, r
 end
 
 function TokenPermissions.Inspect(token: string, required: { string }): Inspection
-	local options: Net.FetchParams = {
-		url = (Process.env.GITHUB_API_URL or "https://api.github.com") .. "/user",
+	local options: Net.Metadata = {
 		headers = {
 			Authorization = "Bearer " .. token,
 			Accept = "application/vnd.github+json",
 			["User-Agent"] = "Luau-CI",
 		},
 	}
-	local ok, response = pcall(function(): Net.FetchResponse
-		return Net.request(options)
+	local ok, response = pcall(function(): Net.Response
+		return Net.request((Process.env.GITHUB_API_URL or "https://api.github.com") .. "/user", options)
 	end)
 	if not ok then
 		return { state = "unverified", required = required, missing = {} }
 	end
 	if token:match("^github_pat_") or token:match("^gh[su]_") then
-		return TokenPermissions.Evaluate(response.statusCode, {}, required)
+		return TokenPermissions.Evaluate(response.status, {}, required)
 	end
-	return TokenPermissions.Evaluate(response.statusCode, response.headers, required)
+	return TokenPermissions.Evaluate(response.status, response.headers, required)
 end
 
 local function scopeText(scopes: { string }?): string

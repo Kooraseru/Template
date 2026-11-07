@@ -1,12 +1,12 @@
 -- .github/ci/integrations/github/resources/milestones/milestoneCatalog.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/integrations/github/publication")
 
-const CONFIG_PATH = ".github/work/milestones/records"
+local CONFIG_PATH = ".github/work/milestones/records"
 
 local MilestoneCatalog = {}
 
@@ -25,10 +25,10 @@ function MilestoneCatalog.Read(): { Milestone }
 	local result: { Milestone } = {}
 	local versions: { [string]: boolean } = {}
 	for _, path in Glob.Find(`{CONFIG_PATH}/*.json`) do
-		if not Fs.isFile(path) then
+		if not Fs.exists(path) or Fs.type(path) ~= "file" then
 			continue
 		end
-		local entry = Publication.Record(Serde.decode("json", Fs.readFile(path)))
+		local entry = Publication.Record(Json.decode(Fs.readFileToString(path)))
 		for field in entry do
 			if field ~= "version" and field ~= "status" and field ~= "due_on" and field ~= "description" then
 				error(`{CONFIG_PATH}: unsupported planned milestone field {tostring(field)}`, 0)

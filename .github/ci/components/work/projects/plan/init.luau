@@ -1,8 +1,8 @@
 -- .github/ci/components/work/projects/plan/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local ProjectCatalog = require("@ci/integrations/github/resources/projects/projectCatalog")
 
 local Component = {}
@@ -15,10 +15,10 @@ end
 
 function Component.Run(_self: Component, _context: { event: string }): ()
 	local projects = ProjectCatalog.Read()
-	Fs.writeDir("build/github/project-plans")
-	Fs.writeFile(
+	Fs.createDirectory("build/github/project-plans", { makeParents = true })
+	Fs.writeStringToFile(
 		"build/github/project-plans/index.json",
-		Serde.encode("json", {
+		Json.encode({
 			projects = projects,
 			applied = false,
 			note = "Validated definition snapshot only; projects/sync re-reads the source definitions and reconciles GitHub Projects using configured App/PAT authorization.",

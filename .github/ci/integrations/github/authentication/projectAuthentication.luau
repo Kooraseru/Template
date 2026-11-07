@@ -1,9 +1,9 @@
 -- .github/ci/integrations/github/authentication/projectAuthentication.luau
 --!strict
 
-local Process = require("@lune/process")
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Process = require("@lute/process")
+local Toml = require("@formats/toml")
+local Fs = require("@std/fs")
 local Configuration = require("@ci/integrations/github/configuration")
 local Authentication = require("@ci/integrations/github/authentication/authentication")
 local Publication = require("@ci/integrations/github/publication")
@@ -15,7 +15,7 @@ local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string? }
 
 local function requirements(): { [string]: string }
-	local root = Publication.Record(Serde.decode("toml", Fs.readFile(".github/automation/authorization/projects.toml")))
+	local root = Publication.Record(Toml.decode(Fs.readFileToString(".github/automation/authorization/projects.toml")))
 	local app = Publication.Record(Publication.Record(root.app).organization)
 	local permissions: { [string]: string } = {}
 	for name, value in app do

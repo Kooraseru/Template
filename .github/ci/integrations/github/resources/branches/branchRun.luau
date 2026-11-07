@@ -1,17 +1,16 @@
 -- .github/ci/integrations/github/resources/branches/branchRun.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Net = require("@lune/net")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
-local Task = require("@lune/task")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
+local Net = require("@lute/net/client")
+local Process = require("@lute/process")
+local Task = require("@std/task")
 local Contract = require("@ci/bootstrap/contracts/contract")
 local Authentication = require("@ci/integrations/github/authentication/authentication")
 local Configuration = require("@ci/integrations/github/configuration")
 local Credentials = require("@ci/integrations/github/authentication/credentials")
 local Workflow = require("@ci/integrations/github/workflows/workflow")
-local ActionsLock = require("@ci/tooling/actions-lock")
 local TokenPermissions = require("@ci/integrations/github/authentication/tokenPermissions")
 local Responses = require("@ci/integrations/github/reporting/responses")
 
@@ -41,19 +40,21 @@ local function gitFailure(stderr: string): string
 end
 
 local function git(arguments: { string }, cwd: string?, token: string?): string
-	local result = Process.exec("git", arguments, {
+	local command = table.clone(arguments)
+	table.insert(command, 1, "git")
+	local environment = table.clone(Process.env)
+	if token then
+		environment.CI_GIT_BOOTSTRAP_TOKEN = token
+		environment.CI_GIT_SERVER_URL = Process.env.GITHUB_SERVER_URL or "https://github.com"
+		environment.GIT_TERMINAL_PROMPT = "0"
+	end
+	local result = Process.run(command, {
 		cwd = cwd,
-		env = if token
-			then {
-				CI_GIT_BOOTSTRAP_TOKEN = token,
-				CI_GIT_SERVER_URL = Process.env.GITHUB_SERVER_URL or "https://github.com",
-				GIT_TERMINAL_PROMPT = "0",
-			}
-			else nil,
+		env = environment,
 	})
 	if not result.ok then
 		error(
-			`GitHub branch bootstrap Git operation failed with exit code {result.code}: {gitFailure(result.stderr)}`,
+			`GitHub branch bootstrap Git operation failed with exit code {result.exitcode}: {gitFailure(result.stderr)}`,
 			0
 		)
 	end
@@ -74,23 +75,31 @@ local function launch(
 		error("GitHub branch bootstrap requires a valid run ID and attempt", 0)
 	end
 	local worktree = `build/run/ci-start/artifacts/worktree-{runId}-{attempt}`
-	if Fs.metadata(worktree).exists then
+	if Fs.exists(worktree) then
 		error("Refusing to reuse an existing bootstrap worktree", 0)
 	end
-	local valid = Process.exec("git", { "check-ref-format", `refs/heads/{branch}` })
+	local valid = Process.run({ "git", "check-ref-format", `refs/heads/{branch}` })
 	if not valid.ok then
 		error("github.bootstrap.branch_prefix produced an invalid branch", 0)
 	end
 	local yaml = Workflow.Render(tasks, sha, branch, event)
-	Fs.writeDir("build/run/ci-start/artifacts")
-	Fs.writeFile("build/run/ci-start/artifacts/workflow.yml", yaml)
+	Fs.createDirectory("build/run/ci-start/artifacts", { makeParents = true })
+	Fs.writeStringToFile("build/run/ci-start/artifacts/workflow.yml", yaml)
 	git({ "worktree", "add", "--detach", worktree, sha })
 	local stage = "writing generated workflow"
 	local ok, failure = (xpcall :: any)(function(): ()
-		Fs.writeDir(`{worktree}/.github/workflows`)
-		Fs.writeFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
+		Fs.createDirectory(`{worktree}/.github/workflows`, { makeParents = true })
+		Fs.writeStringToFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
 		stage = "locking generated workflow dependencies"
-		ActionsLock.Lock(worktree, ".github/workflows/ci-execution.yml")
+		local loader = `{Process.cwd()}/dependencies/packages/dependencyLoader/index.ts`
+		local locked = Process.run({ "node", loader, "--exec", "tools.actionsLock", "--no-interactive", "--no-narrow", ".github/workflows/ci-execution.yml" }, { cwd = worktree })
+		if not locked.ok then
+			error(`Official GitHub Actions lockfile generation failed: {locked.stderr}`, 0)
+		end
+		local verified = Process.run({ "node", loader, "--exec", "tools.actionsLock", "--verify-local", ".github/workflows/ci-execution.yml" }, { cwd = worktree })
+		if not verified.ok then
+			error(`Generated workflow is not covered by actions.lock: {verified.stderr}`, 0)
+		end
 		stage = "committing generated workflow"
 		git({ "add", "--", ".github/workflows/ci-execution.yml", ".github/workflows/actions.lock" }, worktree)
 		git({
@@ -118,7 +127,7 @@ local function launch(
 			`HEAD:refs/heads/{branch}`,
 		}, worktree, access.token)
 	end, tostring)
-	local removed = Process.exec("git", { "worktree", "remove", "--force", worktree })
+	local removed = Process.run({ "git", "worktree", "remove", "--force", worktree })
 	if not removed.ok then
 		print("::warning::Could not remove the temporary bootstrap worktree")
 	end
@@ -140,10 +149,9 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 	local observedId: number? = nil
 	-- The required gate check must reflect the generated run, not merely its dispatch.
 	while os.time() - started < PR_EXECUTION_TIMEOUT_SECONDS do
-		local response = Net.request({
-			url = if observedId
+		local response = Net.request(if observedId
 				then `{api}/repos/{repository}/actions/runs/{observedId}`
-				else `{api}/repos/{repository}/actions/runs?branch={encoded}&event=push&per_page=30`,
+				else `{api}/repos/{repository}/actions/runs?branch={encoded}&event=push&per_page=30`, {
 			headers = {
 				Authorization = `Bearer {token}`,
 				Accept = "application/vnd.github+json",
@@ -151,9 +159,9 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			},
 		})
 		if not response.ok then
-			error(`Cannot inspect native PR execution (HTTP {response.statusCode}); gate needs Actions: read`, 0)
+			error(`Cannot inspect native PR execution (HTTP {response.status}); gate needs Actions: read`, 0)
 		end
-		local decoded: unknown = Serde.decode("json", response.body)
+		local decoded: unknown = Json.decode(response.body)
 		local runs: { any }
 		if observedId then
 			if type(decoded) ~= "table" or type(decoded.id) ~= "number" or decoded.id ~= observedId then
@@ -217,9 +225,9 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		-- act binds one shared workspace for every job and every invocation.
 		Responses.ResetLocal()
 		local directory = "build/run/ci-start/artifacts"
-		Fs.writeDir(directory)
-		Fs.writeFile(`{directory}/workflow.yml`, workflow)
-		Fs.writeFile(`{directory}/event.json`, Serde.encode("json", { ref = `refs/heads/{branch}` }))
+		Fs.createDirectory(directory, { makeParents = true })
+		Fs.writeStringToFile(`{directory}/workflow.yml`, workflow)
+		Fs.writeStringToFile(`{directory}/event.json`, Json.encode({ ref = `refs/heads/{branch}` }))
 		Responses.Write("start", {
 			color = "success",
 			result = "Local CI Execution workflow generated. Run it with the local Actions task.",
@@ -307,10 +315,10 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		execution_url = url,
 		source_sha = sha,
 	})
-	Fs.writeDir("build/run/ci-start/responses")
-	Fs.writeFile(
+	Fs.createDirectory("build/run/ci-start/responses", { makeParents = true })
+	Fs.writeStringToFile(
 		"build/run/ci-start/responses/launch.json",
-		Serde.encode("json", { branch = branch, source = sha, url = url })
+		Json.encode({ branch = branch, source = sha, url = url })
 	)
 	return true
 end
@@ -351,11 +359,11 @@ function BranchRun.Cleanup(): ()
 		Accept = "application/vnd.github+json",
 		["User-Agent"] = "Luau-CI-bootstrap",
 	}
-	local repositoryResponse = Net.request({ url = `{api}/repos/{repository}`, headers = headers })
+	local repositoryResponse = Net.request(`{api}/repos/{repository}`, { headers = headers })
 	if not repositoryResponse.ok then
-		error(`Unable to check repository default branch: HTTP {repositoryResponse.statusCode}`, 0)
+		error(`Unable to check repository default branch: HTTP {repositoryResponse.status}`, 0)
 	end
-	local metadata: unknown = Serde.decode("json", repositoryResponse.body)
+	local metadata: unknown = Json.decode(repositoryResponse.body)
 	if type(metadata) ~= "table" or type(metadata.default_branch) ~= "string" then
 		error("GitHub returned an invalid repository default branch", 0)
 	end
@@ -365,15 +373,15 @@ function BranchRun.Cleanup(): ()
 	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
-	local current = Net.request({ url = `{api}/repos/{repository}/git/ref/heads/{encoded}`, headers = headers })
-	if current.statusCode == 404 then
+	local current = Net.request(`{api}/repos/{repository}/git/ref/heads/{encoded}`, { headers = headers })
+	if current.status == 404 then
 		print("::notice::Temporary CI branch was already removed")
 		return
 	end
 	if not current.ok then
-		error(`Unable to inspect temporary CI branch: HTTP {current.statusCode}`, 0)
+		error(`Unable to inspect temporary CI branch: HTTP {current.status}`, 0)
 	end
-	local decoded: unknown = Serde.decode("json", current.body)
+	local decoded: unknown = Json.decode(current.body)
 	if type(decoded) ~= "table" or type(decoded.object) ~= "table" then
 		error("GitHub returned an invalid branch reference", 0)
 	end
@@ -382,9 +390,9 @@ function BranchRun.Cleanup(): ()
 		error("Temporary CI branch moved after this run started; leaving it untouched", 0)
 	end
 	local removed =
-		Net.request({ url = `{api}/repos/{repository}/git/refs/heads/{encoded}`, method = "DELETE", headers = headers })
-	if not removed.ok and removed.statusCode ~= 404 then
-		error(`Unable to remove temporary CI branch: HTTP {removed.statusCode}`, 0)
+		Net.request(`{api}/repos/{repository}/git/refs/heads/{encoded}`, { method = "DELETE", headers = headers })
+	if not removed.ok and removed.status ~= 404 then
+		error(`Unable to remove temporary CI branch: HTTP {removed.status}`, 0)
 	end
 	print(`::notice::Removed temporary CI branch {branch}`)
 end

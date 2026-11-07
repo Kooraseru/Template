@@ -1,10 +1,10 @@
 -- .github/ci/integrations/github/configuration/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
 
-const CONFIG_PATH = ".github/targets.toml"
+local CONFIG_PATH = ".github/targets.toml"
 
 local Configuration = {}
 Configuration.__index = Configuration
@@ -53,7 +53,7 @@ local function record(value: unknown, label: string): { [string]: unknown }
 end
 
 function Configuration.new(): Configuration
-	local decoded: unknown = Serde.decode("toml", Fs.readFile(CONFIG_PATH))
+	local decoded: unknown = Toml.decode(Fs.readFileToString(CONFIG_PATH))
 	local root = record(decoded, "configuration")
 	local github = record(root.github, "github")
 	local aliasSource = record(github.aliases, "github.aliases")

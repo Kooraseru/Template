@@ -1,7 +1,7 @@
 -- .github/ci/bootstrap/outcomes/reporter.luau
 --!strict
 
-local Process = require("@lune/process")
+local Process = require("@lute/process")
 local SkipPolicy = require("@ci/bootstrap/outcomes/skipPolicy")
 local Responses = require("@ci/integrations/github/reporting/responses")
 

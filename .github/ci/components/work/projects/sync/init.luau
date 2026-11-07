@@ -1,8 +1,8 @@
 -- .github/ci/components/work/projects/sync/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local Publication = require("@ci/integrations/github/publication")
 local Configuration = require("@ci/integrations/github/configuration")
 local Catalog = require("@ci/integrations/github/resources/projects/projectCatalog")
@@ -74,10 +74,10 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			changed = true
 		end
 	end
-	Fs.writeDir("build/github/project-sync")
-	Fs.writeFile(
+	Fs.createDirectory("build/github/project-sync", { makeParents = true })
+	Fs.writeStringToFile(
 		"build/github/project-sync/index.json",
-		Serde.encode("json", { applied = not skipped, projects = receipts })
+		Json.encode({ applied = not skipped, projects = receipts })
 	)
 	if skipped then
 		return "skipped"

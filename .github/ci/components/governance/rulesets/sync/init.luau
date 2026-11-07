@@ -1,9 +1,9 @@
 -- .github/ci/components/governance/rulesets/sync/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Process = require("@lute/process")
+local Json = require("@formats/json")
 local Authentication = require("@ci/integrations/github/authentication/authentication")
 local Configuration = require("@ci/integrations/github/configuration")
 local RulesetCatalog = require("@ci/integrations/github/resources/rulesets/rulesetCatalog")
@@ -79,8 +79,8 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		report(configuration, "Failed: GitHub rejected the ruleset operation", problem, "failure")
 		error(problem, 0)
 	end
-	Fs.writeDir("build/github/ruleset-sync")
-	Fs.writeFile("build/github/ruleset-sync/index.json", Serde.encode("json", { applied = true, rulesets = receipts }))
+	Fs.createDirectory("build/github/ruleset-sync", { makeParents = true })
+	Fs.writeStringToFile("build/github/ruleset-sync/index.json", Json.encode({ applied = true, rulesets = receipts }))
 	if not changed then
 		print("All managed GitHub rulesets already match their source definitions")
 	end

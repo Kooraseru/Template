@@ -11,7 +11,7 @@ url = "${{ steps.deployment.outputs.page_url }}"
 [[steps]]
 name = "Resolve Pages deployment"
 id = "pages"
-run = "bash .github/ci/tooling/lune/bootstrap.sh run .github/ci/entry.luau --pages-options"
+run = "node dependencies/packages/dependencyLoader/index.ts --exec luau.lute run .github/ci/entry.luau --pages-options"
 [steps.env]
 GH_TOKEN = "${{ github.token }}"
 CI_PUBLISH_PAGES = "${{ vars.CI_PUBLISH_PAGES }}"

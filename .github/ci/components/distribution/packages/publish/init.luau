@@ -2,8 +2,8 @@
 --!strict
 
 local Publication = require("@ci/integrations/github/publication")
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local ConflictPolicy = require("@ci/integrations/github/publication/conflictPolicy")
 
 local Component = {}
@@ -15,7 +15,7 @@ function Component.new(): Component
 end
 
 function Component.Run(_self: Component, _context: { event: string }): string?
-	local index = Publication.Record(Serde.decode("json", Fs.readFile("build/github/packages/index.json")))
+	local index = Publication.Record(Json.decode(Fs.readFileToString("build/github/packages/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged packages")
 	print(`GitHub Packages existing-version policy: {policy}`)
 	-- GitHub Packages is separate from Releases and release attachments.

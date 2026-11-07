@@ -2,18 +2,18 @@
 --!strict
 
 -- The Intel host controls its own toolchain and output.
-local Process = require("@lune/process")
-local Fs = require("@lune/fs")
+local Process = require("@lute/process")
+local Fs = require("@std/fs")
 
-const DOCKER_OPTIONS: Process.ExecOptions = { stdio = "inherit" }
-const IMAGE = "template-windows-intel"
-const COMPILER = "x86_64-w64-mingw32-clang"
-const OUTPUT = "build/run/ci-execution/artifacts/application/windows-intel.exe"
+local DOCKER_OPTIONS: Process.ProcessRunOptions = { stdio = "inherit" }
+local IMAGE = "template-windows-intel"
+local COMPILER = "x86_64-w64-mingw32-clang"
+local OUTPUT = "build/run/ci-execution/artifacts/application/windows-intel.exe"
 
-local function runDocker(arguments: { string }): Process.ExecResult
-	local result = Process.exec("docker", arguments, DOCKER_OPTIONS)
+local function runDocker(arguments: { string }): Process.ProcessResult
+	local result = Process.run({ "docker", table.unpack(arguments) }, DOCKER_OPTIONS)
 	if not result.ok then
-		error(`Docker command failed with status {result.code}`, 0)
+		error(`Docker command failed with status {result.exitcode}`, 0)
 	end
 	return result
 end
@@ -21,7 +21,7 @@ end
 local Host = {}
 
 function Host.Build(): ()
-	Fs.writeDir("build/run/ci-execution/artifacts/application")
+	Fs.createDirectory("build/run/ci-execution/artifacts/application", { makeParents = true })
 	runDocker({
 		"build",
 		"--file",
@@ -30,7 +30,8 @@ function Host.Build(): ()
 		IMAGE,
 		".",
 	})
-	local created = Process.exec("docker", {
+	local created = Process.run({
+		"docker",
 		"create",
 		IMAGE,
 		COMPILER,
@@ -41,7 +42,7 @@ function Host.Build(): ()
 		"/tmp/windows-intel.exe",
 	})
 	if not created.ok then
-		error(`Docker container creation failed with status {created.code}`, 0)
+		error(`Docker container creation failed with status {created.exitcode}`, 0)
 	end
 	local containerId = created.stdout:match("%S+")
 	if not containerId then

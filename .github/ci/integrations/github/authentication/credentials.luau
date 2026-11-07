@@ -1,8 +1,8 @@
 -- .github/ci/integrations/github/authentication/credentials.luau
 --!strict
 
-local Process = require("@lune/process")
-local Fs = require("@lune/fs")
+local Process = require("@lute/process")
+local Fs = require("@std/fs")
 local Configuration = require("@ci/integrations/github/configuration")
 
 local Credentials = {}
@@ -13,7 +13,7 @@ export type Credentials = setmetatable<Fields, typeof(Credentials)>
 
 -- This is the native workflow transport contract, not a secret-name registry.
 -- Actual secret names are read exclusively from repository.toml.
-const SECRET_ROLES: { [string]: string } = {
+local SECRET_ROLES: { [string]: string } = {
 	app_id = "CI_GITHUB_APP_ID_SECRET",
 	app_private_key = "CI_GITHUB_APP_PRIVATE_KEY",
 	bootstrap_token = "CI_GITHUB_BOOTSTRAP_TOKEN",
@@ -76,9 +76,9 @@ function Credentials.ExportNames(): ()
 	if #lines == 0 then
 		return
 	end
-	local current = if Fs.isFile(destination) then Fs.readFile(destination) else ""
+	local current = if Fs.exists(destination) and Fs.type(destination) == "file" then Fs.readFileToString(destination) else ""
 	local separator = if current ~= "" and current:sub(-1) ~= "\n" then "\n" else ""
-	Fs.writeFile(destination, current .. separator .. table.concat(lines, "\n") .. "\n")
+	Fs.writeStringToFile(destination, current .. separator .. table.concat(lines, "\n") .. "\n")
 end
 
 function Credentials.Get(

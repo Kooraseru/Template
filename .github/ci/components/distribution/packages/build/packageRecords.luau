@@ -1,14 +1,14 @@
 -- .github/ci/components/distribution/packages/build/packageRecords.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
-local Process = require("@lune/process")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
+local Process = require("@lute/process")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local ConflictPolicy = require("@ci/integrations/github/publication/conflictPolicy")
 
-const ROOT = ".github/distribution/packages"
-const RECORD_ROOT = ".github/distribution/packages"
+local ROOT = ".github/distribution/packages"
+local RECORD_ROOT = ".github/distribution/packages"
 
 local PackageRecords = {}
 
@@ -47,8 +47,8 @@ local function optionalText(value: unknown, label: string): string?
 end
 
 local function regularFile(path: string): ()
-	local metadata = Fs.metadata(path)
-	if not metadata.exists or metadata.kind ~= "file" then
+	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
+	if metadata == nil or metadata ~= "file" then
 		error(`Expected a regular package file: {path}`, 0)
 	end
 	-- Reject traversal before accepting any input or description path.
@@ -60,7 +60,7 @@ local function regularFile(path: string): ()
 end
 
 function PackageRecords.Read(): Records
-	local root = record(Serde.decode("toml", Fs.readFile(`{ROOT}/settings.toml`)), ROOT)
+	local root = record(Toml.decode(Fs.readFileToString(`{ROOT}/settings.toml`)), ROOT)
 	local settings = record(root.packages, "packages")
 	for field in settings do
 		if field ~= "on_existing" then
@@ -68,13 +68,13 @@ function PackageRecords.Read(): Records
 		end
 	end
 	local policy = ConflictPolicy.Parse(settings.on_existing, `{ROOT}/settings.toml`)
-	if not Fs.metadata(RECORD_ROOT).exists then
+	if not Fs.exists(RECORD_ROOT) then
 		return { entries = {}, onExisting = policy }
 	end
-	if not Fs.isDir(RECORD_ROOT) then
+	if not (Fs.exists(RECORD_ROOT) and Fs.type(RECORD_ROOT) == "dir") then
 		error(`Missing package record directory: {RECORD_ROOT}`, 0)
 	end
-	local tracked = Process.exec("git", { "ls-files", "--stage", "--", RECORD_ROOT })
+	local tracked = Process.run({ "git",  "ls-files", "--stage", "--", RECORD_ROOT })
 	if not tracked.ok then
 		error("Unable to inspect package record file types", 0)
 	end
@@ -87,7 +87,7 @@ function PackageRecords.Read(): Records
 	local entries: { Entry } = {}
 	for _, directory in Glob.Find(`{RECORD_ROOT}/*`) do
 		-- Root policy and documentation are not package records; only directories are discovered.
-		if not Fs.isDir(directory) then
+		if not (Fs.exists(directory) and Fs.type(directory) == "dir") then
 			continue
 		end
 		local name = directory:match("([^/]+)$")
@@ -102,10 +102,10 @@ function PackageRecords.Read(): Records
 		local description = `{directory}/description.md`
 		regularFile(path)
 		regularFile(description)
-		if not Fs.readFile(description):find("%S") then
+		if not Fs.readFileToString(description):find("%S") then
 			error(`{description}: package description is empty`, 0)
 		end
-		local entry = record(Serde.decode("toml", Fs.readFile(path)), path)
+		local entry = record(Toml.decode(Fs.readFileToString(path)), path)
 		for field in entry do
 			if field ~= "files" and field ~= "format" and field ~= "repository" and field ~= "version" then
 				error(`{path}: unknown package field {field}`, 0)

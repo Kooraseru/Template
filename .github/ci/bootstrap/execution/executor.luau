@@ -1,9 +1,8 @@
 -- .github/ci/bootstrap/execution/executor.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local DateTime = require("@lune/datetime")
+local Fs = require("@std/fs")
+local Process = require("@lute/process")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Contract = require("@ci/bootstrap/contracts/contract")
 local Outcome = require("@ci/bootstrap/outcomes/outcome")
@@ -28,14 +27,14 @@ function Executor.new(credentials: Credentials.Credentials?): Executor
 	return setmetatable(fields, Executor)
 end
 
-function Executor.MissingOutputs(self: Executor, outputs: { string }): { string }
+function Executor.MissingOutputs(_self: Executor, outputs: { string }): { string }
 	local missing: { string } = {}
 	for _, pattern in outputs do
 		if pattern:find("*", 1, true) or pattern:find("?", 1, true) then
 			if #Glob.Find(pattern) == 0 then
 				table.insert(missing, pattern)
 			end
-		elseif not Fs.metadata(pattern).exists then
+		elseif not Fs.exists(pattern) then
 			table.insert(missing, pattern)
 		end
 	end
@@ -43,27 +42,21 @@ function Executor.MissingOutputs(self: Executor, outputs: { string }): { string 
 end
 
 function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Outcome.Value
-	local luneExecutable = Process.env.CI_LUNE
-	if not luneExecutable then
-		print(
-			"::error::CI_LUNE is unset; start CI with bash .github/ci/tooling/lune/bootstrap.sh run .github/ci/entry.luau"
-		)
-		return "failed"
-	end
-	local environment: { [string]: string } =
-		{ GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else "" }
+	local luteExecutable = Process.env.CI_LUTE or Process.execPath()
+	local environment: { [string]: string } = table.clone(Process.env)
+	environment.GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else ""
 	environment.CI_COMPONENT = task.identity
 	if self.credentials and task.boundary == "privileged" then
 		for name, value in self.credentials:Environment(task.credentials) do
 			environment[name] = value
 		end
 	end
-	local options: Process.ExecOptions = {
-		cwd = Process.cwd,
+	local options: Process.ProcessRunOptions = {
+		cwd = Process.cwd(),
 		stdio = "inherit",
 		env = environment,
 	}
-	local ok, result = xpcall(Process.exec, tostring, luneExecutable, {
+	local ok, result = xpcall(Process.run, tostring, { luteExecutable,
 		"run",
 		task.invoker,
 		task.entry,
@@ -71,12 +64,12 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Ou
 	}, options)
 
 	if not ok then
-		print(`::error::{task.identity}: unable to start Lune: {result}`)
+		print(`::error::{task.identity}: unable to start Lute: {result}`)
 		return "failed"
 	end
-	local outcome = Outcome.FromExitCode(result.code)
+	local outcome = Outcome.FromExitCode(result.exitcode)
 	if outcome == "failed" then
-		print(`::error::{task.identity}: exited with status {result.code}`)
+		print(`::error::{task.identity}: exited with status {result.exitcode}`)
 	end
 	return outcome
 end
@@ -99,7 +92,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 			outcome = "blocked"
 			print(`::error::{task.identity}: blocked by {table.concat(blockedBy, ", ")}`)
 		else
-			print(`::notice::Starting {task.identity} at {DateTime.now():toRfc3339()}`)
+			print(`::notice::Starting {task.identity} at {os.date("!%Y-%m-%dT%H:%M:%SZ")}`)
 			local executed = self:Invoke(task, event)
 			local missing = if executed == "passed" then self:MissingOutputs(task.outputs) else {}
 			if #missing > 0 then
@@ -107,7 +100,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 			end
 			outcome = if #missing > 0 then "failed" else executed
 		end
-		print(`::notice::{task.identity}: {outcome} at {DateTime.now():toRfc3339()}`)
+		print(`::notice::{task.identity}: {outcome} at {os.date("!%Y-%m-%dT%H:%M:%SZ")}`)
 		print("::endgroup::")
 
 		outcomes[task.identity] = outcome

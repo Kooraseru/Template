@@ -2,7 +2,7 @@
 --!strict
 
 local Bootstrap = require("@ci/bootstrap")
-local Process = require("@lune/process")
+local Process = require("@lute/process")
 local Credentials = require("@ci/integrations/github/authentication/credentials")
 local BranchRun = require("@ci/integrations/github/resources/branches/branchRun")
 local PagesDeployment = require("@ci/integrations/github/publication/pagesDeployment")
@@ -12,7 +12,7 @@ local Responses = require("@ci/integrations/github/reporting/responses")
 local GitHub = {}
 
 function GitHub.Run(): ()
-	local argumentIndex = if Process.args[1] == "--" then 2 else 1
+	local argumentIndex = if Process.args[2] == "--" then 3 else 2
 	local argument = Process.args[argumentIndex]
 	local component = if argument == "--component" then Process.args[argumentIndex + 1] else nil
 	local reportOnly = argument == "--report"

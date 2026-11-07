@@ -1,9 +1,9 @@
 -- .github/ci/bootstrap/discovery/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Process = require("@lute/process")
+local Toml = require("@formats/toml")
 
 local Contract = require("@ci/bootstrap/contracts/contract")
 local Glob = require("@ci/bootstrap/discovery/glob")
@@ -19,12 +19,12 @@ function Discovery.new(): Discovery
 end
 
 --[[
-Lune's filesystem metadata follows symlinks on supported releases. The
+Filesystem metadata may follow symlinks on supported platforms. The
 checked-out Git tree supplies the authoritative type of tracked entries;
 reject links before walking a discovered extension point.
 ]]
-function Discovery.RejectLinkedEntries(self: Discovery): ()
-	local result = Process.exec("git", { "ls-files", "--stage", "--", ".github/ci/components" })
+function Discovery.RejectLinkedEntries(_self: Discovery): ()
+	local result = Process.run({ "git", "ls-files", "--stage", "--", ".github/ci/components" })
 	if not result.ok then
 		error(`unable to inspect tracked component entry types: {result.stderr}`, 0)
 	end
@@ -44,13 +44,17 @@ Grouping folders are traversed recursively. A component starts at a manifest or
 entry point; its private implementation directories are not extension points.
 ]]
 function Discovery.Discover(self: Discovery): { Contract.Contract }
-	if not Fs.isDir(".github/ci/components") then
+	if not Fs.exists(".github/ci/components") or Fs.metadata(".github/ci/components").type ~= "dir" then
 		error("missing .github/ci/components extension point", 0)
 	end
 	self:RejectLinkedEntries()
 	local settingsPath = ".github/automation/components.toml"
-	local settings = Serde.decode("toml", Fs.readFile(settingsPath))
-	if type(settings) ~= "table" or type(settings.default) ~= "boolean" or type(settings.enabled) ~= "table" then
+	local decodedSettings = Toml.decode(Fs.readFileToString(settingsPath))
+	if type(decodedSettings) ~= "table" then
+		error(`{settingsPath}: expected boolean default and an [enabled] table`, 0)
+	end
+	local settings = decodedSettings :: { [string]: unknown }
+	if type(settings.default) ~= "boolean" or type(settings.enabled) ~= "table" then
 		error(`{settingsPath}: expected boolean default and an [enabled] table`, 0)
 	end
 	for key in settings do
@@ -59,7 +63,8 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		end
 	end
 	local overrides: { [string]: boolean } = {}
-	for identity, enabled in settings.enabled do
+	local enabledOverrides = settings.enabled :: { [string]: unknown }
+	for identity, enabled in enabledOverrides do
 		if type(identity) ~= "string" or not Contract.ValidIdentity(identity) or type(enabled) ~= "boolean" then
 			error(`{settingsPath}: enabled entries require valid component identities and booleans`, 0)
 		end
@@ -85,10 +90,10 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		end
 		local name = path:match("([^/]+)$")
 		local metadata = Fs.metadata(path)
-		if metadata.kind == "file" and (name == ".gitkeep" or name == "README.md") then
+		if metadata.type == "file" and (name == ".gitkeep" or name == "README.md") then
 			continue
 		end
-		if metadata.kind ~= "dir" then
+		if metadata.type ~= "dir" then
 			error(`{path}: grouping folders may contain component folders, README.md, or .gitkeep`, 0)
 		end
 		local identity = path:sub(#".github/ci/components/" + 1)
@@ -102,19 +107,19 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		identities[folded] = path
 		local entry = `{path}/init.luau`
 		local contractFile = `{path}/component.toml`
-		if not Fs.metadata(entry).exists and not Fs.metadata(contractFile).exists then
+		if not Fs.exists(entry) and not Fs.exists(contractFile) then
 			continue
 		end
-		if not Fs.isFile(entry) or Fs.metadata(entry).kind ~= "file" then
+		if not Fs.exists(entry) or Fs.metadata(entry).type ~= "file" then
 			error(`{path}: component directory requires a regular init.luau`, 0)
 		end
-		if not Fs.isFile(contractFile) or Fs.metadata(contractFile).kind ~= "file" then
+		if not Fs.exists(contractFile) or Fs.metadata(contractFile).type ~= "file" then
 			error(`{path}: component directory requires a regular component.toml`, 0)
 		end
 		table.insert(packages, path)
 
 		local loaded, source = xpcall(function(): unknown
-			return Serde.decode("toml", Fs.readFile(contractFile))
+			return Toml.decode(Fs.readFileToString(contractFile))
 		end, tostring)
 		if not loaded then
 			error(`{contractFile}: unable to parse component manifest: {source}`, 0)

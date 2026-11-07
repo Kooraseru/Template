@@ -1,12 +1,12 @@
 -- .github/ci/integrations/github/resources/rulesets/rulesetCatalog.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/integrations/github/publication")
 
-const ROOT = ".github/governance/rulesets"
+local ROOT = ".github/governance/rulesets"
 
 local RulesetCatalog = {}
 export type Ruleset = { identity: string, definition: { [string]: unknown } }
@@ -53,14 +53,14 @@ function RulesetCatalog.Read(): { Ruleset }
 	local names: { [string]: boolean } = {}
 	for _, path in Glob.Find(`{ROOT}/*.json`) do
 		local identity = path:match("/([%w_-]+)%.json$")
-		if not identity or not Fs.isFile(path) then
+		if not identity or not Fs.exists(path) or Fs.type(path) ~= "file" then
 			error(`{path}: expected a ruleset JSON file`, 0)
 		end
 		if identities[identity:lower()] then
 			error(`{path}: duplicate ruleset identity`, 0)
 		end
 		identities[identity:lower()] = true
-		local root = Publication.Record(Serde.decode("json", Fs.readFile(path)))
+		local root = Publication.Record(Json.decode(Fs.readFileToString(path)))
 		known(root, { ruleset = true, bypass_actors = true, rules = true }, path)
 		local definition = Publication.Record(root.ruleset)
 		known(definition, { name = true, target = true, enforcement = true, include = true, exclude = true }, path)

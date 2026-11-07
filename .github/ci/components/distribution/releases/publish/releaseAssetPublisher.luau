@@ -1,8 +1,8 @@
 -- .github/ci/components/distribution/releases/publish/releaseAssetPublisher.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Hash = require("@formats/hash")
 local Publication = require("@ci/integrations/github/publication")
 
 local ReleaseAssetPublisher = {}
@@ -34,11 +34,11 @@ function ReleaseAssetPublisher.Read(value: unknown): { Asset }
 		if not path:match("^build/github/releases/[%w_./%-]+$") or path:find("..", 1, true) then
 			error("Release asset must be a staged file under build/github/releases/", 0)
 		end
-		if Fs.metadata(path).kind ~= "file" then
+		if (if Fs.exists(path) then Fs.type(path) else nil) ~= "file" then
 			error(`Missing staged release asset: {path}`, 0)
 		end
-		local bytes = Fs.readFile(path)
-		if digest ~= "sha256:" .. Serde.hash("sha256", bytes) then
+		local bytes = Fs.readFileToString(path)
+		if digest ~= "sha256:" .. Hash.sha256(bytes) then
 			error(`Release asset checksum mismatch: {name}`, 0)
 		end
 		table.insert(assets, { name = name, bytes = bytes, digest = digest })

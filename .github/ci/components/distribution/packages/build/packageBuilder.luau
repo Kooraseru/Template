@@ -1,24 +1,24 @@
 -- .github/ci/components/distribution/packages/build/packageBuilder.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local PackageRecords = require("./packageRecords")
 
-const OUTPUT_ROOT = "build/github/packages"
+local OUTPUT_ROOT = "build/github/packages"
 
 local PackageBuilder = {}
 PackageBuilder.__index = PackageBuilder
 export type PackageBuilder = setmetatable<{}, typeof(PackageBuilder)>
 
 local function ensureDirectory(path: string): ()
-	local metadata = Fs.metadata(path)
-	if metadata.kind == "symlink" then
+	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
+	if metadata == "link" then
 		error(`Refusing to write through a symlink: {path}`, 0)
 	end
-	if not metadata.exists then
-		Fs.writeDir(path)
-	elseif metadata.kind ~= "dir" then
+	if metadata == nil then
+		Fs.createDirectory(path, { makeParents = true })
+	elseif metadata ~= "dir" then
 		error(`Expected a directory: {path}`, 0)
 	end
 end
@@ -29,12 +29,12 @@ end
 
 function PackageBuilder.Run(_self: PackageBuilder): string?
 	local records = PackageRecords.Read()
-	local metadata = Fs.metadata(OUTPUT_ROOT)
-	if metadata.kind == "symlink" then
+	local metadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+	if metadata == "link" then
 		error(`Refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
-	elseif metadata.kind == "dir" then
-		Fs.removeDir(OUTPUT_ROOT)
-	elseif metadata.exists then
+	elseif metadata == "dir" then
+		Fs.removeDirectory(OUTPUT_ROOT, { recursive = true })
+	elseif metadata ~= nil then
 		error(`Expected directory: {OUTPUT_ROOT}`, 0)
 	end
 	if #records.entries == 0 then
@@ -67,9 +67,9 @@ function PackageBuilder.Run(_self: PackageBuilder): string?
 			version = entry.version,
 		})
 	end
-	Fs.writeFile(
+	Fs.writeStringToFile(
 		`{OUTPUT_ROOT}/index.json`,
-		Serde.encode("json", { onExisting = records.onExisting, packages = index })
+		Json.encode({ onExisting = records.onExisting, packages = index })
 	)
 	print(`Staged {#index} package records into {OUTPUT_ROOT}`)
 	return nil

@@ -1,12 +1,12 @@
 -- .github/ci/rendering/tagRenderer.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 
-const LOCALE_ROOT = "docs/i18n"
-const LOCALE_METADATA = "locale.toml"
+local LOCALE_ROOT = "docs/i18n"
+local LOCALE_METADATA = "locale.toml"
 
 type Fields = { locale: string }
 
@@ -39,7 +39,7 @@ local function localeConfiguration(): { default: string, supported: { string }, 
 	local names: { [string]: string } = {}
 	local default: string? = nil
 	for _, path in Glob.Find(`{LOCALE_ROOT}/*`) do
-		if not Fs.isDir(path) then
+		if not Fs.exists(path) or Fs.metadata(path).type ~= "dir" then
 			continue
 		end
 		local locale = string.match(path, "([^/]+)$")
@@ -52,8 +52,8 @@ local function localeConfiguration(): { default: string, supported: { string }, 
 		end
 		table.insert(supported, localeName)
 		local metadataPath = `{path}/{LOCALE_METADATA}`
-		if Fs.isFile(metadataPath) then
-			local decoded = Serde.decode("toml", Fs.readFile(metadataPath))
+		if Fs.exists(metadataPath) and Fs.metadata(metadataPath).type == "file" then
+			local decoded = Toml.decode( Fs.readFileToString(metadataPath))
 			if type(decoded) ~= "table" or type(decoded.locale) ~= "table" then
 				error(`{metadataPath}: expected a [locale] table`, 0)
 			end
@@ -92,10 +92,10 @@ local function readPageTags(locale: string, source: string): { [string]: string 
 	assert(category and relative)
 	relative = relative:gsub("%.md$", ".toml")
 	local path = `docs/i18n/{locale}/{category}/{relative}`
-	if not Fs.isFile(path) or Fs.metadata(path).kind == "symlink" then
+	if not Fs.exists(path) or Fs.metadata(path).type ~= "file" then
 		return {}
 	end
-	local pageConfiguration = Serde.decode("toml", Fs.readFile(path))
+	local pageConfiguration = Toml.decode( Fs.readFileToString(path))
 	if type(pageConfiguration) ~= "table" or type(pageConfiguration.tags) ~= "table" then
 		error(`{path}: expected a [tags] table`, 0)
 	end
@@ -122,11 +122,11 @@ local function tagOccurrences(roots: { string }): { { name: string, path: string
 	local occurrences: { { name: string, path: string, line: number, column: number } } = {}
 	for _, root in roots do
 		for _, path in Glob.Find(`{root}/**`) do
-			if not path:match("%.md$") or Fs.metadata(path).kind ~= "file" then
+			if not path:match("%.md$") or Fs.metadata(path).type ~= "file" then
 				continue
 			end
 			local lineNumber = 0
-			for line in (Fs.readFile(path) .. "\n"):gmatch("(.-)\n") do
+			for line in (Fs.readFileToString(path) .. "\n"):gmatch("(.-)\n") do
 				lineNumber += 1
 				local cursor = 1
 				while true do
@@ -155,11 +155,11 @@ function TagRenderer.FindMalformed(roots: { string }): { MalformedTag }
 	local malformed: { MalformedTag } = {}
 	for _, root in roots do
 		for _, path in Glob.Find(`{root}/**`) do
-			if not path:match("%.md$") or Fs.metadata(path).kind ~= "file" then
+			if not path:match("%.md$") or Fs.metadata(path).type ~= "file" then
 				continue
 			end
 			local lineNumber = 0
-			for line in (Fs.readFile(path) .. "\n"):gmatch("(.-)\n") do
+			for line in (Fs.readFileToString(path) .. "\n"):gmatch("(.-)\n") do
 				lineNumber += 1
 				local cursor = 1
 				while true do
@@ -187,9 +187,9 @@ function TagRenderer.FindMalformed(roots: { string }): { MalformedTag }
 end
 
 local function missingTagLocation(path: string, tag: string): (number, number, number)
-	if Fs.isFile(path) then
+	if Fs.exists(path) and Fs.metadata(path).type == "file" then
 		local lineNumber = 0
-		for line in (Fs.readFile(path) .. "\n"):gmatch("(.-)\n") do
+		for line in (Fs.readFileToString(path) .. "\n"):gmatch("(.-)\n") do
 			lineNumber += 1
 			local commentColumn = line:find("#", 1, true)
 			local commentedTag: string? = nil

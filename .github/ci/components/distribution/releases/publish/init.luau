@@ -1,8 +1,8 @@
 -- .github/ci/components/distribution/releases/publish/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local Publication = require("@ci/integrations/github/publication")
 local ConflictPolicy = require("@ci/integrations/github/publication/conflictPolicy")
 local ReleasePublisher = require("@self/releasePublisher")
@@ -16,7 +16,7 @@ function Component.new(): Component
 end
 
 function Component.Run(_self: Component, _context: { event: string }): string?
-	local index = Publication.Record(Serde.decode("json", Fs.readFile("build/github/releases/index.json")))
+	local index = Publication.Record(Json.decode(Fs.readFileToString("build/github/releases/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged releases")
 	local repository = Publication.Begin("RELEASES")
 	if not repository then

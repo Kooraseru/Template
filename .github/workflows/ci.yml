@@ -26,16 +26,19 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       # The bootstrap reads credential names from targets.toml for both events.
       - name: Resolve credential names
         id: credentials
-        run: bash .github/ci/tooling/lune/bootstrap.sh run .github/ci/entry.luau --credential-names
+        run: node dependencies/packages/dependencyLoader/index.ts --exec luau.lute run .github/ci/entry.luau --credential-names
       # Source pushes, manual runs, and trusted PRs share the entry point and preserve event-specific boundaries.
       - name: Start bootstrap
         env:
           CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
-          CI_PUBLISH_RELEASES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_RELEASES || '' }}
+          CI_PUBLISH_RELEASES: ${{ github.event_name == 'push' && 'true' || '' }}
           CI_PUBLISH_PACKAGES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_PACKAGES || '' }}
           CI_PUBLISH_BRANCHES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_BRANCHES || '' }}
           CI_PUBLISH_PAGES: ${{ github.event_name == 'push' && vars.CI_PUBLISH_PAGES || '' }}

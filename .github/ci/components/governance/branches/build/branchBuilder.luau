@@ -1,14 +1,14 @@
 -- .github/ci/components/governance/branches/build/branchBuilder.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local TagRenderer = require("@ci/rendering/tagRenderer")
 
-const CONFIG_ROOT = ".github/governance/branches"
-const CONTENT_ROOT = "docs/templates/repo"
-const OUTPUT_ROOT = "build/github/branches"
+local CONFIG_ROOT = ".github/governance/branches"
+local CONTENT_ROOT = "docs/templates/repo"
+local OUTPUT_ROOT = "build/github/branches"
 
 local BranchBuilder = {}
 BranchBuilder.__index = BranchBuilder
@@ -16,13 +16,13 @@ BranchBuilder.__index = BranchBuilder
 export type BranchBuilder = setmetatable<{}, typeof(BranchBuilder)>
 
 local function ensureDirectory(path: string): ()
-	local metadata = Fs.metadata(path)
-	if metadata.kind == "symlink" then
+	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
+	if metadata == "link" then
 		error(`refusing to write through a symlink: {path}`, 0)
 	end
-	if not metadata.exists then
-		Fs.writeDir(path)
-	elseif metadata.kind ~= "dir" then
+	if metadata == nil then
+		Fs.createDirectory(path, { makeParents = true })
+	elseif metadata ~= "dir" then
 		error(`expected a directory at {path}`, 0)
 	end
 end
@@ -47,10 +47,10 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 		end
 		local matched = false
 		for _, source in Glob.Find(pattern) do
-			local metadata = Fs.metadata(source)
-			if metadata.kind == "dir" then
+			local metadata = (if Fs.exists(source) then Fs.type(source) else nil)
+			if metadata == "dir" then
 				continue
-			elseif metadata.kind ~= "file" then
+			elseif metadata ~= "file" then
 				error(`unsupported repository source entry: {source}`, 0)
 			end
 			matched = true
@@ -76,7 +76,7 @@ end
 local function overlayTranslations(branchRoot: string, defaultLocale: string, branchName: string): number
 	local copied = 0
 	for _, source in Glob.Find(`{CONTENT_ROOT}/**`) do
-		if not source:match("%.md$") or Fs.metadata(source).kind ~= "file" then
+		if not source:match("%.md$") or (if Fs.exists(source) then Fs.type(source) else nil) ~= "file" then
 			continue
 		end
 		local relativePath = source:gsub(`^{CONTENT_ROOT}/`, "")
@@ -86,7 +86,7 @@ local function overlayTranslations(branchRoot: string, defaultLocale: string, br
 				continue
 			end
 			local translation = `docs/i18n/{locale}/repo/{translationStem}`
-			if not Fs.isFile(translation) then
+			if not (Fs.exists(translation) and Fs.type(translation) == "file") then
 				continue
 			end
 			local destination = `{branchRoot}/docs/{locale}/{relativePath}`
@@ -99,7 +99,7 @@ local function overlayTranslations(branchRoot: string, defaultLocale: string, br
 			if relativePath == "README.md" then
 				overrides.language_navigation = TagRenderer.LanguageNavigation(relativePath, locale)
 			end
-			Fs.writeFile(destination, tags:Render(Fs.readFile(source), source, overrides))
+			Fs.writeStringToFile(destination, tags:Render(Fs.readFileToString(source), source, overrides))
 			copied += 1
 		end
 	end
@@ -121,7 +121,7 @@ local function copyAuthoredFile(
 		if source == `{CONTENT_ROOT}/README.md` then
 			overrides.language_navigation = TagRenderer.LanguageNavigation("README.md", TagRenderer.DefaultLocale())
 		end
-		Fs.writeFile(destination, tags:Render(Fs.readFile(source), source, overrides))
+		Fs.writeStringToFile(destination, tags:Render(Fs.readFileToString(source), source, overrides))
 	else
 		Fs.copy(source, destination)
 	end
@@ -140,10 +140,10 @@ local function overlayTemplates(
 		end
 		local relativePath = source:gsub(`^{sourceRoot}/`, "")
 		local destination = `{destinationRoot}/{relativePath}`
-		local metadata = Fs.metadata(source)
-		if metadata.kind == "dir" then
+		local metadata = (if Fs.exists(source) then Fs.type(source) else nil)
+		if metadata == "dir" then
 			ensureDirectory(destination)
-		elseif metadata.kind == "file" then
+		elseif metadata == "file" then
 			copyAuthoredFile(source, destination, tags, branchName)
 			copied += 1
 		else
@@ -158,17 +158,17 @@ function BranchBuilder.new(): BranchBuilder
 end
 
 function BranchBuilder.Run(_self: BranchBuilder): ()
-	if not Fs.isDir(CONTENT_ROOT) then
+	if not (Fs.exists(CONTENT_ROOT) and Fs.type(CONTENT_ROOT) == "dir") then
 		error(`missing repository content directory: {CONTENT_ROOT}`, 0)
 	end
 	TagRenderer.Validate({ CONTENT_ROOT })
 
-	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
-	if outputMetadata.kind == "symlink" then
+	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
-	elseif outputMetadata.kind == "dir" then
-		Fs.removeDir(OUTPUT_ROOT)
-	elseif outputMetadata.exists then
+	elseif outputMetadata == "dir" then
+		Fs.removeDirectory(OUTPUT_ROOT, { recursive = true })
+	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
 	ensureDirectory("build")
@@ -181,7 +181,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	local records = Glob.Find(`{CONFIG_ROOT}/*.toml`)
 	table.sort(records)
 	for _, path in records do
-		if Fs.metadata(path).kind ~= "file" then
+		if (if Fs.exists(path) then Fs.type(path) else nil) ~= "file" then
 			error(`{path}: branch record must be a regular file`, 0)
 		end
 		local name = path:match("([^/]+)%.toml$")
@@ -189,7 +189,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 			error(`{path}: branch record filename must end in .toml`, 0)
 		end
 		validateBranch(name, path)
-		local configuration = Serde.decode("toml", Fs.readFile(path))
+		local configuration = Toml.decode(Fs.readFileToString(path))
 		if type(configuration) ~= "table" or type(configuration.branch) ~= "table" then
 			error(`{path}: expected a [branch] table`, 0)
 		end
@@ -199,7 +199,12 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 		end
 		local branchRoot = `{OUTPUT_ROOT}/{name}`
 		ensureDirectory(branchRoot)
-		local copied = copySource(value.source, branchRoot, path)
+		local sources: { string } = {}
+		for _, source in value.source :: { unknown } do
+			if type(source) ~= "string" then error(`{path}: source globs must be strings`, 0) end
+			table.insert(sources, source)
+		end
+		local copied = copySource(sources, branchRoot, path)
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, tags, name)
 		copied += overlayTranslations(branchRoot, defaultLocale, name)
 		if copied == 0 then

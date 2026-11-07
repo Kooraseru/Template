@@ -18,7 +18,7 @@ end
 Source hosts are discovered by their owning source/hosts extension point.
 Bootstrap does not define or enumerate supported platforms.
 ]]
-const RESERVED_OUTPUTS: { string } = {
+local RESERVED_OUTPUTS: { string } = {
 	".github/ci/bootstrap/**",
 	".github/workflows/**",
 	".git/**",
@@ -126,7 +126,7 @@ local function requireBoundary(component: Contract.Contract): ()
 	end
 end
 
-function Planner.Resolve(self: Planner, components: { Contract.Contract }, event: string): { Contract.Task }
+function Planner.Resolve(_self: Planner, components: { Contract.Contract }, event: string): { Contract.Task }
 	local supportedEvents: { [string]: boolean } = {
 		push = true,
 		pull_request = true,

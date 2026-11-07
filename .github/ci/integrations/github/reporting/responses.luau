@@ -1,17 +1,18 @@
 -- .github/ci/integrations/github/reporting/responses.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Net = require("@lune/net")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
+local Toml = require("@formats/toml")
+local Net = require("@lute/net/client")
+local Process = require("@lute/process")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Contract = require("@ci/bootstrap/contracts/contract")
 local Configuration = require("@ci/integrations/github/configuration")
 local Publication = require("@ci/integrations/github/publication")
 
-const ROOT = ".github/automation/responses"
-const RECORDS = "build/run/ci-execution/responses"
+local ROOT = ".github/automation/responses"
+local RECORDS = "build/run/ci-execution/responses"
 
 local Responses = {}
 local written = false
@@ -20,7 +21,7 @@ type Entry = { id: string, markdown: string, components: { [string]: boolean }, 
 type Branch = { name: string, children: { [string]: Branch }, outcome: string?, component: string }
 
 local function configuration(): { [string]: unknown }
-	return Publication.Record(Serde.decode("toml", Fs.readFile(`{ROOT}/responses.toml`)))
+	return Publication.Record(Toml.decode(Fs.readFileToString(`{ROOT}/responses.toml`)))
 end
 
 local function read(path: string): string
@@ -32,7 +33,7 @@ local function read(path: string): string
 			error("Response paths must stay within the response directory", 0)
 		end
 	end
-	return Fs.readFile(`{ROOT}/{path}`)
+	return Fs.readFileToString(`{ROOT}/{path}`)
 end
 
 function Responses.Template(role: string): string
@@ -145,8 +146,7 @@ local function artifactCount(repository: string): string
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
 	local ok, result = pcall(function()
-		return Net.request({
-			url = api .. "/repos/" .. repository .. "/actions/runs/" .. run .. "/artifacts?per_page=1",
+		return Net.request(api .. "/repos/" .. repository .. "/actions/runs/" .. run .. "/artifacts?per_page=1", {
 			headers = {
 				Authorization = "Bearer " .. token,
 				Accept = "application/vnd.github+json",
@@ -159,7 +159,7 @@ local function artifactCount(repository: string): string
 		return "?"
 	end
 	local decodedOk, decoded = pcall(function()
-		return Serde.decode("json", result.body)
+		return Json.decode(result.body)
 	end)
 	if
 		decodedOk
@@ -284,15 +284,16 @@ function Responses.ResetLocal(): ()
 		error("Response reset is restricted to local act runs", 0)
 	end
 	for _, path in { "build", "build/run", "build/run/ci-execution", RECORDS } do
-		if Fs.metadata(path).kind == "symlink" then
+		if Fs.exists(path) and Fs.type(path) == "link" then
 			error(`Refusing to write through a symlink: {path}`, 0)
 		end
 	end
-	local metadata = Fs.metadata(RECORDS)
-	if metadata.kind == "dir" then
-		Fs.removeDir(RECORDS)
-	elseif metadata.exists then
-		error(`Expected a directory: {RECORDS}`, 0)
+	if Fs.exists(RECORDS) then
+		if Fs.type(RECORDS) == "dir" then
+			Fs.removeDirectory(RECORDS, { recursive = true })
+		else
+			error(`Expected a directory: {RECORDS}`, 0)
+		end
 	end
 end
 
@@ -302,8 +303,8 @@ function Responses.Prepare(): string
 		error("Invalid response component identity", 0)
 	end
 	local directory = `{RECORDS}/{Contract.Key(component)}`
-	Fs.writeDir(`{directory}/records`)
-	Fs.writeFile(`{directory}/metadata.json`, Serde.encode("json", { component = component }))
+	Fs.createDirectory(`{directory}/records`, { makeParents = true })
+	Fs.writeStringToFile(`{directory}/metadata.json`, Json.encode({ component = component }))
 	return directory
 end
 
@@ -319,13 +320,13 @@ function Responses.Record(id: string, markdown: string, selectedColor: string?):
 		color = selectedColor or "warning",
 	}
 	color(record.color)
-	Fs.writeFile(`{directory}/records/{Contract.Key(id)}.json`, Serde.encode("json", record))
+	Fs.writeStringToFile(`{directory}/records/{Contract.Key(id)}.json`, Json.encode(record))
 end
 
 local function records(): { Record }
 	local result: { Record } = {}
 	for _, path in Glob.Find(`{RECORDS}/*/records/*.json`) do
-		local raw = Publication.Record(Serde.decode("json", Fs.readFile(path)))
+		local raw = Publication.Record(Json.decode(Fs.readFileToString(path)))
 		local record: Record = {
 			id = Publication.Text(raw.id),
 			markdown = Publication.Text(raw.markdown),
@@ -667,11 +668,11 @@ end
 function Responses.Write(root: string, values: { [string]: string }, outcomes: { [string]: string }?): ()
 	local markdown = Responses.Render(root, values, outcomes)
 	local directory = if root == "start" then "build/run/ci-start/responses" else RECORDS
-	Fs.writeDir(directory)
-	Fs.writeFile(`{directory}/{root}.md`, markdown)
+	Fs.createDirectory(directory, { makeParents = true })
+	Fs.writeStringToFile(`{directory}/{root}.md`, markdown)
 	local path = Process.env.GITHUB_STEP_SUMMARY
 	if path then
-		Fs.writeFile(path, markdown)
+		Fs.writeStringToFile(path, markdown)
 	end
 	written = true
 	print(`CI {root} response assembled.`)

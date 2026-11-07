@@ -1,17 +1,18 @@
 -- .github/ci/integrations/github/authentication/authentication.luau
 --!strict
 
-local DateTime = require("@lune/datetime")
-local Fs = require("@lune/fs")
-local Net = require("@lune/net")
-local Process = require("@lune/process")
-local Serde = require("@lune/serde")
+local Json = require("@formats/json")
+local Fs = require("@std/fs")
+local Net = require("@lute/net/client")
+local Process = require("@lute/process")
+local System = require("@lute/system")
 local Configuration = require("@ci/integrations/github/configuration")
 local Credentials = require("@ci/integrations/github/authentication/credentials")
 local TokenPermissions = require("@ci/integrations/github/authentication/tokenPermissions")
 
 local Authentication = {}
 export type Access = { token: string, temporary: boolean, inspection: TokenPermissions.Inspection? }
+local BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 local function mask(value: string): ()
 	if Process.env.GITHUB_ACTIONS ~= "true" then
@@ -22,17 +23,28 @@ local function mask(value: string): ()
 end
 
 local function base64url(value: string): string
-	local encoded = Process.exec("openssl", { "base64", "-A" }, { stdio = { stdin = value } })
-	if not encoded.ok then
-		error("OpenSSL could not encode the App authentication request", 0)
+	local encoded = table.create(math.ceil(#value / 3) * 4)
+	for index = 1, #value, 3 do
+		local first = string.byte(value, index)
+		local second = string.byte(value, index + 1) or 0
+		local third = string.byte(value, index + 2) or 0
+		table.insert(encoded, BASE64URL:sub(math.floor(first / 4) + 1, math.floor(first / 4) + 1))
+		local secondIndex = (first % 4) * 16 + math.floor(second / 16) + 1
+		table.insert(encoded, BASE64URL:sub(secondIndex, secondIndex))
+		if index + 1 <= #value then
+			local thirdIndex = (second % 16) * 4 + math.floor(third / 64) + 1
+			table.insert(encoded, BASE64URL:sub(thirdIndex, thirdIndex))
+		end
+		if index + 2 <= #value then
+			local fourthIndex = third % 64 + 1
+			table.insert(encoded, BASE64URL:sub(fourthIndex, fourthIndex))
+		end
 	end
-	local result = encoded.stdout:gsub("%+", "-"):gsub("/", "_"):gsub("=+$", "")
-	return result
+	return table.concat(encoded)
 end
 
-local function request(token: string, method: Net.HttpMethod, path: string, body: unknown?): Net.FetchResponse
-	return Net.request({
-		url = (Process.env.GITHUB_API_URL or "https://api.github.com") .. path,
+local function request(token: string, method: string, path: string, body: unknown?): Net.Response
+	return Net.request((Process.env.GITHUB_API_URL or "https://api.github.com") .. path, {
 		method = method,
 		headers = {
 			Authorization = "Bearer " .. token,
@@ -40,7 +52,7 @@ local function request(token: string, method: Net.HttpMethod, path: string, body
 			["Content-Type"] = "application/json",
 			["User-Agent"] = "Luau-CI-bootstrap",
 		},
-		body = if body ~= nil then Serde.encode("json", body) else nil,
+		body = if body ~= nil then Json.encode(body) else nil,
 	})
 end
 
@@ -51,25 +63,26 @@ local function appAccess(
 	permissions: { [string]: string }?,
 	organization: string?
 ): Access
-	if Process.os ~= "linux" then
+	if string.lower(System.os) ~= "linux" then
 		error("GitHub App signing currently requires the Linux Actions runner", 0)
 	end
-	local now = math.floor(DateTime.now().unixTimestamp)
-	local message = base64url(Serde.encode("json", { alg = "RS256", typ = "JWT" }))
+	local now = math.floor(os.time())
+	local message = base64url(Json.encode({ alg = "RS256", typ = "JWT" }))
 		.. "."
-		.. base64url(Serde.encode("json", { iat = now - 60, exp = now + 540, iss = id }))
-	Fs.writeDir("build/run/ci-start/artifacts")
-	local messagePath = "build/run/ci-start/artifacts/app-request.jwt-message"
-	Fs.writeFile(messagePath, message)
-	-- Only the public JWT claims touch disk. The private key is passed on stdin.
-	local ok, signature = xpcall(Process.exec, tostring, "openssl", {
-		"dgst",
-		"-sha256",
-		"-sign",
-		"/dev/stdin",
-		messagePath,
-	}, { stdio = { stdin = key } })
-	Fs.removeFile(messagePath)
+		.. base64url(Json.encode({ iat = now - 60, exp = now + 540, iss = id }))
+	local temporaryDirectoryResult = Process.run({ "mktemp", "-d", "-p", System.tmpdir(), "ci-app-signing.XXXXXXXX" })
+	if not temporaryDirectoryResult.ok then
+		error("Unable to create a private temporary directory for App authentication", 0)
+	end
+	local temporaryDirectory = temporaryDirectoryResult.stdout:gsub("%s+$", "")
+	local messagePath = `{temporaryDirectory}/message.jwt`
+	local keyPath = `{temporaryDirectory}/private-key.pem`
+	local ok, signature = xpcall(function(): Process.ProcessResult
+		Fs.writeStringToFile(messagePath, message)
+		Fs.writeStringToFile(keyPath, key)
+		return Process.run({ "openssl", "dgst", "-sha256", "-sign", keyPath, messagePath })
+	end, tostring)
+	Fs.removeDirectory(temporaryDirectory, { recursive = true })
 	if not ok or not signature.ok then
 		error("Unable to sign GitHub App authentication request", 0)
 	end
@@ -80,9 +93,9 @@ local function appAccess(
 		else `/repos/{repository}/installation`
 	local installation = request(jwt, "GET", installationPath)
 	if not installation.ok then
-		error(`GitHub App installation lookup returned HTTP {installation.statusCode}`, 0)
+		error(`GitHub App installation lookup returned HTTP {installation.status}`, 0)
 	end
-	local decoded: unknown = Serde.decode("json", installation.body)
+	local decoded: unknown = Json.decode(installation.body)
 	if type(decoded) ~= "table" or type(decoded.id) ~= "number" then
 		error("GitHub returned an invalid App installation ID", 0)
 	end
@@ -92,9 +105,9 @@ local function appAccess(
 		permissions = permissions or { contents = "write", workflows = "write" },
 	})
 	if not created.ok then
-		error(`App installation token request returned HTTP {created.statusCode}`, 0)
+		error(`App installation token request returned HTTP {created.status}`, 0)
 	end
-	local token: unknown = Serde.decode("json", created.body)
+	local token: unknown = Json.decode(created.body)
 	if type(token) ~= "table" or type(token.token) ~= "string" or token.token == "" then
 		error("GitHub returned an invalid App installation token", 0)
 	end

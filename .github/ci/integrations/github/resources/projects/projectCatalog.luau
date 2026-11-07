@@ -3,8 +3,8 @@
 
 --# Modules
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Configuration = require("@ci/integrations/github/configuration")
 local Publication = require("@ci/integrations/github/publication")
@@ -44,9 +44,9 @@ export type Project = {
 
 --# Constants
 
-const ROOT = ".github/work/projects"
-const SCHEMA_PATH = `{ROOT}/project.schema.json`
-const SUPPORTED_SCHEMA_KEYS = {
+local ROOT = ".github/work/projects"
+local SCHEMA_PATH = `{ROOT}/project.schema.json`
+local SUPPORTED_SCHEMA_KEYS = {
 	"$schema",
 	"$id",
 	"title",
@@ -316,7 +316,7 @@ end
 
 -- Read each blueprint only after the shared JSON schema has checked its declarative shape.
 function ProjectCatalog.Read(): { Project }
-	local schema = Publication.Record(Serde.decode("json", Fs.readFile(SCHEMA_PATH)))
+	local schema = Publication.Record(Json.decode(Fs.readFileToString(SCHEMA_PATH)))
 	checkSchema(schema, SCHEMA_PATH)
 
 	local configuration = Configuration.new()
@@ -336,7 +336,7 @@ function ProjectCatalog.Read(): { Project }
 		end
 
 		local identity = directory:match("([^/]+)$")
-		if not identity or not identity:match("^[%w][%w_-]*$") or not Fs.isFile(path) then
+		if not identity or not identity:match("^[%w][%w_-]*$") or not Fs.exists(path) or Fs.type(path) ~= "file" then
 			error(`{path}: expected a project folder containing project.json`, 0)
 		end
 		local identityKey = identity:lower()
@@ -345,7 +345,7 @@ function ProjectCatalog.Read(): { Project }
 		end
 		seen[identityKey] = true
 
-		local root = Publication.Record(Serde.decode("json", Fs.readFile(path)))
+		local root = Publication.Record(Json.decode(Fs.readFileToString(path)))
 		validate(root, schema, path)
 		local project = Publication.Record(root.project)
 		local owner = if project.owner ~= nil
@@ -356,7 +356,7 @@ function ProjectCatalog.Read(): { Project }
 		if not readmeFile:match("^[%w_.-]+$") then
 			error(`{path}: project.readme_file must name a file in its project folder`, 0)
 		end
-		local readme = Fs.readFile(`{directory}/{readmeFile}`)
+		local readme = Fs.readFileToString(`{directory}/{readmeFile}`)
 		if not readme:find("%S") then
 			error(`{path}: project README must contain content`, 0)
 		end

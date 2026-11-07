@@ -1,33 +1,61 @@
+
 {
-  "githubLocalActions.actCommand": "act --pull=false --bind",
-  "luau-lsp.fflags.enableNewSolver": true,
-  "luau-lsp.platform.type": "standard",
-  "luau-lsp.analyzeLuaFiles": false,
-  "luau-lsp.diagnostics.workspace": true,
-  "luau-lsp.sourcemap.enabled": false,
-  "luau-lsp.sourcemap.autogenerate": false,
-  "luau-lsp.server.baseLuaurc": ".luaurc",
-	"vscodeExtensionHost.diagnosticsScript": ".vscode/preflight/workspace-checks.js",
-	"vscodeExtensionHost.diagnosticsScriptArgs": ["C:/msys64/usr/bin/bash.exe", "--once"],
-  "mandolin.luteExecPath": "../../../build/run/dependencies/lute/1.0.1-nightly.20261104/lute.exe",
-  "mandolin.foremanTomlPath": ".vscode/luau/lute/foreman.toml",
-  "mandolin.lintConfigPath": ".vscode/luau/lute/config.luau",
-  "stylua.configPath": ".vscode/luau/stylua/.stylua.toml",
-  "json.schemas": [
-    {
-      "fileMatch": [".github/work/projects/**/project.json"],
-      "url": "./.github/work/projects/project.schema.json"
-    }
-  ],
-  "[luau]": {
-    "editor.defaultFormatter": "JohnnyMorganz.stylua",
-    "editor.formatOnSave": false,
-    "editor.codeActionsOnSave": {
-      "source.fixAll": "never",
-      "source.organizeImports": "never"
-    },
-    "editor.insertSpaces": false,
-    "editor.tabSize": 4
-  },
-  "stylua.targetReleaseVersion": "v2.6.0"
+	// Generic Workbench Bridge external workspace client.
+	"workbenchBridge.workspaceCommands": [
+		["node", "dependencies/packages/editorIntegration/client.cjs"]
+	],
+	// File Associations
+	"files.associations": {
+		".luaurc": "jsonc"
+	},
+
+	// Explorer
+	// Generated discovery files; edit the canonical files under .vscode/config.
+	"files.exclude": {
+		".luaurc": true,
+		"tsconfig.json": true
+	},
+	"explorer.compactFolders": true,
+	"explorer.fileNesting.enabled": true,
+	"explorer.fileNesting.expand": false,
+	"explorer.fileNesting.patterns": {
+		"init.luau": "*.luau",
+		"package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, node_modules",
+		"tsconfig.json": "tsconfig.*.json",
+		"dependencies.toml": "dependencies.lock"
+	},
+
+	// Luau Language Server
+	"luau-lsp.platform.type": "standard",
+	"luau-lsp.analyzeLuaFiles": false,
+	"luau-lsp.ignoreGlobs": [
+		"**/_Index/**",
+		"**/build/dependencies/**"
+	],
+	"luau-lsp.diagnostics.workspace": true,
+	"luau-lsp.sourcemap.enabled": false,
+	"luau-lsp.sourcemap.autogenerate": false,
+	"luau-lsp.server.baseLuaurc": ".vscode/config/luau/.luaurc",
+	"luau-lsp.fflags.enableNewSolver": true,
+
+	// Luau Editor
+	"[luau]": {
+		"editor.formatOnSave": false,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "never",
+			"source.organizeImports": "never"
+		},
+		"editor.insertSpaces": false,
+		"editor.tabSize": 4
+	},
+
+	// JSON Schemas
+	"json.schemas": [
+		{
+			"fileMatch": [
+				".github/work/projects/**/project.json"
+			],
+			"url": "./.github/work/projects/project.schema.json"
+		}
+	]
 }

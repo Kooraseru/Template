@@ -1,14 +1,14 @@
 -- .github/ci/components/documentation/pages/build/siteBuilder.luau
 --!strict
 
-local Fs = require("@lune/fs")
+local Fs = require("@std/fs")
 
 local Glob = require("@ci/bootstrap/discovery/glob")
 local MarkdownRenderer = require("./markdownRenderer")
 local StaticAssetCopier = require("./staticAssetCopier")
 
-const DOCUMENTATION_ROOT = "docs/templates/site"
-const OUTPUT_ROOT = "build/github/pages"
+local DOCUMENTATION_ROOT = "docs/templates/site"
+local OUTPUT_ROOT = "build/github/pages"
 
 local SiteBuilder = {}
 SiteBuilder.__index = SiteBuilder
@@ -21,13 +21,13 @@ type SiteBuilderFields = {
 export type SiteBuilder = setmetatable<SiteBuilderFields, typeof(SiteBuilder)>
 
 local function ensureDirectory(path: string): ()
-	local metadata = Fs.metadata(path)
-	if metadata.kind == "symlink" then
+	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
+	if metadata == "link" then
 		error(`refusing to write through a symlink: {path}`, 0)
 	end
-	if not metadata.exists then
-		Fs.writeDir(path)
-	elseif metadata.kind ~= "dir" then
+	if metadata == nil then
+		Fs.createDirectory(path, { makeParents = true })
+	elseif metadata ~= "dir" then
 		error(`expected a directory at {path}`, 0)
 	end
 end
@@ -47,10 +47,10 @@ local function renderTree(self: SiteBuilder, sourceRoot: string, outputRoot: str
 			continue
 		end
 		local destination = outputPath(source, sourceRoot, outputRoot)
-		local metadata = Fs.metadata(source)
-		if metadata.kind == "dir" then
+		local metadata = (if Fs.exists(source) then Fs.type(source) else nil)
+		if metadata == "dir" then
 			ensureDirectory(destination)
-		elseif metadata.kind == "file" then
+		elseif metadata == "file" then
 			local parent = destination:match("^(.*)/[^/]+$")
 			if parent then
 				ensureDirectory(parent)
@@ -75,19 +75,19 @@ function SiteBuilder.new(): SiteBuilder
 end
 
 function SiteBuilder.Run(self: SiteBuilder): ()
-	if not Fs.isDir(DOCUMENTATION_ROOT) then
+	if not (Fs.exists(DOCUMENTATION_ROOT) and Fs.type(DOCUMENTATION_ROOT) == "dir") then
 		error(`missing documentation source directory: {DOCUMENTATION_ROOT}`, 0)
 	end
-	if not Fs.isFile(`{DOCUMENTATION_ROOT}/index.md`) then
+	if not (Fs.exists(`{DOCUMENTATION_ROOT}/index.md`) and Fs.type(`{DOCUMENTATION_ROOT}/index.md`) == "file") then
 		error(`documentation requires {DOCUMENTATION_ROOT}/index.md`, 0)
 	end
 
-	local outputMetadata = Fs.metadata(OUTPUT_ROOT)
-	if outputMetadata.kind == "symlink" then
+	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
-	elseif outputMetadata.kind == "dir" then
-		Fs.removeDir(OUTPUT_ROOT)
-	elseif outputMetadata.exists then
+	elseif outputMetadata == "dir" then
+		Fs.removeDirectory(OUTPUT_ROOT, { recursive = true })
+	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
 	ensureDirectory("build")
@@ -96,7 +96,7 @@ function SiteBuilder.Run(self: SiteBuilder): ()
 
 	renderTree(self, DOCUMENTATION_ROOT, OUTPUT_ROOT)
 
-	if not Fs.isFile(`{OUTPUT_ROOT}/index.html`) then
+	if not (Fs.exists(`{OUTPUT_ROOT}/index.html`) and Fs.type(`{OUTPUT_ROOT}/index.html`) == "file") then
 		error(`Pages build did not produce {OUTPUT_ROOT}/index.html`, 0)
 	end
 	print(`Built documentation from {DOCUMENTATION_ROOT} into {OUTPUT_ROOT}`)

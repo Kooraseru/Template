@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "typeRoots": [
+      "../../../build/dependencies/types"
+    ],
+    "types": [
+      "node"
+    ],
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": true,
+    "strict": true
+  },
+  "include": [
+    "../../../**/*.ts",
+    "../../../**/*.tsx",
+    "../../../**/*.mts",
+    "../../../**/*.cts"
+  ],
+  "exclude": [
+    "../../../**/node_modules",
+    "../../../**/vendor",
+    "../../../build"
+  ]
+}

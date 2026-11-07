@@ -1,19 +1,20 @@
 -- .github/ci/components/work/labels/sync/labelCatalog.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
+local Yaml = require("@formats/yaml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/integrations/github/publication")
 
-const CONFIG_PATH = ".github/work/labels.toml"
-const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
+local CONFIG_PATH = ".github/work/labels.toml"
+local FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
 
 local LabelCatalog = {}
 export type Label = { name: string, color: string, description: string }
 
 function LabelCatalog.Parse(source: string): { Label }
-	local root = Publication.Record(Serde.decode("toml", source))
+	local root = Publication.Record(Toml.decode(source))
 	for field in root do
 		if field ~= "labels" then
 			error(`{CONFIG_PATH}: unknown field {field}`, 0)
@@ -74,10 +75,10 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 		declared[label.name:lower()] = true
 	end
 	for _, path in Glob.Find(FORM_PATTERN) do
-		if not path:match("%.ya?ml$") or not Fs.isFile(path) then
+		if not path:match("%.ya?ml$") or not (Fs.exists(path) and Fs.type(path) == "file") then
 			continue
 		end
-		local form = Publication.Record(Serde.decode("yaml", Fs.readFile(path)))
+		local form = Publication.Record(Yaml.decode(Fs.readFileToString(path)))
 		local references = form.labels
 		if references == nil then
 			continue
@@ -106,7 +107,7 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 end
 
 function LabelCatalog.Read(): { Label }
-	local labels = LabelCatalog.Parse(Fs.readFile(CONFIG_PATH))
+	local labels = LabelCatalog.Parse(Fs.readFileToString(CONFIG_PATH))
 	LabelCatalog.ValidateForms(labels)
 	return labels
 end

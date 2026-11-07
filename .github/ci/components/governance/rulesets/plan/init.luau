@@ -1,8 +1,8 @@
 -- .github/ci/components/governance/rulesets/plan/init.luau
 --!strict
 
-local Fs = require("@lune/fs")
-local Serde = require("@lune/serde")
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local RulesetCatalog = require("@ci/integrations/github/resources/rulesets/rulesetCatalog")
 
 local Component = {}
@@ -15,10 +15,10 @@ end
 
 function Component.Run(_self: Component, _context: { event: string }): ()
 	local definitions = RulesetCatalog.Read()
-	Fs.writeDir("build/github/ruleset-plans")
-	Fs.writeFile(
+	Fs.createDirectory("build/github/ruleset-plans", { makeParents = true })
+	Fs.writeStringToFile(
 		"build/github/ruleset-plans/index.json",
-		Serde.encode("json", {
+		Json.encode({
 			rulesets = definitions,
 			applied = false,
 			note = "Validated local rulesets only. The privileged rulesets/sync component applies them on source pushes.",
