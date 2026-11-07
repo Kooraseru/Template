@@ -61,3 +61,15 @@ To show the pull-request plan in VS Code, add this command to the workspace's `w
 ```json
 ["node", "dependencies/node_modules/preflight/bin/preflight.js", "workspace", "--provider", ".github/ci/preflight/provider.cjs", "--bridge-client", "dependencies/packages/workbenchBridgeClient"]
 ```
+
+Template owns editor workflow settings in `.vscode/config/workflow.json`. Each command is an argument array with an executable followed by its arguments. The same file controls status labels, the dependency progress notification, and which paths trigger a rerun. Reload the VS Code window after changing this configuration.
+
+Automatic editor reruns happen after content changes are saved in watched source paths. The editor watches rules/ for on-disk additions, edits, and deletions. These changes prompt for **Refresh Rules**, which reruns Rules independently and rediscovers validators. Rule examples are excluded. Saved fixture edits refresh fixture diagnostics separately from the workspace result. Run the fixture suites directly to verify the full acceptance matrices.
+
+Rule diagnostics carry full spans and link to the owning rule. Expected fixture findings use the **Rule fixture** source in Problems. They are informational and do not count against either status. Rules reports lint violations and fixture regressions. Preflight reports TypeScript and Luau compile-check results. Saving a fixture refreshes rule results.
+
+JSON extraction is opt-in. In workflow.json, set checks.jsonExtractionLoaders to an array of objects with path (workspace glob), runtime ("lute"), returnContract ("json-object"), and expression (a project-owned Luau expression with one {file} placeholder). Preflight replaces the placeholder with the quoted sibling filename. The expression must load relative to the module and return the same validated shape. The default has no extraction loaders.
+
+### Rules severity
+
+Set defaultSeverity and fixtureSeverity in `.vscode/config/rules.json`. Both default to warning. Set a rule-specific severity under overrides using its full ID, for example `"rules/languages/luau/language/types": "error"`. The supported levels are error, warning, info, and off. Off hides the matching findings. Fixture expectations still run and unexpected outcomes remain errors. Expected fixture findings never affect the Rules status. Changes to this file offer **Refresh Rules**.

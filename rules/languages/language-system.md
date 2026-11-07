@@ -15,4 +15,4 @@ The universal [`comments.md`](comments.md) owns why and where to comment. Langua
 When a language-specific rule conflicts with a universal rule for a real syntax or runtime reason, the language concept owns that exception and explains it. Application-specific exceptions belong in the application's knowledge tree.
 
 
-The cross-language control-flow preference is guard-first reasoning: resolve failure or absence before writing the successful path. See [Luau guards](luau/language/control-flow.md) and [Rust guards](low-level-languages/rust/language/control-flow.md). This is a readability default, not a ban on positive conditions.
+The cross-language control-flow preference is guard-first reasoning: resolve failure or absence before writing the successful path. See [Luau guards](luau/language/control-flow.md) and [Rust guards](rust/language/control-flow.md). This is a readability default, not a ban on positive conditions.

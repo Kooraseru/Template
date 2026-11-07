@@ -15,7 +15,7 @@ Comments explain the information a maintainer cannot reliably infer from the nea
 
 Explain **why** a rule exists or **what must remain true**. Do not paraphrase a function name, selector, element, or assignment. Clear, concise section markers are encouraged in long multi-phase routines when they improve navigation; avoid ceremonial banners and repeated headings in tiny files. Use stable terms from the module's contract. When a workaround is temporary, name the exit condition and its owner; a bare `TODO` is not a migration plan.
 
-For exported APIs, unusual mathematics, indexed traversal, and security/FFI boundaries, the applicable language standard may require Rustdoc or stronger local comments. See [Rust comments](low-level-languages/rust/language/comments.md).
+For exported APIs, unusual mathematics, indexed traversal, and security/FFI boundaries, the applicable language standard may require Rustdoc or stronger local comments. See [Rust comments](rust/language/comments.md).
 
 Keep comments accurate when behavior changes. Delete comments that no longer describe the code. Cite an external source beside the behavior it influenced when that source is needed to understand the design; prefer specifications and official documentation. Do not paste long external text into comments.
 

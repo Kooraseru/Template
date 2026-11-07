@@ -1,0 +1,34 @@
+{
+  "dependencies": {
+    "command": ["node", "dependencies/packages/dependencyLoader/index.ts"],
+    "env": { "VSCODE_WORKSPACE_SETUP": "1" },
+    "notification": "Loading workspace dependencies",
+    "status": {
+      "running": "Loading dependencies",
+      "passed": "Dependencies ready",
+      "failed": "Dependency setup failed"
+    }
+  },
+  "checks": {
+    "command": ["node", "dependencies/packages/preflightChecker/index.ts"],
+    "notification": "Running Preflight",
+    "status": {
+      "passed": "$(check) Preflight passed",
+      "warning": "$(warning) Preflight warnings",
+      "failed": "$(error) Preflight failed"
+    }
+  },
+  "rules": {
+    "command": ["node", "dependencies/packages/preflightChecker/index.ts", "--rules"],
+    "notification": "Checking repository rules",
+    "status": {
+      "passed": "$(check) Rules passed",
+      "warning": "$(warning) Rules warnings",
+      "failed": "$(error) Rules failed"
+    }
+  },
+  "watch": {
+    "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "source/**", "rules/**", ".luaurc", "tsconfig.json"],
+    "setupInputs": ["dependencies/dependencies.toml", "dependencies/dependencies.lock", ".vscode/config/luau/.luaurc", ".vscode/config/typescript/tsconfig.json"]
+  }
+}

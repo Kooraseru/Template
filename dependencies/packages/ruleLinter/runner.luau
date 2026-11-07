@@ -19,7 +19,7 @@ end
 
 --- Loads a rule and verifies that it exposes the required Check method.
 local function load_rule(entry: string, identity: string): Rule.Rule
-	local module_path = `@workspace/{entry:gsub("%.luau$", "")}`
+	local module_path = `@workspace/{entry:gsub("/init%.luau$", ""):gsub("%.luau$", "")}`
 	local loaded, result = pcall(require, module_path)
 
 	if not loaded then

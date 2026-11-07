@@ -1,3 +1,4 @@
+-- dependencies/packages/dataFormats/json.luau
 --!strict
 
 local Json = require("@std/json")

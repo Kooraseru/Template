@@ -1,0 +1,207 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Template editor workflow",
+  "type": "object",
+  "properties": {
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "description": "Executable followed by its arguments. No shell interpolation."
+        },
+        "notification": {
+          "type": "string",
+          "description": "Progress notification title. Use an empty string to suppress it."
+        },
+        "status": {
+          "type": "object",
+          "properties": {
+            "running": {
+              "type": "string"
+            },
+            "passed": {
+              "type": "string"
+            },
+            "failed": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "running",
+            "passed",
+            "failed"
+          ],
+          "additionalProperties": false
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "command",
+        "notification",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "description": "Executable followed by its arguments. No shell interpolation."
+        },
+        "notification": {
+          "type": "string",
+          "description": "Progress notification title. Use an empty string to suppress it."
+        },
+        "status": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "string"
+            },
+            "warning": {
+              "type": "string"
+            },
+            "failed": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "passed",
+            "warning",
+            "failed"
+          ],
+          "additionalProperties": false
+        },
+        "jsonExtractionLoaders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Workspace-relative glob for files that use this loader."
+              },
+              "runtime": {
+                "const": "lute"
+              },
+              "returnContract": {
+                "const": "json-object"
+              },
+              "expression": {
+                "type": "string",
+                "pattern": "^(?:(?!\\{file\\})[\\s\\S])*\\{file\\}(?:(?!\\{file\\})[\\s\\S])*$",
+                "description": "Luau loader expression with one {file} placeholder for the quoted sibling filename."
+              }
+            },
+            "required": [
+              "path",
+              "runtime",
+              "returnContract",
+              "expression"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "command",
+        "notification",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "description": "Executable followed by its arguments. No shell interpolation."
+        },
+        "notification": {
+          "type": "string",
+          "description": "Progress notification title. Use an empty string to suppress it."
+        },
+        "status": {
+          "type": "object",
+          "properties": {
+            "passed": {
+              "type": "string"
+            },
+            "warning": {
+              "type": "string"
+            },
+            "failed": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "passed",
+            "warning",
+            "failed"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "command",
+        "notification",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "watch": {
+      "type": "object",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "setupInputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "paths",
+        "setupInputs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "dependencies",
+    "checks",
+    "rules",
+    "watch"
+  ],
+  "additionalProperties": false
+}

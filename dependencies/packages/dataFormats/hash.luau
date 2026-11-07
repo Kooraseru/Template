@@ -1,3 +1,4 @@
+-- dependencies/packages/dataFormats/hash.luau
 --!strict
 local Crypto = require("@lute/crypto")
 local function sha256(input: string): string

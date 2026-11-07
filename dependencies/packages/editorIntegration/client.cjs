@@ -5,19 +5,24 @@ const { spawn } = require("node:child_process");
 
 const root = process.cwd();
 const { connect } = require(path.join(__dirname, "../workbenchBridgeClient/index.js"));
-const SETUP = "dependencies/packages/dependencyLoader/index.ts";
-const CHECKER = "dependencies/packages/preflightChecker/index.ts";
+const workflow = require("../../../.vscode/config/workflow.json");
 
 function parseFinding(line) {
+	if (line.startsWith("::rule-finding::")) {
+		try {
+			const finding = JSON.parse(line.slice("::rule-finding::".length));
+			return { ...finding, file: path.resolve(root, finding.file) };
+		} catch { return undefined; }
+	}
 	const match = line.match(/^(.*?):(\d+):(\d+): (error|warning|information|info):(?: \[([^\]]+)\])? (.*)$/);
 	if (!match) return undefined;
 	return { file: match[1], line: Number(match[2]), column: Number(match[3]), severity: match[4] === "info" ? "information" : match[4], source: match[5] || "Preflight", message: match[6] };
 }
 
-function runNode(script, { env = {}, onLine = () => {}, signal } = {}) {
+function runCommand([executable, ...args], { env = {}, onLine = () => {}, signal } = {}) {
 	return new Promise((resolve, reject) => {
 		if (signal?.aborted) return reject(new Error("Workspace client is closing"));
-		const child = spawn(process.execPath, [script], { cwd: root, env: { ...process.env, ...env }, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+		const child = spawn(executable === "node" ? process.execPath : executable, args, { cwd: root, env: { ...process.env, ...env }, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
 		let stdoutTail = "";
 		let stderrTail = "";
 		let stdoutText = "";
@@ -52,7 +57,7 @@ function runNode(script, { env = {}, onLine = () => {}, signal } = {}) {
 }
 
 function createController(bridgeClient, bridgeModule) {
-	let activeCheck;
+	const activeChecks = new Map();
 	let generation = 0;
 	let closing = false;
 	let setupFlight;
@@ -74,17 +79,17 @@ function createController(bridgeClient, bridgeModule) {
 	};
 
 	async function setup() {
-		await report("updateDependencies", { message: "Loading dependencies" });
+		await report("updateDependencies", { message: workflow.dependencies.status.running });
 		let result;
 		try {
-			result = await runNode(SETUP, {
-			env: { VSCODE_WORKSPACE_SETUP: "1" },
+			result = await runCommand(workflow.dependencies.command, {
+			env: workflow.dependencies.env,
 			signal: lifecycle.signal,
 			onLine(line, isError) {
 				if (line.startsWith("::workspace-setup::")) {
 					try {
 						const progress = JSON.parse(line.slice("::workspace-setup::".length));
-						reportDetached("updateDependencies", { ...progress, complete: progress.completed === progress.total });
+						reportDetached("updateDependencies", { ...progress, complete: false });
 					} catch { reportDetached("log", `Invalid setup progress: ${line}`); }
 				} else reportDetached("log", `${isError ? "[setup error] " : "[setup] "}${line}`);
 			},
@@ -95,7 +100,7 @@ function createController(bridgeClient, bridgeModule) {
 			state.dependenciesReady = false;
 			state.preflightState = "blocked";
 			state.setupError = detail;
-			await report("updateDependencies", { error: detail, message: "Dependency setup failed" });
+			await report("updateDependencies", { error: detail, message: workflow.dependencies.status.failed });
 			return false;
 		}
 		if (result.code !== 0) {
@@ -104,13 +109,13 @@ function createController(bridgeClient, bridgeModule) {
 			state.dependenciesReady = false;
 			state.preflightState = "blocked";
 			state.setupError = detail;
-			await report("updateDependencies", { error: detail, message: "Dependency setup failed", exitCode: result.code });
+			await report("updateDependencies", { error: detail, message: workflow.dependencies.status.failed, exitCode: result.code });
 			return false;
 		}
 		dependenciesReady = true;
 		state.dependenciesReady = true;
 		state.setupError = undefined;
-		await report("updateDependencies", { message: "Dependencies ready", complete: true, completed: 1, total: 1 });
+		await report("updateDependencies", { message: workflow.dependencies.status.passed, complete: true, completed: 1, total: 1 });
 		return true;
 	}
 
@@ -121,32 +126,39 @@ function createController(bridgeClient, bridgeModule) {
 		state.preflightState = "pending";
 		state.setupError = undefined;
 		const setupGeneration = ++generation;
-		activeCheck?.controller.abort();
-		activeCheck = undefined;
+		for (const check of activeChecks.values()) check.controller.abort();
+		activeChecks.clear();
 		setupFlight = (async () => {
 			await report("beginSetup", setupGeneration);
 			const ready = await setup();
-			if (ready) await check();
+			if (ready) await checkAll();
 			return ready;
 		})().finally(() => { setupFlight = undefined; });
 		return setupFlight;
 	}
 
-	async function check() {
+	async function check(kind = "compile") {
+		const rules = kind === "rules";
 		if (closing || !dependenciesReady) return;
-		if (activeCheck) activeCheck.controller.abort();
+		activeChecks.get(kind)?.controller.abort();
 		const controller = new AbortController();
 		const id = ++generation;
-		activeCheck = { controller, id };
-		state.preflightState = "running";
-		state.preflightError = undefined;
-		await report("beginCheck", id);
+		activeChecks.set(kind, { controller, id });
+		if (!rules) {
+			state.preflightState = "running";
+			state.preflightError = undefined;
+		}
+		await report(rules ? "beginRules" : "beginCheck", id);
 		const findings = [];
 		let error;
 		try {
-			const result = await runNode(CHECKER, {
+			const result = await runCommand((rules ? workflow.rules : workflow.checks).command, {
 				signal: controller.signal,
 				onLine(line, isError) {
+					if (!isError && line.startsWith("::preflight-stage::")) {
+						if (activeChecks.get(kind)?.id === id) reportDetached("updateCheckProgress", { kind, generation: id, message: line.slice("::preflight-stage::".length) });
+						return;
+					}
 					const finding = !isError && parseFinding(line);
 					if (finding) findings.push(finding);
 					else reportDetached("log", `${isError ? "[check error] " : "[check] "}${line}`);
@@ -156,26 +168,39 @@ function createController(bridgeClient, bridgeModule) {
 		} catch (caught) {
 			if (!controller.signal.aborted) error = caught instanceof Error ? caught.message : String(caught);
 		}
-		if (!closing && !controller.signal.aborted && id === generation) {
-			state.errorCount = findings.filter(finding => finding.severity === "error").length + (error ? 1 : 0);
-			state.warningCount = findings.filter(finding => finding.severity === "warning").length;
-			state.preflightError = error;
-			state.preflightState = error || state.errorCount > 0 ? "failed" : state.warningCount > 0 ? "warning" : "passed";
-			await report("publishPreflight", { generation: id, findings, error });
+		if (!closing && !controller.signal.aborted && activeChecks.get(kind)?.id === id) {
+			const errorCount = findings.filter(finding => !finding.fixture && finding.severity === "error").length + (error ? 1 : 0);
+			const warningCount = findings.filter(finding => !finding.fixture && finding.severity === "warning").length;
+			const status = errorCount > 0 ? "failed" : warningCount > 0 ? "warning" : "passed";
+			if (rules) {
+				state.rulesState = status;
+				state.ruleErrorCount = errorCount;
+			} else {
+				state.errorCount = errorCount;
+				state.warningCount = warningCount;
+				state.preflightError = error;
+				state.preflightState = status;
+			}
+			await report(rules ? "publishRules" : "publishPreflight", { generation: id, findings, error });
 		}
-		if (activeCheck?.id === id) activeCheck = undefined;
+		if (activeChecks.get(kind)?.id === id) activeChecks.delete(kind);
+	}
+
+	async function checkAll() {
+		await Promise.all([check("compile"), check("rules")]);
 	}
 
 	return {
 		async start() { const ready = await runSetup(); return ready; },
 		run: runSetup,
 		check,
+		checkAll,
 		getState() { return { ...state }; },
 		close() {
 			if (closing) return;
 			closing = true;
 			lifecycle.abort();
-			activeCheck?.controller.abort();
+			for (const check of activeChecks.values()) check.controller.abort();
 			bridgeClient.close?.();
 		},
 	};
@@ -190,15 +215,6 @@ async function main() {
 		const bridgeModule = await bridgeClient.loadModule({ path: "dependencies/packages/editorIntegration/activate.cjs" });
 		controller = createController(bridgeClient, bridgeModule);
 		await controller.start();
-		await bridgeClient.call({
-			target: bridgeModule,
-			path: ["start"],
-			args: [action => {
-				void Promise.resolve(action === "run" ? controller.run() : controller.check()).catch(error => {
-					void bridgeClient.call({ target: bridgeModule, path: ["log"], args: [`[controller error] ${error instanceof Error ? error.message : String(error)}`] }).catch(() => {});
-				});
-			}],
-		});
 		if (process.env.WORKBENCH_BRIDGE_ONCE === "1") {
 			const state = controller.getState();
 			const success = state.dependenciesReady && ["passed", "warning"].includes(state.preflightState);
@@ -208,6 +224,15 @@ async function main() {
 			await bridgeClient.closed;
 			return;
 		}
+		await bridgeClient.call({
+			target: bridgeModule,
+			path: ["start"],
+			args: [action => {
+				void Promise.resolve(action === "run" ? controller.run() : action === "check" ? controller.checkAll() : controller.check(action)).catch(error => {
+					void bridgeClient.call({ target: bridgeModule, path: ["log"], args: [`[controller error] ${error instanceof Error ? error.message : String(error)}`] }).catch(() => {});
+				});
+			}],
+		});
 		await bridgeClient.closed;
 	} finally {
 		if (controller) controller.close();
@@ -222,4 +247,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { createController, parseFinding, runNode };
+module.exports = { createController, parseFinding, runCommand };

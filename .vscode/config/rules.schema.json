@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Template rules policy",
+  "type": "object",
+  "properties": {
+    "defaultSeverity": {
+      "description": "Severity for source findings without a rule override.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/severity"
+        }
+      ]
+    },
+    "fixtureSeverity": {
+      "description": "Display severity for expected fixture findings. Fixture regressions remain errors.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/severity"
+        }
+      ]
+    },
+    "overrides": {
+      "type": "object",
+      "description": "Severity by full rule ID, for example rules/languages/luau/language/types.",
+      "additionalProperties": {
+        "$ref": "#/definitions/severity"
+      }
+    }
+  },
+  "required": [
+    "defaultSeverity",
+    "fixtureSeverity",
+    "overrides"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "severity": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warning",
+        "info",
+        "off"
+      ],
+      "default": "warning"
+    }
+  }
+}
