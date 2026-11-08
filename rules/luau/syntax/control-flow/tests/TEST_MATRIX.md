@@ -10,3 +10,6 @@
 - [Shadowed assertion](review/shadowed-assertion.luau) produces no finding because the callable is locally defined.
 - [Redundant boolean branches](invalid/redundant-boolean-branches.luau) reports a comparison wrapped in a boolean conditional and a negation expressed as branches.
 - [Truthiness conversion](review/truthiness-conversion.luau) produces no warning because the condition itself is not a boolean comparison.
+
+- [Boolean expression wrapper](invalid/boolean-expression-wrapper.luau) reports grouped, negated, and combined boolean expressions that already return booleans.
+- [Short circuit value](review/short-circuit-value.luau) keeps conversion around an expression that can yield a number.

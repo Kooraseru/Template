@@ -8,6 +8,24 @@ local Query = require("@std/syntax/query")
 local Syntax = require("@std/syntax")
 local Utils = require("@std/syntax/utils")
 
+local function isBooleanExpression(expression: Syntax.CstExpr): boolean
+	if expression.tag == "group" then
+		return isBooleanExpression(expression.expression)
+	elseif expression.tag == "boolean" then
+		return true
+	elseif expression.tag == "unary" then
+		return expression.operator.text == "not"
+	elseif expression.tag ~= "binary" then
+		return false
+	end
+	local operator = expression.operator.text
+	if operator == "and" or operator == "or" then
+		return isBooleanExpression(expression.lhsOperand) and isBooleanExpression(expression.rhsOperand)
+	end
+	return operator == "==" or operator == "~=" or operator == "<" or operator == "<="
+		or operator == ">" or operator == ">="
+end
+
 local function canUnnest(statements: { Syntax.CstStat }): boolean
 	for _, statement in statements do
 		if statement.tag == "assign" or statement.tag == "compoundassign" then
@@ -31,11 +49,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		if node.conditionLocal or #node.elseifs > 0 or yes.tag ~= "boolean" or no.tag ~= "boolean" or yes.value == no.value then
 			continue
 		end
-		local condition = node.condition
-		local operator = if condition.tag == "binary" then condition.operator.text else ""
-		local comparison = operator == "==" or operator == "~=" or operator == "<" or operator == "<="
-			or operator == ">" or operator == ">="
-		if yes.value and not comparison then
+		if yes.value and not isBooleanExpression(node.condition) then
 			continue
 		end
 		local span = node.location
@@ -43,7 +57,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			line = span.beginLine, column = span.beginColumn,
 			endLine = span.endLine, endColumn = span.endColumn,
 			severity = "warning",
-			message = if yes.value then "Use the boolean comparison directly." else "Use not to express the negated condition.",
+			message = if yes.value then "Use the boolean expression directly." else "Use not to express the negated condition.",
 		}
 	end
 	for _, call in Query.findAllFromRoot(block, Utils.isExprCall).nodes do
