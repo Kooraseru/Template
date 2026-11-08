@@ -68,6 +68,10 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		return current;
 	}
 
+	function shouldNotify(trigger) {
+		return trigger === "startup" || trigger === "manual";
+	}
+
 	function showError(message, detail) {
 		finishSetupProgress();
 		setupStatus.text = "$(error) " + setupLabels.failed;
@@ -472,7 +476,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		check.inputRevision = compileInputRevision;
 		check.policyRevision = policyRevision;
 		check.progress?.finish();
-		check.progress = trigger === "automatic" ? undefined : beginProgress(check.config.notification);
+		check.progress = shouldNotify(trigger) ? beginProgress(check.config.notification) : undefined;
 		if (kind === "compile") {
 			checkStatus.text = "$(sync~spin) CI Preflight running";
 			checkStatus.tooltip = "Checking saved workspace inputs.";
@@ -538,7 +542,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			scopedResults.clear();
 			ruleUris.clear();
 			finishSetupProgress();
-			setupProgress = trigger === "automatic" ? undefined : beginProgress(workflow.dependencies.notification);
+			setupProgress = shouldNotify(trigger) ? beginProgress(workflow.dependencies.notification) : undefined;
 			return true;
 		},
 		log,

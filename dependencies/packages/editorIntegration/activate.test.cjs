@@ -292,12 +292,24 @@ test("startup and manual compile show progress while automatic compile uses the 
 	state.api.beginCheck({ generation: 1, trigger: "startup" });
 	assert.equal(state.progress.length, 1);
 	state.api.publishPreflight({ generation: 1, findings: [] });
-	state.api.beginCheck({ generation: 2, trigger: "automatic" });
-	assert.equal(state.progress.length, 1);
-	assert.match(state.statusItems[1].text, /CI Preflight running/);
-	state.api.publishPreflight({ generation: 2, findings: [] });
+	for (let generation = 2; generation <= 5; generation++) {
+		state.api.beginCheck({ generation, trigger: "automatic" });
+		assert.equal(state.progress.length, 1);
+		assert.match(state.statusItems[1].text, /CI Preflight running/);
+		state.api.publishPreflight({ generation, findings: [] });
+	}
 	assert.match(state.statusItems[1].text, /CI Preflight passed/);
-	state.api.beginCheck({ generation: 3, trigger: "manual" });
+	state.api.beginCheck({ generation: 6, trigger: "manual" });
 	assert.equal(state.progress.length, 2);
+	state.api.dispose();
+});
+
+test("checks with an omitted trigger stay quiet", () => {
+	const state = fixture("C:/repo");
+	state.api.updateDependencies({ complete: true });
+	state.api.beginCheck({ generation: 1 });
+	state.api.beginRules({ generation: 2 });
+	state.api.beginSetup({ generation: 3 });
+	assert.equal(state.progress.length, 0);
 	state.api.dispose();
 });

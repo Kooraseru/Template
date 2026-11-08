@@ -100,6 +100,108 @@ function findingKey(finding, source, edit) {
 		edit && (end > edit.end || start >= edit.end) ? end + delta : end]);
 }
 
+function lineOffset(source, line) {
+	let offset = 0;
+	for (let current = 0; current < line; current++) {
+		const end = source.indexOf("\n", offset);
+		if (end < 0) return source.length;
+		offset = end + 1;
+	}
+	return offset;
+}
+
+function ruleQuickFix(snapshot, relative) {
+	const { source, diagnostic } = snapshot;
+	const code = path.posix.basename(snapshot.rule);
+	const start = diagnostic.range.start;
+	const end = diagnostic.range.end;
+	const startOffset = lineOffset(source, start.line) + start.character;
+	const endOffset = lineOffset(source, end.line) + end.character;
+	const message = diagnostic.message.replace(/^Expected: /, "");
+	const lineStart = lineOffset(source, start.line);
+	const lineEndRaw = source.indexOf("\n", lineStart);
+	const lineEnd = lineEndRaw < 0 ? source.length : lineEndRaw;
+	const lineText = source.slice(lineStart, lineEnd).replace(/\r$/, "");
+	const eol = source.includes("\r\n") ? "\r\n" : "\n";
+	const edit = (title, editStart, editEnd, text) => ({ title, start: editStart, end: editEnd, text });
+
+	if (code === "file-system" && message.startsWith("Declare --!strict")) {
+		return edit("Add --!strict", 0, 0, "--!strict" + eol);
+	}
+	if (code === "file-system" && (message.startsWith("Remove the repeated section marker") || message.includes("explicitly disallowed"))) {
+		if (/^\s*--#\s*[^\r\n]+\s*$/.test(lineText)) {
+			const removeEnd = lineEndRaw < 0 ? lineEnd : lineEndRaw + 1;
+			return edit("Remove section marker", lineStart, removeEnd, "");
+		}
+	}
+	if (code === "blank-lines") {
+		const offset = lineStart;
+		if (offset > 0 && !source.slice(0, offset).endsWith(eol + eol)) {
+			return edit("Insert blank line", offset, offset, eol);
+		}
+	}
+	if (code === "indentation") {
+		const prefix = source.slice(lineStart, endOffset);
+		const spaces = (prefix.match(/ /g) || []).length;
+		if (/^[ \t]*$/.test(prefix) && spaces > 0 && spaces % 4 === 0) {
+			const replacement = "\t".repeat(spaces / 4 + (prefix.match(/\t/g) || []).length);
+			return edit("Use tabs for indentation", lineStart, endOffset, replacement);
+		}
+	}
+	if (code === "todo-comments" && message.startsWith("Describe the follow-up")) {
+		if (/^\s*--+(?:\s*TODO)?[\s:!?.-]*$/.test(lineText)) {
+			const removeEnd = lineEndRaw < 0 ? lineEnd : lineEndRaw + 1;
+			return edit("Remove empty TODO comment", lineStart, removeEnd, "");
+		}
+	}
+	if (code === "types" && message.startsWith("Remove the repeated Luau type assertion")) {
+		return edit("Remove repeated type assertion", startOffset, endOffset, "");
+	}
+	if (code === "functions" && message.startsWith("A bare function declaration")) {
+		const name = source.slice(startOffset, endOffset);
+		const prefix = source.slice(lineStart, startOffset);
+		if (/^[A-Za-z_][A-Za-z_0-9]*$/.test(name) && /\bfunction\s+$/.test(prefix)) {
+			const keyword = prefix.lastIndexOf("function");
+			return edit("Make helper local", lineStart + keyword, lineStart + keyword, "local ");
+		}
+	}
+	if (code === "naming" && message.startsWith("Declare this stable Luau constant with const.")) {
+		const token = source.slice(startOffset, endOffset);
+		if (token === "local") return edit("Use const", startOffset, endOffset, "const");
+	}
+	if (code === "strings" && message.startsWith("Interpolation already converts")) {
+		const expression = source.slice(startOffset, endOffset);
+		const redundant = expression.match(/^tostring\s*\(\s*((?:[A-Za-z_][A-Za-z_0-9]*|true|false|nil|-?\d+(?:\.\d+)?|\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'))\s*\)$/);
+		if (redundant) return edit("Remove redundant tostring", startOffset, endOffset, redundant[1]);
+	}
+	if (code === "strings" && message.startsWith("Use the quoted string directly")) {
+		const expression = source.slice(startOffset, endOffset);
+		const formatted = expression.match(/^string\.format\s*\(\s*(['"])%s\1\s*,\s*(['"])([^\\\r\n\0]*)\2\s*\)$/);
+		if (formatted) return edit("Use the string literal directly", startOffset, endOffset, formatted[2] + formatted[3] + formatted[2]);
+	}
+	if (code === "function-documentation") {
+		if (message.startsWith("Start a LuaCATS")) {
+			const comment = source.slice(startOffset, endOffset);
+			if (comment.startsWith("--@")) return edit("Use a LuaCATS annotation", startOffset, startOffset + 2, "---");
+		}
+		if (message.startsWith("Leave a blank line")) {
+			return edit("Separate prose from LuaCATS tags", lineStart, lineStart, eol);
+		}
+		if (message.startsWith("Reserve @readonly") || message.startsWith("Remove this declaration tag")) {
+			const comment = source.slice(startOffset, endOffset);
+			if (comment.startsWith("---@")) {
+				const removeEnd = lineEndRaw < 0 ? lineEnd : lineEndRaw + 1;
+				return edit("Remove misplaced LuaCATS tag", lineStart, removeEnd, "");
+			}
+		}
+	}
+	if (code === "path-headers") {
+		const repair = headerEdit(source, relative);
+		if (repair) return edit("Fix path header", 0, repair.length, repair.text);
+	}
+	return undefined;
+}
+
 function registerRuleActions({ vscode, root, workflow, actionSources, command, requestFile, getRevision }) {
 	const previews = new Map();
 	const previewScheme = command("preview").toLowerCase();
@@ -166,26 +268,29 @@ function registerRuleActions({ vscode, root, workflow, actionSources, command, r
 			for (const [key, snapshot] of snapshots || []) {
 				const { diagnostic } = snapshot;
 				const code = diagnostic.code.value;
-				if (code !== "path-headers" && code !== "declarative-data") continue;
-				const kind = code === "path-headers" ? vscode.CodeActionKind.QuickFix : vscode.CodeActionKind.RefactorExtract;
+				const fix = ruleQuickFix(snapshot, relative);
+				const proposal = code === "declarative-data" ? extraction(document, diagnostic.range) : undefined;
+				if (!fix && !proposal) continue;
+				const kind = proposal ? vscode.CodeActionKind.RefactorExtract : vscode.CodeActionKind.QuickFix;
 				if (context.only && !context.only.contains(kind)) continue;
 				if (token?.isCancellationRequested || document.getText() !== snapshot.source) continue;
 				if (!range.intersection(diagnostic.range)) continue;
 				const version = document.version;
-				const repair = code === "path-headers" ? headerEdit(snapshot.source, relative) : undefined;
-				const proposal = code === "declarative-data" ? extraction(document, diagnostic.range) : undefined;
-				if (!repair && !proposal) continue;
-				const edit = repair ? { start: 0, end: repair.length, text: repair.text } : {
+				const edit = fix || {
 					start: document.offsetAt(diagnostic.range.start), end: document.offsetAt(diagnostic.range.end), text: proposal.replacement,
 				};
 				if (!await validate(document, snapshot, key, edit).catch(() => false) ||
 					token?.isCancellationRequested || document.version !== version) continue;
-				const action = repair
-					? new vscode.CodeAction("Fix path header", vscode.CodeActionKind.QuickFix)
-					: new vscode.CodeAction("Extract static table to JSON…", vscode.CodeActionKind.RefactorExtract);
+				const action = proposal
+					? new vscode.CodeAction("Extract static table to JSON…", vscode.CodeActionKind.RefactorExtract)
+					: new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
+				action.isPreferred = !proposal;
 				action.diagnostics = [diagnostic];
-				action.command = { command: command(repair ? "fixHeader" : "extractJson"), title: action.title,
-					arguments: [document.uri, version, key, diagnostic.range] };
+				const actionCommand = proposal ? "extractJson" : code === "path-headers" ? "fixHeader" : "applyRuleEdit";
+				const args = proposal ? [document.uri, version, key, diagnostic.range]
+					: code === "path-headers" ? [document.uri, version, key]
+						: [document.uri, version, key, edit.start, edit.end, edit.text];
+				action.command = { command: command(actionCommand), title: action.title, arguments: args };
 				actions.push(action);
 			}
 			return actions;
@@ -213,6 +318,16 @@ function registerRuleActions({ vscode, root, workflow, actionSources, command, r
 				state.document.version !== version) return;
 			const edit = new vscode.WorkspaceEdit();
 			edit.replace(uri, new vscode.Range(0, 0, 0, repair.length), repair.text);
+			await apply(edit);
+		}),
+		vscode.commands.registerCommand(command("applyRuleEdit"), async (uri, version, key, start, end, text) => {
+			const state = await current(uri, version, key);
+			const relative = state && applicable(state.document);
+			const fix = state && ruleQuickFix(state.snapshot, relative);
+			if (!state || !fix || fix.start !== start || fix.end !== end || fix.text !== text || state.document.version !== version ||
+				!await validate(state.document, state.snapshot, key, fix) || state.document.version !== version) return;
+			const edit = new vscode.WorkspaceEdit();
+			edit.replace(uri, new vscode.Range(state.document.positionAt(fix.start), state.document.positionAt(fix.end)), fix.text);
 			await apply(edit);
 		}),
 		vscode.commands.registerCommand(command("extractJson"), async (uri, version, key, range) => {
@@ -249,4 +364,4 @@ function registerRuleActions({ vscode, root, workflow, actionSources, command, r
 	];
 }
 
-module.exports = { registerRuleActions, headerEdit, jsonObject, diagnosticKey, findingKey };
+module.exports = { registerRuleActions, headerEdit, jsonObject, diagnosticKey, findingKey, ruleQuickFix };
