@@ -15,3 +15,6 @@
 - [Class inheritance](invalid/class-inheritance.luau) highlights the base-class link.
 - [Instance index](valid/instance-index.luau) passes because the index resolves to its own class.
 - [Lookup metatable](review/lookup-metatable.luau) produces no finding. A lookup default is not enough evidence of class inheritance.
+
+- [Additional metamethod](invalid/inheritance-with-metamethod.luau) reports the inheritance link alongside another metamethod.
+- [Computed key](review/computed-inheritance-key.luau) stays for review because the computed key could replace the explicit link.

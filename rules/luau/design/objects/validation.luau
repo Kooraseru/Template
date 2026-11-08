@@ -8,6 +8,22 @@ local Syntax = require("@std/syntax")
 local Rule = require("@ruleLinter/rule")
 local Utils = require("@std/syntax/utils")
 
+local function explicitIndex(entries: { Syntax.CstTableExprItem }): Syntax.CstTableExprItem?
+	local selected: Syntax.CstTableExprItem? = nil
+	for _, entry in entries do
+		if entry.kind ~= "record" then
+			return nil
+		end
+		if entry.key.text == "__index" then
+			if selected then
+				return nil
+			end
+			selected = entry
+		end
+	end
+	return selected
+end
+
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)
 	if not parsed then
@@ -78,24 +94,23 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		local derived = call.arguments[1]
 		local metadata = call.arguments[2]
-		if derived.tag ~= "local" or not instanceMetatables[derived["local"]] or metadata.tag ~= "table" or #metadata.entries ~= 1 then
+		if derived.tag ~= "local" or not instanceMetatables[derived["local"]] or metadata.tag ~= "table" then
 			continue
 		end
-		for _, entry in metadata.entries do
-			if entry.kind ~= "record" or entry.key.text ~= "__index" then
-				continue
-			end
-			local base = entry.value
-			if base.tag ~= "local" or base["local"] == derived["local"] or not instanceMetatables[base["local"]] then
-				continue
-			end
-			local span = entry.location
-			findings[#findings + 1] = {
-				line = span.beginLine, column = span.beginColumn,
-				endLine = span.endLine, endColumn = span.endColumn,
-				severity = "warning", message = "This class inherits from another local class. Prefer composition unless inheritance is needed.",
-			}
+		local indexEntry = explicitIndex(metadata.entries)
+		if not indexEntry then
+			continue
 		end
+		local base = indexEntry.value
+		if base.tag ~= "local" or base["local"] == derived["local"] or not instanceMetatables[base["local"]] then
+			continue
+		end
+		local span = indexEntry.location
+		findings[#findings + 1] = {
+			line = span.beginLine, column = span.beginColumn,
+			endLine = span.endLine, endColumn = span.endColumn,
+			severity = "warning", message = "This class inherits from another local class. Prefer composition unless inheritance is needed.",
+		}
 	end
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
 		local name = declaration.name

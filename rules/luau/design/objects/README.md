@@ -6,4 +6,9 @@ Empty tables used for staged construction, dynamic metatables, and mixed table e
 
 A colon declaration warns when its receiver is a locally declared table used as an instance metatable. A dot declaration on the same kind of table warns on a first parameter named `self` without a type annotation. Reassigned bindings, colon calls, and methods on externally owned tables stay outside the receiver check.
 
-The validator also warns on an explicit __index link between two distinct local classes. Both tables must be demonstrably used as instance metatables. A plain lookup table's default values and an instance's link to its own class do not meet that condition. See [inheritance guidance](../../../../rules-old/languages/luau/structures/oop/inheritance.md).
+The validator also warns on an explicit __index link between two distinct local classes. Both tables must be demonstrably used as instance metatables. A plain lookup table's default values and an instance's link to its own class do not meet that condition.
+
+
+## Inheritance
+
+Avoid inheritance by default. Prefer composition or an explicit structural interface. The check allows other named fields in the metatable and leaves duplicate or computed keys for review because they can replace the explicit link.
