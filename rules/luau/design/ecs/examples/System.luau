@@ -1,4 +1,4 @@
--- global-rules/languages/luau/structures/ecs/examples/System.luau
+-- rules/luau/design/ecs/examples/System.luau
 --!strict
 
 -- Sketch only. Final ECS shape should come from real ECS source.

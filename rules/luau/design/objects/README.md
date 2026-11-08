@@ -125,3 +125,5 @@ This keeps receiver typing explicit while preserving normal call ergonomics.
 External APIs keep their documented call conventions even when they differ from project-owned methods.
 
 Do not use a metatable-derived concrete instance type as a shared cross-implementation interface. Shared abstractions should use an explicit structural contract.
+
+See the [object design guidance](guidance.md), [structural interfaces](interfaces.md), and the [fields-first](examples/SimpleObject.luau) and [staged](examples/StagedObject.luau) examples.

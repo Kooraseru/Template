@@ -2,9 +2,9 @@
 
 This document owns language-wide function guidance.
 
-Function names follow [naming](naming.md). Document nontrivial public contracts using [Luau function documentation](../../../../rules/luau/style/function-documentation/README.md).
+Function names follow [naming](../../style/naming/guidance.md). Document nontrivial public contracts using [Luau function documentation](../../style/function-documentation/README.md).
 
-Project-owned receiver methods follow the selected structure. OOP receiver methods are owned by [objects](../../../../rules/luau/design/objects/README.md).
+Project-owned receiver methods follow the selected structure. OOP receiver methods are owned by [objects](../objects/README.md).
 
 Prefer local helper functions for private behavior. Do not create table-private methods just to simulate privacy.
 
@@ -28,4 +28,4 @@ end
 
 Use explicit return values for real failures; a silent `return` is not an error strategy.
 
-See [the validator](../../../../rules/luau/design/functions/README.md) for the enforced subset.
+See [the validator](README.md) for the enforced subset.

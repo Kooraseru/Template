@@ -17,3 +17,5 @@ Which entities have this data, and what behavior runs over that set?
 Do not choose ECS just because a module stores records. A runtime registry, procedural module, or OOP object is usually clearer until entity/component iteration is the actual pressure.
 
 Until real ECS code exists in an adopting repository, examples should stay sketches. They may show responsibility boundaries, but they must not define final APIs, validator rules, or framework choices.
+
+See [components](components.md), [queries](queries.md), [systems](systems.md), and the [system example](examples/System.luau).

@@ -1,4 +1,4 @@
--- global-rules/languages/luau/structures/oop/examples/SimpleObject.luau
+-- rules/luau/design/objects/examples/SimpleObject.luau
 --!strict
 
 type Resource = {

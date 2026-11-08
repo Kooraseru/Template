@@ -18,6 +18,6 @@ if input.Text == nil then
 end
 ```
 
-For guard-first decisions, see [control flow](../../../../rules/luau/syntax/control-flow/README.md).
+For guard-first decisions, see [control flow](control-flow/README.md).
 
-Use [backtick interpolation](../../../../rules/luau/syntax/strings/README.md) for strings combining text and values.
+Use [backtick interpolation](strings/README.md) for strings combining text and values.

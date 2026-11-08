@@ -6,7 +6,7 @@ These files are reusable language and module-writing conventions. Start with [th
 - [CSS](css/README.md)
 - [HTML](html/README.md)
 - [JavaScript](javascript/README.md)
-- [Luau](luau/README.md)
+- [Luau](../../rules/luau/README.md)
 - [Rust](rust/README.md)
 
 No language becomes mandatory merely because guidance for it exists. Build systems and runtime ownership remain project-specific.

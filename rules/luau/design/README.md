@@ -19,3 +19,12 @@ The structure is chosen by why the file exists, not by which syntax looks famili
 Do not add ceremony from another structure unless the current file earns it.
 
 If a file feels awkward, check the "why" before changing syntax. A table module with one function may want to become a return-function module. A data-only table may belong in JSON/TOML with a typed loader. A procedural module that manufactures independent lifetimes may want to become OOP.
+
+## Structure references
+
+- [Return-function modules](function-modules/README.md) and [composition](function-modules/composition.md)
+- [Procedural modules](procedural/README.md), [table modules](procedural/table-modules.md), and [shared state](procedural/stateful-modules.md)
+- [Objects](objects/README.md) and [structural interfaces](objects/interfaces.md)
+- [Declarative data boundaries](declarative-data/boundaries.md)
+- [Entry points](../files/entry-points.md)
+- [ECS design sketches](ecs/README.md)

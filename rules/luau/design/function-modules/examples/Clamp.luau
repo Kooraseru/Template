@@ -1,4 +1,4 @@
--- global-rules/languages/luau/structures/functional/examples/Clamp.luau
+-- rules/luau/design/function-modules/examples/Clamp.luau
 --!strict
 
 return function(value: number, minimum: number, maximum: number): number

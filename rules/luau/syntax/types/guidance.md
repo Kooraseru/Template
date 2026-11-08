@@ -61,4 +61,4 @@ type Values<T> = index<T, keyof<T>>
 For metatable-sensitive cases, consider `rawkeyof` and `rawget` when inherited `__index` keys should not count.
 
 
-See [explicit types](../../../../rules/luau/syntax/types/README.md) for the active checks.
+See [explicit types](README.md) for the active checks.

@@ -1,4 +1,4 @@
--- global-rules/languages/luau/structures/procedural/examples/TableModule.luau
+-- rules/luau/design/procedural/examples/TableModule.luau
 --!strict
 
 local Text = {}

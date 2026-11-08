@@ -111,4 +111,4 @@ const MAX_GLYPH_COUNT = 2048
 const mathMin = math.min
 ```
 
-See [enforced declaration naming](../../../../rules/luau/style/naming/README.md) for the syntax-based check.
+See [enforced declaration naming](README.md) for the syntax-based check.

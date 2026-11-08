@@ -1,4 +1,4 @@
--- global-rules/languages/luau/structures/data/examples/Scale.luau
+-- rules/luau/design/declarative-data/examples/Scale.luau
 --!strict
 
 const base = 8

@@ -1,4 +1,4 @@
--- global-rules/languages/luau/structures/oop/examples/StagedObject.luau
+-- rules/luau/design/objects/examples/StagedObject.luau
 --!strict
 
 type Resource = {

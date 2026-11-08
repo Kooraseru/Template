@@ -6,9 +6,9 @@ The user's Luau style is global, but it is not one rigid skeleton. Different mod
 
 ## File Shape
 
-Use the path label and `--!strict` at the top of hand-written Luau source. See the [strict-directive validator](../../../../rules/luau/files/file-system/README.md).
+Use the path label and `--!strict` at the top of hand-written Luau source. See the [strict-directive validator](README.md).
 
-See [section-marker guidance](../../../../rules/luau/files/file-system/README.md) for role headers.
+See [section-marker guidance](README.md) for role headers.
 
 Preferred phase order:
 
