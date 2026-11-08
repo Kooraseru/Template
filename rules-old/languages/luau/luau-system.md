@@ -13,7 +13,6 @@ luau/
     types.md
     functions.md
     expressions.md
-    strings.md
     types/
 
   declarative-data/

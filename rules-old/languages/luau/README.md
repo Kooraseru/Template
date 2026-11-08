@@ -8,7 +8,7 @@ Treat Luau as the executable layer. Keep ordinary declarative catalogs and confi
 
 Choose a single `name.luau` module when one script is sufficient. When meaningful child modules warrant a directory, `name/init.luau` is the normal coordinating module head; it must not exist solely to echo child exports.
 
-See [directory roots](../../../rules/luau/files/module-roots/README.md), [file layout](files/file-system.md), [control flow](../../../rules/luau/syntax/control-flow/README.md), [indentation](../../../rules/luau/style/indentation/README.md), [function documentation](../../../rules/luau/style/function-documentation/README.md), [declarative data](../../../rules/luau/design/declarative-data/README.md), and [strings](language/strings.md).
+See [directory roots](../../../rules/luau/files/module-roots/README.md), [file layout](files/file-system.md), [control flow](../../../rules/luau/syntax/control-flow/README.md), [indentation](../../../rules/luau/style/indentation/README.md), [function documentation](../../../rules/luau/style/function-documentation/README.md), [declarative data](../../../rules/luau/design/declarative-data/README.md), and [strings](../../../rules/luau/syntax/strings/README.md).
 
 ## Executable checks
 

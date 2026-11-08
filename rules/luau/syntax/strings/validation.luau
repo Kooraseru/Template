@@ -12,6 +12,35 @@ local function isQuotedLiteral(node: Syntax.CstExpr): boolean
 	return node.tag == "string" and (node.quoteStyle == "single" or node.quoteStyle == "double")
 end
 
+local function replacesTostring(block: Syntax.CstStatBlock): boolean
+	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
+		for _, target in assignment.variables do
+			if target.tag == "global" and target.name.text == "tostring" then
+				return true
+			end
+		end
+	end
+	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
+		if declaration.name.tag == "global" and declaration.name.name.text == "tostring" then
+			return true
+		end
+	end
+	return false
+end
+
+local function isRedundantTostring(expression: Syntax.CstExpr): boolean
+	if expression.tag ~= "call" or #expression.arguments ~= 1 then
+		return false
+	end
+	local callee = expression.func
+	if callee.tag ~= "global" or callee.name.text ~= "tostring" then
+		return false
+	end
+	local value = expression.arguments[1]
+	return value.tag == "local" or value.tag == "boolean" or value.tag == "number"
+		or value.tag == "integer" or value.tag == "nil" or isQuotedLiteral(value)
+end
+
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)
 	if not parsed then
@@ -39,10 +68,13 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			report(node.location, "Include the literal text inside the interpolated string.")
 		end
 	end
+	local builtinTostring = not replacesTostring(block)
 	for _, node in Query.findAllFromRoot(block, Utils.isExprInterpString).nodes do
 		for _, expression in node.expressions do
 			if isQuotedLiteral(expression) then
 				report(expression.location, "Write this constant text directly in the interpolated string.")
+			elseif builtinTostring and #node.expressions == 1 and isRedundantTostring(expression) then
+				report(expression.location, "Interpolation already converts this value to text. Remove the redundant tostring call.")
 			end
 		end
 	end
