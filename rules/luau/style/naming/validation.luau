@@ -109,6 +109,11 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			report(name.location, "Use PascalCase for public Luau module functions.")
 		end
 	end
+	local function checkPublicField(name: Syntax.CstToken<string>)
+		if name.text:match("^_") and not name.text:match("^__") then
+			report(name.location, "An exported Luau field is public. Use a local binding for private state or give the field a public name.")
+		end
+	end
 	local function publicStringKey(key: Syntax.CstExpr): Syntax.CstToken<string>?
 		if key.tag == "string" and (key.quoteStyle == "single" or key.quoteStyle == "double")
 			and key.value.text:match("^[%a_][%w_]*$") then
@@ -118,17 +123,21 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	end
 	local last = block.statements[#block.statements]
 	local exported = if last and last.tag == "return" and #last.expressions == 1 then last.expressions[1] else nil
-	if exported and exported.tag == "table" then
-		for _, member in exported.entries do
-			if member.kind == "record" and member.value.tag == "function" then
-				checkPublicName(member.key)
-			elseif member.kind == "general" and member.value.tag == "function" then
-				local key = publicStringKey(member.key)
-				if key then
+	local function checkReturnedFields(value: Syntax.CstExprTable)
+		for _, member in value.entries do
+			local key = if member.kind == "record" then member.key
+				elseif member.kind == "general" then publicStringKey(member.key) else nil
+			if key then
+				if member.value.tag == "function" then
 					checkPublicName(key)
+				else
+					checkPublicField(key)
 				end
 			end
 		end
+	end
+	if exported and exported.tag == "table" then
+		checkReturnedFields(exported)
 	end
 	local exportedBinding = if exported and exported.tag == "local" then exported["local"] else nil
 	local ownedExport: Syntax.CstLocal?
@@ -147,6 +156,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		if value.tag == "table" and statement.variables[1] == exportedBinding then
 			ownedExport = statement.variables[1]
+			if not reassigned[ownedExport] then
+				checkReturnedFields(value)
+			end
 		end
 		if value.tag ~= "call" then
 			continue
@@ -168,11 +180,12 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		local hasPublicFunction = false
 		for _, statement in block.statements do
 			local name: Syntax.CstExpr
+			local isFunction = true
 			if statement.tag == "function" then
 				name = statement.name
-			elseif statement.tag == "assign" and #statement.variables == 1 and #statement.values == 1
-				and statement.values[1].tag == "function" then
+			elseif statement.tag == "assign" and #statement.variables == 1 and #statement.values == 1 then
 				name = statement.variables[1]
+				isFunction = statement.values[1].tag == "function"
 			else
 				continue
 			end
@@ -180,8 +193,12 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				and name.expression.tag == "local" and name.expression["local"] == exportedBinding then
 				local key = if name.tag == "indexname" then name.index else publicStringKey(name.index)
 				if key then
-					hasPublicFunction = true
-					checkPublicName(key)
+					if isFunction then
+						hasPublicFunction = true
+						checkPublicName(key)
+					else
+						checkPublicField(key)
+					end
 				end
 			end
 		end

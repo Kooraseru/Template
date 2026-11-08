@@ -88,7 +88,6 @@ Prefer `const` for bindings that are not reassigned, including mutable tables wh
 
 Many rules belong to more than one concept. Cached function references are both a variable/constant style concern and an optimization concern. This document owns their Luau naming shape; a performance or runtime document may explain why the cache exists.
 
-Do not use `_` prefixes for private fields, locals, or helpers. A bare `_` is only for intentionally ignored values.
 
 Numeric separators are optional. Use them when they make a literal easier to read, such as `10_000` or `0xFF_FF`.
 

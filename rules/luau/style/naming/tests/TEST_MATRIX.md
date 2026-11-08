@@ -26,3 +26,7 @@
 - [Mutated local](review/mutated-local.luau) keeps `local` because a nested closure reassigns it.
 - [Invalid scalar local names](invalid/scalar-local-names.luau) highlights PascalCase and snake_case local names.
 - [Valid scalar local names](valid/scalar-local-names.luau) accepts camelCase at module and function scope.
+
+- [Private fields](invalid/private-fields.luau) reports underscore-prefixed data fields on an owned module, including literal bracket keys.
+- [Returned record](invalid/private-record-field.luau) reports a private-looking field in a direct return.
+- [Public fields](valid/public-fields.luau) allows ordinary public data fields and the metamethod prefix.

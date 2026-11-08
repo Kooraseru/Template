@@ -20,6 +20,8 @@ Top-level SCREAMING_SNAKE_CASE scalar literals use `const` when the binding is n
 
 Ordinary locals initialized with a scalar literal use camelCase. SCREAMING_SNAKE_CASE bindings are left to the constant check. Computed initializers may need context to distinguish a local from a module or service binding.
 
+Public data fields on a returned, locally owned table cannot use a single underscore prefix. This covers literal records, named assignments, and literal bracket keys. Use a local binding for private state. The double-underscore metamethod prefix is exempt.
+
 This check covers declarations. Runtime names and references to types from another module require context and are outside this validator.
 
 See [Luau naming](../../../../rules-old/languages/luau/language/naming.md) and the [fixture matrix](tests/TEST_MATRIX.md).
