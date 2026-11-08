@@ -1,7 +1,7 @@
 # Blank-line separation
 
-The validator warns when two consecutive multi-line statements at module scope touch with no blank line between them. A comment between the statements counts as a visual separator. Single-line statements may remain grouped.
+The validator warns at crowded statement boundaries, including inside functions, loops, and branches. A run is crowded when it has two unseparated boundaries around loops, substantial conditionals, scoped blocks, or named functions that span at least five lines. Two such blocks touching also warn on their own. A blank line or standalone comment between statements separates the run.
 
-This check is advisory and emits warnings. It does not reformat files. Nested statement lists are not checked yet; see the review fixture and matrix.
+Keep related single-line statements, consecutive early guards, and a short exit after a block together when they read naturally. The check also covers adjacent multiline statements at module scope. It emits warnings and leaves edits to the author.
 
-See [Luau blank-line guidance](../../../../rules-old/languages/luau/language/blank-lines.md) and the [fixture matrix](tests/TEST_MATRIX.md).
+See the [fixture matrix](tests/TEST_MATRIX.md).

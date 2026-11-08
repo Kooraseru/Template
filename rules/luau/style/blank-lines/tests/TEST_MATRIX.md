@@ -2,4 +2,7 @@
 
 - [Bunched blocks](invalid/bunched-blocks.luau) warns on adjacent multi-line module-level functions.
 - [Separated blocks](valid/separated-blocks.luau) passes when functions and the return statement have blank-line separation.
-- [Nested blocks](review/nested-blocks.luau) records the unresolved policy for adjacent blocks inside a function; this first validator only checks module scope.
+- [Compact guards](review/nested-blocks.luau) leaves consecutive early exits grouped.
+- [Crowded nested phases](invalid/nested-phases.luau) warns between a guard and a loop, then between the loop and a local declaration.
+- [Separated nested phases](valid/nested-phases.luau) accepts a blank line or a standalone comment at those same boundaries.
+- [Single nested boundary](valid/single-boundary.luau) leaves an isolated transition alone.
