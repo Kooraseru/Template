@@ -25,7 +25,7 @@ function fixture(root, textDocuments = [], autoRefresh = workflow.rules.autoRefr
 			return watcher;
 		},
 		onDidSaveTextDocument(callback) { this.save = callback; return disposable(); },
-		onDidCloseTextDocument() { return disposable(); },
+		onDidCloseTextDocument(callback) { this.close = callback; return disposable(); },
 		onDidOpenTextDocument(callback) { this.open = callback; return disposable(); },
 		onDidChangeTextDocument(callback) { this.change = callback; return disposable(); },
 	};
@@ -75,28 +75,35 @@ test("workspace status and command identifiers are unique per root", () => {
 	second.api.dispose();
 });
 
-test("only changed saves in watched paths run Preflight", async () => {
-	const state = fixture("C:/repo");
+const fileUri = fsPath => ({ scheme: "file", fsPath, toString: () => "file://" + fsPath.replaceAll("\\", "/") });
+const waitForFileCheck = () => new Promise(resolve => setTimeout(resolve, 400));
+
+test("unsaved edits and undo check the current buffer silently, and save reuses its result", async () => {
+	const document = { uri: fileUri("C:/repo/source/a.luau"), version: 1, isDirty: true, text: "return true", getText() { return this.text; } };
+	const state = fixture("C:/repo", [document]);
 	const actions = [];
-	state.api.start(action => actions.push(action));
-	const document = { uri: { scheme: "file", fsPath: "C:/repo/source/a.luau" }, isDirty: true };
+	state.api.start((action, payload) => {
+		actions.push(action === "file" ? JSON.parse(payload) : action);
+		return { scope: "file", findings: [] };
+	});
 	state.workspace.save(document);
 	state.workspace.change({ document, contentChanges: [{}] });
-	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, []);
+	document.version++;
+	document.text = "return false";
+	state.workspace.change({ document, contentChanges: [{}] });
+	await waitForFileCheck();
+	assert.deepEqual(actions.map(action => action.source), ["return false"]);
+	document.version++;
+	document.text = "return true";
+	state.workspace.change({ document, contentChanges: [{}] });
+	await waitForFileCheck();
+	assert.deepEqual(actions.map(action => action.source), ["return false", "return true"]);
+	document.isDirty = false;
 	state.workspace.save(document);
-	await new Promise(resolve => setTimeout(resolve, 400));
-	const setup = { uri: { scheme: "file", fsPath: "C:/repo/dependencies/dependencies.lock" }, isDirty: true };
-	state.workspace.change({ document: setup, contentChanges: [{}] });
-	state.workspace.save(setup);
-	await new Promise(resolve => setTimeout(resolve, 400));
-	const fixtureFile = { uri: { scheme: "file", fsPath: "C:/repo/rules/luau/tests/invalid/example.luau" }, isDirty: true };
-	state.workspace.change({ document: fixtureFile, contentChanges: [{}] });
-	state.workspace.save(fixtureFile);
-	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, ["check", "run", "check"]);
-	assert.equal(state.workspace.open, undefined);
-	assert.equal(state.watchers.length, 1);
+	state.watchers[0].change(document.uri);
+	await waitForFileCheck();
+	assert.equal(actions.length, 2);
+	assert.equal(state.progress.length, 0);
 	state.api.dispose();
 });
 
@@ -189,21 +196,23 @@ test("rule changes offer one explicit Rules-only refresh", async () => {
 test("automatic Rules refresh combines saves and disk events without prompting", async () => {
 	const state = fixture("C:/repo", [], true);
 	const actions = [];
-	state.api.start(action => actions.push(action));
+	state.api.start((action, payload) => actions.push(action === "file" ? JSON.parse(payload) : action));
 	const watcher = state.watchers[0];
 	const rule = { scheme: "file", fsPath: "C:/repo/rules/luau/style/new/validation.luau" };
 	rule.fsPath = "C:/repo/rules/luau/style/new/validation.luau";
-	const document = { uri: rule, isDirty: true };
+	const document = { uri: rule, isDirty: true, getText: () => "return true" };
 	state.workspace.change({ document, contentChanges: [{}] });
 	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, []);
+	assert.equal(actions.length, 1);
+	assert.equal(actions[0].scope, "file");
+	actions.length = 0;
 	state.workspace.save(document);
 	watcher.change(rule);
 	watcher.change({ scheme: "file", fsPath: "C:/repo/.vscode/config/rules.json" });
 	watcher.create(rule);
 	watcher.delete(rule);
 	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, ["check"]);
+	assert.deepEqual(actions, ["rules"]);
 	assert.deepEqual(state.notices, []);
 	state.api.dispose();
 });
@@ -260,18 +269,35 @@ test("native Luau replaces matching workspace findings and closing restores cove
 	state.api.dispose();
 });
 
-test("external Luau changes schedule checks without opening a document", async () => {
+test("missing files and ignored paths are skipped while fixture saves are scoped", async () => {
 	const state = fixture("C:/repo");
 	const actions = [];
-	state.api.start(action => actions.push(action));
-	const uri = fsPath => ({ scheme: "file", fsPath: "C:/repo/" + fsPath });
+	state.api.start((action, payload) => { actions.push(action === "file" ? JSON.parse(payload) : action); });
+	const uri = file => fileUri("C:/repo/" + file);
 	state.watchers[0].change(uri("source/unopened.luau"));
 	state.watchers[0].delete(uri("source/removed.luau"));
-	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, ["check"]);
+	await waitForFileCheck();
+	assert.deepEqual(actions.map(action => [action.scope, action.file, action.fixture]), []);
 	state.watchers[0].change(uri("dependencies/node_modules/example/ignored.luau"));
 	state.watchers[0].change(uri("rules/luau/style/new/tests/invalid/fixture.luau"));
-	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, ["check", "check"]);
+	await waitForFileCheck();
+	assert.deepEqual(actions.map(action => [action.scope, action.file, action.fixture]),
+		[["file", "rules/luau/style/new/tests/invalid/fixture.luau", true]]);
+	assert.equal(state.progress.length, 0);
+	state.api.dispose();
+});
+test("startup and manual compile show progress while automatic compile uses the status bar", () => {
+	const state = fixture("C:/repo");
+	state.api.updateDependencies({ complete: true });
+	state.api.beginCheck({ generation: 1, trigger: "startup" });
+	assert.equal(state.progress.length, 1);
+	state.api.publishPreflight({ generation: 1, findings: [] });
+	state.api.beginCheck({ generation: 2, trigger: "automatic" });
+	assert.equal(state.progress.length, 1);
+	assert.match(state.statusItems[1].text, /CI Preflight running/);
+	state.api.publishPreflight({ generation: 2, findings: [] });
+	assert.match(state.statusItems[1].text, /CI Preflight passed/);
+	state.api.beginCheck({ generation: 3, trigger: "manual" });
+	assert.equal(state.progress.length, 2);
 	state.api.dispose();
 });

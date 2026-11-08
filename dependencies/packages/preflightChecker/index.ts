@@ -152,13 +152,13 @@ function reportRuleError(error: unknown): void {
 	process.exitCode = 1;
 }
 
-function checkRepositoryRules(sources: string[]): void {
+function checkRepositoryRules(sources: string[], scoped?: { file: string; source?: string; fixture?: boolean; candidate?: boolean }): void {
 	console.log("::preflight-stage::Repository rules");
 	let policy;
 	try { policy = loadPolicy(root); }
 	catch (error) { reportRuleError(error); return; }
 	const paths = sources.map(file => file.split(path.sep).join("/"));
-	const entries = [...policy.rules.values()].map(rule => {
+	const entries = [...policy.rules.values()].filter(rule => !scoped?.fixture || scoped.file.startsWith(rule.directory + "/tests/")).map(rule => {
 		const configured = policy.result.get(rule.id);
 		const variants = [];
 		const settingsFor: Record<string, number> = Object.create(null);
@@ -174,7 +174,7 @@ function checkRepositoryRules(sources: string[]): void {
 	});
 	const result = spawnSync(lute, ["run", "dependencies/packages/ruleLinter/editor.luau"], {
 		cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
-		input: JSON.stringify({ sources: paths, entries }) + "\n",
+		input: JSON.stringify({ sources: paths, entries, scoped }) + "\n",
 	});
 	if (result.error || result.status !== 0) {
 		const detail = result.error?.message || result.stderr?.trim().replace(/\s+/g, " ") || "Lute exited with status " + result.status;
@@ -199,16 +199,32 @@ function checkRepositoryRules(sources: string[]): void {
 			const severity = rule.fixtureFailure || rule.checkerFailure ? "error" : rule.fixture ? configured.fixtureSeverity
 				: effective(configured, rule.file).severity;
 			if (severity === "error" && !rule.fixture) process.exitCode = 1;
-			if (severity !== "off") console.log(marker + JSON.stringify({ ...rule, severity: severity === "info" ? "information" : severity }));
+			if (severity !== "off" || scoped?.candidate) console.log(marker + JSON.stringify({ ...rule, severity: severity === "info" ? "information" : severity }));
 			continue;
 		}
 		console.log(line);
 	}
 }
 
+const compileFile = process.argv.includes("--compile-file");
+const scoped = (compileFile || process.argv.includes("--rule-file")) ? JSON.parse(fs.readFileSync(0, "utf8")) : undefined;
+if (scoped && (typeof scoped.file !== "string" || !scoped.file.endsWith(".luau") ||
+	scoped.file.includes("\\") || path.isAbsolute(scoped.file) ||
+	scoped.file.split("/").some((part: string) => !part || part === "." || part === "..") ||
+	(scoped.source !== undefined && typeof scoped.source !== "string"))) {
+	throw new Error("Expected a workspace-relative Luau file and optional source text");
+}
 if (await dependenciesReady()) {
-	const sources = luauSources();
-	if (process.argv.includes("--rules")) {
+	const sources = scoped ? (scoped.fixture ? [] : [scoped.file as string]) : luauSources();
+	if (compileFile) {
+		const file = scoped.file as string;
+		const resolved = fs.realpathSync(path.resolve(root, file));
+		const relative = path.relative(fs.realpathSync(root), resolved);
+		if (path.isAbsolute(relative) || relative === ".." || relative.startsWith(".." + path.sep)) {
+			throw new Error("Expected a Luau file inside the workspace");
+		}
+		check(lute, ["check", file], "Lute");
+	} else if (process.argv.includes("--rules")) {
 		const ruleSources = sources.filter(file => {
 			const relative = file.split(path.sep).join("/");
 			const directories = relative.split("/").slice(0, -1);
@@ -216,7 +232,7 @@ if (await dependenciesReady()) {
 			return (activeValidatorSource || ["source/", ".github/ci/", "dependencies/packages/"].some(prefix => relative.startsWith(prefix)))
 				&& !directories.some(segment => ["generated", "vendor", "examples"].includes(segment));
 		});
-		checkRepositoryRules(ruleSources);
+		checkRepositoryRules(ruleSources, scoped);
 	} else {
 		check(process.execPath, [typescript, "--project", configuration, "--pretty", "false"], "TypeScript");
 		if (sources.length) check(lute, ["check", ...sources], "Lute");

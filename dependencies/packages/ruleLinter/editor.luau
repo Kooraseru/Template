@@ -1,6 +1,7 @@
 -- dependencies/packages/ruleLinter/editor.luau
 --!strict
 
+local Parser = require("@std/syntax/parser")
 local Fs = require("@std/fs")
 local Io = require("@std/io")
 local Hash = require("@formats/hash")
@@ -15,13 +16,17 @@ type Entry = {
 	configurable: boolean, settings: unknown, variants: { Variant },
 	settingsFor: { [string]: number },
 }
-type Request = { sources: { string }, entries: { Entry } }
+type Request = { sources: { string }, entries: { Entry }, scoped: { source: string?, fixture: boolean? }? }
 
 local request = Json.decode(Io.input()) :: Request
 local sources: { Rule.Context } = {}
 local sourceHashes: { [string]: string } = {}
 for _, path in request.sources do
-	local source = Fs.readFileToString(path)
+	local source = if request.scoped and request.scoped.source ~= nil then request.scoped.source else Fs.readFileToString(path)
+	if request.scoped and not pcall(Parser.parseBlock, source) then
+		print("::rule-incomplete::")
+		return
+	end
 	sourceHashes[path] = Hash.sha256(source)
 	table.insert(sources, { path = path, source = source })
 end
@@ -105,6 +110,7 @@ for _, item in prepared do
 			checkerFailed(rule, diagnostics)
 		end
 	end
+	if request.scoped and not request.scoped.fixture then continue end
 	for _, category in { "valid", "invalid", "review" } do
 		local directory = rule.directory .. "/tests/" .. category
 		if Fs.exists(directory) then
