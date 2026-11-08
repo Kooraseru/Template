@@ -8,6 +8,10 @@ local Rule = require("@ruleLinter/rule")
 local Syntax = require("@std/syntax")
 local Visitor = require("@std/syntax/visitor")
 
+local function isNamedFunction(statement: Syntax.CstStat): boolean
+	return statement.tag == "function" or statement.tag == "localfunction"
+end
+
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)
 	if not parsed then
@@ -43,7 +47,10 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				finishRun()
 				continue
 			end
-			local moduleBoundary = scope == block and previous.beginLine < previous.endLine and current.beginLine < current.endLine
+			local moduleBoundary = scope == block and (
+				(previous.beginLine < previous.endLine and current.beginLine < current.endLine)
+				or (isNamedFunction(before) and isNamedFunction(after))
+			)
 			local beforeBlock, afterBlock = PhaseLayout.IsStructured(before), PhaseLayout.IsStructured(after)
 			local phaseBoundary = not PhaseLayout.IsShortExit(after) and (beforeBlock or afterBlock)
 			if moduleBoundary or phaseBoundary then
