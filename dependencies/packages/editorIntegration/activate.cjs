@@ -174,7 +174,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 				if (sourceText !== undefined && !finding.fixture && crypto.createHash("sha256").update(sourceText).digest("hex") === finding.sourceHash) {
 					const key = uri.toString();
 					if (!actionSources.has(key)) actionSources.set(key, new Map());
-					actionSources.get(key).set(diagnosticKey(finding.rule, range), { source: sourceText, version: result.version, revision: policyRevision, rule: finding.rule, diagnostic, target: findingKey(finding, sourceText) });
+					actionSources.get(key).set(diagnosticKey(finding.rule, range), { source: sourceText, version: result.version, revision: policyRevision, rule: finding.rule, diagnostic, target: findingKey(finding, sourceText), fix: finding.fix });
 				}
 			}
 			const key = uri.toString();

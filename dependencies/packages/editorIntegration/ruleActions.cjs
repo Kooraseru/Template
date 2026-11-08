@@ -110,6 +110,13 @@ function lineOffset(source, line) {
 	return offset;
 }
 
+function sourceOffset(source, line, byteColumn) {
+	const start = lineOffset(source, line);
+	const end = source.indexOf("\n", start);
+	const text = source.slice(start, end < 0 ? source.length : end);
+	return start + Buffer.from(text).subarray(0, Math.max(0, byteColumn - 1)).toString("utf8").length;
+}
+
 function ruleQuickFix(snapshot, relative) {
 	const { source, diagnostic } = snapshot;
 	const code = path.posix.basename(snapshot.rule);
@@ -124,6 +131,16 @@ function ruleQuickFix(snapshot, relative) {
 	const lineText = source.slice(lineStart, lineEnd).replace(/\r$/, "");
 	const eol = source.includes("\r\n") ? "\r\n" : "\n";
 	const edit = (title, editStart, editEnd, text) => ({ title, start: editStart, end: editEnd, text });
+	const hinted = snapshot.fix;
+	if (hinted && typeof hinted.title === "string" && typeof hinted.text === "string" && hinted.range) {
+		const range = hinted.range;
+		if ([range.line, range.column, range.endLine, range.endColumn].every(Number.isInteger) &&
+			range.line >= 1 && range.column >= 1 && range.endLine >= range.line && range.endColumn >= 1) {
+			const fixStart = sourceOffset(source, range.line - 1, range.column);
+			const fixEnd = sourceOffset(source, range.endLine - 1, range.endColumn);
+			if (fixStart <= fixEnd && fixEnd <= source.length) return edit(hinted.title, fixStart, fixEnd, hinted.text);
+		}
+	}
 
 	if (code === "file-system" && message.startsWith("Declare --!strict")) {
 		return edit("Add --!strict", 0, 0, "--!strict" + eol);
@@ -192,6 +209,13 @@ function ruleQuickFix(snapshot, relative) {
 			if (comment.startsWith("---@")) {
 				const removeEnd = lineEndRaw < 0 ? lineEnd : lineEndRaw + 1;
 				return edit("Remove misplaced LuaCATS tag", lineStart, removeEnd, "");
+			}
+		}
+		if (message.startsWith("Complete the LuaCATS") || message.startsWith("LuaCATS documents a parameter absent")) {
+			const comment = source.slice(startOffset, endOffset);
+			if (comment.startsWith("---@")) {
+				const removeEnd = lineEndRaw < 0 ? lineEnd : lineEndRaw + 1;
+				return edit("Remove incomplete or outdated LuaCATS tag", lineStart, removeEnd, "");
 			}
 		}
 	}
@@ -364,4 +388,4 @@ function registerRuleActions({ vscode, root, workflow, actionSources, command, r
 	];
 }
 
-module.exports = { registerRuleActions, headerEdit, jsonObject, diagnosticKey, findingKey, ruleQuickFix };
+module.exports = { registerRuleActions, headerEdit, jsonObject, diagnosticKey, findingKey, ruleQuickFix, sourceOffset };

@@ -30,6 +30,7 @@ test("rule quick fixes are limited to direct, syntax-preserving edits", () => {
 		["functions", "A bare function declaration in a returning module writes a global.", "function helper(): ()\nend\nreturn {}\n", [0, 9, 0, 15], [0, 0, "local "]],
 		["strings", "Interpolation already converts this value to text. Remove the redundant tostring call.", "local text = `{tostring(name)}`\n", [0, 15, 0, 29], [15, 29, "name"]],
 		["function-documentation", "Start a LuaCATS @param annotation with three dashes.", "--@param value string\n", [0, 0, 0, 21], [0, 2, "---"]],
+		["function-documentation", "Complete the LuaCATS @return annotation or remove it.", "---@return\n", [0, 0, 0, 10], [0, 11, ""]],
 	];
 	for (const [rule, message, source, coords, expected] of cases) {
 		const [line, character, endLine, endCharacter] = coords;
@@ -47,6 +48,31 @@ test("rule quick fixes are limited to direct, syntax-preserving edits", () => {
 	assert.equal(ruleQuickFix({ rule: "luau/indentation", source: "  Run()\n", diagnostic: {
 		message: "Use literal tabs for code indentation.", range: { start: { line: 0, character: 0 }, end: { line: 0, character: 2 } },
 	} }, "source/example.luau"), undefined, "ambiguous non-four-space indentation stays manual");
+});
+
+test("AST-provided quick fixes preserve byte ranges after Unicode text", () => {
+	const source = 'local label = "é"; local active = if ready then false else true\n';
+	const line = source.split("\n")[0];
+	const expression = "if ready then false else true";
+	const start = line.indexOf(expression);
+	const byteColumn = index => Buffer.byteLength(line.slice(0, index), "utf8") + 1;
+	const diagnostic = {
+		message: "Use not to express the negated condition.",
+		range: { start: { line: 0, character: start }, end: { line: 0, character: start + expression.length } },
+	};
+	const snapshot = {
+		source, rule: "luau/control-flow", diagnostic,
+		fix: {
+			title: "Negate the condition",
+			range: { line: 1, column: byteColumn(start), endLine: 1, endColumn: byteColumn(start + expression.length) },
+			text: "not (ready)",
+		},
+	};
+	const fix = ruleQuickFix(snapshot, "source/example.luau");
+	assert.ok(fix);
+	assert.equal(source.slice(fix.start, fix.end), expression);
+	assert.equal(source.slice(0, fix.start) + fix.text + source.slice(fix.end),
+		'local label = "é"; local active = not (ready)\n');
 });
 
 test("header action requires a current finding and rejects edits that introduce another rule", async () => {

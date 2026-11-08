@@ -41,7 +41,7 @@ local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixt
 		fixtureFailure = if failure == "fixture" then true else nil,
 		checkerFailure = if failure == "checker" then true else nil,
 		line = finding.line, column = finding.column, endLine = finding.endLine, endColumn = finding.endColumn,
-		severity = finding.severity, message = finding.message, related = finding.related,
+		severity = finding.severity, message = finding.message, related = finding.related, fix = finding.fix,
 	}))
 end
 

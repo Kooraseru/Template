@@ -46,6 +46,18 @@ local function isErrorCall(statement: Syntax.CstStat): boolean
 	return callee.tag == "global" and callee.name.text == "error"
 end
 
+local function offsetAt(source: string, line: number, column: number): number
+	local offset = 1
+	for _ = 1, line - 1 do
+		local newline = source:find("\n", offset, true)
+		if not newline then
+			return #source + 1
+		end
+		offset = newline + 1
+	end
+	return offset + column - 1
+end
+
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)
 	if not parsed then
@@ -61,7 +73,25 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			continue
 		end
 		local span = node.location
+		local fix: Diagnostic.SuggestedEdit? = nil
+		local wholeStart = offsetAt(context.source, span.beginLine, span.beginColumn)
+		local wholeEnd = offsetAt(context.source, span.endLine, span.endColumn)
+		local conditionStart = offsetAt(context.source, node.condition.location.beginLine, node.condition.location.beginColumn)
+		local conditionEnd = offsetAt(context.source, node.condition.location.endLine, node.condition.location.endColumn)
+		local wholeText = context.source:sub(wholeStart, wholeEnd - 1)
+		if not wholeText:find("%-%-") then
+			local replacement = context.source:sub(conditionStart, conditionEnd - 1)
+			if not yes.value then
+				replacement = "not (" .. replacement .. ")"
+			end
+			fix = {
+				title = if yes.value then "Use the condition directly" else "Negate the condition",
+				range = { line = span.beginLine, column = span.beginColumn, endLine = span.endLine, endColumn = span.endColumn },
+				text = replacement,
+			}
+		end
 		findings[#findings + 1] = {
+			fix = fix,
 			line = span.beginLine, column = span.beginColumn,
 			endLine = span.endLine, endColumn = span.endColumn,
 			severity = "warning",
