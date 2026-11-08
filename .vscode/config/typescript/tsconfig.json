@@ -3,12 +3,13 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "paths": {
+      "@root/*": ["../../../*"]
+    },
     "typeRoots": [
       "../../../build/dependencies/npm/node_modules/@types"
     ],
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "allowJs": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
