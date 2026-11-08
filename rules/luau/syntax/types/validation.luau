@@ -5,7 +5,29 @@ local Rule = require("@ruleLinter/rule")
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Parser = require("@std/syntax/parser")
 local Query = require("@std/syntax/query")
+local Syntax = require("@std/syntax")
 local Utils = require("@std/syntax/utils")
+
+local function sourceAt(lines: { string }, span: Syntax.Span): string
+	if span.beginLine == span.endLine then
+		return lines[span.beginLine]:sub(span.beginColumn, span.endColumn - 1)
+	end
+	local parts = { lines[span.beginLine]:sub(span.beginColumn) }
+	for line = span.beginLine + 1, span.endLine - 1 do
+		parts[#parts + 1] = lines[line]
+	end
+	parts[#parts + 1] = lines[span.endLine]:sub(1, span.endColumn - 1)
+	return table.concat(parts, "\n")
+end
+
+local function sameAnnotation(lines: { string }, inner: Syntax.CstType, outer: Syntax.CstType): boolean
+	if inner.tag == "reference" and outer.tag == "reference" and not inner.openParameters and not outer.openParameters then
+		local innerPrefix = if inner.prefix then inner.prefix.text else nil
+		local outerPrefix = if outer.prefix then outer.prefix.text else nil
+		return inner.name.text == outer.name.text and innerPrefix == outerPrefix
+	end
+	return inner.tag == outer.tag and sourceAt(lines, inner.location) == sourceAt(lines, outer.location)
+end
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, ast = pcall(Parser.parseBlock, context.source)
@@ -13,6 +35,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 	local findings: { Diagnostic.Finding } = {}
+	local lines = context.source:split("\n")
 	for _, reference in Query.findAllFromRoot(ast, Utils.isTypeReference).nodes do
 		if reference.prefix ~= nil or reference.name.text ~= "any" then
 			continue
@@ -26,7 +49,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	end
 	for _, assertion in Query.findAllFromRoot(ast, Utils.isExprTypeAssertion).nodes do
 		local outer = assertion.annotation
-		if outer.tag ~= "reference" or outer.openParameters or (not outer.prefix and outer.name.text == "any") then
+		if outer.tag == "reference" and not outer.prefix and outer.name.text == "any" then
 			continue
 		end
 		local operand = assertion.operand
@@ -36,13 +59,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		if operand.tag ~= "cast" then
 			continue
 		end
-		local inner = operand.annotation
-		if inner.tag ~= "reference" or inner.openParameters or inner.name.text ~= outer.name.text then
-			continue
-		end
-		local innerPrefix = if inner.prefix then inner.prefix.text else nil
-		local outerPrefix = if outer.prefix then outer.prefix.text else nil
-		if innerPrefix ~= outerPrefix then
+		if not sameAnnotation(lines, operand.annotation, outer) then
 			continue
 		end
 		local start = assertion.operator.location

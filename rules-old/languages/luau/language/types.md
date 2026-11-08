@@ -16,8 +16,6 @@ When a type error appears, resolve it in this order:
 6. Move validation to the actual boundary.
 7. Use a named boundary pattern only if the uncertainty truly belongs there.
 
-Never fix a type error by casting to `any`. "The analyzer does not understand this" means the design needs sharper types, not a shrug-cast.
-
 ## Allowed Boundary Patterns
 
 Allowed boundary patterns are rare.
@@ -62,10 +60,5 @@ type Values<T> = index<T, keyof<T>>
 
 For metatable-sensitive cases, consider `rawkeyof` and `rawget` when inherited `__index` keys should not count.
 
-## Unknown vs Any
 
-Use `unknown` for raw values that must be validated.
-
-Do not use `any` in type annotations. If it appears necessary, first try a typed lookup surface, explicit structural contract, validated boundary, or API redesign. Do not export `any`.
-
-See [the explicit type validator](../../../../rules/luau/syntax/types/README.md) for its enforcement scope and fixtures.
+See [explicit types](../../../../rules/luau/syntax/types/README.md) for the active checks.
