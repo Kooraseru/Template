@@ -13,3 +13,5 @@
 
 - [Boolean expression wrapper](invalid/boolean-expression-wrapper.luau) reports grouped, negated, and combined boolean expressions that already return booleans.
 - [Short circuit value](review/short-circuit-value.luau) keeps conversion around an expression that can yield a number.
+
+- [Nil fallback](invalid/nil-fallback.luau) warns when an explicit no-result return follows the successful branch.

@@ -84,7 +84,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			continue
 		end
 		local exit = failure[1]
-		if exit.tag ~= "continue" and exit.tag ~= "break" and not (exit.tag == "return" and #exit.expressions == 0) then
+		local returnsNoResult = exit.tag == "return" and (#exit.expressions == 0
+			or (#exit.expressions == 1 and exit.expressions[1].tag == "nil"))
+		if exit.tag ~= "continue" and exit.tag ~= "break" and not returnsNoResult then
 			continue
 		end
 		local span = node.location

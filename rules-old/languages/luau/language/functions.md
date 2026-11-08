@@ -26,6 +26,6 @@ return function(value: number, minimum: number, maximum: number): number
 end
 ```
 
-Prefer [early guard clauses](../../../../rules/luau/syntax/control-flow/README.md) to nested positive conditions when the function cannot meaningfully proceed. Use explicit return values for real failures; a silent `return` is not an error strategy.
+Use explicit return values for real failures; a silent `return` is not an error strategy.
 
 See [the validator](../../../../rules/luau/design/functions/README.md) for the enforced subset.
