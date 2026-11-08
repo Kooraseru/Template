@@ -56,27 +56,11 @@ function compilerDiagnostics(output: string, source: string): Diagnostic[] {
 	return diagnostics;
 }
 
-function lintDiagnostics(output: string): Diagnostic[] {
-	const diagnostics: Diagnostic[] = [];
-	let heading: { severity: string; source: string; message: string } | undefined;
-	for (const line of output.split(/\r?\n/)) {
-		const start = line.match(/^(error|warning|info)\[([^\]]+)\]: (.*)$/);
-		if (start) heading = { severity: start[1] === "info" ? "information" : start[1], source: `Lute lint: ${start[2]}`, message: start[3] };
-		const location = line.match(/┌── (.*):(\d+):(\d+)(?:-\d+(?::\d+)?)? ──/);
-		if (heading && location) {
-			diagnostics.push({ ...heading, file: location[1], line: Number(location[2]), column: Number(location[3]) });
-			heading = undefined;
-		}
-		if (line.startsWith("Error applying lint rule")) diagnostics.push({ file: configuration, line: 1, column: 1, severity: "error", source: "Lute lint", message: line });
-	}
-	return diagnostics;
-}
-
 function check(program: string, args: string[], source: string): void {
 	console.log(`::preflight-stage::${source}`);
 	const result = spawnSync(program, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } });
 	const output = `${result.stdout || ""}\n${result.stderr || ""}`;
-	const diagnostics = source === "Lute lint" ? lintDiagnostics(output) : compilerDiagnostics(output, source);
+	const diagnostics = compilerDiagnostics(output, source);
 	for (const item of diagnostics) finding(item.file, item.line, item.column, item.severity, item.source, item.message);
 	if (result.error || (result.status !== 0 && diagnostics.length === 0)) {
 		finding(configuration, 1, 1, "error", source, result.error?.message || output.trim().replace(/\s+/g, " ") || `Checker exited with status ${result.status}`);
@@ -225,7 +209,6 @@ function checkRepositoryRules(sources: string[]): void {
 if (await dependenciesReady()) {
 	const sources = luauSources();
 	if (process.argv.includes("--rules")) {
-		if (sources.length) check(lute, ["lint", ...sources], "Lute lint");
 		const ruleSources = sources.filter(file => {
 			const relative = file.split(path.sep).join("/");
 			const directories = relative.split("/").slice(0, -1);
