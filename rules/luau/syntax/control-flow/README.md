@@ -1,6 +1,6 @@
 # Guard-first branches
 
-The validator flags a two-branch statement when the successful branch consists of calls or assignments and the fallback is only a bare `return`, `return nil`, `continue`, `break`, or a call to the global `error` built-in. Moving the operations after the guard keeps local declarations in their original scope. The rule offers a diagnostic for manual review.
+The validator flags a two-branch statement when the successful branch consists of calls or assignments and the fallback is only a bare `return`, a return starting with `nil` (with or without further results), `continue`, `break`, or a call to the global `error` built-in. Moving the operations after the guard keeps local declarations in their original scope. The rule offers a diagnostic for manual review.
 
 The validator also flags a direct `pcall(assert, ...)` using both global built-ins. A direct assertion for an invariant passes. Shadowed functions and protected callbacks with their own logic require review.
 

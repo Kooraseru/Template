@@ -17,3 +17,4 @@
 - [Nil fallback](invalid/nil-fallback.luau) warns when an explicit no-result return follows the successful branch.
 - [Error fallback](invalid/error-fallback.luau) warns on an else branch that only raises an error.
 - [Shadowed error](valid/shadowed-error-fallback.luau) passes because a local function may return normally.
+- [Failure result](invalid/failure-result.luau) warns when a nil-first return also carries a failure reason.

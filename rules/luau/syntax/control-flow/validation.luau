@@ -93,7 +93,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		local exit = failure[1]
 		local returnsNoResult = exit.tag == "return" and (#exit.expressions == 0
-			or (#exit.expressions == 1 and exit.expressions[1].tag == "nil"))
+			or exit.expressions[1].tag == "nil")
 		if exit.tag ~= "continue" and exit.tag ~= "break" and not returnsNoResult and not isErrorCall(exit) then
 			continue
 		end
