@@ -5,21 +5,19 @@ local Parser = require("@std/syntax/parser")
 local Syntax = require("@std/syntax")
 local Visitor = require("@std/syntax/visitor")
 
-local function visitLineComments(source: string, callback: (string, Syntax.Span) -> ())
-	local parsed, file = pcall(Parser.parse, source)
-	if not parsed then
-		return
-	end
+type CommentCallback = (string, Syntax.Span, boolean) -> ()
+
+local function visitComments(file: Syntax.CstParseResult, callback: CommentCallback)
 	local seen: { [string]: boolean } = {}
 	local function visitTrivia(trivia: Syntax.Trivia)
-		if trivia.tag ~= "comment" then
+		if trivia.tag ~= "comment" and trivia.tag ~= "blockcomment" then
 			return
 		end
 		local span = trivia.location
 		local key = `{span.beginLine}:{span.beginColumn}`
 		if not seen[key] then
 			seen[key] = true
-			callback(trivia.text, span)
+			callback(trivia.text, span, trivia.tag == "blockcomment")
 		end
 	end
 	local function visitToken(token: Syntax.CstToken): boolean
@@ -37,4 +35,15 @@ local function visitLineComments(source: string, callback: (string, Syntax.Span)
 	visitToken(file.eof)
 end
 
-return { VisitLineComments = visitLineComments }
+local function visitLineComments(source: string, callback: (string, Syntax.Span) -> ())
+	local parsed, file = pcall(Parser.parse, source)
+	if parsed then
+		visitComments(file, function(text, span, block)
+			if not block then
+				callback(text, span)
+			end
+		end)
+	end
+end
+
+return { VisitComments = visitComments, VisitLineComments = visitLineComments }

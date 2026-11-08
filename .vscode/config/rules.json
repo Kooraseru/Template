@@ -4,6 +4,9 @@
     "fixtureSeverity": "warning"
   },
   "rules": {
+    "luau/phase-comments": {
+      "severity": "info"
+    },
     "luau/file-system": {
       "settings": {
         "sectionMarkers": {
