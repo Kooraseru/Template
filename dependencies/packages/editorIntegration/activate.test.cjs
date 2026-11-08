@@ -4,9 +4,10 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const test = require("node:test");
 const { activate } = require("./activate.cjs");
+const workflow = require("../../../.vscode/config/workflow.json");
 
 function disposable() { return { dispose() {} }; }
-function fixture(root, textDocuments = []) {
+function fixture(root, textDocuments = [], autoRefresh = workflow.rules.autoRefresh) {
 	const commands = new Map();
 	const watchers = [];
 	const statusItems = [];
@@ -51,7 +52,8 @@ function fixture(root, textDocuments = []) {
 		Diagnostic: class { constructor(range, message, severity) { Object.assign(this, { range, message, severity }); } },
 	};
 	const workspaceFolder = { uri: { fsPath: root } };
-	return { api: activate({ vscode, workspaceFolder, subscriptions, signal: new AbortController().signal, asAbsolutePath: relative => path.join(root, relative) }), commands, watchers, statusItems, diagnosticCalls, workspace, subscriptions, outputLines, progress, notices };
+	const config = { ...workflow, rules: { ...workflow.rules, autoRefresh } };
+	return { api: activate({ vscode, workspaceFolder, subscriptions, signal: new AbortController().signal, asAbsolutePath: relative => path.join(root, relative) }, config), commands, watchers, statusItems, diagnosticCalls, workspace, subscriptions, outputLines, progress, notices };
 }
 
 test("workspace status and command identifiers are unique per root", () => {
@@ -149,7 +151,7 @@ test("dependency progress reports work and closes on success, failure, or dispos
 });
 
 test("rule changes offer one explicit Rules-only refresh", async () => {
-	const state = fixture("C:/repo");
+	const state = fixture("C:/repo", [], false);
 	const actions = [];
 	state.api.start(action => actions.push(action));
 	const watcher = state.watchers[0];
@@ -164,6 +166,27 @@ test("rule changes offer one explicit Rules-only refresh", async () => {
 	state.notices[0].resolve("Refresh Rules");
 	await new Promise(resolve => setImmediate(resolve));
 	assert.deepEqual(actions, ["rules"]);
+	state.api.dispose();
+});
+
+test("automatic Rules refresh combines saves and disk events without prompting", async () => {
+	const state = fixture("C:/repo", [], true);
+	const actions = [];
+	state.api.start(action => actions.push(action));
+	const watcher = state.watchers[0];
+	const rule = { scheme: "file", fsPath: "C:/repo/rules/luau/style/new/validation.luau" };
+	const document = { uri: rule, isDirty: true };
+	state.workspace.change({ document, contentChanges: [{}] });
+	await new Promise(resolve => setTimeout(resolve, 400));
+	assert.deepEqual(actions, []);
+	state.workspace.save(document);
+	watcher.change(rule);
+	watcher.change({ scheme: "file", fsPath: "C:/repo/.vscode/config/rules.json" });
+	watcher.create(rule);
+	watcher.delete(rule);
+	await new Promise(resolve => setTimeout(resolve, 400));
+	assert.deepEqual(actions, ["rules"]);
+	assert.deepEqual(state.notices, []);
 	state.api.dispose();
 });
 

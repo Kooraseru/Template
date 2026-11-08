@@ -20,6 +20,7 @@
   },
   "rules": {
     "command": ["node", "dependencies/packages/preflightChecker/index.ts", "--rules"],
+    "autoRefresh": true,
     "notification": "Checking repository rules",
     "status": {
       "passed": "$(check) Rules passed",

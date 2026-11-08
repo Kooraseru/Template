@@ -6,8 +6,7 @@ const path = require("node:path");
 
 const { registerRuleActions } = require("./ruleActions.cjs");
 const { registerRuleSettings } = require("./ruleSettings.cjs");
-function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePath }) {
-	const workflow = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../.vscode/config/workflow.json"), "utf8"));
+function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePath }, workflow = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../.vscode/config/workflow.json"), "utf8"))) {
 	const setupLabels = workflow.dependencies.status;
 	const setupFiles = new Set(workflow.watch.setupInputs);
 	const root = workspaceFolder.uri?.fsPath || workspaceFolder.fsPath;
@@ -197,6 +196,8 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		callback = controllerCallback;
 		const changed = new Set();
 		const isRuleFixture = relative => /^rules\/.*\/tests\/(valid|invalid|review)\/.*\.luau$/.test(relative);
+		const isRuleInput = relative => relative.startsWith("rules/luau/") ||
+			relative === ".vscode/config/rules.json" || relative === ".vscode/config/rules.schema.json";
 		const watchedPath = uri => {
 			if (uri.scheme !== "file" || !isInWorkspace(uri)) return undefined;
 			const relative = path.relative(root, uri.fsPath).split(path.sep).join("/");
@@ -215,8 +216,8 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		const rulesWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{rules/luau/**,.vscode/config/rules.json,.vscode/config/rules.schema.json}"));
 		const onRuleChange = uri => {
 			const relative = watchedPath(uri);
-			if (!relative || disposed) return;
-			if (isRuleFixture(relative)) {
+			if (!relative || !isRuleInput(relative) || disposed) return;
+			if (workflow.rules.autoRefresh === true || isRuleFixture(relative)) {
 				schedule("rules");
 				return;
 			}
@@ -239,9 +240,8 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		owned.push(vscode.workspace.onDidSaveTextDocument(document => {
 			const relative = watchedPath(document.uri);
 			if (!relative || !changed.delete(relative)) return;
-			if (isRuleFixture(relative)) schedule("rules");
-			else if (!relative.startsWith("rules/") && relative !== ".vscode/config/rules.json"
-				&& relative !== ".vscode/config/rules.schema.json") schedule(setupFiles.has(relative) ? "run" : "check");
+			if (isRuleInput(relative)) onRuleChange(document.uri);
+			else schedule(setupFiles.has(relative) ? "run" : "check");
 		}));
 		owned.push(vscode.workspace.onDidCloseTextDocument(document => {
 			changed.delete(watchedPath(document.uri));

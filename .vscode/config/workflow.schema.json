@@ -131,6 +131,11 @@
     "rules": {
       "type": "object",
       "properties": {
+        "autoRefresh": {
+          "type": "boolean",
+          "default": false,
+          "description": "Rerun Rules automatically after saved or external changes to active rules or their policy."
+        },
         "command": {
           "type": "array",
           "items": {
