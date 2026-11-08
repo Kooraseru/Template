@@ -63,6 +63,28 @@ local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Sp
 	return nil
 end
 
+local function boundWrapper(block: Syntax.CstStatBlock, stem: string): SourceRange?
+	local binding, returned = block.statements[1], block.statements[2]
+	if (binding.tag ~= "local" and binding.tag ~= "const") or #binding.variables ~= 1
+		or #binding.values ~= 1 or binding.values[1].tag ~= "function"
+		or returned.tag ~= "return" or #returned.expressions ~= 1 then
+		return nil
+	end
+	local result = returned.expressions[1]
+	if result.tag ~= "table" or #result.entries ~= 1 then
+		return nil
+	end
+	local member = result.entries[1]
+	if member.kind ~= "record" or member.key.text ~= stem or member.value.tag ~= "local"
+		or member.value["local"] ~= binding.variables[1] then
+		return nil
+	end
+	return {
+		beginLine = binding.location.beginLine, beginColumn = binding.location.beginColumn,
+		endLine = returned.location.endLine, endColumn = returned.location.endColumn,
+	}
+end
+
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local stem = context.path:match("([^/\\]+)%.luau$")
 	if not stem or stem == "init" or stem == "index" then
@@ -73,6 +95,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 	local span = if #block.statements == 1 then inlineWrapper(block.statements[1], stem)
+		elseif #block.statements == 2 then boundWrapper(block, stem)
 		elseif #block.statements == 3 then namedWrapper(block, stem)
 		else nil
 	if not span then
