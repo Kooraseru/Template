@@ -10,7 +10,7 @@ Install the recommended [Workbench Bridge](https://marketplace.visualstudio.com/
 
 ## Dependencies and local checks
 
-`dependencies/dependencies.toml` declares dependency sources and output locations; `dependencies/dependencies.lock` pins upstream versions and assets. Checked-in local tools live under `dependencies/packages/`, including `dependencyLoader`, `dataFormats`, and `ruleLinter`.
+`dependencies/dependencies.json` declares dependency sources and output locations; `dependencies/dependencies.lock` pins upstream versions, release assets, and the npm tree. Checked-in local tools live under `dependencies/packages/`, including `dependencyLoader`, `dataFormats`, and `ruleLinter`.
 
 Install or refresh all declared dependencies and generate the local config discovery bridges with:
 
@@ -33,7 +33,7 @@ node dependencies/packages/dependencyLoader/index.ts --exec luau.lute check .git
 node dependencies/packages/dependencyLoader/index.ts --exec luau.lute lint .github/ci
 ```
 
-The loader writes managed package/runtime files to `build/dependencies/packages/`, executables to `build/dependencies/binaries/`, and generated type definitions to `build/dependencies/types/`. These build outputs are ignored. Local source packages stay checked in under `dependencies/packages/`.
+The loader writes managed package/runtime files to `build/dependencies/packages/`, executables to `build/dependencies/bin/`, and generated type definitions to `build/dependencies/types/`. These build outputs are ignored. The npm provider writes its manifest, native lock, and install to build/dependencies/npm/. See the [dependency provider contract](../../dependencies/README.md). Local source packages stay checked in under `dependencies/packages/`.
 
 ## Configuration
 
@@ -45,13 +45,12 @@ From the repository root, install the managed tools and the pinned Preflight pac
 
 ```powershell
 node dependencies/packages/dependencyLoader/index.ts
-npm --prefix dependencies ci --ignore-scripts
 ```
 
 Analyze the actual Bootstrap graph for an event:
 
 ```powershell
-node dependencies/node_modules/preflight/bin/preflight.js plan --provider .github/ci/preflight/provider.cjs --entry pull_request
+node build/dependencies/npm/node_modules/preflight/bin/preflight.js plan --provider .github/ci/preflight/provider.cjs --entry pull_request
 ```
 
 For a release plan, use `--entry push --target distribution/releases/publish`. Preflight includes the selected task's upstream dependencies. Plan analysis resolves the graph without running its tasks.
@@ -59,17 +58,17 @@ For a release plan, use `--entry push --target distribution/releases/publish`. P
 To show the pull-request plan in VS Code, add this command to the workspace's `workbenchBridge.workspaceCommands` after installing the package:
 
 ```json
-["node", "dependencies/node_modules/preflight/bin/preflight.js", "workspace", "--provider", ".github/ci/preflight/provider.cjs", "--bridge-client", "dependencies/packages/workbenchBridgeClient"]
+["node", "build/dependencies/npm/node_modules/preflight/bin/preflight.js", "workspace", "--provider", ".github/ci/preflight/provider.cjs", "--bridge-client", "dependencies/packages/workbenchBridgeClient"]
 ```
 
 Template owns editor workflow settings in `.vscode/config/workflow.json`. Each command is an argument array with an executable followed by its arguments. The same file controls status labels, the dependency progress notification, and which paths trigger a rerun. Reload the VS Code window after changing this configuration.
 
 Automatic editor reruns happen after content changes are saved in watched source paths. The editor watches rules/ for on-disk additions, edits, and deletions. These changes prompt for **Refresh Rules**, which reruns Rules independently and rediscovers validators. Rule examples are excluded. Saved fixture edits refresh fixture diagnostics separately from the workspace result. Run the fixture suites directly to verify the full acceptance matrices.
 
-Rule diagnostics carry full spans and link to the owning rule. Expected fixture findings use the **Rule fixture** source in Problems. They are informational and do not count against either status. Rules reports lint violations and fixture regressions. Preflight reports TypeScript and Luau compile-check results. Saving a fixture refreshes rule results.
+Rule diagnostics carry full spans and link to the owning rule. Expected fixture findings use the **Rule fixture** source in Problems and default to warning. They do not count against either status. Rules reports lint violations and fixture regressions. Preflight reports TypeScript and Luau compile-check results. Saving a fixture refreshes rule results.
 
 JSON extraction is opt-in. In workflow.json, set checks.jsonExtractionLoaders to an array of objects with path (workspace glob), runtime ("lute"), returnContract ("json-object"), and expression (a project-owned Luau expression with one {file} placeholder). Preflight replaces the placeholder with the quoted sibling filename. The expression must load relative to the module and return the same validated shape. The default has no extraction loaders.
 
 ### Rules severity
 
-Set defaultSeverity and fixtureSeverity in `.vscode/config/rules.json`. Both default to warning. Set a rule-specific severity under overrides using its full ID, for example `"rules/languages/luau/language/types": "error"`. The supported levels are error, warning, info, and off. Off hides the matching findings. Fixture expectations still run and unexpected outcomes remain errors. Expected fixture findings never affect the Rules status. Changes to this file offer **Refresh Rules**.
+See the [Rules settings contract](../../rules/general/workflows/review/checker-contract.md) for discovered IDs, rule settings, and severity overrides. Run the dependency loader with --update-lock after changing a dependency declaration.

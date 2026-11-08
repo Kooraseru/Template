@@ -12,7 +12,7 @@ if (format === "toml") {
 	process.stdout.write(JSON.stringify(toml.parse(input)));
 } else if (format === "yaml") {
 	const yaml = require(
-		path.join(root, "build/dependencies/packages/yaml/dist/index.js"),
+		path.join(root, "build/dependencies/npm/node_modules/yaml/dist/index.js"),
 	);
 	process.stdout.write(JSON.stringify(yaml.parse(input)));
 } else throw new Error(`Unsupported format: ${format}`);

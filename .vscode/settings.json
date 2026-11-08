@@ -23,7 +23,7 @@
 		"init.luau": "*.luau",
 		"package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, node_modules",
 		"tsconfig.json": "tsconfig.*.json",
-		"dependencies.toml": "dependencies.lock"
+		"dependencies.json": "dependencies.lock, dependencies.schema.json"
 	},
 
 	// Luau Language Server
@@ -32,9 +32,10 @@
 	"luau-lsp.ignoreGlobs": [
 		"**/_Index/**",
 		"**/build/dependencies/**",
-		"rules/**/tests/valid/**",
-		"rules/**/tests/invalid/**",
-		"rules/**/tests/review/**"
+		"rules-old/**",
+		"rules/luau/**/tests/valid/**",
+		"rules/luau/**/tests/invalid/**",
+		"rules/luau/**/tests/review/**"
 	],
 	"luau-lsp.diagnostics.workspace": true,
 	"luau-lsp.sourcemap.enabled": false,
@@ -56,6 +57,10 @@
 
 	// JSON Schemas
 	"json.schemas": [
+		{
+			"fileMatch": ["/dependencies/dependencies.json"],
+			"url": "./dependencies/dependencies.schema.json"
+		},
 		{
 			"fileMatch": ["/.vscode/config/rules.json"],
 			"url": "./.vscode/config/rules.schema.json"

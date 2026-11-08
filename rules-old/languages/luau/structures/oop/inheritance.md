@@ -1,0 +1,7 @@
+# OOP Inheritance
+
+Avoid inheritance by default.
+
+Prefer composition or explicit structural interfaces. Add inheritance guidance only when real code needs it and the ownership tradeoff is clear.
+
+The [OOP validator](../../../../../rules/luau/design/objects/README.md) flags direct inheritance between two locally owned instance metatables. Dynamic inheritance remains a review case.

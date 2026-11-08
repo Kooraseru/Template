@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const path = require("node:path");
 
 const { registerRuleActions } = require("./ruleActions.cjs");
+const { registerRuleSettings } = require("./ruleSettings.cjs");
 function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePath }) {
 	const workflow = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../.vscode/config/workflow.json"), "utf8"));
 	const setupLabels = workflow.dependencies.status;
@@ -140,7 +141,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			);
 			diagnostic.source = finding.fixture ? "Rule fixture" : kind === "rules" && finding.rule ? "Rules" : finding.source || (kind === "rules" ? "Rules" : "Preflight");
 			if (finding.rule) {
-				diagnostic.code = { value: path.posix.basename(finding.rule), target: vscode.Uri.file(asAbsolutePath(finding.rule + "/README.md")) };
+				diagnostic.code = { value: path.posix.basename(finding.rule), target: vscode.Uri.file(asAbsolutePath(finding.ruleDoc || finding.rule + "/README.md")) };
 				if (finding.relatedRanges) diagnostic.relatedInformation = finding.relatedRanges.map(related => new vscode.DiagnosticRelatedInformation(new vscode.Location(uri, related), "Static assignment"));
 				if (sourceText !== undefined && !finding.fixture && crypto.createHash("sha256").update(sourceText).digest("hex") === finding.sourceHash) {
 					const key = uri.toString() + ":" + diagnostic.code.value + ":" + range.start.line + ":" + range.start.character;
@@ -211,7 +212,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			}
 		}));
 		// Rules can also change on disk through Git or an external editor.
-		const rulesWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{rules/**,.vscode/config/rules.json}"));
+		const rulesWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{rules/luau/**,.vscode/config/rules.json,.vscode/config/rules.schema.json}"));
 		const onRuleChange = uri => {
 			const relative = watchedPath(uri);
 			if (!relative || disposed) return;
@@ -239,12 +240,14 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			const relative = watchedPath(document.uri);
 			if (!relative || !changed.delete(relative)) return;
 			if (isRuleFixture(relative)) schedule("rules");
-			else if (!relative.startsWith("rules/") && relative !== ".vscode/config/rules.json") schedule(setupFiles.has(relative) ? "run" : "check");
+			else if (!relative.startsWith("rules/") && relative !== ".vscode/config/rules.json"
+				&& relative !== ".vscode/config/rules.schema.json") schedule(setupFiles.has(relative) ? "run" : "check");
 		}));
 		owned.push(vscode.workspace.onDidCloseTextDocument(document => {
 			changed.delete(watchedPath(document.uri));
 		}));
 		owned.push(...registerRuleActions({ vscode, root, workflow, actionSources, command }));
+		owned.push(registerRuleSettings({ vscode, workspaceFolder, root }));
 		owned.push(vscode.commands.registerCommand(command("showOutput"), () => output.show(true)));
 		owned.push(vscode.commands.registerCommand(command("runSetup"), () => dispatch("run")));
 		owned.push(vscode.commands.registerCommand(command("check"), () => dispatch("compile")));

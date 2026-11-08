@@ -2,12 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { effective, loadPolicy, policyFile } from "../ruleLinter/policy.cjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const ignoredDirectories = new Set([".git", ".codex", "build", "node_modules", "vendor"]);
+const ignoredDirectories = new Set([".git", ".codex", "build", "node_modules", "vendor", "rules-old"]);
 const configuration = ".vscode/config/typescript/tsconfig.json";
-const lute = path.join(root, "build/dependencies/binaries/lute", process.platform === "win32" ? "lute.exe" : "lute");
-const typescript = path.join(root, "build/dependencies/packages/typescript/bin/tsc");
+const lute = path.join(root, "build/dependencies/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+const typescript = path.join(root, "build/dependencies/npm/node_modules/typescript/bin/tsc");
 
 function finding(file: string, line: number, column: number, severity: string, source: string, message: string): void {
 	console.log(`${path.resolve(root, file)}:${line}:${column}: ${severity}: [${source}] ${message}`);
@@ -18,7 +19,7 @@ function luauSources(directory = root): string[] {
 	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isSymbolicLink()) continue;
 		const file = path.join(directory, entry.name);
-		if (entry.isDirectory() && !ignoredDirectories.has(entry.name) && !(["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep))) result.push(...luauSources(file));
+		if (entry.isDirectory() && !ignoredDirectories.has(entry.name) && !(["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep + "luau" + path.sep))) result.push(...luauSources(file));
 		else if (entry.isFile() && entry.name.endsWith(".luau")) result.push(path.relative(root, file));
 	}
 	return result.sort();
@@ -29,9 +30,8 @@ async function dependenciesReady(): Promise<boolean> {
 		lute,
 		typescript,
 		path.join(root, ".luaurc"),
-		path.join(root, "build/dependencies/packages/lute/.dependency.json"),
-		path.join(root, "build/dependencies/packages/typescript/.dependency.json"),
-		path.join(root, "build/dependencies/types/node/.dependency.json"),
+		path.join(root, "build/dependencies/.loader-state.json"),
+		path.join(root, "build/dependencies/npm/node_modules/@types/node/index.d.ts"),
 	];
 	const deadline = Date.now() + 120000;
 	while (required.some(file => !fs.existsSync(file))) {
@@ -81,51 +81,64 @@ function check(program: string, args: string[], source: string): void {
 	}
 }
 
-const policyPath = ".vscode/config/rules.json";
-const ruleSeverities = new Set(["error", "warning", "info", "off"]);
-
-function readRulePolicy(): { defaultSeverity: string; fixtureSeverity: string; overrides: Record<string, string>; ruleSettings: Record<string, Record<string, unknown>> } {
-	const policy = JSON.parse(fs.readFileSync(path.join(root, policyPath), "utf8"));
-	if (!policy || !ruleSeverities.has(policy.defaultSeverity) || !ruleSeverities.has(policy.fixtureSeverity)
-		|| !policy.overrides || typeof policy.overrides !== "object" || Array.isArray(policy.overrides)
-		|| !Object.values(policy.overrides).every(value => ruleSeverities.has(value as string))
-		|| !policy.ruleSettings || typeof policy.ruleSettings !== "object" || Array.isArray(policy.ruleSettings)
-		|| !Object.values(policy.ruleSettings).every(value => value && typeof value === "object" && !Array.isArray(value))) {
-		throw new Error("Set valid severities, and make ruleSettings an object mapping rule IDs to settings objects.");
-	}
-	return policy;
+function reportRuleError(error: unknown): void {
+	const detail = error as Partial<Diagnostic>;
+	finding(detail.file || policyFile, detail.line || 1, detail.column || 1, "error", "Rules",
+		error instanceof Error ? error.message : String(error));
+	process.exitCode = 1;
 }
 
 function checkRepositoryRules(sources: string[]): void {
 	console.log("::preflight-stage::Repository rules");
 	let policy;
-	try {
-		policy = readRulePolicy();
-	} catch (error) {
-		finding(policyPath, 1, 1, "error", "Rules", error instanceof Error ? error.message : String(error));
-		return;
-	}
-	const result = spawnSync(lute, ["run", "dependencies/packages/ruleLinter/editor.luau", ...sources], {
+	try { policy = loadPolicy(root); }
+	catch (error) { reportRuleError(error); return; }
+	const paths = sources.map(file => file.split(path.sep).join("/"));
+	const entries = [...policy.rules.values()].map(rule => {
+		const configured = policy.result.get(rule.id);
+		const variants = [];
+		const settingsFor: Record<string, number> = Object.create(null);
+		for (const [index, override] of (configured.overrides || []).entries()) {
+			if (Object.hasOwn(override, "settings")) variants.push({ index: index + 1, settings: override.settings });
+		}
+		if (variants.length) for (const file of paths) {
+			const { settingsIndex } = effective(configured, file);
+			if (settingsIndex) settingsFor[file] = settingsIndex;
+		}
+		const settings = configured.settings ?? (rule.schema ? {} : undefined);
+		return { ...rule, configurable: Boolean(rule.schema), settings, variants, settingsFor };
+	});
+	const result = spawnSync(lute, ["run", "dependencies/packages/ruleLinter/editor.luau"], {
 		cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
+		input: JSON.stringify({ sources: paths, entries }) + "\n",
 	});
 	if (result.error || result.status !== 0) {
-		const detail = result.error?.message || result.stderr?.trim().replace(/\s+/g, " ") || `Lute exited with status ${result.status}`;
+		const detail = result.error?.message || result.stderr?.trim().replace(/\s+/g, " ") || "Lute exited with status " + result.status;
 		finding("dependencies/packages/ruleLinter/editor.luau", 1, 1, "error", "Repository rules", "Checker failed: " + detail);
+		process.exitCode = 1;
 		return;
 	}
+	const marker = "::rule-finding::";
+	const settingsError = "::rule-settings-error::";
 	for (const line of (result.stdout || "").split(/\r?\n/)) {
 		if (!line) continue;
-		const marker = "::rule-finding::";
+		if (line.startsWith(settingsError)) {
+			const failure = JSON.parse(line.slice(settingsError.length));
+			const scope = ["rules", policy.result.get(failure.rule).key];
+			if (failure.index) scope.push("overrides", failure.index - 1);
+			reportRuleError(policy.document.error(failure.rule + ": " + failure.message, [...scope, "settings"]));
+			continue;
+		}
 		if (line.startsWith(marker)) {
 			const rule = JSON.parse(line.slice(marker.length));
-			const severity = rule.fixtureFailure || rule.checkerFailure ? "error" : rule.fixture ? policy.fixtureSeverity
-				: Object.hasOwn(policy.overrides, rule.rule) ? policy.overrides[rule.rule] : policy.defaultSeverity;
+			const configured = policy.result.get(rule.rule);
+			const severity = rule.fixtureFailure || rule.checkerFailure ? "error" : rule.fixture ? configured.fixtureSeverity
+				: effective(configured, rule.file).severity;
+			if (severity === "error" && !rule.fixture) process.exitCode = 1;
 			if (severity !== "off") console.log(marker + JSON.stringify({ ...rule, severity: severity === "info" ? "information" : severity }));
 			continue;
 		}
-		const match = line.match(/^(.*?):(\d+):(\d+): (error|warning|information): \[([^\]]+)\] (.*)$/);
-		if (match) finding(match[1], Number(match[2]), Number(match[3]), match[4], match[5], match[6]);
-		else console.log(line);
+		console.log(line);
 	}
 }
 
@@ -144,5 +157,5 @@ if (await dependenciesReady()) {
 		if (sources.length) check(lute, ["check", ...sources], "Lute");
 	}
 } else {
-	finding("dependencies/dependencies.toml", 1, 1, "error", "Preflight", "Dependencies are unavailable. Run workspace dependency setup and check its status-bar output.");
+	finding("dependencies/dependencies.json", 1, 1, "error", "Preflight", "Dependencies are unavailable. Run workspace dependency setup and check its status-bar output.");
 }

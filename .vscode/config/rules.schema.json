@@ -1,65 +1,90 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Template rules policy",
-  "description": "A dynamic policy map keyed by rule directory paths under rules/.",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
-    "defaultSeverity": {
-      "description": "Severity for source findings without a rule override.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/severity"
-        }
-      ]
-    },
-    "fixtureSeverity": {
-      "description": "Display severity for expected fixture findings. Fixture regressions remain errors.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/severity"
-        }
-      ]
-    },
-    "overrides": {
+    "defaults": {
       "type": "object",
-      "description": "Severity overrides keyed by full rule directory path.",
-      "patternProperties": {
-        "^rules/(?:[^/]+/)*[^/]+$": {
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
+          "$ref": "#/definitions/severity"
+        },
+        "fixtureSeverity": {
           "$ref": "#/definitions/severity"
         }
-      },
-      "additionalProperties": false
+      }
     },
-    "ruleSettings": {
+    "rules": {
       "type": "object",
-      "description": "Open settings objects keyed by the corresponding rule folder path. Each rule owns its fields.",
-      "patternProperties": {
-        "^rules/(?:[^/]+/)*[^/]+$": {
-          "type": "object",
-          "description": "Settings owned by this rule. Rule-specific fields remain open for the owning rule.",
-          "additionalProperties": true
-        }
-      },
-      "additionalProperties": false
+      "additionalProperties": {
+        "$ref": "#/definitions/rule"
+      }
     }
   },
-  "required": [
-    "defaultSeverity",
-    "fixtureSeverity",
-    "overrides",
-    "ruleSettings"
-  ],
-  "additionalProperties": false,
   "definitions": {
     "severity": {
-      "type": "string",
       "enum": [
         "error",
         "warning",
         "info",
         "off"
-      ],
-      "default": "warning"
+      ]
+    },
+    "settings": {
+      "type": "object"
+    },
+    "globs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
+          "$ref": "#/definitions/severity"
+        },
+        "fixtureSeverity": {
+          "$ref": "#/definitions/severity"
+        },
+        "settings": {
+          "$ref": "#/definitions/settings"
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/override"
+          }
+        }
+      }
+    },
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "$ref": "#/definitions/globs"
+        },
+        "excludedFiles": {
+          "$ref": "#/definitions/globs"
+        },
+        "severity": {
+          "$ref": "#/definitions/severity"
+        },
+        "settings": {
+          "$ref": "#/definitions/settings"
+        }
+      },
+      "required": [
+        "files"
+      ]
     }
   }
 }

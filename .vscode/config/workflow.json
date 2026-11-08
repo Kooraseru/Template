@@ -28,7 +28,7 @@
     }
   },
   "watch": {
-    "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "source/**", "rules/**", ".luaurc", "tsconfig.json"],
-    "setupInputs": ["dependencies/dependencies.toml", "dependencies/dependencies.lock", ".vscode/config/luau/.luaurc", ".vscode/config/typescript/tsconfig.json"]
+    "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "source/**", "rules/luau/**", ".luaurc", "tsconfig.json"],
+    "setupInputs": ["dependencies/dependencies.json", "dependencies/dependencies.lock", ".vscode/config/luau/.luaurc", ".vscode/config/typescript/tsconfig.json"]
   }
 }

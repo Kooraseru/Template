@@ -1,74 +1,56 @@
 -- dependencies/packages/ruleLinter/runner.luau
 --!strict
 
---# Modules
-
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
 
---# Helpers
-
---- Resolves the rule identity from its validation module path.
-local function get_rule_identity(entry: string): string
-	local identity = entry
-		:gsub("/validation/init%.luau$", "")
-		:gsub("/validation%.luau$", "")
-
-	return identity
+local function loadRule(entry: string): unknown
+	local modulePath = "@workspace/" .. entry:gsub("/init%.luau$", ""):gsub("%.luau$", "")
+	local loaded, result = pcall(require, modulePath)
+	if not loaded then
+		error(tostring(result), 0)
+	end
+	return result
 end
 
---- Loads a rule and verifies that it exposes the required Check method.
-local function load_rule(entry: string, identity: string): Rule.Rule
-	local module_path = `@workspace/{entry:gsub("/init%.luau$", ""):gsub("%.luau$", "")}`
-	local loaded, result = pcall(require, module_path)
-
-	if not loaded then
-		error(`Failed to load rule {identity}: {tostring(result)}`, 0)
+local function configure(module: unknown, settings: unknown): Rule.Rule
+	local result = module
+	if type(module) == "table" then
+		local create = (module :: { [string]: unknown }).Create
+		if type(create) == "function" then
+			result = (create :: (unknown) -> unknown)(settings)
+		end
 	end
-
 	if type(result) ~= "table" or type(result.Check) ~= "function" then
-		error(`Rule {identity} does not implement Check`, 0)
+		error("Rule does not implement Check", 0)
 	end
-
 	return result :: Rule.Rule
 end
 
---# Functions
-
---- Executes discovered rules against the supplied sources.
---- @param entries Paths to rule validation modules.
---- @param sources Source contexts to validate.
---- @return Collected diagnostics from all rule checks.
-local function run(entries: { string }, sources: { Rule.Context }): { Diagnostic.Diagnostic }
-	--# Variables
-
+local function check(validator: Rule.Rule, identity: string, sources: { Rule.Context }): { Diagnostic.Diagnostic }
 	local diagnostics: { Diagnostic.Diagnostic } = {}
-
-	-- Execute each rule against every source.
-	for _, entry in entries do
-		local identity = get_rule_identity(entry)
-		local validator = load_rule(entry, identity)
-
-		for _, source in sources do
-			local checked, findings = pcall(validator.Check, validator, source)
-			if not checked then
-				error(`Rule {identity} failed while checking {source.path}: {tostring(findings)}`, 0)
-			end
-
-			-- Associate each finding with its source and rule.
-			for _, finding in findings do
-				table.insert(diagnostics, {
-					path = source.path,
-					rule = identity,
-					finding = finding,
-				})
-			end
+	for _, source in sources do
+		local checked, findings = pcall(validator.Check, validator, source)
+		if not checked then
+			error("Rule " .. identity .. " failed while checking " .. source.path .. ": " .. tostring(findings), 0)
+		end
+		for _, finding in findings do
+			table.insert(diagnostics, { path = source.path, rule = identity, finding = finding })
 		end
 	end
-
 	return diagnostics
 end
 
-return {
-	Run = run,
-}
+local function run(entries: { string }, sources: { Rule.Context }): { Diagnostic.Diagnostic }
+	local diagnostics: { Diagnostic.Diagnostic } = {}
+	for _, entry in entries do
+		local directory = entry:gsub("/validation/init%.luau$", ""):gsub("/validation%.luau$", "")
+		local identity = "luau/" .. (directory:match("[^/]+$") or directory)
+		for _, diagnostic in check(configure(loadRule(entry), nil), identity, sources) do
+			table.insert(diagnostics, diagnostic)
+		end
+	end
+	return diagnostics
+end
+
+return { Load = loadRule, Configure = configure, Check = check, Run = run }

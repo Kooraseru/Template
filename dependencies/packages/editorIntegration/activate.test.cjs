@@ -42,7 +42,7 @@ function fixture(root, textDocuments = []) {
 			createOutputChannel() { return { appendLine(line) { outputLines.push(line); }, show() {}, dispose() {} }; },
 			createStatusBarItem() { const item = { show() {}, dispose() {} }; statusItems.push(item); return item; },
 		},
-		languages: { registerCodeActionsProvider() { return disposable(); }, createDiagnosticCollection() { return { clear() { diagnosticCalls.cleared = true; }, set(uri, items) { diagnosticCalls.sets.push({ uri, items }); }, delete(uri) { diagnosticCalls.deletes.push(uri); }, dispose() {} }; } },
+		languages: { registerCompletionItemProvider() { return disposable(); }, registerCodeActionsProvider() { return disposable(); }, createDiagnosticCollection() { return { clear() { diagnosticCalls.cleared = true; }, set(uri, items) { diagnosticCalls.sets.push({ uri, items }); }, delete(uri) { diagnosticCalls.deletes.push(uri); }, dispose() {} }; } },
 		commands: { registerCommand(name, callback) { commands.set(name, callback); return disposable(); } },
 		workspace,
 		RelativePattern: class { constructor(folder, glob) { this.folder = folder; this.glob = glob; } },
@@ -153,7 +153,7 @@ test("rule changes offer one explicit Rules-only refresh", async () => {
 	const actions = [];
 	state.api.start(action => actions.push(action));
 	const watcher = state.watchers[0];
-	const rule = { scheme: "file", fsPath: "C:/repo/rules/languages/luau/new/validation.luau" };
+	const rule = { scheme: "file", fsPath: "C:/repo/rules/luau/style/new/validation.luau" };
 	watcher.create(rule);
 	watcher.change(rule);
 	watcher.delete(rule);

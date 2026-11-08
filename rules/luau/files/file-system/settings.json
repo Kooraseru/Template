@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sectionMarkers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "$ref": "#/definitions/markerNames"
+        },
+        "disallowed": {
+          "$ref": "#/definitions/markerNames"
+        }
+      },
+      "required": [
+        "allowed",
+        "disallowed"
+      ]
+    }
+  },
+  "required": [
+    "sectionMarkers"
+  ],
+  "definitions": {
+    "markerNames": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    }
+  }
+}

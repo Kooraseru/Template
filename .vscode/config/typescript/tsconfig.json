@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "typeRoots": [
-      "../../../build/dependencies/types"
+      "../../../build/dependencies/npm/node_modules/@types"
     ],
     "types": [
       "node"
@@ -25,6 +25,7 @@
     "../../../**/node_modules",
     "../../../**/vendor",
     "../../../build",
-    "../../../rules/**/tests/**"
+    "../../../rules/luau/**/tests/**",
+    "../../../rules-old"
   ]
 }

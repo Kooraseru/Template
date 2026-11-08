@@ -2,51 +2,111 @@
 --!strict
 
 local Fs = require("@std/fs")
-local Process = require("@lute/process")
+local Io = require("@std/io")
 local Hash = require("@formats/hash")
 local Json = require("@formats/json")
-local Discovery = require("@ruleLinter/discovery")
 local Runner = require("@ruleLinter/runner")
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
 
+type Variant = { index: number, settings: unknown }
+type Entry = {
+	id: string, directory: string, entry: string, readme: string,
+	configurable: boolean, settings: unknown, variants: { Variant },
+	settingsFor: { [string]: number },
+}
+type Request = { sources: { string }, entries: { Entry } }
+
+local request = Json.decode(Io.input()) :: Request
 local sources: { Rule.Context } = {}
 local sourceHashes: { [string]: string } = {}
-for index = 2, #Process.args do
-	local path = Process.args[index]
+for _, path in request.sources do
 	local source = Fs.readFileToString(path)
 	sourceHashes[path] = Hash.sha256(source)
 	table.insert(sources, { path = path, source = source })
 end
 
-local entries = Discovery.Discover()
-if #entries == 0 then
+if #request.entries == 0 then
 	print("Repository rules: no validators discovered")
 end
-local function emit(file: string, rule: string, finding: Diagnostic.Finding, fixture: boolean, failure: ("fixture" | "checker")?)
+local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixture: boolean, failure: ("fixture" | "checker")?)
 	print("::rule-finding::" .. Json.encode({
-		file = file, sourceHash = sourceHashes[file], source = if fixture then "Rule fixture" else rule, rule = rule, fixture = fixture,
+		file = file, sourceHash = sourceHashes[file], source = if fixture then "Rule fixture" else rule.id,
+		rule = rule.id, ruleDoc = rule.readme, fixture = fixture,
 		fixtureFailure = if failure == "fixture" then true else nil,
 		checkerFailure = if failure == "checker" then true else nil,
 		line = finding.line, column = finding.column, endLine = finding.endLine, endColumn = finding.endColumn,
 		severity = finding.severity, message = finding.message, related = finding.related,
 	}))
 end
-for _, entry in entries do
-	local rule = entry:gsub("/validation/init%.luau$", ""):gsub("/validation%.luau$", "")
-	local checked, diagnostics = pcall(Runner.Run, { entry }, sources)
-	if checked then
-		for _, diagnostic in diagnostics do
-			emit(diagnostic.path, diagnostic.rule, diagnostic.finding, false)
+
+local function checkerFailed(rule: Entry, failure: unknown)
+	emit(rule.entry, rule, {
+		line = 1, column = 1, endLine = 1, endColumn = 1, severity = "error",
+		message = "Checker failed: " .. tostring(failure),
+	}, false, "checker")
+end
+
+local function settingsFailed(rule: Entry, failure: unknown, index: number?)
+	print("::rule-settings-error::" .. Json.encode({ rule = rule.id, message = tostring(failure), index = index }))
+end
+
+local prepared: { { rule: Entry, validators: { [number]: Rule.Rule } } } = {}
+for _, rule in request.entries do
+	local loaded, module = pcall(Runner.Load, rule.entry)
+	if not loaded then
+		checkerFailed(rule, module)
+		continue
+	end
+	if rule.configurable and (type(module) ~= "table" or type((module :: { [string]: unknown }).Create) ~= "function") then
+		checkerFailed(rule, "A rule with settings.json must export Create(settings)")
+		continue
+	end
+	local configured, validator = pcall(Runner.Configure, module, rule.settings)
+	if not configured then
+		if rule.configurable then
+			settingsFailed(rule, validator)
+			return
 		end
-	else
-		emit(entry, rule, {
-			line = 1, column = 1, endLine = 1, endColumn = 1, severity = "error",
-			message = "Checker failed: " .. tostring(diagnostics),
-		}, false, "checker")
+		checkerFailed(rule, validator)
+		continue
+	end
+	local validators = { [0] = validator }
+	for _, variant in rule.variants do
+		local valid, scoped = pcall(Runner.Configure, module, variant.settings)
+		if not valid then
+			settingsFailed(rule, scoped, variant.index)
+			return
+		end
+		validators[variant.index] = scoped
+	end
+	table.insert(prepared, { rule = rule, validators = validators })
+end
+
+for _, item in prepared do
+	local rule, validators = item.rule, item.validators
+	local grouped: { [number]: { Rule.Context } } = {}
+	for _, source in sources do
+		local index = rule.settingsFor[source.path] or 0
+		local group = grouped[index]
+		if not group then
+			group = {}
+			grouped[index] = group
+		end
+		table.insert(group, source)
+	end
+	for index, group in grouped do
+		local checked, diagnostics = pcall(Runner.Check, validators[index], rule.id, group)
+		if checked then
+			for _, diagnostic in diagnostics do
+				emit(diagnostic.path, rule, diagnostic.finding, false)
+			end
+		else
+			checkerFailed(rule, diagnostics)
+		end
 	end
 	for _, category in { "valid", "invalid", "review" } do
-		local directory = rule .. "/tests/" .. category
+		local directory = rule.directory .. "/tests/" .. category
 		if Fs.exists(directory) then
 			local function collect(actualDirectory: string, virtualPrefix: string, fixtureSources: { Rule.Context }, fixtureFiles: { [string]: string })
 				for _, file in Fs.listDirectory(actualDirectory) do
@@ -77,14 +137,15 @@ for _, entry in entries do
 					table.insert(fixtureSources, { path = virtualPath, source = source })
 				end
 				if #fixtureSources == 0 then continue end
-				local checked, findings = pcall(Runner.Run, { entry }, fixtureSources)
+				local checked, findings = pcall(Runner.Check, validators[0], rule.id, fixtureSources)
 				local failure: string?
 				if not checked then
 					failure = "Fixture checker failed: " .. tostring(findings)
 				elseif (#findings > 0) ~= (category == "invalid") then
 					failure = "Unexpected " .. category .. " fixture result"
 				end
-				local failurePath = if testCase.type == "dir" then casePath .. "/init.luau" else casePath
+				local failurePath = if testCase.type == "dir" and Fs.exists(casePath .. "/init.luau")
+					then casePath .. "/init.luau" else fixtureFiles[fixtureSources[1].path]
 				if failure then
 					emit(failurePath, rule, { line = 1, column = 1, endLine = 1, endColumn = 1, severity = "error", message = failure }, false, "fixture")
 					continue

@@ -1,0 +1,178 @@
+{
+  "providers": {
+    "local": {
+      "builtin": "local"
+    },
+    "github-release": {
+      "builtin": "github-release"
+    },
+    "npm": {
+      "builtin": "npm"
+    }
+  },
+  "dependencies": {
+    "luau.ruleLinter": {
+      "provider": "local",
+      "options": {
+        "path": "packages/ruleLinter"
+      }
+    },
+    "luau.lute": {
+      "provider": "github-release",
+      "options": {
+        "repository": "luau-lang/lute",
+        "version": "v1.0.1-nightly.20261104",
+        "packagePath": "packages/lute",
+        "binaryPath": "bin/lute",
+        "typesPath": "types/lute",
+        "setup": [
+          "setup",
+          "--with-luaurc"
+        ],
+        "setupAliases": {
+          "lute": ".",
+          "std": "std"
+        },
+        "platforms": {
+          "win32-x64": {
+            "asset": "lute-windows-x86_64.zip",
+            "executable": "lute.exe"
+          },
+          "win32-arm64": {
+            "asset": "lute-windows-x86_64.zip",
+            "executable": "lute.exe"
+          },
+          "linux-x64": {
+            "asset": "lute-linux-x86_64.zip",
+            "executable": "lute"
+          },
+          "linux-arm64": {
+            "asset": "lute-linux-aarch64.zip",
+            "executable": "lute"
+          },
+          "darwin-arm64": {
+            "asset": "lute-macos-aarch64.zip",
+            "executable": "lute"
+          }
+        }
+      }
+    },
+    "tools.dependencyLoader": {
+      "provider": "local",
+      "options": {
+        "path": "packages/dependencyLoader"
+      }
+    },
+    "tools.dataFormats": {
+      "provider": "local",
+      "options": {
+        "path": "packages/dataFormats"
+      }
+    },
+    "tools.preflightChecker": {
+      "provider": "local",
+      "options": {
+        "path": "packages/preflightChecker"
+      }
+    },
+    "tools.editorIntegration": {
+      "provider": "local",
+      "options": {
+        "path": "packages/editorIntegration"
+      }
+    },
+    "tools.workbenchBridgeClient": {
+      "provider": "local",
+      "options": {
+        "path": "packages/workbenchBridgeClient"
+      }
+    },
+    "tools.pandoc": {
+      "provider": "github-release",
+      "options": {
+        "repository": "jgm/pandoc",
+        "version": "3.13",
+        "packagePath": "packages/pandoc",
+        "binaryPath": "bin/pandoc",
+        "platforms": {
+          "win32-x64": {
+            "asset": "pandoc-*-windows-x86_64.zip",
+            "executable": "pandoc.exe"
+          },
+          "win32-arm64": {
+            "asset": "pandoc-*-windows-x86_64.zip",
+            "executable": "pandoc.exe"
+          },
+          "linux-x64": {
+            "asset": "pandoc-*-linux-amd64.tar.gz",
+            "executable": "pandoc"
+          },
+          "linux-arm64": {
+            "asset": "pandoc-*-linux-arm64.tar.gz",
+            "executable": "pandoc"
+          },
+          "darwin-x64": {
+            "asset": "pandoc-*-x86_64-macOS.zip",
+            "executable": "pandoc"
+          },
+          "darwin-arm64": {
+            "asset": "pandoc-*-arm64-macOS.zip",
+            "executable": "pandoc"
+          }
+        }
+      }
+    },
+    "tools.actionsLock": {
+      "provider": "github-release",
+      "options": {
+        "repository": "github/gh-actions-lock",
+        "version": "v0.4.1",
+        "packagePath": "packages/actionsLock",
+        "binaryPath": "bin/actionsLock",
+        "platforms": {
+          "win32-x64": {
+            "asset": "windows-amd64.exe",
+            "executable": "actions-lock.exe"
+          },
+          "win32-arm64": {
+            "asset": "windows-arm64.exe",
+            "executable": "actions-lock.exe"
+          },
+          "linux-x64": {
+            "asset": "linux-amd64",
+            "executable": "actions-lock"
+          },
+          "linux-arm64": {
+            "asset": "linux-arm64",
+            "executable": "actions-lock"
+          },
+          "darwin-x64": {
+            "asset": "darwin-amd64",
+            "executable": "actions-lock"
+          },
+          "darwin-arm64": {
+            "asset": "darwin-arm64",
+            "executable": "actions-lock"
+          }
+        }
+      }
+    },
+    "workspace.npm": {
+      "provider": "npm",
+      "options": {
+        "manifest": {
+          "name": "template-workspace-tools",
+          "private": true,
+          "dependencies": {
+            "@types/node": "24.10.1",
+            "ajv": "8.17.1",
+            "jsonc-parser": "3.3.1",
+            "preflight": "https://codeload.github.com/Kooraseru-Hub/Preflight/tar.gz/a862ebdcb784a4e396224eb39c458ec7c864a4b1",
+            "typescript": "5.9.3",
+            "yaml": "2.8.1"
+          }
+        }
+      }
+    }
+  }
+}

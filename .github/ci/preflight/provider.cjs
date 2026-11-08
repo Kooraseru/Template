@@ -12,7 +12,7 @@ function list(value) {
 
 async function resolve({ workspace, entry = "pull_request", signal }) {
 	const binary = process.platform === "win32" ? "lute.exe" : "lute";
-	const runtime = path.join(workspace, "build", "dependencies", "binaries", "lute", binary);
+	const runtime = path.join(workspace, "build", "dependencies", "bin", "lute", binary);
 	const { stdout } = await execute(runtime, ["run", ".github/ci/preflight/plan.luau", entry], {
 		cwd: workspace,
 		signal,
