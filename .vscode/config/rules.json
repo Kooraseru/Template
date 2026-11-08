@@ -1,7 +1,7 @@
 {
   "defaults": {
     "severity": "warning",
-    "fixtureSeverity": "warning"
+    "fixtureSeverity": "info"
   },
   "rules": {
     "luau/module-roots": {

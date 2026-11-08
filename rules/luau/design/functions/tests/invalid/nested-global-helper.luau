@@ -3,4 +3,9 @@ local function setup(): ()
 	end
 end
 
-return setup
+local function run()
+	setup()
+	onReady()
+end
+
+return run

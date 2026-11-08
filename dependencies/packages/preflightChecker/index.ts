@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -14,12 +15,13 @@ function finding(file: string, line: number, column: number, severity: string, s
 	console.log(`${path.resolve(root, file)}:${line}:${column}: ${severity}: [${source}] ${message}`);
 }
 
-function luauSources(directory = root): string[] {
+function luauSources(directory = root, includeFixtures = false): string[] {
 	const result: string[] = [];
 	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isSymbolicLink()) continue;
 		const file = path.join(directory, entry.name);
-		if (entry.isDirectory() && !ignoredDirectories.has(entry.name) && !(["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep + "luau" + path.sep))) result.push(...luauSources(file));
+		const fixtureDirectory = ["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep + "luau" + path.sep);
+		if (entry.isDirectory() && !ignoredDirectories.has(entry.name) && (includeFixtures || !fixtureDirectory)) result.push(...luauSources(file, includeFixtures));
 		else if (entry.isFile() && entry.name.endsWith(".luau")) result.push(path.relative(root, file));
 	}
 	return result.sort();
@@ -79,6 +81,84 @@ function check(program: string, args: string[], source: string): void {
 	if (result.error || (result.status !== 0 && diagnostics.length === 0)) {
 		finding(configuration, 1, 1, "error", source, result.error?.message || output.trim().replace(/\s+/g, " ") || `Checker exited with status ${result.status}`);
 	}
+}
+
+function checkCiPlans(): void {
+	const cli = path.join(root, "build/dependencies/npm/node_modules/preflight/bin/preflight.js");
+	const provider = ".github/ci/preflight/provider.cjs";
+	for (const entry of ["pull_request", "push", "workflow_dispatch"]) {
+		const source = "Bootstrap plan (" + entry + ")";
+		console.log("::preflight-stage::" + source);
+		const result = spawnSync(process.execPath, [cli, "plan", "--provider", provider, "--entry", entry, "--json"], {
+			cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000,
+		});
+		let report;
+		try { report = JSON.parse(result.stdout || ""); } catch { /* Report process failures below. */ }
+		const diagnostics: Array<{ path?: string; line?: number; column?: number; severity: string; message: string }> = report?.diagnostics || [];
+		for (const item of diagnostics) {
+			finding(item.path && fs.existsSync(path.resolve(root, item.path)) ? item.path : provider,
+				item.line || 1, item.column || 1, item.severity, source, item.message);
+		}
+		if ((result.error || result.status !== 0 || report?.status !== "passed") && !diagnostics.some(item => item.severity === "error")) {
+			finding(provider, 1, 1, "error", source,
+				(result.error?.message || result.stderr?.trim() || "Preflight did not return a passing plan.").replace(/\s+/g, " "));
+		}
+	}
+}
+
+function editorLuauChecks(): void {
+	const analyzer = process.env.TEMPLATE_LUAU_ANALYZER;
+	const toolConfig = ".vscode/settings.json";
+
+	function run(program: string, args: string[], source: string) {
+		console.log("::preflight-stage::" + source);
+		return spawnSync(program, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024 });
+	}
+
+	if (analyzer) {
+		const source = "Luau LSP workspace";
+		const inputs = luauSources(root, true);
+		const fileKey = (file: string) => {
+			const absolute = path.resolve(root, file);
+			return process.platform === "win32" ? absolute.toLowerCase() : absolute;
+		};
+		const inputKeys = new Set(inputs.map(fileKey));
+		if (!inputs.length) return;
+		const configured = process.env.TEMPLATE_LUAU_SETTINGS;
+		const baseConfig = process.env.TEMPLATE_LUAU_BASE_CONFIG;
+		const sourcemap = process.env.TEMPLATE_LUAU_SOURCEMAP;
+		const settingsDir = configured ? fs.mkdtempSync(path.join(os.tmpdir(), "template-luau-")) : undefined;
+		const args = ["analyze", "--formatter=gnu"];
+		let result;
+		try {
+			if (settingsDir) {
+				const settingsFile = path.join(settingsDir, "settings.json");
+				fs.writeFileSync(settingsFile, configured!);
+				args.push("--settings", settingsFile);
+				if (JSON.parse(configured!)["luau-lsp.fflags.enableByDefault"] === false) args.push("--no-flags-enabled");
+			} else args.push("--platform=standard", "--flag=LuauSolverV2=true");
+			if (baseConfig) args.push("--base-luaurc", baseConfig);
+			if (sourcemap) args.push("--sourcemap", sourcemap);
+			result = run(analyzer, [...args, ...inputs], source);
+		} finally {
+			if (settingsDir) fs.rmSync(settingsDir, { recursive: true, force: true });
+		}
+		const seen = new Set<string>();
+		let reported = false;
+		for (const line of [result.stdout, result.stderr].join("\n").split(/\r?\n/)) {
+			const match = line.match(/^(.*):(\d+)\.(\d+)(?:-\d+\.\d+)?: ([^:]+): (.*)$/);
+			if (!match) continue;
+			const [, file, row, column, category, message] = match;
+			reported = true;
+			if (!inputKeys.has(fileKey(file)) || seen.has(line)) continue;
+			seen.add(line);
+			finding(file, Number(row), Number(column), /^(TypeError|SyntaxError)$/.test(category) ? "error" : "warning", source, message);
+		}
+		if (result.error || (result.status !== 0 && !reported)) {
+			finding(toolConfig, 1, 1, "error", source, result.error?.message || "Workspace analysis failed.");
+		}
+	}
+
 }
 
 function reportRuleError(error: unknown): void {
@@ -157,6 +237,8 @@ if (await dependenciesReady()) {
 	} else {
 		check(process.execPath, [typescript, "--project", configuration, "--pretty", "false"], "TypeScript");
 		if (sources.length) check(lute, ["check", ...sources], "Lute");
+		if (process.argv.includes("--ci")) checkCiPlans();
+		editorLuauChecks();
 	}
 } else {
 	finding("dependencies/dependencies.json", 1, 1, "error", "Preflight", "Dependencies are unavailable. Run workspace dependency setup and check its status-bar output.");

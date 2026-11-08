@@ -1,2 +1,6 @@
+local External = require("../External")
+
 type Result = External.foreignType
-return true
+return function(value: Result): Result
+	return value
+end

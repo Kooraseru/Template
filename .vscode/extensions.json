@@ -1,5 +1,6 @@
 {
 	"recommendations": [
-		"Kooraseru.workbench-bridge"
+		"Kooraseru.workbench-bridge",
+		"JohnnyMorganz.luau-lsp"
 	]
 }

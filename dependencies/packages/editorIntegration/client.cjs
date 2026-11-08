@@ -16,7 +16,7 @@ function parseFinding(line) {
 	}
 	const match = line.match(/^(.*?):(\d+):(\d+): (error|warning|information|info):(?: \[([^\]]+)\])? (.*)$/);
 	if (!match) return undefined;
-	return { file: match[1], line: Number(match[2]), column: Number(match[3]), severity: match[4] === "info" ? "information" : match[4], source: match[5] || "Preflight", message: match[6] };
+	return { file: match[1], line: Number(match[2]), column: Number(match[3]), severity: match[4] === "info" ? "information" : match[4], source: match[5] || "Preflight", editorTool: match[5] === "Luau LSP workspace", message: match[6] };
 }
 
 function runCommand([executable, ...args], { env = {}, onLine = () => {}, signal } = {}) {
@@ -56,7 +56,7 @@ function runCommand([executable, ...args], { env = {}, onLine = () => {}, signal
 	});
 }
 
-function createController(bridgeClient, bridgeModule) {
+function createController(bridgeClient, bridgeModule, getLuauTools = async () => ({})) {
 	const activeChecks = new Map();
 	let generation = 0;
 	let closing = false;
@@ -119,7 +119,7 @@ function createController(bridgeClient, bridgeModule) {
 		return true;
 	}
 
-	function runSetup() {
+	function runSetup(reloadProviders = false) {
 		if (setupFlight) return setupFlight;
 		dependenciesReady = false;
 		state.dependenciesReady = false;
@@ -131,6 +131,7 @@ function createController(bridgeClient, bridgeModule) {
 		setupFlight = (async () => {
 			await report("beginSetup", setupGeneration);
 			const ready = await setup();
+			if (ready && reloadProviders) await report("reloadLanguageServer");
 			if (ready) await checkAll();
 			return ready;
 		})().finally(() => { setupFlight = undefined; });
@@ -152,7 +153,9 @@ function createController(bridgeClient, bridgeModule) {
 		const findings = [];
 		let error;
 		try {
+			const env = rules ? {} : await getLuauTools();
 			const result = await runCommand((rules ? workflow.rules : workflow.checks).command, {
+				env,
 				signal: controller.signal,
 				onLine(line, isError) {
 					if (!isError && line.startsWith("::preflight-stage::")) {
@@ -169,8 +172,8 @@ function createController(bridgeClient, bridgeModule) {
 			if (!controller.signal.aborted) error = caught instanceof Error ? caught.message : String(caught);
 		}
 		if (!closing && !controller.signal.aborted && activeChecks.get(kind)?.id === id) {
-			const errorCount = findings.filter(finding => !finding.fixture && finding.severity === "error").length + (error ? 1 : 0);
-			const warningCount = findings.filter(finding => !finding.fixture && finding.severity === "warning").length;
+			const errorCount = findings.filter(finding => !finding.fixture && !finding.editorTool && finding.severity === "error").length + (error ? 1 : 0);
+			const warningCount = findings.filter(finding => !finding.fixture && !finding.editorTool && finding.severity === "warning").length;
 			const status = errorCount > 0 ? "failed" : warningCount > 0 ? "warning" : "passed";
 			if (rules) {
 				state.rulesState = status;
@@ -193,6 +196,7 @@ function createController(bridgeClient, bridgeModule) {
 	return {
 		async start() { const ready = await runSetup(); return ready; },
 		run: runSetup,
+		reloadProviders: () => runSetup(true),
 		check,
 		checkAll,
 		getState() { return { ...state }; },
@@ -211,9 +215,16 @@ async function main() {
 	let controller;
 	try {
 		bridgeClient = await connect({ sessionFile: process.env.WORKBENCH_BRIDGE_SESSION, workspace: root });
+		if (process.argv.includes("--problems")) {
+			const module = await bridgeClient.loadModule({ path: "dependencies/packages/editorIntegration/problems.cjs" });
+			const problems = await bridgeClient.call({ target: module, path: ["snapshot"], args: [] });
+			console.log(JSON.stringify(await bridgeClient.snapshot({ target: problems }), null, 2));
+			return;
+		}
 		bridgeClient.onClose(() => controller?.close());
 		const bridgeModule = await bridgeClient.loadModule({ path: "dependencies/packages/editorIntegration/activate.cjs" });
-		controller = createController(bridgeClient, bridgeModule);
+		controller = createController(bridgeClient, bridgeModule, async () =>
+			JSON.parse(await bridgeClient.call({ target: bridgeModule, path: ["getLuauTools"], args: [] })));
 		await controller.start();
 		if (process.env.WORKBENCH_BRIDGE_ONCE === "1") {
 			const state = controller.getState();
@@ -228,7 +239,10 @@ async function main() {
 			target: bridgeModule,
 			path: ["start"],
 			args: [action => {
-				void Promise.resolve(action === "run" ? controller.run() : action === "check" ? controller.checkAll() : controller.check(action)).catch(error => {
+				const run = action === "reloadProviders" ? controller.reloadProviders()
+					: action === "run" ? controller.run()
+					: action === "check" ? controller.checkAll() : controller.check(action);
+				void Promise.resolve(run).catch(error => {
 					void bridgeClient.call({ target: bridgeModule, path: ["log"], args: [`[controller error] ${error instanceof Error ? error.message : String(error)}`] }).catch(() => {});
 				});
 			}],

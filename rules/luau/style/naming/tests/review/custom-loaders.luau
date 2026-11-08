@@ -1,4 +1,4 @@
-local runtimePath = "./Render"
+local runtimePath = "../Render"
 local runtimeModule = require(runtimePath)
 
 local function require(path: string): string

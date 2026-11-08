@@ -1,4 +1,4 @@
-local Renderer = require("./Renderer")
+local Renderer = require("../Renderer")
 
 function Renderer.drawFrame(): ()
 end

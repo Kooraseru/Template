@@ -32,10 +32,7 @@
 	"luau-lsp.ignoreGlobs": [
 		"**/_Index/**",
 		"**/build/dependencies/**",
-		"rules-old/**",
-		"rules/luau/**/tests/valid/**",
-		"rules/luau/**/tests/invalid/**",
-		"rules/luau/**/tests/review/**"
+		"rules-old/**"
 	],
 	"luau-lsp.diagnostics.workspace": true,
 	"luau-lsp.sourcemap.enabled": false,

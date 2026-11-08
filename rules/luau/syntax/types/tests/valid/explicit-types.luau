@@ -2,7 +2,7 @@
 --!strict
 
 type Input = { value: unknown }
-local note = "a type named any should not trigger this rule"
+local _note = "a type named any should not trigger this rule"
 -- nor should comments mention any.
 local function read(input: Input): unknown
 	return input.value

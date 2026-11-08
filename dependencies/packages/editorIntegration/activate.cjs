@@ -17,14 +17,14 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 	const setupStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 21);
 	const checkStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
 	const diagnostics = vscode.languages.createDiagnosticCollection(`workspace-preflight-${workspaceId}`);
-	const rulesStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 19);
 	const rulesDiagnostics = vscode.languages.createDiagnosticCollection(`workspace-rules-${workspaceId}`);
 	const checks = {
 		compile: { status: checkStatus, diagnostics, config: workflow.checks, generation: 0 },
-		rules: { status: rulesStatus, diagnostics: rulesDiagnostics, config: workflow.rules, generation: 0 },
+		rules: { diagnostics: rulesDiagnostics, config: workflow.rules, generation: 0 },
 	};
 	const actionSources = new Map();
-	const owned = [output, setupStatus, checkStatus, diagnostics, rulesStatus, rulesDiagnostics];
+	const compileFindings = new Map();
+	const owned = [output, setupStatus, checkStatus, diagnostics, rulesDiagnostics];
 	let setupProgress;
 	let setupReady = false;
 	let disposed = false;
@@ -36,11 +36,10 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 
 	setupStatus.command = command("runSetup");
 	setupStatus.text = "$(sync~spin) " + setupLabels.running;
-	setupStatus.tooltip = "Preparing workspace dependencies. Click to retry setup.";
+	setupStatus.tooltip = "Preparing workspace providers. Click to reload.";
 	setupStatus.show();
 	checkStatus.command = command("check");
-	rulesStatus.command = command("rules");
-	checkStatus.tooltip = "Workspace preflight status";
+	checkStatus.tooltip = "CI compile and Bootstrap plan checks.";
 
 	function finishSetupProgress() {
 		setupProgress?.finish();
@@ -96,7 +95,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			setupReady = true;
 			finishSetupProgress();
 			setupStatus.text = "$(check) " + setupLabels.passed;
-			setupStatus.tooltip = "Dependencies are available. Click to run setup again.";
+			setupStatus.tooltip = "Click to rerun dependency setup and reload Luau LSP.";
 		}
 	}
 
@@ -152,13 +151,22 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			byFile.get(key).diagnostics.push(diagnostic);
 		}
 		diagnostics.clear();
-		for (const { uri, diagnostics: fileDiagnostics } of byFile.values()) diagnostics.set(uri, fileDiagnostics);
-		const workspaceItems = items.filter(item => !item.fixture);
+		if (kind === "compile") compileFindings.clear();
+		for (const [key, { uri, diagnostics: fileDiagnostics }] of byFile) {
+			if (kind === "compile") {
+				compileFindings.set(key, { uri, items: fileDiagnostics, visible: undefined });
+				refreshCompileDiagnostics(uri);
+			} else diagnostics.set(uri, fileDiagnostics);
+		}
+		if (result.error) {
+			output.appendLine(`[check error] ${result.error}`);
+			output.show(true);
+		}
+		if (!checkStatus) return;
+		const workspaceItems = items.filter(item => !item.fixture && !item.editorTool);
 		if (result.error) {
 			checkStatus.text = checkLabels.failed;
 			checkStatus.tooltip = result.error;
-			output.appendLine(`[check error] ${result.error}`);
-			output.show(true);
 		} else if (workspaceItems.some(item => item.severity === "error")) {
 			checkStatus.text = checkLabels.failed;
 			checkStatus.tooltip = `${workspaceItems.filter(item => item.severity === "error").length} error(s); click to rerun checks`;
@@ -167,9 +175,30 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			checkStatus.tooltip = `${workspaceItems.length} warning(s); click to rerun checks`;
 		} else if (setupReady) {
 			checkStatus.text = checkLabels.passed;
-			checkStatus.tooltip = checkLabels.passed + ". Click to rerun.";
+			checkStatus.tooltip = "CI compile and Bootstrap plan checks passed. Click to rerun.";
 		}
 		if (checkStatus.text) checkStatus.show();
+	}
+
+	function refreshCompileDiagnostics(uri) {
+		const entry = compileFindings.get(uri.toString());
+		if (!entry) return;
+		const signature = item => {
+			const line = item.range.start?.line ?? item.range.startLine;
+			const column = item.range.start?.character ?? item.range.startCharacter;
+			const message = item.message.replace(/^(?:TypeError|SyntaxError):\s*/, "").replace(/\s+/g, " ").trim();
+			return JSON.stringify([line, column, message]);
+		};
+		const native = new Set((vscode.languages.getDiagnostics?.(uri) || []).filter(item => item.source === "Luau").map(signature));
+		const analyzer = new Set(entry.items.filter(item => item.source === "Luau LSP workspace").map(signature));
+		const visible = entry.items.filter(item => {
+			if (item.source === "Luau LSP workspace") return !native.has(signature(item));
+			if (item.source === "Lute") return !native.has(signature(item)) && !analyzer.has(signature(item));
+			return true;
+		});
+		if (entry.visible?.length === visible.length && visible.every((item, index) => item === entry.visible[index])) return;
+		entry.visible = visible;
+		diagnostics.set(entry.uri, visible);
 	}
 
 	function log(message) { if (!disposed && message) output.appendLine(String(message)); }
@@ -187,13 +216,19 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		if (watchTimer) clearTimeout(watchTimer);
 		watchTimer = setTimeout(() => {
 			watchTimer = undefined;
-			const nextAction = pendingActions.has("run") ? "run" : pendingActions.has("check") ? "check" : "rules";
+			const compile = pendingActions.has("compile");
+			const checkAll = pendingActions.has("check") || (compile && pendingActions.has("rules"));
+			const nextAction = pendingActions.has("run") ? "run" : checkAll ? "check" : compile ? "compile" : "rules";
 			pendingActions.clear();
 			if (!disposed) dispatch(nextAction);
 		}, 350);
 	}
 	function startWatching(controllerCallback) {
 		callback = controllerCallback;
+		if (vscode.languages.onDidChangeDiagnostics) owned.push(vscode.languages.onDidChangeDiagnostics(({ uris }) => {
+			for (const uri of uris) refreshCompileDiagnostics(uri);
+		}));
+		for (const { uri } of compileFindings.values()) refreshCompileDiagnostics(uri);
 		const changed = new Set();
 		const isRuleFixture = relative => /^rules\/.*\/tests\/(valid|invalid|review)\/.*\.luau$/.test(relative);
 		const isRuleInput = relative => relative.startsWith("rules/luau/") ||
@@ -208,15 +243,23 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			const relative = watchedPath(document.uri);
 			if (relative && document.isDirty && contentChanges.length) {
 				changed.add(relative);
+				compileFindings.delete(document.uri.toString());
 				diagnostics.delete(document.uri);
 				rulesDiagnostics.delete(document.uri);
 			}
 		}));
-		// Rules can also change on disk through Git or an external editor.
-		const rulesWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{rules/luau/**,.vscode/config/rules.json,.vscode/config/rules.schema.json}"));
-		const onRuleChange = uri => {
+		// Disk events also cover edits made by Git, scripts, and external editors.
+		const diskWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{**/*.luau,rules/luau/**,.vscode/config/rules.json,.vscode/config/rules.schema.json}"));
+		const onDiskChange = uri => {
 			const relative = watchedPath(uri);
-			if (!relative || !isRuleInput(relative) || disposed) return;
+			if (!relative || disposed) return;
+			if (!isRuleInput(relative)) {
+				if (relative.endsWith(".luau") && !relative.split("/").some(segment => ["node_modules", "build", "generated", "vendor", "examples"].includes(segment))) {
+					schedule("check");
+				}
+				return;
+			}
+			if (relative.endsWith(".luau")) schedule("compile");
 			if (workflow.rules.autoRefresh === true || isRuleFixture(relative)) {
 				schedule("rules");
 				return;
@@ -236,11 +279,11 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 				}
 			}, 350);
 		};
-		owned.push(rulesWatcher, rulesWatcher.onDidCreate(onRuleChange), rulesWatcher.onDidChange(onRuleChange), rulesWatcher.onDidDelete(onRuleChange));
+		owned.push(diskWatcher, diskWatcher.onDidCreate(onDiskChange), diskWatcher.onDidChange(onDiskChange), diskWatcher.onDidDelete(onDiskChange));
 		owned.push(vscode.workspace.onDidSaveTextDocument(document => {
 			const relative = watchedPath(document.uri);
 			if (!relative || !changed.delete(relative)) return;
-			if (isRuleInput(relative)) onRuleChange(document.uri);
+			if (isRuleInput(relative)) onDiskChange(document.uri);
 			else schedule(setupFiles.has(relative) ? "run" : "check");
 		}));
 		owned.push(vscode.workspace.onDidCloseTextDocument(document => {
@@ -249,10 +292,21 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		owned.push(...registerRuleActions({ vscode, root, workflow, actionSources, command }));
 		owned.push(registerRuleSettings({ vscode, workspaceFolder, root }));
 		owned.push(vscode.commands.registerCommand(command("showOutput"), () => output.show(true)));
-		owned.push(vscode.commands.registerCommand(command("runSetup"), () => dispatch("run")));
+		owned.push(vscode.commands.registerCommand(command("runSetup"), () => dispatch("reloadProviders")));
 		owned.push(vscode.commands.registerCommand(command("check"), () => dispatch("compile")));
 		owned.push(vscode.commands.registerCommand(command("rules"), () => dispatch("rules")));
 		return { dispose() { callback = undefined; } };
+	}
+
+	async function reloadLanguageServer() {
+		try {
+			if (vscode.extensions?.getExtension("JohnnyMorganz.luau-lsp")) {
+				await vscode.commands.executeCommand("luau-lsp.reloadServer");
+			}
+		} catch (error) {
+			log(`[provider reload error] ${error.message}`);
+			output.show(true);
+		}
 	}
 
 	function beginCheck(kind, generation) {
@@ -265,6 +319,32 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 	}
 
 	const api = {
+		reloadLanguageServer,
+		getLuauTools() {
+			const config = section => vscode.workspace.getConfiguration(section, workspaceFolder.uri);
+			const executable = name => process.platform === "win32" ? name + ".exe" : name;
+			const extension = vscode.extensions.getExtension("JohnnyMorganz.luau-lsp");
+			const extensionPath = extension?.extensionPath;
+			const lsp = config("luau-lsp");
+			const settings = {
+				"luau-lsp.platform.type": lsp.get("platform.type", "standard"),
+				"luau-lsp.fflags.enableNewSolver": lsp.get("fflags.enableNewSolver", true),
+			};
+			for (const group of [extension?.packageJSON?.contributes?.configuration].flat().filter(Boolean)) {
+				for (const key of Object.keys(group.properties || {})) {
+					if (/^luau-lsp\.(?:platform|types|diagnostics|fflags|plugins)\./.test(key)) settings[key] = lsp.get(key.slice("luau-lsp.".length));
+				}
+			}
+			settings["luau-lsp.ignoreGlobs"] = lsp.get("ignoreGlobs", []);
+			const resolve = (configured, installed, fallback) => configured
+				? path.resolve(root, configured) : installed && fs.existsSync(installed) ? installed : fallback;
+			return JSON.stringify({
+				TEMPLATE_LUAU_ANALYZER: resolve(config("luau-lsp").get("server.path"), extensionPath && path.join(extensionPath, "bin", executable("server")), "luau-lsp"),
+				TEMPLATE_LUAU_SETTINGS: JSON.stringify(settings),
+				TEMPLATE_LUAU_BASE_CONFIG: lsp.get("server.baseLuaurc") || "",
+				TEMPLATE_LUAU_SOURCEMAP: lsp.get("sourcemap.enabled") ? lsp.get("sourcemap.sourcemapFile", "sourcemap.json") : "",
+			});
+		},
 		start: startWatching,
 		run() { return dispatch("run"); },
 		check() { return dispatch("check"); },
@@ -282,6 +362,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		beginSetup(generation) {
 			if (disposed || Object.values(checks).some(check => generation < check.generation)) return false;
 			setupReady = false;
+			compileFindings.clear();
 			for (const check of Object.values(checks)) {
 				check.generation = generation;
 				check.diagnostics.clear();

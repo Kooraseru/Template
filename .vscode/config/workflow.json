@@ -2,31 +2,26 @@
   "dependencies": {
     "command": ["node", "dependencies/packages/dependencyLoader/index.ts"],
     "env": { "VSCODE_WORKSPACE_SETUP": "1" },
-    "notification": "Loading workspace dependencies",
+    "notification": "Preparing workspace providers",
     "status": {
-      "running": "Loading dependencies",
-      "passed": "Dependencies ready",
-      "failed": "Dependency setup failed"
+      "running": "Loading providers",
+      "passed": "Providers ready",
+      "failed": "Provider setup failed"
     }
   },
   "checks": {
-    "command": ["node", "dependencies/packages/preflightChecker/index.ts"],
-    "notification": "Running Preflight",
+    "command": ["node", "dependencies/packages/preflightChecker/index.ts", "--ci"],
+    "notification": "Running CI Preflight",
     "status": {
-      "passed": "$(check) Preflight passed",
-      "warning": "$(warning) Preflight warnings",
-      "failed": "$(error) Preflight failed"
+      "passed": "$(check) CI Preflight passed",
+      "warning": "$(warning) CI Preflight warnings",
+      "failed": "$(error) CI Preflight failed"
     }
   },
   "rules": {
     "command": ["node", "dependencies/packages/preflightChecker/index.ts", "--rules"],
     "autoRefresh": true,
-    "notification": "Checking repository rules",
-    "status": {
-      "passed": "$(check) Rules passed",
-      "warning": "$(warning) Rules warnings",
-      "failed": "$(error) Rules failed"
-    }
+    "notification": "Checking repository rules"
   },
   "watch": {
     "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "source/**", "rules/luau/**", ".luaurc", "tsconfig.json"],

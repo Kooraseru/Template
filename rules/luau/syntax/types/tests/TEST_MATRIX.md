@@ -14,7 +14,7 @@ Template checks these fixtures through the Repository rules stage. Expected viol
 | Single assertion after boundary validation | Valid | [validated-boundary](valid/validated-boundary.luau) |
 | Different assertions during a boundary conversion | Review | [boundary-conversion](review/boundary-conversion.luau) |
 
-Review [qualified-any](review/qualified-any.luau) separately. A qualified type reference requires knowledge of the exporting module and must produce no finding from this validator.
+Review [qualified-reference](review/qualified-reference.luau) checks that a resolvable imported type produces no repository finding.
 
 - [Repeated structural assertions](invalid/repeated-structural-assertion.luau) reports matching generic and table annotations.
 - [Different structural assertions](review/different-structural-assertions.luau) leaves a changed generic argument for review.

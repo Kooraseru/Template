@@ -1,3 +1,7 @@
+local function resolveKey(): string
+	return "runtimeKey"
+end
+
 const Base = {}
 const Derived = {}
 function Base.new()

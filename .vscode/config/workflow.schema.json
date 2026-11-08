@@ -172,8 +172,7 @@
       },
       "required": [
         "command",
-        "notification",
-        "status"
+        "notification"
       ],
       "additionalProperties": false
     },

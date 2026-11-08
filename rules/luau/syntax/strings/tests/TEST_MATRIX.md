@@ -12,5 +12,5 @@
 
 - [Redundant tostring](invalid/redundant-tostring.luau) reports built-in conversion around a local or literal in a single interpolation.
 - [Conversion order](review/tostring-conversion-order.luau) preserves explicit conversion among other interpolations and around a call.
-- [Replaced tostring](review/replaced-tostring.luau) leaves the overwritten global for review.
+- [Replaced tostring](review/replaced-tostring.luau) leaves a local binding reassigned to a project formatter alone.
 - [Custom tostring](valid/custom-tostring.luau) preserves a local formatter.

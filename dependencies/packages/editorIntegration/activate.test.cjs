@@ -16,6 +16,7 @@ function fixture(root, textDocuments = [], autoRefresh = workflow.rules.autoRefr
 	const progress = [];
 	const notices = [];
 	const diagnosticCalls = { sets: [], deletes: [], cleared: false };
+	const native = [];
 	const workspace = {
 		textDocuments,
 		createFileSystemWatcher(pattern) {
@@ -52,8 +53,13 @@ function fixture(root, textDocuments = [], autoRefresh = workflow.rules.autoRefr
 		Diagnostic: class { constructor(range, message, severity) { Object.assign(this, { range, message, severity }); } },
 	};
 	const workspaceFolder = { uri: { fsPath: root } };
+	vscode.languages.getDiagnostics = () => native;
+	vscode.languages.onDidChangeDiagnostics = callback => {
+		diagnosticCalls.change = callback;
+		return disposable();
+	};
 	const config = { ...workflow, rules: { ...workflow.rules, autoRefresh } };
-	return { api: activate({ vscode, workspaceFolder, subscriptions, signal: new AbortController().signal, asAbsolutePath: relative => path.join(root, relative) }, config), commands, watchers, statusItems, diagnosticCalls, workspace, subscriptions, outputLines, progress, notices };
+	return { api: activate({ vscode, workspaceFolder, subscriptions, signal: new AbortController().signal, asAbsolutePath: relative => path.join(root, relative) }, config), commands, watchers, statusItems, diagnosticCalls, workspace, subscriptions, outputLines, progress, notices, native };
 }
 
 test("workspace status and command identifiers are unique per root", () => {
@@ -64,7 +70,7 @@ test("workspace status and command identifiers are unique per root", () => {
 	first.api.updateDependencies({ message: "Ready", complete: true });
 	assert.equal([...first.commands.keys()].some(name => name.endsWith(".runSetup")), true);
 	assert.notEqual([...first.commands.keys()].find(name => name.endsWith(".check")), [...second.commands.keys()].find(name => name.endsWith(".check")));
-	assert.equal(first.statusItems.length, 3);
+	assert.equal(first.statusItems.length, 2);
 	first.api.dispose();
 	second.api.dispose();
 });
@@ -88,7 +94,7 @@ test("only changed saves in watched paths run Preflight", async () => {
 	state.workspace.change({ document: fixtureFile, contentChanges: [{}] });
 	state.workspace.save(fixtureFile);
 	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, ["check", "run", "rules"]);
+	assert.deepEqual(actions, ["check", "run", "check"]);
 	assert.equal(state.workspace.open, undefined);
 	assert.equal(state.watchers.length, 1);
 	state.api.dispose();
@@ -129,7 +135,18 @@ test("setup and checker status items remain independently actionable", () => {
 	const names = [...state.commands.keys()];
 	assert.equal(names.filter(name => name.endsWith(".runSetup")).length, 1);
 	assert.equal(names.filter(name => name.endsWith(".check")).length, 1);
-	assert.equal(state.statusItems.length, 3);
+	assert.equal(state.statusItems.length, 2);
+	state.api.dispose();
+});
+
+test("clicking provider status requests a provider reload", async () => {
+	const state = fixture("C:/repo");
+	const actions = [];
+	state.api.start(action => actions.push(action));
+	state.api.updateDependencies({ complete: true });
+	assert.match(state.statusItems[0].text, /Providers ready/);
+	await state.commands.get(state.statusItems[0].command)();
+	assert.deepEqual(actions, ["reloadProviders"]);
 	state.api.dispose();
 });
 
@@ -155,7 +172,7 @@ test("rule changes offer one explicit Rules-only refresh", async () => {
 	const actions = [];
 	state.api.start(action => actions.push(action));
 	const watcher = state.watchers[0];
-	const rule = { scheme: "file", fsPath: "C:/repo/rules/luau/style/new/validation.luau" };
+	const rule = { scheme: "file", fsPath: "C:/repo/rules/luau/style/new/README.md" };
 	watcher.create(rule);
 	watcher.change(rule);
 	watcher.delete(rule);
@@ -175,6 +192,7 @@ test("automatic Rules refresh combines saves and disk events without prompting",
 	state.api.start(action => actions.push(action));
 	const watcher = state.watchers[0];
 	const rule = { scheme: "file", fsPath: "C:/repo/rules/luau/style/new/validation.luau" };
+	rule.fsPath = "C:/repo/rules/luau/style/new/validation.luau";
 	const document = { uri: rule, isDirty: true };
 	state.workspace.change({ document, contentChanges: [{}] });
 	await new Promise(resolve => setTimeout(resolve, 400));
@@ -185,7 +203,7 @@ test("automatic Rules refresh combines saves and disk events without prompting",
 	watcher.create(rule);
 	watcher.delete(rule);
 	await new Promise(resolve => setTimeout(resolve, 400));
-	assert.deepEqual(actions, ["rules"]);
+	assert.deepEqual(actions, ["check"]);
 	assert.deepEqual(state.notices, []);
 	state.api.dispose();
 });
@@ -200,8 +218,60 @@ test("Rules failures leave a passing compile result and its diagnostics intact",
 		{ file: "source/a.luau", severity: "error", message: "Rule violation" },
 		{ file: "rules/test.luau", fixture: true, severity: "warning", message: "Expected violation" },
 	] });
-	assert.match(state.statusItems[1].text, /Preflight passed/);
-	assert.match(state.statusItems[2].text, /Rules failed/);
+	assert.match(state.statusItems[1].text, /CI Preflight passed/);
+	assert.equal(state.statusItems[1].tooltip, "CI compile and Bootstrap plan checks passed. Click to rerun.");
+	assert.equal(state.statusItems.length, 2);
 	assert.equal(state.diagnosticCalls.sets[1].items[0].severity, 1);
+	state.api.dispose();
+});
+
+test("editor tool diagnostics are published without changing Preflight status", () => {
+	const state = fixture("C:/repo");
+	state.api.updateDependencies({ complete: true });
+	state.api.publishPreflight({ findings: [
+		{ file: "source/unopened.luau", source: "Luau LSP workspace", editorTool: true, severity: "error", message: "Type mismatch" },
+	] });
+	assert.match(state.statusItems[1].text, /Preflight passed/);
+	assert.deepEqual(state.diagnosticCalls.sets[0].items.map(item => item.source), ["Luau LSP workspace"]);
+	state.api.dispose();
+});
+
+test("native Luau replaces matching workspace findings and closing restores coverage", () => {
+	const state = fixture("C:/repo");
+	state.api.start(() => {});
+	const file = "source/unopened.luau";
+	const finding = { file, line: 5, column: 24, severity: "error", message: "Unknown type 'External.any'" };
+	state.api.publishPreflight({ findings: [
+		{ ...finding, source: "Lute" },
+		{ ...finding, source: "Luau LSP workspace", editorTool: true },
+		{ ...finding, source: "TypeScript", severity: "warning", message: "Formatting differs" },
+	] });
+	const { uri, items } = state.diagnosticCalls.sets.at(-1);
+	assert.deepEqual(items.map(item => item.source), ["Luau LSP workspace", "TypeScript"]);
+	state.native.push({ ...items[0], source: "Luau", message: "TypeError: " + finding.message });
+	state.diagnosticCalls.change({ uris: [uri] });
+	assert.deepEqual(state.diagnosticCalls.sets.at(-1).items.map(item => item.source), ["TypeScript"]);
+	const updates = state.diagnosticCalls.sets.length;
+	state.diagnosticCalls.change({ uris: [uri] });
+	assert.equal(state.diagnosticCalls.sets.length, updates);
+	state.native.pop();
+	state.diagnosticCalls.change({ uris: [uri] });
+	assert.deepEqual(state.diagnosticCalls.sets.at(-1).items.map(item => item.source), ["Luau LSP workspace", "TypeScript"]);
+	state.api.dispose();
+});
+
+test("external Luau changes schedule checks without opening a document", async () => {
+	const state = fixture("C:/repo");
+	const actions = [];
+	state.api.start(action => actions.push(action));
+	const uri = fsPath => ({ scheme: "file", fsPath: "C:/repo/" + fsPath });
+	state.watchers[0].change(uri("source/unopened.luau"));
+	state.watchers[0].delete(uri("source/removed.luau"));
+	await new Promise(resolve => setTimeout(resolve, 400));
+	assert.deepEqual(actions, ["check"]);
+	state.watchers[0].change(uri("dependencies/node_modules/example/ignored.luau"));
+	state.watchers[0].change(uri("rules/luau/style/new/tests/invalid/fixture.luau"));
+	await new Promise(resolve => setTimeout(resolve, 400));
+	assert.deepEqual(actions, ["check", "check"]);
 	state.api.dispose();
 });

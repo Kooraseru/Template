@@ -36,11 +36,11 @@ export type Task = {
 	needs: { string },
 }
 
-local TASK_INVOKER = ".github/ci/bootstrap/execution/invoke.luau"
+const TASK_INVOKER = ".github/ci/bootstrap/execution/invoke.luau"
 
 --# Constants
 
-local EVENTS: { [string]: boolean } = { push = true, pull_request = true, workflow_dispatch = true }
+const EVENTS: { [string]: boolean } = { push = true, pull_request = true, workflow_dispatch = true }
 
 function Contract.ValidIdentity(identity: string): boolean
 	if identity == "" or identity:sub(1, 1) == "/" or identity:sub(-1) == "/" or identity:find("//", 1, true) then
