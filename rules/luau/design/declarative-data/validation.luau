@@ -26,9 +26,22 @@ type Candidate = {
 local RULE_NAME = "declarative_data"
 local MESSAGE = "This table contains static declarative data; move it to a data file or document the runtime constraint."
 
+local function isScalarLiteral(value: syntax.CstExpr): boolean
+	return value.tag == "boolean" or value.tag == "string" or value.tag == "number"
+		or value.tag == "integer" or value.tag == "nil"
+end
+
 -- Recognize serializable literal values, recursively, without relying on identifier spelling.
 local function isStatic(value: syntax.CstExpr): boolean
-	if value.tag == "boolean" or value.tag == "string" or value.tag == "number" or value.tag == "integer" or value.tag == "nil" then
+	if isScalarLiteral(value) then
+		return true
+	end
+	if value.tag == "interpolatedstring" then
+		for _, expression in value.expressions do
+			if not isScalarLiteral(expression) then
+				return false
+			end
+		end
 		return true
 	end
 	if value.tag == "unary" then

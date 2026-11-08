@@ -18,7 +18,7 @@ for _, category in { "valid", "invalid", "review" } do
 		count += 1
 	end
 end
-assert(count == 21)
+assert(count == 23)
 print(`Declarative-data fixtures passed: {count}`)
 
 local assigned = Validator:Check({ path = "source/assigned.luau", source = [[

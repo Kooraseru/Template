@@ -27,3 +27,6 @@ The separate test system executes each fixture. Run the fixture suite from the r
 | Shadowed or similar identifiers | Valid | [shadowed-names](valid/shadowed-names.luau) |
 
 `review` means human judgment is required; an uncertain case must not become a fabricated violation. A test must not pass solely because a validator recognizes one capitalization pattern or field count.
+
+- [Literal interpolation](invalid/literal-interpolation.luau) is static because every interpolated value is a primitive literal.
+- [Runtime interpolation](valid/runtime-interpolation.luau) keeps an interpolated runtime value outside the check.

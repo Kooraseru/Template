@@ -76,4 +76,6 @@ Static analysis cannot always prove what a callback or another module does to a 
 
 The imported `validation.luau` implementation uses Lute's syntax tree to track lexical table bindings, simple stable aliases, function fields, declared methods, and direct runtime mutations. It conservatively exempts opaque escapes whose effects it cannot establish.
 
-The separate test system owns the [21 acceptance cases](tests/TEST_MATRIX.md). It executes the fixtures independently; the validator never loads `tests/`. Template reports supported violations as errors on workspace source. Review cases remain advisory.
+The separate test system owns the [acceptance cases](tests/TEST_MATRIX.md). It executes the fixtures independently; the validator never loads `tests/`. Template reports supported violations on workspace source using the configured Rules severity. Review cases remain advisory.
+
+An interpolated string with only primitive literals is static data. A runtime value or a potentially custom conversion stays in Luau. An inline table passed to a function can also be an ordinary runtime value and is not automatically a data module.
