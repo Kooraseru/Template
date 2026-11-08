@@ -12,7 +12,6 @@ luau/
     naming.md
     types.md
     functions.md
-    function-documentation.md
     expressions.md
     strings.md
     types/
@@ -46,4 +45,4 @@ When adding or editing Luau, choose in this order:
 4. language-wide naming/type/function/expression rules
 5. structure-specific required and absent elements
 
-Apply [declarative-data](../../../rules/luau/design/declarative-data/README.md) when choosing whether the source should be Luau at all, and [function documentation](language/function-documentation.md) when documenting nontrivial APIs.
+Apply [declarative-data](../../../rules/luau/design/declarative-data/README.md) when choosing whether the source should be Luau at all, and [function documentation](../../../rules/luau/style/function-documentation/README.md) when documenting nontrivial APIs.

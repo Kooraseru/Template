@@ -30,14 +30,28 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local findings: { Diagnostic.Finding } = {}
 	local lines = context.source:split("\n")
 	local docLines: { [number]: { text: string, span: Syntax.Span } } = {}
-	local function report(span: Syntax.Span, message: string)
+	local blockDocs: { [number]: Syntax.Span } = {}
+	local function reportRange(line: number, column: number, endLine: number, endColumn: number, message: string)
 		findings[#findings + 1] = {
-			line = span.beginLine, column = span.beginColumn,
-			endLine = span.endLine, endColumn = span.endColumn,
+			line = line, column = column, endLine = endLine, endColumn = endColumn,
 			severity = "warning", message = message,
 		}
 	end
-	Comments.VisitLineComments(context.source, function(comment, span)
+	local function report(span: Syntax.Span, message: string)
+		reportRange(span.beginLine, span.beginColumn, span.endLine, span.endColumn, message)
+	end
+	local parsed, file = pcall(Parser.parse, context.source)
+	if not parsed then
+		return findings
+	end
+	Comments.VisitComments(file, function(comment, span, block)
+		if block then
+			if lines[span.beginLine]:sub(1, span.beginColumn - 1):match("^%s*$")
+				and lines[span.endLine]:sub(span.endColumn):match("^%s*$") then
+				blockDocs[span.endLine] = span
+			end
+			return
+		end
 		local issue = annotationIssue(comment)
 		if issue then
 			report(span, issue)
@@ -46,11 +60,30 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			docLines[span.beginLine] = { text = comment, span = span }
 		end
 	end)
-	local parsed, block = pcall(Parser.parseBlock, context.source)
-	if not parsed then
-		return findings
+	local function checkBlockSpacing(declarationLine: number)
+		local span = blockDocs[declarationLine - 1]
+		if not span then
+			return
+		end
+		local hasProse, fenced = false, false
+		for line = span.beginLine + 1, span.endLine - 1 do
+			local content = lines[line]:match("^%s*(.-)%s*$") or ""
+			if content:match("^```") then
+				fenced = not fenced
+			elseif not fenced and (content:match("^@param%s") or content:match("^@return%s")) then
+				if hasProse and not lines[line - 1]:match("^%s*$") then
+					local column = #(lines[line]:match("^%s*") or "") + 1
+					reportRange(line, column, line, column + #content,
+						"Leave a blank line between Moonwave prose and its annotation tags.")
+				end
+				break
+			elseif not fenced and content ~= "" and not content:match("^@") then
+				hasProse = true
+			end
+		end
 	end
 	local function checkFunctionDocs(func: Syntax.CstExprFunction, declarationLine: number)
+		checkBlockSpacing(declarationLine)
 		local names: { [string]: boolean } = {}
 		for _, parameter in func.parameters do
 			names[parameter.name.text] = true
@@ -74,10 +107,10 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			line -= 1
 		end
 	end
-	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocalFunction).nodes do
+	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatLocalFunction).nodes do
 		checkFunctionDocs(declaration.func, declaration.location.beginLine)
 	end
-	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
+	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatFunction).nodes do
 		checkFunctionDocs(declaration.func, declaration.location.beginLine)
 	end
 	return findings

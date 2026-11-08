@@ -8,3 +8,5 @@
 - [Detached documentation](review/detached-doc.luau) has an ambiguous owner and produces no warning.
 - [Function metadata](invalid/function-metadata.luau) reports property metadata and a redundant declaration tag on a named function.
 - [Property metadata](valid/property-metadata.luau) accepts a readonly annotation on a binding and lifecycle metadata on a function.
+
+- [Moonwave spacing](invalid/moonwave-spacing.luau) reports a tag that immediately follows prose.

@@ -2,7 +2,7 @@
 
 This document owns language-wide function guidance.
 
-Function names follow [naming](naming.md). Document nontrivial public contracts using [Luau function documentation](function-documentation.md).
+Function names follow [naming](naming.md). Document nontrivial public contracts using [Luau function documentation](../../../../rules/luau/style/function-documentation/README.md).
 
 Project-owned receiver methods follow the selected structure. OOP receiver methods are owned by [objects](../structures/oop/objects.md).
 

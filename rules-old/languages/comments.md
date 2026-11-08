@@ -7,7 +7,7 @@ Comments explain the information a maintainer cannot reliably infer from the nea
 - Put a short file-level comment at the top only when the file's role is not evident from its name and location. State what it owns, not a slogan.
 - Put a comment beside the rule or operation it explains. A distant overview does not replace a local explanation for a surprising condition.
 - Document public contracts at their declaration: inputs, outputs, important constraints, side effects, and caller obligations. Use the language's native documentation form where one exists.
-- For Luau, use [Moonwave-compatible function documentation](luau/language/function-documentation.md) when a function has a meaningful public contract.
+- For Luau, use [Moonwave-compatible function documentation](../../rules/luau/style/function-documentation/README.md) when a function has a meaningful public contract.
 - Keep data-field documentation close to the field or schema. Describe groups and invariants; do not annotate every obvious leaf.
 - For generated files, identify the generator and editable source. Do not put the only explanation in generated output.
 
