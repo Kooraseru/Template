@@ -148,8 +148,10 @@ if (await dependenciesReady()) {
 		if (sources.length) check(lute, ["lint", ...sources], "Lute lint");
 		const ruleSources = sources.filter(file => {
 			const relative = file.split(path.sep).join("/");
-			return ["source/", ".github/ci/", "dependencies/packages/"].some(prefix => relative.startsWith(prefix))
-				&& !relative.split("/").slice(0, -1).some(segment => ["generated", "vendor", "examples"].includes(segment));
+			const directories = relative.split("/").slice(0, -1);
+			const activeValidatorSource = relative.startsWith("rules/luau/") && !directories.includes("tests");
+			return (activeValidatorSource || ["source/", ".github/ci/", "dependencies/packages/"].some(prefix => relative.startsWith(prefix)))
+				&& !directories.some(segment => ["generated", "vendor", "examples"].includes(segment));
 		});
 		checkRepositoryRules(ruleSources);
 	} else {
