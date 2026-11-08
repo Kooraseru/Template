@@ -13,7 +13,6 @@ luau/
     types.md
     functions.md
     function-documentation.md
-    indentation.md
     expressions.md
     strings.md
     types/
