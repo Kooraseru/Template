@@ -38,6 +38,14 @@ local function canUnnest(statements: { Syntax.CstStat }): boolean
 	return #statements > 0
 end
 
+local function isErrorCall(statement: Syntax.CstStat): boolean
+	if statement.tag ~= "expression" or statement.expression.tag ~= "call" then
+		return false
+	end
+	local callee = statement.expression.func
+	return callee.tag == "global" and callee.name.text == "error"
+end
+
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)
 	if not parsed then
@@ -86,7 +94,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		local exit = failure[1]
 		local returnsNoResult = exit.tag == "return" and (#exit.expressions == 0
 			or (#exit.expressions == 1 and exit.expressions[1].tag == "nil"))
-		if exit.tag ~= "continue" and exit.tag ~= "break" and not returnsNoResult then
+		if exit.tag ~= "continue" and exit.tag ~= "break" and not returnsNoResult and not isErrorCall(exit) then
 			continue
 		end
 		local span = node.location

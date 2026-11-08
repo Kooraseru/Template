@@ -15,3 +15,5 @@
 - [Short circuit value](review/short-circuit-value.luau) keeps conversion around an expression that can yield a number.
 
 - [Nil fallback](invalid/nil-fallback.luau) warns when an explicit no-result return follows the successful branch.
+- [Error fallback](invalid/error-fallback.luau) warns on an else branch that only raises an error.
+- [Shadowed error](valid/shadowed-error-fallback.luau) passes because a local function may return normally.

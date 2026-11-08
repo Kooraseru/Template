@@ -18,8 +18,6 @@ if input.Text == nil then
 end
 ```
 
-## Guard-first decisions
-
-Apply [“if not, not if”](../../../../rules/luau/syntax/control-flow/README.md) when handling an absent or invalid precondition keeps the main path flat. Do not replace useful `if` branches with confusing negations or boolean expression puzzles merely for syntactic consistency.
+For guard-first decisions, see [control flow](../../../../rules/luau/syntax/control-flow/README.md).
 
 Use [backtick interpolation](../../../../rules/luau/syntax/strings/README.md) for strings combining text and values.
