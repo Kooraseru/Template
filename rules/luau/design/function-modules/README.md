@@ -40,3 +40,5 @@ Why this shape:
 - there is no public surface to organize beyond the returned callable
 - testing can focus on input/output behavior
 
+
+Returned records use the same check for a bare field or a quoted bracket key spelling the module name. Computed keys stay for review.

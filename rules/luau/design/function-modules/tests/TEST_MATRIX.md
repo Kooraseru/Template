@@ -10,3 +10,4 @@ The module file is named `Clamp.luau` in each fixture so the validator exercises
 
 - [Bound wrapper](invalid/bound-wrapper/Clamp.luau) reports a same-name field that forwards a local function.
 - [Named operation](valid/named-operation/Clamp.luau) preserves a distinct public operation name.
+- [Quoted inline key](invalid/quoted-inline/Clamp.luau) and [quoted bound key](invalid/quoted-binding/Clamp.luau) warn when a bracketed string repeats the module name.

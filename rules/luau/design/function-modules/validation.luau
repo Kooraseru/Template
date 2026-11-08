@@ -48,6 +48,11 @@ local function namedWrapper(block: Syntax.CstStatBlock, stem: string): SourceRan
 	}
 end
 
+local function matchesQuotedName(key: Syntax.CstExpr, stem: string): boolean
+	return key.tag == "string" and (key.quoteStyle == "single" or key.quoteStyle == "double")
+		and key.value.text == stem
+end
+
 local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Span?
 	if statement.tag ~= "return" or #statement.expressions ~= 1 then
 		return nil
@@ -57,7 +62,9 @@ local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Sp
 		return nil
 	end
 	local member = result.entries[1]
-	if member.kind == "record" and member.key.text == stem and member.value.tag == "function" then
+	local matchesName = (member.kind == "record" and member.key.text == stem)
+		or (member.kind == "general" and matchesQuotedName(member.key, stem))
+	if matchesName and member.value.tag == "function" then
 		return result.location
 	end
 	return nil
@@ -75,7 +82,9 @@ local function boundWrapper(block: Syntax.CstStatBlock, stem: string): SourceRan
 		return nil
 	end
 	local member = result.entries[1]
-	if member.kind ~= "record" or member.key.text ~= stem or member.value.tag ~= "local"
+	local matchesName = (member.kind == "record" and member.key.text == stem)
+		or (member.kind == "general" and matchesQuotedName(member.key, stem))
+	if not matchesName or member.value.tag ~= "local"
 		or member.value["local"] ~= binding.variables[1] then
 		return nil
 	end
