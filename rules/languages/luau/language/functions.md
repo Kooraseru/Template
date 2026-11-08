@@ -27,3 +27,5 @@ end
 ```
 
 Prefer [early guard clauses](control-flow.md) to nested positive conditions when the function cannot meaningfully proceed. Use explicit return values for real failures; a silent `return` is not an error strategy.
+
+See [the validator](functions/README.md) for the enforced subset.

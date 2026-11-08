@@ -40,7 +40,7 @@ The Packages publisher currently stages package metadata but has no complete reg
 
 ## Editor and language tools
 
-`.vscode/` owns Luau LSP settings, Lute rules and configuration, StyLua settings, Preflight's editor plan, tasks, and extension recommendations. The root `.luaurc` provides runtime module aliases and definitions. CI lint and editor diagnostics should share the same custom Lute rules. Preflight diagnoses editor state and does not replace the CI scheduler. Keep local shell hooks compatible with MSYS2, including Windows ARM64; do not introduce WSL or PowerShell runtime dependencies.
+`.vscode/` owns Luau LSP settings, Lute rules and configuration, Preflight's editor plan, tasks, and extension recommendations. The root `.luaurc` provides runtime module aliases and definitions. CI lint and editor diagnostics should share the same custom Lute rules. Preflight diagnoses editor state and does not replace the CI scheduler. Keep local shell hooks compatible with MSYS2, including Windows ARM64; do not introduce WSL or PowerShell runtime dependencies.
 
 ## Validation and reporting
 

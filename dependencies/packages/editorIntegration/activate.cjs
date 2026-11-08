@@ -195,6 +195,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 	function startWatching(controllerCallback) {
 		callback = controllerCallback;
 		const changed = new Set();
+		const isRuleFixture = relative => /^rules\/.*\/tests\/(valid|invalid|review)\/.*\.luau$/.test(relative);
 		const watchedPath = uri => {
 			if (uri.scheme !== "file" || !isInWorkspace(uri)) return undefined;
 			const relative = path.relative(root, uri.fsPath).split(path.sep).join("/");
@@ -212,7 +213,13 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		// Rules can also change on disk through Git or an external editor.
 		const rulesWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{rules/**,.vscode/config/rules.json}"));
 		const onRuleChange = uri => {
-			if (!watchedPath(uri) || ruleNoticeOpen || disposed) return;
+			const relative = watchedPath(uri);
+			if (!relative || disposed) return;
+			if (isRuleFixture(relative)) {
+				schedule("rules");
+				return;
+			}
+			if (ruleNoticeOpen) return;
 			clearTimeout(ruleNoticeTimer);
 			ruleNoticeTimer = setTimeout(async () => {
 				ruleNoticeTimer = undefined;
@@ -230,7 +237,9 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		owned.push(rulesWatcher, rulesWatcher.onDidCreate(onRuleChange), rulesWatcher.onDidChange(onRuleChange), rulesWatcher.onDidDelete(onRuleChange));
 		owned.push(vscode.workspace.onDidSaveTextDocument(document => {
 			const relative = watchedPath(document.uri);
-			if (relative && changed.delete(relative) && !relative.startsWith("rules/") && relative !== ".vscode/config/rules.json") schedule(setupFiles.has(relative) ? "run" : "check");
+			if (!relative || !changed.delete(relative)) return;
+			if (isRuleFixture(relative)) schedule("rules");
+			else if (!relative.startsWith("rules/") && relative !== ".vscode/config/rules.json") schedule(setupFiles.has(relative) ? "run" : "check");
 		}));
 		owned.push(vscode.workspace.onDidCloseTextDocument(document => {
 			changed.delete(watchedPath(document.uri));

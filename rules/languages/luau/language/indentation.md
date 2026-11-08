@@ -14,4 +14,4 @@ function Registry.Add(name: string): ()
 end
 ```
 
-Editors may render a tab as two, four, or eight columns; this rule governs the actual `\t` character in source, not its displayed width. The repository's `.stylua.toml` sets `indent_type = "Tabs"`, and `.editorconfig` specifies a four-column display width. Run StyLua's formatting check for Luau files; do not maintain a second competing whitespace checker. Preserve deliberate semantic line breaks and do not introduce arbitrary line-width wrapping.
+Editors may render a tab as two, four, or eight columns; this rule governs the actual `\t` character in source, not its displayed width. Preserve deliberate semantic line breaks and do not introduce arbitrary line-width wrapping. For visual separation between larger blocks, see the [blank-line rule](blank-lines.md).

@@ -66,7 +66,7 @@ Use one constructor-boundary cast only when construction order genuinely needs i
 
 Prefer fields-first construction when possible. Use empty-table incremental construction when the instance is built out step by step.
 
-Do not inline a populated field table inside `setmetatable`. Use one of the established construction shapes.
+Do not inline a populated field table inside `setmetatable`. Use one of the established construction shapes. The [instance-construction validator](objects/README.md) checks this for named fields and a local metatable binding.
 
 Fields-first:
 

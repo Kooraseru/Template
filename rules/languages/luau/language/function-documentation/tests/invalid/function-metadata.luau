@@ -1,4 +1,5 @@
----@param obsolete string This tag might refer to a previous signature.
+---@readonly
+---@function greet
 local function greet(name: string): string
 	return name
 end

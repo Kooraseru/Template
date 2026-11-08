@@ -50,7 +50,10 @@ local function run(entries: { string }, sources: { Rule.Context }): { Diagnostic
 		local validator = load_rule(entry, identity)
 
 		for _, source in sources do
-			local findings = validator:Check(source)
+			local checked, findings = pcall(validator.Check, validator, source)
+			if not checked then
+				error(`Rule {identity} failed while checking {source.path}: {tostring(findings)}`, 0)
+			end
 
 			-- Associate each finding with its source and rule.
 			for _, finding in findings do

@@ -84,12 +84,14 @@ function check(program: string, args: string[], source: string): void {
 const policyPath = ".vscode/config/rules.json";
 const ruleSeverities = new Set(["error", "warning", "info", "off"]);
 
-function readRulePolicy(): { defaultSeverity: string; fixtureSeverity: string; overrides: Record<string, string> } {
+function readRulePolicy(): { defaultSeverity: string; fixtureSeverity: string; overrides: Record<string, string>; ruleSettings: Record<string, Record<string, unknown>> } {
 	const policy = JSON.parse(fs.readFileSync(path.join(root, policyPath), "utf8"));
 	if (!policy || !ruleSeverities.has(policy.defaultSeverity) || !ruleSeverities.has(policy.fixtureSeverity)
 		|| !policy.overrides || typeof policy.overrides !== "object" || Array.isArray(policy.overrides)
-		|| !Object.values(policy.overrides).every(value => ruleSeverities.has(value as string))) {
-		throw new Error("Use error, warning, info, or off for defaultSeverity, fixtureSeverity, and rule overrides.");
+		|| !Object.values(policy.overrides).every(value => ruleSeverities.has(value as string))
+		|| !policy.ruleSettings || typeof policy.ruleSettings !== "object" || Array.isArray(policy.ruleSettings)
+		|| !Object.values(policy.ruleSettings).every(value => value && typeof value === "object" && !Array.isArray(value))) {
+		throw new Error("Set valid severities, and make ruleSettings an object mapping rule IDs to settings objects.");
 	}
 	return policy;
 }
@@ -116,7 +118,7 @@ function checkRepositoryRules(sources: string[]): void {
 		const marker = "::rule-finding::";
 		if (line.startsWith(marker)) {
 			const rule = JSON.parse(line.slice(marker.length));
-			const severity = rule.fixtureFailure ? "error" : rule.fixture ? policy.fixtureSeverity
+			const severity = rule.fixtureFailure || rule.checkerFailure ? "error" : rule.fixture ? policy.fixtureSeverity
 				: Object.hasOwn(policy.overrides, rule.rule) ? policy.overrides[rule.rule] : policy.defaultSeverity;
 			if (severity !== "off") console.log(marker + JSON.stringify({ ...rule, severity: severity === "info" ? "information" : severity }));
 			continue;
@@ -131,7 +133,12 @@ if (await dependenciesReady()) {
 	const sources = luauSources();
 	if (process.argv.includes("--rules")) {
 		if (sources.length) check(lute, ["lint", ...sources], "Lute lint");
-		checkRepositoryRules(sources.filter(file => ["source", ".github/ci", "dependencies/packages"].some(prefix => file.split(path.sep).join("/").startsWith(prefix + "/"))));
+		const ruleSources = sources.filter(file => {
+			const relative = file.split(path.sep).join("/");
+			return ["source/", ".github/ci/", "dependencies/packages/"].some(prefix => relative.startsWith(prefix))
+				&& !relative.split("/").slice(0, -1).some(segment => ["generated", "vendor", "examples"].includes(segment));
+		});
+		checkRepositoryRules(ruleSources);
 	} else {
 		check(process.execPath, [typescript, "--project", configuration, "--pretty", "false"], "TypeScript");
 		if (sources.length) check(lute, ["check", ...sources], "Lute");

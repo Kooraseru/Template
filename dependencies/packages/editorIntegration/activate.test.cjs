@@ -85,7 +85,8 @@ test("only changed saves in watched paths run Preflight", async () => {
 	const fixtureFile = { uri: { scheme: "file", fsPath: "C:/repo/rules/luau/tests/invalid/example.luau" }, isDirty: true };
 	state.workspace.change({ document: fixtureFile, contentChanges: [{}] });
 	state.workspace.save(fixtureFile);
-	assert.deepEqual(actions, ["check", "run"]);
+	await new Promise(resolve => setTimeout(resolve, 400));
+	assert.deepEqual(actions, ["check", "run", "rules"]);
 	assert.equal(state.workspace.open, undefined);
 	assert.equal(state.watchers.length, 1);
 	state.api.dispose();

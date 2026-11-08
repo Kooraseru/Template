@@ -90,7 +90,7 @@ Many rules belong to more than one concept. Cached function references are both 
 
 Do not use `_` prefixes for private fields, locals, or helpers. A bare `_` is only for intentionally ignored values.
 
-Do not use numeric separators such as `10_000`.
+Numeric separators are optional. Use them when they make a literal easier to read, such as `10_000` or `0xFF_FF`.
 
 Avoid new generic `State` and `States` names for modules, variables, and runtime concepts. Name the actual state domain.
 
@@ -111,3 +111,5 @@ type RenderOptions = {
 const MAX_GLYPH_COUNT = 2048
 const mathMin = math.min
 ```
+
+See [enforced declaration naming](naming/README.md) for the syntax-based check.

@@ -6,7 +6,7 @@ The user's Luau style is global, but it is not one rigid skeleton. Different mod
 
 ## File Shape
 
-Use the path label and `--!strict` at the top of every Luau source file.
+Use the path label and `--!strict` at the top of hand-written Luau source. See the [strict-directive validator](file-system/README.md).
 
 Use role headers only when they improve scanning. A tiny file does not need decorative structure.
 
@@ -100,23 +100,7 @@ Tiny modules can omit role headers when the structure is obvious.
 
 ## Headers
 
-Allowed common headers:
-
-```luau
---# Services
---# Modules
---# Types
---# Constants
---# Variables
---# Helpers
---# Constructor
---# Functions
---# Methods
---# Lifecycle
---# Initialization
-```
-
-Avoid `--# Imports`, `--# Module`, `--# Public Methods`, and `--# Private Methods`.
+The approved `--#` section-marker names and the explicitly discouraged names are maintained in the file-system rule's `sectionMarkers` settings in [rules.json](../../../../.vscode/config/rules.json). Standalone markers not on the allowlist are warnings. Inline comment lookalikes are not section markers.
 
 Private behavior should usually be local helpers, not table-private methods.
 

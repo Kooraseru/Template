@@ -17,3 +17,5 @@ Inside a backtick literal, escape an opening brace with `\{`, a backtick with a 
 Apply this preference when editing messages, paths, labels, and similar string construction. Avoid mechanical changes to patterns, serialized payloads, or code whose formatting is part of a contract.
 
 Sources: [Luau syntax](https://luau.org/syntax/#string-interpolation) and the [implemented interpolation RFC](https://rfcs.luau.org/syntax-string-interpolation.html).
+
+See [the enforced subset](strings/README.md) for diagnostics and review cases.

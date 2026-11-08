@@ -3,9 +3,11 @@
 
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
+local Comments = require("@ruleLinter/comments")
 local Parser = require("@std/syntax/parser")
+local Query = require("@std/syntax/query")
 local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+local Utils = require("@std/syntax/utils")
 
 local function annotationIssue(text: string): string?
 	local tag, body = text:match("^%-%-%-?%s*@([%a]+)%s*(.*)$")
@@ -25,44 +27,58 @@ local function annotationIssue(text: string): string?
 end
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
-	local parsed, file = pcall(Parser.parse, context.source)
-	if not parsed then
-		return {}
-	end
 	local findings: { Diagnostic.Finding } = {}
-	local seen: { [string]: boolean } = {}
-	local function checkTrivia(trivia: Syntax.Trivia)
-		if trivia.tag ~= "comment" then
-			return
-		end
-		local issue = annotationIssue(trivia.text)
-		if not issue then
-			return
-		end
-		local span = trivia.location
-		local key = `{span.beginLine}:{span.beginColumn}`
-		if seen[key] then
-			return
-		end
-		seen[key] = true
+	local lines = context.source:split("\n")
+	local docLines: { [number]: { text: string, span: Syntax.Span } } = {}
+	local function report(span: Syntax.Span, message: string)
 		findings[#findings + 1] = {
 			line = span.beginLine, column = span.beginColumn,
 			endLine = span.endLine, endColumn = span.endColumn,
-			severity = "warning", message = issue,
+			severity = "warning", message = message,
 		}
 	end
-	local function checkToken(token: Syntax.CstToken): boolean
-		for _, trivia in token.leadingTrivia do
-			checkTrivia(trivia)
+	Comments.VisitLineComments(context.source, function(comment, span)
+		local issue = annotationIssue(comment)
+		if issue then
+			report(span, issue)
 		end
-		for _, trivia in token.trailingTrivia do
-			checkTrivia(trivia)
+		if comment:match("^%-%-%-") and lines[span.beginLine]:sub(1, span.beginColumn - 1):match("^%s*$") then
+			docLines[span.beginLine] = { text = comment, span = span }
 		end
-		return true
+	end)
+	local parsed, block = pcall(Parser.parseBlock, context.source)
+	if not parsed then
+		return findings
 	end
-	local visitor = Visitor.create()
-	visitor.visitToken = checkToken
-	Visitor.visitBlock(file.root, visitor)
-	checkToken(file.eof)
+	local function checkFunctionDocs(func: Syntax.CstExprFunction, declarationLine: number)
+		local names: { [string]: boolean } = {}
+		for _, parameter in func.parameters do
+			names[parameter.name.text] = true
+		end
+		if func.self then
+			names.self = true
+		end
+		local line = declarationLine - 1
+		while docLines[line] do
+			local doc = docLines[line]
+			local name = doc.text:match("^%-%-%-%s*@param%s+([%a_][%w_]*)%??%s+%S")
+			if name and not names[name] then
+				report(doc.span, "LuaCATS documents a parameter absent from this declaration: " .. name .. ".")
+			end
+			local tag = doc.text:match("^%-%-%-%s*@([%a_]+)%f[^%w_]")
+			if tag == "readonly" then
+				report(doc.span, "Reserve @readonly for property documentation.")
+			elseif tag == "function" or tag == "method" then
+				report(doc.span, "Remove this declaration tag from a function already declared in Luau.")
+			end
+			line -= 1
+		end
+	end
+	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocalFunction).nodes do
+		checkFunctionDocs(declaration.func, declaration.location.beginLine)
+	end
+	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
+		checkFunctionDocs(declaration.func, declaration.location.beginLine)
+	end
 	return findings
 end)

@@ -1,2 +1,2 @@
--- source/sample.luau
+-- source/header.luau
 return true

@@ -4,4 +4,6 @@ Generated files should be recognizable from path, generator ownership, or file c
 
 Generated output may have different shape pressure than hand-authored source, but generator behavior must be owned by the tool that creates it.
 
+Template skips directories named `generated`, `vendor`, and `examples` when applying repository style validators. Compiler and Luau tooling checks retain their own source scopes. A prose comment alone does not establish generator ownership.
+
 Do not hand-edit generated files unless the generator contract explicitly allows manual edits.

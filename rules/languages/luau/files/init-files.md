@@ -18,3 +18,5 @@ Render/
   Text.luau
   Layout.luau
 ```
+
+See [the forwarding-only check](init-files/README.md) for the enforced subset.

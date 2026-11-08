@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Template rules policy",
+  "description": "A dynamic policy map keyed by rule directory paths under rules/.",
   "type": "object",
   "properties": {
     "defaultSeverity": {
@@ -21,16 +22,32 @@
     },
     "overrides": {
       "type": "object",
-      "description": "Severity by full rule ID, for example rules/languages/luau/language/types.",
-      "additionalProperties": {
-        "$ref": "#/definitions/severity"
-      }
+      "description": "Severity overrides keyed by full rule directory path.",
+      "patternProperties": {
+        "^rules/(?:[^/]+/)*[^/]+$": {
+          "$ref": "#/definitions/severity"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ruleSettings": {
+      "type": "object",
+      "description": "Open settings objects keyed by the corresponding rule folder path. Each rule owns its fields.",
+      "patternProperties": {
+        "^rules/(?:[^/]+/)*[^/]+$": {
+          "type": "object",
+          "description": "Settings owned by this rule. Rule-specific fields remain open for the owning rule.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": [
     "defaultSeverity",
     "fixtureSeverity",
-    "overrides"
+    "overrides",
+    "ruleSettings"
   ],
   "additionalProperties": false,
   "definitions": {

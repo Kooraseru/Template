@@ -31,3 +31,5 @@ Why this shape:
 - the function has no stored state
 - there is no public surface to organize beyond the returned callable
 - testing can focus on input/output behavior
+
+See [the validator](function-modules/README.md) for the enforced subset.
