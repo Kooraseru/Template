@@ -291,10 +291,21 @@ function registerRuleActions({ vscode, root, workflow, actionSources, command, r
 			const snapshots = actionSources.get(document.uri.toString());
 			for (const [key, snapshot] of snapshots || []) {
 				const { diagnostic } = snapshot;
+				if (snapshot.revision !== getRevision() || document.getText() !== snapshot.source ||
+					(snapshot.version !== undefined && document.version !== snapshot.version) ||
+					actionSources.get(document.uri.toString())?.get(key) !== snapshot) continue;
 				const code = diagnostic.code.value;
 				const fix = ruleQuickFix(snapshot, relative);
 				const proposal = code === "declarative-data" ? extraction(document, diagnostic.range) : undefined;
-				if (!fix && !proposal) continue;
+				if (!fix && !proposal) {
+					const target = diagnostic.code?.target;
+					if (!target || token?.isCancellationRequested || !range.intersection(diagnostic.range)) continue;
+					const action = new vscode.CodeAction(`Open rule guidance: ${snapshot.rule}`);
+					action.diagnostics = [diagnostic];
+					action.command = { command: "vscode.open", title: action.title, arguments: [target] };
+					actions.push(action);
+					continue;
+				}
 				const kind = proposal ? vscode.CodeActionKind.RefactorExtract : vscode.CodeActionKind.QuickFix;
 				if (context.only && !context.only.contains(kind)) continue;
 				if (token?.isCancellationRequested || document.getText() !== snapshot.source) continue;

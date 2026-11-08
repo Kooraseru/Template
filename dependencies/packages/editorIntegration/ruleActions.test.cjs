@@ -160,3 +160,37 @@ test("non-header rule actions are preferred, candidate-checked, and applied from
 	assert.equal(applied.range.start.offset, 0);
 	assert.equal(applied.range.end.offset, 5);
 });
+
+test("rules without a safe mechanical edit offer current rule guidance", async () => {
+	const root = process.cwd();
+	const source = "local function run()\n\tif ready then\n\t\tfirst()\n\t\tif nested then second() end\n\tend\nend\nreturn run\n";
+	const uri = { scheme: "file", fsPath: path.join(root, "source/a.luau"), toString: () => "file:manual-guidance" };
+	const document = { uri, version: 4, getText: () => source };
+	const rule = "luau/nested-conditional-expressions";
+	const finding = { rule, line: 3, column: 3, endLine: 3, endColumn: 31, message: "Give the nested conditional a name or use an explicit branch." };
+	const range = { start: { line: 2, character: 2 }, end: { line: 2, character: 30 }, intersection: () => true };
+	const target = { fsPath: path.join(root, "rules/luau/syntax/nested-conditional-expressions/README.md") };
+	const diagnostic = { source: "Rules", code: { value: "nested-conditional-expressions", target }, message: finding.message, range };
+	const key = diagnosticKey(rule, range);
+	const snapshot = { source, version: 4, revision: 7, rule, diagnostic, target: findingKey(finding, source) };
+	let provider;
+	const commands = new Map();
+	registerRuleActions({
+		root, workflow: {}, actionSources: new Map([[uri.toString(), new Map([[key, snapshot]])]]),
+		command: name => name, getRevision: () => 7, requestFile: async () => { throw new Error("Guidance lookup must not rerun Rules"); },
+		vscode: {
+			CodeAction: class { constructor(title, kind) { this.title = title; this.kind = kind; } },
+			CodeActionKind: { QuickFix: "quickfix", RefactorExtract: "refactor.extract" },
+			workspace: {},
+			languages: { registerCodeActionsProvider(_selector, value) { provider = value; } },
+			commands: { registerCommand(name, callback) { commands.set(name, callback); } },
+		},
+	});
+	const [action] = await provider.provideCodeActions(document, range, {});
+	assert.equal(action.title, `Open rule guidance: ${rule}`);
+	assert.equal(action.command.command, "vscode.open");
+	assert.equal(action.command.arguments[0], target);
+	assert.equal(action.edit, undefined);
+	document.version++;
+	assert.deepEqual(await provider.provideCodeActions(document, range, {}), []);
+});
