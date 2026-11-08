@@ -24,7 +24,6 @@ luau/
   files/
     file-system.md
     modules.md
-    init-files.md
     entry-points.md
     generated-files.md
 

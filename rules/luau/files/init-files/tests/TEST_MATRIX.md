@@ -8,3 +8,6 @@
 - [Owns surface](valid/owns-surface/init.luau) passes because the head defines an API; `Child.luau` is present beside it.
 
 Each case is a directory tree. The fixture runner preserves its paths under a virtual `source/` root, so the validator receives the actual `init.luau` path and sibling modules in the same input set.
+
+- [Aliased child record](invalid/aliased-record/init.luau) reports a record forwarding two local imports.
+- [Additional child initialization](valid/initializes-child/init.luau) leaves a potentially meaningful unused import alone.
