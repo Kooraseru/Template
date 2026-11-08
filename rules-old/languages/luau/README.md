@@ -8,7 +8,7 @@ Treat Luau as the executable layer. Keep ordinary declarative catalogs and confi
 
 Choose a single `name.luau` module when one script is sufficient. When meaningful child modules warrant a directory, `name/init.luau` is the normal coordinating module head; it must not exist solely to echo child exports.
 
-See [directory roots](files/module-roots.md), [file layout](files/file-system.md), [control flow](../../../rules/luau/syntax/control-flow/README.md), [indentation](../../../rules/luau/style/indentation/README.md), [function documentation](language/function-documentation.md), [declarative data](../../../rules/luau/design/declarative-data/README.md), and [strings](language/strings.md).
+See [directory roots](../../../rules/luau/files/module-roots/README.md), [file layout](files/file-system.md), [control flow](../../../rules/luau/syntax/control-flow/README.md), [indentation](../../../rules/luau/style/indentation/README.md), [function documentation](language/function-documentation.md), [declarative data](../../../rules/luau/design/declarative-data/README.md), and [strings](language/strings.md).
 
 ## Executable checks
 
@@ -24,4 +24,4 @@ Indentation uses [literal tabs](../../../rules/luau/style/indentation/README.md)
 
 ## Review
 
-Use the validator matrices for examples that need additional context. [Entry-point responsibilities](files/entry-points.md), [generated-file ownership](files/generated-files.md), [resolver conventions](files/module-roots.md), [expression clarity](language/expressions.md), [composition](structures/functional/composition.md), [shared interfaces](structures/oop/interfaces.md), and [stateful module lifetimes](structures/procedural/stateful-modules.md) still require architectural review. [ECS](structures/ecs/ecs-system.md) defines responsibility boundaries and leaves concrete conventions to an adopting repository.
+Use the validator matrices for examples that need additional context. [Entry-point responsibilities](files/entry-points.md), [generated-file ownership](files/generated-files.md), [resolver conventions](../../../rules/luau/files/module-roots/README.md), [expression clarity](language/expressions.md), [composition](structures/functional/composition.md), [shared interfaces](structures/oop/interfaces.md), and [stateful module lifetimes](structures/procedural/stateful-modules.md) still require architectural review. [ECS](structures/ecs/ecs-system.md) defines responsibility boundaries and leaves concrete conventions to an adopting repository.

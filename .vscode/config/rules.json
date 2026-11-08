@@ -4,6 +4,9 @@
     "fixtureSeverity": "warning"
   },
   "rules": {
+    "luau/module-roots": {
+      "severity": "info"
+    },
     "luau/phase-comments": {
       "severity": "info"
     },

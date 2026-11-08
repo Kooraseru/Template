@@ -4,4 +4,4 @@ A directory head should own a boundary or coordinate child modules. This validat
 
 A computed path or another resolver convention needs review. A directory head that defines a meaningful API or performs boundary work passes this narrow check.
 
-See [init files](../../../../rules-old/languages/luau/files/init-files.md), [directory roots](../../../../rules-old/languages/luau/files/module-roots.md), and the [fixture matrix](tests/TEST_MATRIX.md).
+See [init files](../../../../rules-old/languages/luau/files/init-files.md), [directory roots](../module-roots/README.md), and the [fixture matrix](tests/TEST_MATRIX.md).
