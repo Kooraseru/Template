@@ -18,3 +18,6 @@
 
 - [Additional metamethod](invalid/inheritance-with-metamethod.luau) reports the inheritance link alongside another metamethod.
 - [Computed key](review/computed-inheritance-key.luau) stays for review because the computed key could replace the explicit link.
+
+- [Quoted inline fields](invalid/quoted-inline-fields.luau) reports a populated instance table with a literal bracket key.
+- [Computed inline fields](review/computed-inline-fields.luau) keeps a computed key outside the check.

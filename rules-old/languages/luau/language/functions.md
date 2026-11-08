@@ -4,7 +4,7 @@ This document owns language-wide function guidance.
 
 Function names follow [naming](naming.md). Document nontrivial public contracts using [Luau function documentation](../../../../rules/luau/style/function-documentation/README.md).
 
-Project-owned receiver methods follow the selected structure. OOP receiver methods are owned by [objects](../structures/oop/objects.md).
+Project-owned receiver methods follow the selected structure. OOP receiver methods are owned by [objects](../../../../rules/luau/design/objects/README.md).
 
 Prefer local helper functions for private behavior. Do not create table-private methods just to simulate privacy.
 

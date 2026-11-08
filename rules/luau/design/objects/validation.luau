@@ -72,7 +72,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		local namedFields = true
 		for _, field in fields.entries do
-			if field.kind ~= "record" then
+			local literalKey = field.kind == "general" and field.key.tag == "string"
+				and (field.key.quoteStyle == "single" or field.key.quoteStyle == "double")
+			if field.kind ~= "record" and not literalKey then
 				namedFields = false
 				break
 			end
