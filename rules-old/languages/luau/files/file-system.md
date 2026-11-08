@@ -8,7 +8,7 @@ The user's Luau style is global, but it is not one rigid skeleton. Different mod
 
 Use the path label and `--!strict` at the top of hand-written Luau source. See the [strict-directive validator](../../../../rules/luau/files/file-system/README.md).
 
-Use role headers only when they improve scanning. A tiny file does not need decorative structure.
+See [section-marker guidance](../../../../rules/luau/files/file-system/README.md) for role headers.
 
 Preferred phase order:
 
@@ -96,11 +96,9 @@ end
 return Text
 ```
 
-Tiny modules can omit role headers when the structure is obvious.
 
 ## Headers
 
-The approved `--#` section-marker names and the explicitly discouraged names are maintained in the file-system rule's `sectionMarkers` settings in [rules.json](../../../../.vscode/config/rules.json). Standalone markers not on the allowlist are warnings. Inline comment lookalikes are not section markers.
 
 Private behavior should usually be local helpers, not table-private methods.
 

@@ -9,3 +9,6 @@
 - [Approved markers](valid/approved-markers.luau) passes every name in the marker policy allowlist.
 - [Header lookalikes](valid/header-lookalikes.luau) passes because approved headers, block prose, and strings are allowed.
 - [Trailing marker](review/trailing-marker.luau) is an inline comment, so it produces no section-header warning.
+
+- [Repeated markers](invalid/repeated-markers.luau) reports the second copy when only whitespace separates it from the first.
+- [Separate sections](valid/separate-marker-sections.luau) accepts repeated names when code separates the sections.

@@ -4,6 +4,7 @@
 local Comments = require("@ruleLinter/comments")
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
+local Syntax = require("@std/syntax")
 
 local function loadMarkerPolicy(settings: unknown): ({ [string]: boolean }, { [string]: boolean })
 	if type(settings) ~= "table" then
@@ -41,6 +42,8 @@ local function loadMarkerPolicy(settings: unknown): ({ [string]: boolean }, { [s
 	return allowed, disallowed
 end
 
+type Marker = { name: string, span: Syntax.Span }
+
 local function create(settings: unknown): Rule.Rule
 	local allowedMarkers, disallowedMarkers = loadMarkerPolicy(settings)
 
@@ -67,12 +70,14 @@ local function create(settings: unknown): Rule.Rule
 			}
 		end
 		local lines = context.source:split("\n")
+		local approved: { Marker } = {}
 		Comments.VisitLineComments(context.source, function(comment, span)
 			local header = comment:match("^%-%-#%s*(.-)%s*$")
 			if not header or not lines[span.beginLine]:sub(1, span.beginColumn - 1):match("^%s*$") then
 				return
 			end
 			if allowedMarkers[header] then
+				approved[#approved + 1] = { name = header, span = span }
 				return
 			end
 			local message = if disallowedMarkers[header]
@@ -84,6 +89,30 @@ local function create(settings: unknown): Rule.Rule
 				severity = "warning", message = message,
 			}
 		end)
+		table.sort(approved, function(left: Marker, right: Marker)
+			return left.span.beginLine < right.span.beginLine
+		end)
+		for index = 2, #approved do
+			local previous, current = approved[index - 1], approved[index]
+			if previous.name ~= current.name or previous.span.beginColumn ~= current.span.beginColumn then
+				continue
+			end
+			local onlyWhitespace = true
+			for line = previous.span.endLine + 1, current.span.beginLine - 1 do
+				if not lines[line]:match("^%s*$") then
+					onlyWhitespace = false
+					break
+				end
+			end
+			if onlyWhitespace then
+				local span = current.span
+				findings[#findings + 1] = {
+					line = span.beginLine, column = span.beginColumn,
+					endLine = span.endLine, endColumn = span.endColumn,
+					severity = "warning", message = "Remove the repeated section marker with no code between it and the previous one.",
+				}
+			end
+		end
 		return findings
 	end)
 end
