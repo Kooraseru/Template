@@ -17,7 +17,7 @@ function PagesDeployment.Prepare(): boolean
 		print("Pages publication skipped: enable Pages in repository Settings > Pages")
 		return false
 	end
-	Publication.RequireSuccess(status, "Read Pages configuration")
+	Publication.RequireSuccess(status, "Read Pages configuration", details)
 	if details.build_type ~= "workflow" then
 		error("Pages publication requires Settings > Pages > Source = GitHub Actions", 0)
 	end

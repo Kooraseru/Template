@@ -35,7 +35,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 	Process.env.CI_GIT_CREDENTIAL_HELPER =
 		`{Process.cwd()}/.github/ci/integrations/github/authentication/git-credential.sh`
 	local status, details = Publication.Request("GET", `repos/{repository}`)
-	Publication.RequireSuccess(status, "Read default branch")
+	Publication.RequireSuccess(status, "Read default branch", details)
 	for _, directory in Glob.Find("build/github/branches/*") do
 		if not (Fs.exists(directory) and Fs.type(directory) == "dir") then
 			error("Expected a generated branch directory", 0)

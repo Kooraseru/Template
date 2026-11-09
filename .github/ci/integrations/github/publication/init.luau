@@ -58,10 +58,20 @@ local function response(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", pat
 			Accept = "application/vnd.github+json",
 			["Content-Type"] = "application/json",
 			["X-GitHub-Api-Version"] = "2022-11-28",
+			["User-Agent"] = "Template-CI",
 		},
 		body = if body ~= nil then Json.encode(body) else nil,
 	})
 	return response
+end
+
+local function responseMessage(body: string): string
+	local token = Process.env.GH_TOKEN
+	local safe = body:gsub("[%c]", " ")
+	if token and token ~= "" then
+		safe = safe:gsub(token, "[redacted]")
+	end
+	return safe:sub(1, 240)
 end
 
 function Publication.Request(
@@ -70,13 +80,26 @@ function Publication.Request(
 	body: unknown?
 ): (number, { [string]: unknown })
 	local result = response(method, path, body)
-	local decoded = if result.body ~= "" then Publication.Record(Json.decode(result.body)) else {}
-	return result.status, decoded
+	if result.body == "" then
+		return result.status, {}
+	end
+
+	local decodedOk, decoded = pcall(Json.decode, result.body)
+	if decodedOk and type(decoded) == "table" then
+		return result.status, Publication.Record(decoded)
+	end
+	if result.status < 200 or result.status >= 300 then
+		return result.status, { message = responseMessage(result.body) }
+	end
+	error(
+		`GitHub returned a non-JSON response for {method} {path} (HTTP {result.status}): {responseMessage(result.body)}`,
+		0
+	)
 end
 
 function Publication.List(path: string): { unknown }
 	local result = response("GET", path, nil)
-	Publication.RequireSuccess(result.status, "Read GitHub list")
+	Publication.RequireSuccess(result.status, "Read GitHub list", { message = responseMessage(result.body) })
 	local value: unknown = Json.decode(result.body)
 	if type(value) ~= "table" then
 		error("Expected a GitHub asset list", 0)
@@ -99,16 +122,19 @@ function Publication.Upload(repository: string, releaseId: number, name: string,
 			Authorization = `Bearer {token}`,
 			["Content-Type"] = "application/octet-stream",
 			Accept = "application/vnd.github+json",
+			["User-Agent"] = "Template-CI",
 		},
 		body = bytes,
 	})
-	Publication.RequireSuccess(result.status, `Upload release asset {name}`)
+	Publication.RequireSuccess(result.status, `Upload release asset {name}`, { message = responseMessage(result.body) })
 	return Publication.Record(Json.decode(result.body))
 end
 
-function Publication.RequireSuccess(status: number, operation: string): ()
+function Publication.RequireSuccess(status: number, operation: string, details: { [string]: unknown }?): ()
 	if status < 200 or status >= 300 then
-		error(`{operation}: GitHub returned HTTP {status}; check run permissions and repository policies`, 0)
+		local message = if details then details.message else nil
+		local suffix = if type(message) == "string" and message ~= "" then `: {message}` else ""
+		error(`{operation}: GitHub returned HTTP {status}{suffix}; check run permissions and repository policies`, 0)
 	end
 end
 
@@ -135,7 +161,7 @@ function Publication.Begin(setting: string): string?
 		error("Publication is allowed only for a push in the configured repository", 0)
 	end
 	local status, details = Publication.Request("GET", `repos/{repository}`)
-	Publication.RequireSuccess(status, "Read publication repository")
+	Publication.RequireSuccess(status, "Read publication repository", details)
 	local defaultBranch = Publication.Text(details.default_branch)
 	local graphRun = Process.env.CI_GRAPH_RUN == "true"
 	if not graphRun and Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}` then

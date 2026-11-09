@@ -102,7 +102,7 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 	if supplied.appId and supplied.appId ~= "" and supplied.privateKey and supplied.privateKey ~= "" then
 		local permissions = requirements()
 		local status, account = Publication.Request("GET", `users/{Publication.Encode(owner)}`)
-		Publication.RequireSuccess(status, `Read project owner {owner}`)
+		Publication.RequireSuccess(status, `Read project owner {owner}`, account)
 		if account.type == "Organization" then
 			local ok, access =
 				pcall(Authentication.AppAccess, supplied.appId, supplied.privateKey, repository, permissions, owner)
