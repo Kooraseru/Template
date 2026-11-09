@@ -12,22 +12,19 @@ local Responses = require("@ci/github/reporting/responses")
 local ProjectAuthentication = {}
 export type Supplied = { appId: string?, privateKey: string?, token: string?, verified: boolean }
 
-local function combinedScopes(configuration: Configuration.Configuration): { string }
-	return TokenPermissions.Required(
-		configuration,
-		if configuration.enabled then { "projects_token", "bootstrap_token" } else { "projects_token" },
-		"projects_token"
-	)
+local function projectScopes(configuration: Configuration.Configuration): { string }
+	return TokenPermissions.Required(configuration, { "projects_token" }, "projects_token")
 end
 
 function ProjectAuthentication.Warn(
 	owner: string,
 	reason: ("missing" | "insufficient")?,
-	inspection: TokenPermissions.Inspection?
+	inspection: TokenPermissions.Inspection?,
+	apiRejection: string?
 ): ()
 	local configuration = Configuration.new()
 	local permissions = configuration.roles.projects_token.permissions.organization
-	local scopes = combinedScopes(configuration)
+	local scopes = projectScopes(configuration)
 	local appPermissions: { string } = {}
 	for name, value in permissions do
 		table.insert(appPermissions, `- \`{name}\`: {value}`)
@@ -42,6 +39,7 @@ function ProjectAuthentication.Warn(
 	values.app_permissions = table.concat(appPermissions, "\n")
 	values.classic_scopes = table.concat(classicScopes, "\n")
 	values.projects_token = tokenName
+	values.api_rejection = apiRejection or "No Projects API rejection was captured."
 	values.permission_evidence = TokenPermissions.Evidence(
 		inspection,
 		reason == "insufficient" and (not inspection or inspection.state == "verified")
@@ -103,7 +101,7 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 	local token = supplied.token
 
 	if token and token ~= "" and tokenName:upper() ~= "GITHUB_TOKEN" and token ~= Process.env.GH_TOKEN then
-		local scopes = combinedScopes(configuration)
+		local scopes = projectScopes(configuration)
 		local inspection: TokenPermissions.Inspection = if supplied.verified
 			then { state = "verified", required = scopes, missing = {} }
 			else TokenPermissions.Inspect(token, scopes)

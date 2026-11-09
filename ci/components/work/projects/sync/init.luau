@@ -64,7 +64,11 @@ function Component.Run(self: Component, _: { event: string }): string?
 				print(
 					`::warning::Projects sync skipped for {owner}: verify Projects access for the configured App or secret {name}. See the run summary for personal and organization setup instructions. Partial earlier operations may have succeeded.`
 				)
-				ProjectAuthentication.Warn(owner, "insufficient", access.inspection)
+				local rejection = problem:match("PROJECT_AUTH: ([^\r\n]+)")
+				if rejection then
+					print(`::warning::Projects API for {owner}: {rejection}`)
+				end
+				ProjectAuthentication.Warn(owner, "insufficient", access.inspection, rejection)
 				skipped = true
 				continue
 			end

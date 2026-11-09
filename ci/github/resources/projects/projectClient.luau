@@ -34,7 +34,7 @@ function ProjectClient.Query(
 		}),
 	})
 	if response.status == 401 or response.status == 403 then
-		error("PROJECT_AUTH: Projects API rejected the credential or permissions", 0)
+		error(`PROJECT_AUTH: {operation} returned HTTP {response.status}`, 0)
 	end
 	Publication.RequireSuccess(response.status, "Projects GraphQL request")
 	local result = Publication.Record(Json.decode(response.body))
@@ -52,7 +52,8 @@ function ProjectClient.Query(
 			or first.type == "INSUFFICIENT_SCOPES"
 			or message:find("required scopes", 1, true)
 		then
-			error("PROJECT_AUTH: Projects credential needs account-level Projects read/write access", 0)
+			local category = if first.type == "FORBIDDEN" then "FORBIDDEN" else "INSUFFICIENT_SCOPES"
+			error(`PROJECT_AUTH: {operation} returned {category}`, 0)
 		end
 
 		error(`Projects API: {message}`, 0)

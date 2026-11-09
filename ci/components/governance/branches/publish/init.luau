@@ -14,6 +14,7 @@ export type Component = setmetatable<{}, typeof(Component)>
 local function git(arguments: { string }, directory: string, operation: string?, ref: string?): string
 	local environment = table.clone(Process.env)
 	environment.GIT_TERMINAL_PROMPT = "0"
+	environment.CI_GIT_BOOTSTRAP_TOKEN = environment.GH_TOKEN
 	local result = Process.run({ "git", table.unpack(arguments) }, {
 		cwd = directory,
 		env = environment,
@@ -53,7 +54,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		git({ "init", "--quiet" }, directory)
 		git({ "remote", "add", "origin", remote }, directory)
 		local credential = { "-c", "credential.helper=", "-c", 'credential.helper=!bash "$CI_GIT_CREDENTIAL_HELPER"' }
-		local lookup = Process.run({ "git",
+		local lookup = git({
 			credential[1],
 			credential[2],
 			credential[3],
@@ -61,13 +62,10 @@ function Component.Run(self: Component, _: { event: string }): string?
 			"ls-remote",
 			remote,
 			`refs/heads/{branch}`,
-		})
-		if not lookup.ok then
-			error("Unable to inspect destination branch", 0)
-		end
+		}, directory, "ls-remote", `refs/heads/{branch}`)
 		local parent: string? = nil
 
-		if lookup.stdout ~= "" then
+		if lookup ~= "" then
 			git({
 				credential[1],
 				credential[2],

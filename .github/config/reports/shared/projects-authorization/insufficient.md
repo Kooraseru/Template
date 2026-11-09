@@ -3,7 +3,9 @@
 The supplied credential could not authorize Projects synchronization for
 **{{owner}}**. Update `{{projects_token}}` or the configured App below.
 
-## Show the permission check result
+## Permission check result
+
+{{api_rejection}}
 
 
 {{permission_evidence}}
