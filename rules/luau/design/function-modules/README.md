@@ -44,3 +44,5 @@ Why this shape:
 Returned records use the same check for a bare field or a quoted bracket key spelling the module name. Computed keys stay for review.
 
 See the [functional module guidance](guidance.md), [Clamp example](examples/Clamp.luau), and [composition guidance](composition.md).
+
+See the [copyable script starters](../script-layout/examples/) for section order and example purpose comments.

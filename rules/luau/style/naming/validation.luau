@@ -166,11 +166,6 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			continue
 		end
 		local value = statement.values[1]
-		local binding = statement.variables[1]
-		if statement.tag == "local" and binding.name.text:match("^[A-Z][A-Z0-9_]*$")
-			and not reassigned[binding] and isScalarLiteral(value) then
-			report(statement.localKeyword.location, "Declare this stable Luau constant with const.")
-		end
 
 		if value.tag == "table" and statement.variables[1] == exportedBinding then
 			ownedExport = statement.variables[1]

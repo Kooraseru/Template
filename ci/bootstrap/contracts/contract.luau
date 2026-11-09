@@ -36,40 +36,20 @@ export type Task = {
 	needs: { string },
 }
 
+--# Constants
+
 const TASK_INVOKER = "ci/bootstrap/execution/invoke.luau"
 const COMPONENT_ROOT = "ci/components"
 Contract.ComponentRoot = COMPONENT_ROOT
 
---# Constants
-
-function Contract.ValidEvent(event: string): boolean
-	return event == "push" or event == "pull_request" or event == "workflow_dispatch"
-end
-
-function Contract.ValidIdentity(identity: string): boolean
-	if identity == "" or identity:sub(1, 1) == "/" or identity:sub(-1) == "/" or identity:find("//", 1, true) then
-		return false
-	end
-	for segment in identity:gmatch("[^/]+") do
-		if segment == "init" or not segment:match("^[%a%d][%w_-]*$") then
-			return false
-		end
-	end
-	return true
-end
-
--- Escape separators and the escape character without merging distinct identities.
-function Contract.Key(identity: string): string
-	local key = identity:gsub("_", "_u"):gsub("/", "_s")
-	return key
-end
-
 --# Helpers
 
+--- Attribute a validation failure to its manifest instead of the helper that raised it.
 local function invalid(entry: string, reason: string): never
 	error(`{entry}: {reason}`, 0)
 end
 
+--- Validate a dense array of unique nonempty strings and preserve its declared order.
 local function strings(entry: string, field: string, value: unknown, pattern: string?): { string }
 	if type(value) ~= "table" then
 		return invalid(entry, `{field} must be an array`)
@@ -80,6 +60,7 @@ local function strings(entry: string, field: string, value: unknown, pattern: st
 	local count = 0
 	local maxIndex = 0
 
+	-- Check every key because Luau array length alone cannot reliably identify sparse input.
 	for index, item in value do
 		if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
 			return invalid(entry, `{field} must be an array`)
@@ -99,14 +80,17 @@ local function strings(entry: string, field: string, value: unknown, pattern: st
 		items[index] = item
 	end
 
+	-- Positive integral keys form a dense array only when the count reaches the maximum index.
 	if count ~= maxIndex then
 		return invalid(entry, `{field} must be a contiguous array`)
 	end
 	return items
 end
 
+--- Reject globs that could escape the workspace or resolve differently across platforms.
 local function paths(entry: string, field: string, value: unknown): { string }
 	local items = strings(entry, field, value)
+	-- Check separators and traversal segments before the planner expands the globs.
 	for _, path in items do
 		if
 			path:sub(1, 1) == "/"
@@ -127,6 +111,32 @@ local function paths(entry: string, field: string, value: unknown): { string }
 	return items
 end
 
+--# Functions
+
+--- Restrict scheduling to the events understood by the bootstrap entry point.
+function Contract.ValidEvent(event: string): boolean
+	return event == "push" or event == "pull_request" or event == "workflow_dispatch"
+end
+
+--- Keep component IDs safe as relative paths and reserve init for the module entry.
+function Contract.ValidIdentity(identity: string): boolean
+	if identity == "" or identity:sub(1, 1) == "/" or identity:sub(-1) == "/" or identity:find("//", 1, true) then
+		return false
+	end
+	for segment in identity:gmatch("[^/]+") do
+		if segment == "init" or not segment:match("^[%a%d][%w_-]*$") then
+			return false
+		end
+	end
+	return true
+end
+
+--- Escape separators and the escape character without merging distinct identities.
+function Contract.Key(identity: string): string
+	local key = identity:gsub("_", "_u"):gsub("/", "_s")
+	return key
+end
+
 --# Constructor
 
 --[[
@@ -140,6 +150,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 	end
 	local raw: { [string]: unknown } = {}
 
+	-- Narrow decoded TOML to string keys before looking up named manifest fields.
 	for field, value in source do
 		if type(field) ~= "string" then
 			return invalid(contractFile, "manifest keys must be strings")
@@ -147,6 +158,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		raw[field] = value
 	end
 
+	-- Validate the path-derived identity before exposing it to the planner.
 	if not Contract.ValidIdentity(identity) then
 		invalid(contractFile, `invalid component identity: {identity}`)
 	end
@@ -170,8 +182,10 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		end
 	end
 
+	-- Treat omitted boundaries as read access so privileged execution requires an explicit declaration.
 	local boundary = raw.boundary
 	local boundaryValue: string
+	-- Accept only the boundary values understood by the scheduler.
 	if boundary == nil then
 		boundaryValue = "read"
 	elseif type(boundary) == "string" then
@@ -183,6 +197,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		return invalid(contractFile, "boundary must be read or privileged")
 	end
 
+	-- Normalize optional lists so the planner can iterate them without handling missing values.
 	local requirements = raw.requires
 	if requirements == nil then
 		requirements = {}
@@ -212,6 +227,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 	if boundaryValue ~= "privileged" and #fields.credentials > 0 then
 		invalid(contractFile, "credentials require a privileged boundary")
 	end
+	-- Reject unknown fields so a misspelled policy cannot silently take effect as a default.
 	for field in raw do
 		if field ~= "provides" and field ~= "requires" and field ~= "inputs" and field ~= "outputs"
 			and field ~= "events" and field ~= "boundary" and field ~= "credentials" then
@@ -224,6 +240,7 @@ end
 
 --# Methods
 
+--- Tell the planner whether this manifest participates in the requested event.
 function Contract.SupportsEvent(self: Contract, event: string): boolean
 	return table.find(self.events, event) ~= nil
 end

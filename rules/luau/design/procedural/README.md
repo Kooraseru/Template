@@ -15,3 +15,5 @@ Which operation in this domain should I call?
 Do not use this when the module is only literal data, when one function would carry the whole file, or when each caller needs an independent lifetime with owned resources.
 
 See [table modules](table-modules.md), [stateful modules](stateful-modules.md), and the [table module example](examples/TableModule.luau).
+
+See the [copyable script starters](../script-layout/examples/) for section order and example purpose comments.

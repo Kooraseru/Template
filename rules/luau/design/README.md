@@ -28,3 +28,5 @@ If a file feels awkward, check the "why" before changing syntax. A table module 
 - [Declarative data boundaries](declarative-data/boundaries.md)
 - [Entry points](../files/entry-points.md)
 - [ECS design sketches](ecs/README.md)
+
+Use the [script layout starters](script-layout/README.md) when creating a file with a known structure.

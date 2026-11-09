@@ -4,6 +4,12 @@
     "fixtureSeverity": "info"
   },
   "rules": {
+    "luau/const-bindings": {
+      "severity": "info"
+    },
+    "luau/script-layout": {
+      "settings": { "entryPoints": ["ci/entry.luau", "ci/run.luau"] }
+    },
     "luau/module-roots": {
       "severity": "info"
     },

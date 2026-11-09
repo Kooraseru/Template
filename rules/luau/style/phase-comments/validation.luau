@@ -9,7 +9,7 @@ local Rule = require("@ruleLinter/rule")
 local Syntax = require("@std/syntax")
 local Visitor = require("@std/syntax/visitor")
 
-const MIN_STATEMENT_LINES = 20
+const MIN_STATEMENT_LINES = 12
 
 type Comment = { span: Syntax.Span, prose: boolean }
 
@@ -89,6 +89,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			return true
 		end
 		local statements = func.body.statements
+		local reported = 0
 		for index = 2, #statements do
 			local before, after = statements[index - 1], statements[index]
 			if not isExecutable(before) or not isExecutable(after) or PhaseLayout.IsShortExit(after)
@@ -100,11 +101,14 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			if not explained(comments, span) then
 				findings[#findings + 1] = {
 					line = span.beginLine, column = span.beginColumn,
-					endLine = span.endLine, endColumn = span.endColumn,
+					endLine = span.beginLine, endColumn = #lines[span.beginLine]:gsub("\r$", "") + 1,
 					severity = "information",
 					message = "Consider explaining what this phase does or what must stay true here.",
 				}
-				break
+				reported += 1
+				if reported == 2 then
+					break
+				end
 			end
 		end
 		return true

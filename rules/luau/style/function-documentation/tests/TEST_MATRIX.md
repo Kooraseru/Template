@@ -5,7 +5,7 @@
 - [Method parameters](valid/method-parameters.luau) accepts an optional parameter tag and the implicit receiver.
 - [Moonwave and string](valid/moonwave-and-string.luau) accepts a correctly attached block and ignores tag-like string text.
 - [Parameter binding](invalid/parameter-binding.luau) reports a tag left behind after a parameter rename.
-- [Detached documentation](review/detached-doc.luau) has an ambiguous owner and produces no warning.
+- [Detached documentation](invalid/detached-doc.luau) does not document the small module-level helper below it.
 - [Function metadata](invalid/function-metadata.luau) reports property metadata and a redundant declaration tag on a named function.
 - [Property metadata](valid/property-metadata.luau) accepts a readonly annotation on a binding and lifecycle metadata on a function.
 

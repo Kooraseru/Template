@@ -19,3 +19,5 @@ Do not choose ECS just because a module stores records. A runtime registry, proc
 Until real ECS code exists in an adopting repository, examples should stay sketches. They may show responsibility boundaries, but they must not define final APIs, validator rules, or framework choices.
 
 See [components](components.md), [queries](queries.md), [systems](systems.md), and the [system example](examples/System.luau).
+
+See the [copyable script starters](../script-layout/examples/) for section order and example purpose comments.

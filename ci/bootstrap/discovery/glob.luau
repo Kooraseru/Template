@@ -1,7 +1,7 @@
 -- ci/bootstrap/discovery/glob.luau
 --!strict
 
-local Fs = require("@std/fs")
+const Fs = require("@std/fs")
 
 local Glob = {}
 
@@ -17,7 +17,7 @@ end
 Reuse a compiled segment pattern across a glob walk instead of rebuilding
 the same Lua expression for every matching file or directory.
 ]]
-local expressions: { [string]: string } = {}
+const expressions: { [string]: string } = {}
 
 local function matchSegment(name: string, pattern: string): boolean
 	local expression = expressions[pattern]
@@ -41,6 +41,7 @@ local function matchSegment(name: string, pattern: string): boolean
 		expression = table.concat(fragments)
 		expressions[pattern] = expression
 	end
+	
 	return name:match(expression) ~= nil
 end
 
@@ -168,6 +169,7 @@ local function segmentOverlaps(left: string, right: string): boolean
 	return visit(1, 1)
 end
 
+--- Reports whether two globs can match a common path, treating `**` as zero or more segments.
 function Glob.Overlaps(left: string, right: string): boolean
 	local one = split(left)
 	local two = split(right)

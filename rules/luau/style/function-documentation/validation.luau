@@ -98,7 +98,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return hasProse
 	end
 
-	local function checkFunctionDocs(func: Syntax.CstExprFunction, declaration: Syntax.Span, public: boolean?)
+	local function checkFunctionDocs(func: Syntax.CstExprFunction, declaration: Syntax.Span, public: boolean?, moduleHelper: boolean?)
 		local declarationLine = declaration.beginLine
 		local names: { [string]: boolean } = {}
 		for _, parameter in func.parameters do
@@ -135,7 +135,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				branches += 1 + #statement.elseifs
 			end
 		end
-		if not hasProse and (public or branches >= 3 or #func.body.statements >= 20) then
+		if not hasProse and (public or moduleHelper or branches >= 3 or #func.body.statements >= 20) then
 			local firstLine = lines[declarationLine]
 			reportRange(declarationLine, declaration.beginColumn, declarationLine, #firstLine:gsub("\r$", "") + 1,
 				if public then "Document this exported function's purpose or observable contract above its declaration."
@@ -144,6 +144,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	end
 
 	local exported: { [Syntax.CstLocal]: boolean } = {}
+	local moduleHelpers: { [Syntax.CstLocal]: boolean } = {}
 	local publicNames: { [Syntax.CstExpr]: boolean } = {}
 	for _, statement in file.root.statements do
 		if statement.tag == "return" then
@@ -152,13 +153,15 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 					exported[expression["local"]] = true
 				end
 			end
+		elseif statement.tag == "localfunction" then
+			moduleHelpers[statement.name] = true
 		elseif statement.tag == "function" then
 			publicNames[statement.name] = true
 		end
 	end
 
 	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatLocalFunction).nodes do
-		checkFunctionDocs(declaration.func, declaration.location)
+		checkFunctionDocs(declaration.func, declaration.location, false, moduleHelpers[declaration.name])
 	end
 	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatFunction).nodes do
 		local name = declaration.name
@@ -167,6 +170,12 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		checkFunctionDocs(declaration.func, declaration.location, public)
 	end
 	for _, statement in file.root.statements do
+		if (statement.tag == "local" or statement.tag == "const") and #statement.variables == 1 then
+			local value = statement.values[1]
+			if value and value.tag == "function" then
+				checkFunctionDocs(value, statement.location, false, true)
+			end
+		end
 		if statement.tag ~= "assign" or #statement.variables ~= 1 or #statement.values ~= 1 then
 			continue
 		end

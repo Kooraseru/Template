@@ -3,7 +3,7 @@
 Document module-level functions declared on a local module table returned by the file, even when the body is only a getter. Explain what the returned value means to a caller.
 The same requirement applies when a function expression is assigned to a field of that returned table.
 
-A named function with at least three top-level conditional branches (including `elseif` branches) or twenty top-level statements needs an attached purpose description. Describe ordering, side effects, or failures when those details matter. Tags alone and comments inside the body do not satisfy this requirement. Small, obvious helpers can stay undocumented.
+A named function with at least three top-level conditional branches (including `elseif` branches) or twenty top-level statements needs an attached purpose description. Describe ordering, side effects, or failures when those details matter. Tags alone and comments inside the body do not satisfy this requirement. Named module-level helpers also need a purpose comment. Small nested helpers can stay undocumented when they fall below the complexity thresholds.
 
 Use triple-dash comments for LuaCATS annotations. This check reports a recognized tag written with two dashes, an empty supported tag, or an incomplete @param without a name and type. It reads actual Luau comment tokens.
 

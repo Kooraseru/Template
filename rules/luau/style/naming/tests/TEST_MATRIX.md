@@ -22,7 +22,6 @@
 - [Module identity](invalid/module-identity.luau) reports a lowercase binding when a returned table owns a declared function.
 - [Generic state module](invalid/generic-state-module.luau) requires a name that identifies the domain.
 - [Returned record](review/returned-record.luau) produces no naming finding because its role as a module identity is unclear.
-- [Stable local constant](invalid/stable-local-constant.luau) highlights `local` when a top-level literal constant never changes.
 - [Mutated local](review/mutated-local.luau) keeps `local` because a nested closure reassigns it.
 - [Invalid scalar local names](invalid/scalar-local-names.luau) highlights PascalCase and snake_case local names.
 - [Valid scalar local names](valid/scalar-local-names.luau) accepts camelCase at module and function scope.

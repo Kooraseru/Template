@@ -16,9 +16,9 @@ A stable, locally declared table returned as a module with a directly declared f
 
 Local and constant declarations reject underscore prefixes and allow the bare ignored binding `_`. Direct scalar literal constants accept camelCase or SCREAMING_SNAKE_CASE. Numeric separators are allowed in the literal.
 
-Top-level SCREAMING_SNAKE_CASE scalar literals use `const` when the binding is never reassigned. The warning highlights the `local` keyword. Assignments inside nested closures also count as reassignment.
+[Const binding advice](../const-bindings/README.md) reports separately at informational severity.
 
-Ordinary locals initialized with a scalar literal use camelCase. SCREAMING_SNAKE_CASE bindings are left to the constant check. Computed initializers may need context to distinguish a local from a module or service binding.
+Ordinary locals initialized with a scalar literal use camelCase. SCREAMING_SNAKE_CASE remains available for scalar constants. Computed initializers may need context to distinguish a local from a module or service binding.
 
 Public data fields on a returned, locally owned table cannot use a single underscore prefix. This covers literal records, named assignments, and literal bracket keys. Use a local binding for private state. The double-underscore metamethod prefix is exempt.
 
