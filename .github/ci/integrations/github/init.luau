@@ -21,6 +21,7 @@ function GitHub.Run(): ()
 	local pagesOptions = argument == "--pages-options"
 	local attestationOptions = argument == "--attestation-options"
 	local attestationReport = argument == "--attestation-report"
+
 	if
 		argument
 		and not component
@@ -36,8 +37,10 @@ function GitHub.Run(): ()
 			0
 		)
 	end
+
 	local configuredEvent = Process.env.CI_EVENT
 	local event: string
+
 	if configuredEvent then
 		event = configuredEvent
 	elseif credentialNames then
@@ -76,6 +79,7 @@ function GitHub.Run(): ()
 	end, tostring)
 	if not ok then
 		print(`::error::{problem}`)
+
 		if not credentialNames and not Responses.Written() and (Process.env.CI_GRAPH_RUN ~= "true" or reportOnly) then
 			Responses.Record("execution/error", Responses.Template("execution.error"), "failure")
 			Responses.Write(if Process.env.CI_GRAPH_RUN == "true" then "execution" else "start", {
@@ -83,6 +87,7 @@ function GitHub.Run(): ()
 				result = "CI stopped before completion. Open the run logs for the reported error.",
 			})
 		end
+
 		Process.exit(1)
 	end
 end

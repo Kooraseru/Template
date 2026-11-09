@@ -64,6 +64,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 	local findings: { Diagnostic.Finding } = {}
+
 	for _, node in Query.findAllFromRoot(block, Utils.isExprIfElse).nodes do
 		local yes, no = node.thenExpr, node.elseExpr
 		if node.conditionLocal or #node.elseifs > 0 or yes.tag ~= "boolean" or no.tag ~= "boolean" or yes.value == no.value then
@@ -79,6 +80,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		local conditionStart = offsetAt(context.source, node.condition.location.beginLine, node.condition.location.beginColumn)
 		local conditionEnd = offsetAt(context.source, node.condition.location.endLine, node.condition.location.endColumn)
 		local wholeText = context.source:sub(wholeStart, wholeEnd - 1)
+
 		if not wholeText:find("%-%-") then
 			local replacement = context.source:sub(conditionStart, conditionEnd - 1)
 			if not yes.value then
@@ -90,6 +92,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				text = replacement,
 			}
 		end
+
 		findings[#findings + 1] = {
 			fix = fix,
 			line = span.beginLine, column = span.beginColumn,
@@ -98,6 +101,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			message = if yes.value then "Use the boolean expression directly." else "Use not to express the negated condition.",
 		}
 	end
+
 	for _, call in Query.findAllFromRoot(block, Utils.isExprCall).nodes do
 		local callee = call.func
 		local protected = call.arguments[1]
@@ -111,6 +115,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			}
 		end
 	end
+
 	for _, node in Query.findAllFromRoot(block, Utils.isStatIf).nodes do
 		local fallback = node.elseBlock
 		if node.conditionLocal or #node.elseifs ~= 0 or not fallback then

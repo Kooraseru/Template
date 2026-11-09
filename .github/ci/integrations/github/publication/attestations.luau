@@ -9,19 +9,21 @@ local Process = require("@lute/process")
 local Responses = require("@ci/integrations/github/reporting/responses")
 local Publication = require("@ci/integrations/github/publication")
 
-local ROOT = "build/github/attestations"
-local SUBJECTS = "build/github/attestations/subjects"
+const ROOT = "build/github/attestations"
+const SUBJECTS = "build/github/attestations/subjects"
 
 local Attestations = {}
 
 function Attestations.Enabled(): boolean
 	local root = Publication.Record(Toml.decode(Fs.readFileToString(".github/distribution/attestations.toml")))
 	local settings = Publication.Record(root.attestations)
+
 	for field in settings do
 		if field ~= "mode" then
 			error(`Unknown attestations setting {field}`, 0)
 		end
 	end
+
 	if settings.mode ~= "best_effort" and settings.mode ~= "disabled" then
 		error("attestations.mode must be best_effort or disabled", 0)
 	end
@@ -41,6 +43,7 @@ function Attestations.Prepare(): boolean
 	end
 	local seen: { [string]: boolean } = {}
 	local subjects: { { name: string, digest: string, path: string } } = {}
+
 	for _, value in Publication.ReadIndex("build/github/releases/index.json", "releases") do
 		local release = Publication.Record(value)
 		local assets = release.assets
@@ -55,6 +58,7 @@ function Attestations.Prepare(): boolean
 			local name = Publication.Text(asset.name)
 			local path = Publication.Text(asset.path)
 			local digest = Publication.Text(asset.digest)
+
 			if
 				not name:match("^[%w][%w_.%-]*$")
 				or not path:match("^build/github/releases/[%w_./%-]+$")
@@ -62,6 +66,7 @@ function Attestations.Prepare(): boolean
 			then
 				error("Unsafe attestation subject", 0)
 			end
+
 			local bytes = Fs.readFileToString(path)
 			if digest ~= "sha256:" .. Hash.sha256(bytes) then
 				error(`Attestation subject checksum mismatch: {name}`, 0)
@@ -78,16 +83,19 @@ function Attestations.Prepare(): boolean
 			table.insert(subjects, { name = name, digest = digest, path = destination })
 		end
 	end
+
 	if #subjects == 0 then
 		print("Attestations skipped: no compiled release assets")
 		return false
 	end
+
 	if #subjects > 1024 then
 		print(
 			"::warning::Attestations skipped: GitHub's subject limit is 1024; split the asset set into smaller stages"
 		)
 		return false
 	end
+
 	Fs.writeStringToFile(`{ROOT}/intent.json`, Json.encode({ mode = "best_effort", subjects = subjects }))
 	print(`Prepared {#subjects} verified provenance subjects; signing is handled by the native attestation adapter`)
 	return true
@@ -112,6 +120,7 @@ function Attestations.Options(): ()
 		print("Attestations skipped: empty subject set")
 		return
 	end
+
 	for _, value in subjects do
 		local asset = Publication.Record(value)
 		local path = Publication.Text(asset.path)
@@ -122,6 +131,7 @@ function Attestations.Options(): ()
 			error("Prepared attestation subject changed after staging", 0)
 		end
 	end
+
 	local repository = Process.env.GITHUB_REPOSITORY
 	local workflow = Process.env.GITHUB_WORKFLOW_REF
 	local runId = Process.env.GITHUB_RUN_ID
@@ -196,11 +206,13 @@ function Attestations.Report(): ()
 		Process.env.CI_ATTESTATION_ENABLED,
 		Process.env.CI_ATTESTATION_OUTCOME
 	)
+
 	if outcome == "failed (non-blocking)" then
 		print(`::warning::{detail}`)
 	else
 		print(`Attestations: {outcome}. {detail}`)
 	end
+
 	local text = Responses.Fill(Responses.Template("attestations.result"), { outcome = outcome, detail = detail })
 	Responses.Record("publication/attestations", text, if outcome == "passed" then "success" else "warning")
 end

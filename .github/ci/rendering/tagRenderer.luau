@@ -5,8 +5,8 @@ local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 
-local LOCALE_ROOT = "docs/i18n"
-local LOCALE_METADATA = "locale.toml"
+const LOCALE_ROOT = "docs/i18n"
+const LOCALE_METADATA = "locale.toml"
 
 type Fields = { locale: string }
 
@@ -38,6 +38,7 @@ local function localeConfiguration(): { default: string, supported: { string }, 
 	local supported: { string } = {}
 	local names: { [string]: string } = {}
 	local default: string? = nil
+
 	for _, path in Glob.Find(`{LOCALE_ROOT}/*`) do
 		if not Fs.exists(path) or Fs.metadata(path).type ~= "dir" then
 			continue
@@ -58,12 +59,14 @@ local function localeConfiguration(): { default: string, supported: { string }, 
 				error(`{metadataPath}: expected a [locale] table`, 0)
 			end
 			local metadata = decoded.locale
+
 			if metadata.name ~= nil then
 				if type(metadata.name) ~= "string" or metadata.name == "" then
 					error(`{metadataPath}: locale.name must be a nonempty string`, 0)
 				end
 				names[localeName] = metadata.name
 			end
+
 			if metadata.default ~= nil then
 				if type(metadata.default) ~= "boolean" then
 					error(`{metadataPath}: locale.default must be a boolean`, 0)
@@ -77,6 +80,7 @@ local function localeConfiguration(): { default: string, supported: { string }, 
 			end
 		end
 	end
+
 	table.sort(supported)
 	if #supported > 0 and not default then
 		error(`{LOCALE_ROOT}: mark one locale as default in its locale.toml`, 0)
@@ -134,6 +138,7 @@ local function tagOccurrences(roots: { string }): { { name: string, path: string
 					if not first or not last or not name then
 						break
 					end
+
 					if name ~= "branch_name" and name ~= "language_navigation" then
 						table.insert(occurrences, {
 							name = name,
@@ -142,6 +147,7 @@ local function tagOccurrences(roots: { string }): { { name: string, path: string
 							column = first,
 						})
 					end
+
 					cursor = last + 1
 				end
 			end
@@ -169,6 +175,7 @@ function TagRenderer.FindMalformed(roots: { string }): { MalformedTag }
 					end
 					local last = line:find("}}", first + 6, true)
 					local token = if last then line:sub(first, last + 1) else line:sub(first)
+
 					if not token:match("^{{tag:[%w_.%-]+}}$") then
 						table.insert(malformed, {
 							path = path,
@@ -178,6 +185,7 @@ function TagRenderer.FindMalformed(roots: { string }): { MalformedTag }
 							token = token,
 						})
 					end
+
 					cursor = first + math.max(#token, 1)
 				end
 			end
@@ -244,12 +252,14 @@ function TagRenderer.Validate(roots: { string }): ()
 	local missing = TagRenderer.FindMissing(roots)
 	if #missing > 0 then
 		local messages: { string } = {}
+
 		for _, entry in missing do
 			table.insert(
 				messages,
 				`{entry.path}:{entry.line}: locale {entry.locale} is missing tag {entry.tag}; referenced by {entry.templatePath}:{entry.templateLine}`
 			)
 		end
+
 		error(`Missing content translations:\n{table.concat(messages, "\n")}`, 0)
 	end
 end
@@ -262,7 +272,8 @@ function TagRenderer.new(locale: string): TagRenderer
 	return setmetatable(fields, TagRenderer)
 end
 
-function TagRenderer.Locales(_self: any): { string }
+--- Lists the configured locale codes without creating a renderer.
+function TagRenderer.Locales(): { string }
 	return localeNames()
 end
 
@@ -273,9 +284,11 @@ function TagRenderer.LanguageNavigation(relativePath: string, currentLocale: str
 		parentDepth += 1
 	end
 	local links: { string } = {}
+
 	for _, locale in configuration.supported do
 		local name = configuration.names[locale] or locale
 		local destination: string
+
 		if currentLocale == configuration.default then
 			destination = if locale == configuration.default then relativePath else `docs/{locale}/{relativePath}`
 		elseif locale == configuration.default then
@@ -283,6 +296,7 @@ function TagRenderer.LanguageNavigation(relativePath: string, currentLocale: str
 		else
 			destination = `{string.rep("../", parentDepth + 1)}{locale}/{relativePath}`
 		end
+
 		name = name:gsub("|", function(): string
 			return "\\|"
 		end)
@@ -291,6 +305,7 @@ function TagRenderer.LanguageNavigation(relativePath: string, currentLocale: str
 		end)
 		table.insert(links, if locale == currentLocale then `**{name}**` else `[**{name}**]({destination})`)
 	end
+
 	if #links == 0 then
 		return ""
 	end
@@ -301,18 +316,20 @@ function TagRenderer.LanguageNavigation(relativePath: string, currentLocale: str
 	return `| {table.concat(links, " | ")} |\n| {table.concat(separators, " | ")} |`
 end
 
-function TagRenderer.PageData(_self: TagRenderer, source: string): { [string]: any }
-	local locales: { [string]: any } = {}
+function TagRenderer.PageData(self: TagRenderer, source: string): { defaultLocale: string, locales: { [string]: { name: string, tags: { [string]: string } } } }
+	local locales: { [string]: { name: string, tags: { [string]: string } } } = {}
 	local configuration = localeConfiguration()
 	for _, locale in localeNames() do
 		local pageTags = readPageTags(locale, source)
 		local localeName = configuration.names[locale] or locale
 		local defaultTags = readPageTags(configuration.default, source)
+
 		for key, value in defaultTags do
 			if pageTags[key] == nil then
 				pageTags[key] = value
 			end
 		end
+
 		locales[locale] = { name = localeName, tags = pageTags }
 	end
 	return { defaultLocale = configuration.default, locales = locales }
@@ -329,6 +346,7 @@ function TagRenderer.Render(
 	content = content:gsub("\r\n", "\n")
 	local tags = readPageTags(self.locale, source)
 	local defaults = readPageTags(localeConfiguration().default, source)
+
 	local function replaceTags(input: string, makeInteractive: boolean?): string
 		local replaced = input:gsub("{{tag:([%w_.%-]+)}}", function(name: string): string
 			local value = if overrides then overrides[name] else nil
@@ -347,7 +365,9 @@ function TagRenderer.Render(
 		end)
 		return replaced
 	end
+
 	local rendered: string
+
 	if interactive and content:sub(1, 4) == "---\n" then
 		local metadataEnd = content:find("\n---\n", 5, true)
 		if metadataEnd then
@@ -361,7 +381,9 @@ function TagRenderer.Render(
 	else
 		rendered = replaceTags(content, interactive)
 	end
+
 	local leftover = rendered:find("{{tag:", 1, true)
+
 	if leftover then
 		local line = 1
 		for _ in rendered:sub(1, leftover):gmatch("\n") do

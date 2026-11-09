@@ -81,11 +81,13 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	if not issue then
 		return {}
 	end
+
 	for _, used in forwarded do
 		if not used then
 			return {}
 		end
 	end
+
 	local start = block.statements[1].location
 	local span = statement.location
 	return {{

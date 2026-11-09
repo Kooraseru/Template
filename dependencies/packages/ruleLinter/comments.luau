@@ -9,6 +9,7 @@ type CommentCallback = (string, Syntax.Span, boolean) -> ()
 
 local function visitComments(file: Syntax.CstParseResult, callback: CommentCallback)
 	local seen: { [string]: boolean } = {}
+
 	local function visitTrivia(trivia: Syntax.Trivia)
 		if trivia.tag ~= "comment" and trivia.tag ~= "blockcomment" then
 			return
@@ -20,6 +21,7 @@ local function visitComments(file: Syntax.CstParseResult, callback: CommentCallb
 			callback(trivia.text, span, trivia.tag == "blockcomment")
 		end
 	end
+
 	local function visitToken(token: Syntax.CstToken): boolean
 		for _, trivia in token.leadingTrivia do
 			visitTrivia(trivia)
@@ -29,6 +31,7 @@ local function visitComments(file: Syntax.CstParseResult, callback: CommentCallb
 		end
 		return true
 	end
+
 	local visitor = Visitor.create()
 	visitor.visitToken = visitToken
 	Visitor.visitBlock(file.root, visitor)

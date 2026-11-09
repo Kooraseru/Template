@@ -6,7 +6,7 @@ local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/integrations/github/publication")
 
-local ROOT = ".github/governance/rulesets"
+const ROOT = ".github/governance/rulesets"
 
 local RulesetCatalog = {}
 export type Ruleset = { identity: string, definition: { [string]: unknown } }
@@ -87,6 +87,7 @@ function RulesetCatalog.Read(): { Ruleset }
 			error(`{path}: expected at least one [[rules]] definition`, 0)
 		end
 		local ruleNames: { [string]: boolean } = {}
+
 		for _, rule in rules do
 			known(rule, { type = true, parameters = true }, path)
 			local ruleType = Publication.Text(rule.type)
@@ -98,11 +99,14 @@ function RulesetCatalog.Read(): { Ruleset }
 				Publication.Record(rule.parameters)
 			end
 		end
+
 		local bypass = entries(root.bypass_actors or {}, path)
+
 		for _, actor in bypass do
 			known(actor, { actor_id = true, actor_type = true, bypass_mode = true }, path)
 			local actorType = Publication.Text(actor.actor_type)
 			local mode = Publication.Text(actor.bypass_mode)
+
 			if
 				actorType ~= "RepositoryRole"
 				and actorType ~= "Integration"
@@ -111,6 +115,7 @@ function RulesetCatalog.Read(): { Ruleset }
 			then
 				error(`{path}: unsupported bypass actor type {actorType}`, 0)
 			end
+
 			if type(actor.actor_id) ~= "number" or actor.actor_id < 0 or actor.actor_id % 1 ~= 0 then
 				error(`{path}: bypass actor requires an integer actor_id`, 0)
 			end
@@ -118,6 +123,7 @@ function RulesetCatalog.Read(): { Ruleset }
 				error(`{path}: bypass_mode must be always or pull_request`, 0)
 			end
 		end
+
 		table.insert(result, {
 			identity = identity,
 			definition = {

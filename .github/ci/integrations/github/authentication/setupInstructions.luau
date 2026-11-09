@@ -44,12 +44,14 @@ end
 
 local function permissionQuery(permissions: { [string]: string }): string
 	local names: { string } = {}
+
 	for name, access in permissions do
 		if not name:match("^[a-z_]+$") or (access ~= "read" and access ~= "write") then
 			error("Invalid App registration permission", 0)
 		end
 		table.insert(names, name)
 	end
+
 	table.sort(names)
 	local query = ""
 	for _, name in names do
@@ -73,6 +75,7 @@ function SetupInstructions.Values(
 	end
 	local base = "https://github.com/" .. repository
 	local repoPermissions = table.clone(repositoryPermissions or {})
+
 	local function mergeRepository(path: string): ()
 		local root = Publication.Record(Toml.decode(Fs.readFileToString(path)))
 		for name, access in Publication.Record(Publication.Record(root.app).repository) do
@@ -81,6 +84,7 @@ function SetupInstructions.Values(
 			end
 		end
 	end
+
 	if configuration.enabled then
 		mergeRepository(".github/automation/authorization/bootstrap.toml")
 	end
@@ -145,7 +149,7 @@ end
 function SetupInstructions.Guides(values: { [string]: string }, organizationOnly: boolean?): ()
 	local accountChoices = if organizationOnly or values.owner_type == "Organization"
 		then "setup.app-account-organization"
-		else if values.owner_type == "User" then "setup.app-account-personal" else "setup.app-account"
+		elseif values.owner_type == "User" then "setup.app-account-personal" else "setup.app-account"
 	values.app_account_choices = SetupInstructions.Render(accountChoices, values)
 	if organizationOnly or values.owner_type == "Organization" then
 		values.apps_url = values.organization_apps_url
@@ -153,6 +157,7 @@ function SetupInstructions.Guides(values: { [string]: string }, organizationOnly
 	values.app_registration = SetupInstructions.Render("setup.app-registration", values)
 	local state = values.app_state or "unavailable"
 	values.app_detection = SetupInstructions.Render("setup.app-state-" .. state, values)
+
 	if state == "configured" then
 		values.app_setup = SetupInstructions.Render("setup.app-update", values)
 	else
@@ -164,6 +169,7 @@ function SetupInstructions.Guides(values: { [string]: string }, organizationOnly
 		end
 		values.app_setup = SetupInstructions.Render("setup.app", values)
 	end
+
 	values.token_setup = SetupInstructions.Render("setup.token", values)
 end
 

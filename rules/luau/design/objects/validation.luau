@@ -32,6 +32,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local findings: { Diagnostic.Finding } = {}
 	local ownedTables: { [Syntax.CstLocal]: boolean } = {}
 	local instanceMetatables: { [Syntax.CstLocal]: boolean } = {}
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatConst).nodes do
 		for index, binding in declaration.variables do
 			local initializer = declaration.values[index]
@@ -40,6 +41,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocal).nodes do
 		for index, binding in declaration.variables do
 			local initializer = declaration.values[index]
@@ -48,6 +50,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
 		for _, target in assignment.variables do
 			if target.tag == "local" then
@@ -55,7 +58,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	local calls = Query.findAllFromRoot(block, Utils.isExprCall).nodes
+
 	for _, call in calls do
 		local callee = call.func
 		if callee.tag ~= "global" or callee.name.text ~= "setmetatable" or #call.arguments ~= 2 then
@@ -71,6 +76,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			continue
 		end
 		local namedFields = true
+
 		for _, field in fields.entries do
 			local literalKey = field.kind == "general" and field.key.tag == "string"
 				and (field.key.quoteStyle == "single" or field.key.quoteStyle == "double")
@@ -79,6 +85,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				break
 			end
 		end
+
 		if not namedFields then
 			continue
 		end
@@ -89,6 +96,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			severity = "warning", message = "Declare instance fields before passing them to setmetatable.",
 		}
 	end
+
 	for _, call in calls do
 		local callee = call.func
 		if callee.tag ~= "global" or callee.name.text ~= "setmetatable" or #call.arguments ~= 2 then
@@ -114,6 +122,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			severity = "warning", message = "This class inherits from another local class. Prefer composition unless inheritance is needed.",
 		}
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
 		local name = declaration.name
 		if name.tag ~= "indexname" then

@@ -6,9 +6,9 @@ local Process = require("@lute/process")
 local Fs = require("@std/fs")
 
 local DOCKER_OPTIONS: Process.ProcessRunOptions = { stdio = "inherit" }
-local IMAGE = "template-windows-arm64"
-local COMPILER = "aarch64-w64-mingw32-clang"
-local OUTPUT = "build/run/ci-execution/artifacts/application/windows-arm64.exe"
+const IMAGE = "template-windows-arm64"
+const COMPILER = "aarch64-w64-mingw32-clang"
+const OUTPUT = "build/run/ci-execution/artifacts/application/windows-arm64.exe"
 
 local function runDocker(arguments: { string }): Process.ProcessResult
 	local result = Process.run({ "docker", table.unpack(arguments) }, DOCKER_OPTIONS)

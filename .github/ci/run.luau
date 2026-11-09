@@ -27,6 +27,7 @@ local artifacts = contract.artifacts :: { string }
 if #artifacts == 0 then
 	error(`host contract has no artifacts: {contractPath}`, 0)
 end
+
 for _, artifact in artifacts do
 	if not Fs.exists(artifact) or Fs.metadata(artifact).type ~= "file" then
 		error(
@@ -35,7 +36,9 @@ for _, artifact in artifacts do
 		)
 	end
 end
+
 local executable = contract.run
+
 if executable == nil then
 	print(`Host {selected} produced {#artifacts} artifact(s); no run artifact is declared`)
 	for _, artifact in artifacts do
@@ -43,6 +46,7 @@ if executable == nil then
 	end
 	return
 end
+
 if type(executable) ~= "string" or not table.find(artifacts, executable) then
 	error(`host run artifact is not declared by {contractPath}`, 0)
 end

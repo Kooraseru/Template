@@ -26,6 +26,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 	local findings: { Diagnostic.Finding } = {}
+
 	local function report(span: Syntax.Span, message: string)
 		findings[#findings + 1] = {
 			line = span.beginLine, column = span.beginColumn,
@@ -33,7 +34,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			severity = "warning", message = message,
 		}
 	end
+
 	local reassigned: { [Syntax.CstLocal]: boolean } = {}
+
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
 		for _, target in assignment.variables do
 			if target.tag == "local" then
@@ -41,18 +44,21 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatCompoundAssign).nodes do
 		local target = assignment.variable
 		if target.tag == "local" then
 			reassigned[target["local"]] = true
 		end
 	end
+
 	for _, alias in Query.findAllFromRoot(block, Utils.isStatTypeAlias).nodes do
 		local name = alias.name
 		if not name.text:match("^[A-Z][A-Za-z0-9]*$") then
 			report(name.location, "Use PascalCase for Luau type aliases.")
 		end
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isExprFunction).nodes do
 		for _, parameter in declaration.parameters do
 			local name = parameter.name
@@ -61,12 +67,14 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocalFunction).nodes do
 		local name = declaration.name.name
 		if not name.text:match("^[a-z][A-Za-z0-9]*$") then
 			report(name.location, "Use camelCase for local Luau function names.")
 		end
 	end
+
 	local function checkBinding(name: Syntax.CstToken<string>): boolean
 		if name.text ~= "_" and name.text:match("^_") then
 			report(name.location, "Avoid an underscore prefix on a Luau binding.")
@@ -74,6 +82,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		return name.text ~= "_"
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocal).nodes do
 		for index, variable in declaration.variables do
 			local name = variable.name
@@ -88,6 +97,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatConst).nodes do
 		for index, variable in declaration.variables do
 			local name = variable.name
@@ -104,16 +114,19 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	local function checkPublicName(name: Syntax.CstToken<string>)
 		if name.text ~= "new" and not name.text:match("^__") and not name.text:match("^[A-Z][A-Za-z0-9]*$") then
 			report(name.location, "Use PascalCase for public Luau module functions.")
 		end
 	end
+
 	local function checkPublicField(name: Syntax.CstToken<string>)
 		if name.text:match("^_") and not name.text:match("^__") then
 			report(name.location, "An exported Luau field is public. Use a local binding for private state or give the field a public name.")
 		end
 	end
+
 	local function publicStringKey(key: Syntax.CstExpr): Syntax.CstToken<string>?
 		if key.tag == "string" and (key.quoteStyle == "single" or key.quoteStyle == "double")
 			and key.value.text:match("^[%a_][%w_]*$") then
@@ -121,8 +134,10 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		return nil
 	end
+
 	local last = block.statements[#block.statements]
 	local exported = if last and last.tag == "return" and #last.expressions == 1 then last.expressions[1] else nil
+
 	local function checkReturnedFields(value: Syntax.CstExprTable)
 		for _, member in value.entries do
 			local key = if member.kind == "record" then member.key
@@ -136,11 +151,13 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	if exported and exported.tag == "table" then
 		checkReturnedFields(exported)
 	end
 	local exportedBinding = if exported and exported.tag == "local" then exported["local"] else nil
 	local ownedExport: Syntax.CstLocal?
+
 	for _, statement in block.statements do
 		if statement.tag ~= "local" and statement.tag ~= "const" then
 			continue
@@ -154,12 +171,14 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			and not reassigned[binding] and isScalarLiteral(value) then
 			report(statement.localKeyword.location, "Declare this stable Luau constant with const.")
 		end
+
 		if value.tag == "table" and statement.variables[1] == exportedBinding then
 			ownedExport = statement.variables[1]
 			if not reassigned[ownedExport] then
 				checkReturnedFields(value)
 			end
 		end
+
 		if value.tag ~= "call" then
 			continue
 		end
@@ -176,11 +195,14 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			report(name.location, "Use PascalCase for directly required Luau module bindings.")
 		end
 	end
+
 	if ownedExport and not reassigned[ownedExport] then
 		local hasPublicFunction = false
+
 		for _, statement in block.statements do
 			local name: Syntax.CstExpr
 			local isFunction = true
+
 			if statement.tag == "function" then
 				name = statement.name
 			elseif statement.tag == "assign" and #statement.variables == 1 and #statement.values == 1 then
@@ -189,6 +211,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			else
 				continue
 			end
+
 			if (name.tag == "indexname" or name.tag == "index")
 				and name.expression.tag == "local" and name.expression["local"] == exportedBinding then
 				local key = if name.tag == "indexname" then name.index else publicStringKey(name.index)
@@ -202,7 +225,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				end
 			end
 		end
+
 		local name = ownedExport.name
+
 		if hasPublicFunction and not name.text:match("^_") then
 			if name.text:lower() == "state" or name.text:lower() == "states" then
 				report(name.location, "Name the state domain rather than using State or States for a Luau module.")

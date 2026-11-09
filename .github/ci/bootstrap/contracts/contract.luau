@@ -40,7 +40,9 @@ const TASK_INVOKER = ".github/ci/bootstrap/execution/invoke.luau"
 
 --# Constants
 
-local EVENTS: { [string]: boolean } = { push = true, pull_request = true, workflow_dispatch = true }
+function Contract.ValidEvent(event: string): boolean
+	return event == "push" or event == "pull_request" or event == "workflow_dispatch"
+end
 
 function Contract.ValidIdentity(identity: string): boolean
 	if identity == "" or identity:sub(1, 1) == "/" or identity:sub(-1) == "/" or identity:find("//", 1, true) then
@@ -75,6 +77,7 @@ local function strings(entry: string, field: string, value: unknown, pattern: st
 	local seen: { [string]: boolean } = {}
 	local count = 0
 	local maxIndex = 0
+
 	for index, item in value do
 		if type(index) ~= "number" or index < 1 or index % 1 ~= 0 then
 			return invalid(entry, `{field} must be an array`)
@@ -93,6 +96,7 @@ local function strings(entry: string, field: string, value: unknown, pattern: st
 		seen[item] = true
 		items[index] = item
 	end
+
 	if count ~= maxIndex then
 		return invalid(entry, `{field} must be a contiguous array`)
 	end
@@ -111,6 +115,7 @@ local function paths(entry: string, field: string, value: unknown): { string }
 		then
 			invalid(entry, `unsafe {field} glob: {path}`)
 		end
+
 		for segment in path:gmatch("[^/]+") do
 			if segment == "." or segment == ".." then
 				invalid(entry, `unsafe {field} glob: {path}`)
@@ -122,18 +127,24 @@ end
 
 --# Constructor
 
--- This constructor validates decoded TOML before its values reach planning.
+--[[
+	Validates decoded component metadata before planning. Invalid declarations report the contract file so the owner can correct it.
+
+	@param source unknown The decoded TOML value at the trust boundary.
+]]
 function Contract.new(identity: string, entry: string, contractFile: string, source: unknown): Contract
 	if type(source) ~= "table" then
 		return invalid(contractFile, "component manifest must contain a table")
 	end
 	local raw: { [string]: unknown } = {}
+
 	for field, value in source do
 		if type(field) ~= "string" then
 			return invalid(contractFile, "manifest keys must be strings")
 		end
 		raw[field] = value
 	end
+
 	if not Contract.ValidIdentity(identity) then
 		invalid(contractFile, `invalid component identity: {identity}`)
 	end
@@ -152,7 +163,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		invalid(contractFile, "events must not be empty")
 	end
 	for _, event in events do
-		if not EVENTS[event] then
+		if not Contract.ValidEvent(event) then
 			invalid(contractFile, `unsupported event: {event}`)
 		end
 	end
@@ -199,17 +210,9 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 	if boundaryValue ~= "privileged" and #fields.credentials > 0 then
 		invalid(contractFile, "credentials require a privileged boundary")
 	end
-	local allowedFields: { [string]: boolean } = {
-		provides = true,
-		requires = true,
-		inputs = true,
-		outputs = true,
-		events = true,
-		boundary = true,
-		credentials = true,
-	}
 	for field in raw do
-		if not allowedFields[field] then
+		if field ~= "provides" and field ~= "requires" and field ~= "inputs" and field ~= "outputs"
+			and field ~= "events" and field ~= "boundary" and field ~= "credentials" then
 			invalid(contractFile, `unknown or reserved contract field: {field}`)
 		end
 	end

@@ -11,11 +11,13 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	) then
 		return {}
 	end
+
 	for segment in path:gmatch("[^/]+") do
 		if segment == "vendor" or segment == "generated" or segment == "examples" or segment == "tests" or segment == "node_modules" or segment == "build" then
 			return {}
 		end
 	end
+
 	local expected = "-- " .. path
 	local first = context.source:match("^[^\r\n]*")
 	if first == expected then

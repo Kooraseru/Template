@@ -41,6 +41,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	for _, task in tasks do
 		identities[task.identity] = task
 	end
+
 	for _, task in tasks do
 		local needs: { string } = {}
 		local credentialRoles = table.clone(task.credentials)
@@ -56,6 +57,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			},
 		}
 		appendStep(steps, { uses = "actions/setup-node@v4", with = { ["node-version"] = "24" } })
+
 		for _, dependency in task.needs do
 			table.insert(needs, Workflow.JobId(dependency))
 			local provider = identities[dependency]
@@ -70,6 +72,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				})
 			end
 		end
+
 		if #credentialRoles > 0 then
 			appendStep(steps, {
 				name = "Resolve credential names",
@@ -77,7 +80,9 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				run = "node dependencies/packages/dependencyLoader/index.ts --exec luau.lute run .github/ci/entry.luau --credential-names",
 			})
 		end
+
 		local credentialEnvironment: { [string]: string } = {}
+
 		for _, role in credentialRoles do
 			local output = "steps.credentials.outputs." .. role
 			local expression = "${{ secrets[" .. output .. "] }}"
@@ -86,6 +91,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			end
 			credentialEnvironment["CI_CREDENTIAL_" .. role:upper()] = expression
 		end
+
 		appendStep(steps, {
 			name = `Run {task.identity}`,
 			id = "component",
@@ -104,6 +110,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			)} --component {task.identity}`,
 		})
 		local runStep = steps[#steps]
+
 		if #credentialRoles > 0 then
 			local environment = runStep.env or {}
 			for name, value in credentialEnvironment do
@@ -111,6 +118,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			end
 			runStep.env = environment
 		end
+
 		if #task.outputs > 0 then
 			appendStep(steps, {
 				name = `Publish {task.identity} outputs`,
@@ -123,6 +131,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				},
 			})
 		end
+
 		local job: { [string]: unknown } = {
 			name = task.identity,
 			env = { CI_COMPONENT = task.identity },
@@ -138,6 +147,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 		local nativeStart = #steps + 1
 		NativeJob.Configure(task.identity, task.boundary, steps, job)
+
 		if Process.env.ACT == "true" then
 			for index = nativeStart, #steps do
 				local step = steps[index]
@@ -151,6 +161,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				end
 			end
 		end
+
 		appendStep(steps, {
 			name = "Collect component logs",
 			["if"] = "${{ always() }}",
@@ -179,6 +190,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		jobs[jobId] = job
 		table.insert(jobIds, jobId)
 	end
+
 	jobs.report = {
 		name = "CI result",
 		permissions = { contents = "read", actions = "read" },

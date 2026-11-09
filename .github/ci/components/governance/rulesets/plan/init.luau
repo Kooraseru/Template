@@ -13,7 +13,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): ()
+function Component.Run(self: Component, _: { event: string }): ()
 	local definitions = RulesetCatalog.Read()
 	Fs.createDirectory("build/github/ruleset-plans", { makeParents = true })
 	Fs.writeStringToFile(

@@ -34,6 +34,7 @@ end
 if #request.entries == 0 then
 	print("Repository rules: no validators discovered")
 end
+
 local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixture: boolean, failure: ("fixture" | "checker")?)
 	print("::rule-finding::" .. Json.encode({
 		file = file, sourceHash = sourceHashes[file], source = if fixture then "Rule fixture" else rule.id,
@@ -68,6 +69,7 @@ for _, rule in request.entries do
 		continue
 	end
 	local configured, validator = pcall(Runner.Configure, module, rule.settings)
+
 	if not configured then
 		if rule.configurable then
 			settingsFailed(rule, validator)
@@ -76,7 +78,9 @@ for _, rule in request.entries do
 		checkerFailed(rule, validator)
 		continue
 	end
+
 	local validators = { [0] = validator }
+
 	for _, variant in rule.variants do
 		local valid, scoped = pcall(Runner.Configure, module, variant.settings)
 		if not valid then
@@ -85,12 +89,14 @@ for _, rule in request.entries do
 		end
 		validators[variant.index] = scoped
 	end
+
 	table.insert(prepared, { rule = rule, validators = validators })
 end
 
 for _, item in prepared do
 	local rule, validators = item.rule, item.validators
 	local grouped: { [number]: { Rule.Context } } = {}
+
 	for _, source in sources do
 		local index = rule.settingsFor[source.path] or 0
 		local group = grouped[index]
@@ -100,6 +106,7 @@ for _, item in prepared do
 		end
 		table.insert(group, source)
 	end
+
 	for index, group in grouped do
 		local checked, diagnostics = pcall(Runner.Check, validators[index], rule.id, group)
 		if checked then
@@ -110,7 +117,9 @@ for _, item in prepared do
 			checkerFailed(rule, diagnostics)
 		end
 	end
+
 	if request.scoped and not request.scoped.fixture then continue end
+
 	for _, category in { "valid", "invalid", "review" } do
 		local directory = rule.directory .. "/tests/" .. category
 		if Fs.exists(directory) then
@@ -128,11 +137,13 @@ for _, item in prepared do
 					end
 				end
 			end
+
 			for _, testCase in Fs.listDirectory(directory) do
 				local casePath = directory .. "/" .. testCase.name
 				local caseVirtualPath = "source/" .. testCase.name
 				local fixtureSources: { Rule.Context } = {}
 				local fixtureFiles: { [string]: string } = {}
+
 				if testCase.type == "dir" then
 					collect(casePath, caseVirtualPath, fixtureSources, fixtureFiles)
 				elseif testCase.name:match("%.luau$") then
@@ -142,14 +153,17 @@ for _, item in prepared do
 					fixtureFiles[virtualPath] = casePath
 					table.insert(fixtureSources, { path = virtualPath, source = source })
 				end
+
 				if #fixtureSources == 0 then continue end
 				local checked, findings = pcall(Runner.Check, validators[0], rule.id, fixtureSources)
 				local failure: string?
+
 				if not checked then
 					failure = "Fixture checker failed: " .. tostring(findings)
 				elseif (#findings > 0) ~= (category == "invalid") then
 					failure = "Unexpected " .. category .. " fixture result"
 				end
+
 				local failurePath = if testCase.type == "dir" and Fs.exists(casePath .. "/init.luau")
 					then casePath .. "/init.luau" else fixtureFiles[fixtureSources[1].path]
 				if failure then

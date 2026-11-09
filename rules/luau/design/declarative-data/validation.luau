@@ -3,39 +3,40 @@
 
 local Rule = require("@ruleLinter/rule")
 local Diagnostic = require("@ruleLinter/diagnostic")
-local parser = require("@std/syntax/parser")
-local query = require("@std/syntax/query")
-local syntax = require("@std/syntax")
-local utils = require("@std/syntax/utils")
+local Parser = require("@std/syntax/parser")
+local Query = require("@std/syntax/query")
+local Syntax = require("@std/syntax")
+local Utils = require("@std/syntax/utils")
 
 type LintViolation = {
 	lintname: string,
-	location: syntax.Span,
+	location: Syntax.Span,
 	message: string,
 	severity: "warning",
 	sourcepath: string?,
-	related: { syntax.Span }?,
+	related: { Syntax.Span }?,
 }
 
 type Candidate = {
-	binding: syntax.CstLocal,
-	declaration: syntax.CstStatLocal | syntax.CstStatConst,
-	initial: syntax.CstExprTable,
+	binding: Syntax.CstLocal,
+	declaration: Syntax.CstStatLocal | Syntax.CstStatConst,
+	initial: Syntax.CstExprTable,
 }
 
-local RULE_NAME = "declarative_data"
-local MESSAGE = "This table contains static declarative data; move it to a data file or document the runtime constraint."
+const RULE_NAME = "declarative_data"
+const MESSAGE = "This table contains static declarative data; move it to a data file or document the runtime constraint."
 
-local function isScalarLiteral(value: syntax.CstExpr): boolean
+local function isScalarLiteral(value: Syntax.CstExpr): boolean
 	return value.tag == "boolean" or value.tag == "string" or value.tag == "number"
 		or value.tag == "integer" or value.tag == "nil"
 end
 
 -- Recognize serializable literal values, recursively, without relying on identifier spelling.
-local function isStatic(value: syntax.CstExpr): boolean
+local function isStatic(value: Syntax.CstExpr): boolean
 	if isScalarLiteral(value) then
 		return true
 	end
+
 	if value.tag == "interpolatedstring" then
 		for _, expression in value.expressions do
 			if not isScalarLiteral(expression) then
@@ -44,6 +45,7 @@ local function isStatic(value: syntax.CstExpr): boolean
 		end
 		return true
 	end
+
 	if value.tag == "unary" then
 		return value.operator.text == "-" and isStatic(value.operand)
 	end
@@ -53,6 +55,7 @@ local function isStatic(value: syntax.CstExpr): boolean
 	if value.tag ~= "table" then
 		return false
 	end
+
 	for _, entry in value.entries do
 		if entry.kind == "general" and not isStatic(entry.key) then
 			return false
@@ -65,7 +68,7 @@ local function isStatic(value: syntax.CstExpr): boolean
 end
 
 -- A CST local reference identifies its original binding, including shadowed names.
-local function bindingOf(expression: syntax.CstExpr): syntax.CstLocal?
+local function bindingOf(expression: Syntax.CstExpr): Syntax.CstLocal?
 	if expression.tag == "local" then
 		return expression["local"]
 	end
@@ -76,9 +79,9 @@ local function bindingOf(expression: syntax.CstExpr): syntax.CstLocal?
 end
 
 -- Follow local aliases only when the alias binding is never reassigned.
-local function resolveAlias(binding: syntax.CstLocal, aliases: { [syntax.CstLocal]: syntax.CstLocal }): syntax.CstLocal
+local function resolveAlias(binding: Syntax.CstLocal, aliases: { [Syntax.CstLocal]: Syntax.CstLocal }): Syntax.CstLocal
 	local current = binding
-	local visited: { [syntax.CstLocal]: boolean } = {}
+	local visited: { [Syntax.CstLocal]: boolean } = {}
 	while aliases[current] and not visited[current] do
 		visited[current] = true
 		current = aliases[current]
@@ -86,13 +89,13 @@ local function resolveAlias(binding: syntax.CstLocal, aliases: { [syntax.CstLoca
 	return current
 end
 
-local function isInside(outer: syntax.Span, inner: syntax.Span): boolean
+local function isInside(outer: Syntax.Span, inner: Syntax.Span): boolean
 	local startsAfter = inner.beginLine > outer.beginLine or (inner.beginLine == outer.beginLine and inner.beginColumn >= outer.beginColumn)
 	local endsBefore = inner.endLine < outer.endLine or (inner.endLine == outer.endLine and inner.endColumn <= outer.endColumn)
 	return startsAfter and endsBefore
 end
 
-local function inRuntimeScope(location: syntax.Span, scopes: { syntax.Span }): boolean
+local function inRuntimeScope(location: Syntax.Span, scopes: { Syntax.Span }): boolean
 	for _, scope in scopes do
 		if isInside(scope, location) then
 			return true
@@ -101,44 +104,44 @@ local function inRuntimeScope(location: syntax.Span, scopes: { syntax.Span }): b
 	return false
 end
 
-local function findDeclaration(node: syntax.CstNode): (syntax.CstStatLocal | syntax.CstStatConst)?
-	local declaration = utils.isStatLocal(node)
+local function findDeclaration(node: Syntax.CstNode): (Syntax.CstStatLocal | Syntax.CstStatConst)?
+	local declaration = Utils.isStatLocal(node)
 	if declaration then
 		return declaration
 	end
-	return utils.isStatConst(node)
+	return Utils.isStatConst(node)
 end
 
-local function findLoop(node: syntax.CstNode): (syntax.CstStatFor | syntax.CstStatForIn | syntax.CstStatWhile | syntax.CstStatRepeat)?
-	local numeric = utils.isStatFor(node)
+local function findLoop(node: Syntax.CstNode): (Syntax.CstStatFor | Syntax.CstStatForIn | Syntax.CstStatWhile | Syntax.CstStatRepeat)?
+	local numeric = Utils.isStatFor(node)
 	if numeric then
 		return numeric
 	end
-	local generic = utils.isStatForIn(node)
+	local generic = Utils.isStatForIn(node)
 	if generic then
 		return generic
 	end
-	local loop = utils.isStatWhile(node)
+	local loop = Utils.isStatWhile(node)
 	if loop then
 		return loop
 	end
-	return utils.isStatRepeat(node)
+	return Utils.isStatRepeat(node)
 end
 
-local function lint(ast: syntax.CstStatBlock, sourcepath: string?, _context: unknown): { LintViolation }
+local function lint(ast: Syntax.CstStatBlock, sourcepath: string?, _: unknown): { LintViolation }
 	local candidates: { Candidate } = {}
-	local scopes: { syntax.Span } = {}
-	local hasBehavior: { [syntax.CstLocal]: boolean } = {}
-	local mutatedAtRuntime: { [syntax.CstLocal]: boolean } = {}
-	local stagedStatic: { [syntax.CstLocal]: { syntax.Span } } = {}
-	local uncertain: { [syntax.CstLocal]: boolean } = {}
-	local aliases: { [syntax.CstLocal]: syntax.CstLocal } = {}
-	local reassigned: { [syntax.CstLocal]: boolean } = {}
-	local knownFunctions: { [syntax.CstLocal]: boolean } = {}
+	local scopes: { Syntax.Span } = {}
+	local hasBehavior: { [Syntax.CstLocal]: boolean } = {}
+	local mutatedAtRuntime: { [Syntax.CstLocal]: boolean } = {}
+	local stagedStatic: { [Syntax.CstLocal]: { Syntax.Span } } = {}
+	local uncertain: { [Syntax.CstLocal]: boolean } = {}
+	local aliases: { [Syntax.CstLocal]: Syntax.CstLocal } = {}
+	local reassigned: { [Syntax.CstLocal]: boolean } = {}
+	local knownFunctions: { [Syntax.CstLocal]: boolean } = {}
 	local violations: { LintViolation } = {}
 
 	-- Reject alias propagation across a reassignment; the table identity could have changed.
-	for _, statement in query.findAllFromRoot(ast, utils.isStatAssign).nodes do
+	for _, statement in Query.findAllFromRoot(ast, Utils.isStatAssign).nodes do
 		for _, target in statement.variables do
 			if target.tag == "local" then
 				reassigned[target["local"]] = true
@@ -147,7 +150,7 @@ local function lint(ast: syntax.CstStatBlock, sourcepath: string?, _context: unk
 	end
 
 	-- `const` and `local` are equivalent for this rule; neither makes a table data or behavior.
-	for _, declaration in query.findAllFromRoot(ast, findDeclaration).nodes do
+	for _, declaration in Query.findAllFromRoot(ast, findDeclaration).nodes do
 		if #declaration.variables == 1 and #declaration.values == 1 then
 			local binding = declaration.variables[1]
 			local initial = declaration.values[1]
@@ -162,7 +165,7 @@ local function lint(ast: syntax.CstStatBlock, sourcepath: string?, _context: unk
 	end
 
 	-- Distinguish mutations during execution from one-time module initialization.
-	for _, statement in query.findAllFromRoot(ast, utils.isStatFunction).nodes do
+	for _, statement in Query.findAllFromRoot(ast, Utils.isStatFunction).nodes do
 		table.insert(scopes, statement.func.body.location)
 		if statement.name.tag == "index" or statement.name.tag == "indexname" then
 			local binding = bindingOf(statement.name)
@@ -171,16 +174,16 @@ local function lint(ast: syntax.CstStatBlock, sourcepath: string?, _context: unk
 			end
 		end
 	end
-	for _, statement in query.findAllFromRoot(ast, utils.isStatLocalFunction).nodes do
+	for _, statement in Query.findAllFromRoot(ast, Utils.isStatLocalFunction).nodes do
 		table.insert(scopes, statement.func.body.location)
 		knownFunctions[statement.name] = true
 	end
-	for _, statement in query.findAllFromRoot(ast, findLoop).nodes do
+	for _, statement in Query.findAllFromRoot(ast, findLoop).nodes do
 		table.insert(scopes, statement.body.location)
 	end
 
 	-- Assignments to members can install methods, modify runtime state, or merely stage static data.
-	for _, statement in query.findAllFromRoot(ast, utils.isStatAssign).nodes do
+	for _, statement in Query.findAllFromRoot(ast, Utils.isStatAssign).nodes do
 		for index, target in statement.variables do
 			if target.tag ~= "index" and target.tag ~= "indexname" then
 				continue
@@ -204,7 +207,8 @@ local function lint(ast: syntax.CstStatBlock, sourcepath: string?, _context: unk
 			end
 		end
 	end
-	for _, statement in query.findAllFromRoot(ast, utils.isStatCompoundAssign).nodes do
+
+	for _, statement in Query.findAllFromRoot(ast, Utils.isStatCompoundAssign).nodes do
 		local original = bindingOf(statement.variable)
 		if original then
 			mutatedAtRuntime[resolveAlias(original, aliases)] = true
@@ -212,7 +216,7 @@ local function lint(ast: syntax.CstStatBlock, sourcepath: string?, _context: unk
 	end
 
 	-- Track standard collection operations and opaque calls that may mutate an escaped table.
-	for _, call in query.findAllFromRoot(ast, utils.isExprCall).nodes do
+	for _, call in Query.findAllFromRoot(ast, Utils.isExprCall).nodes do
 		local collectionMethod = call.func.tag == "indexname"
 			and call.func.expression.tag == "global"
 			and call.func.expression.name.text == "table"
@@ -284,26 +288,31 @@ end
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local path = context.path:gsub("\\", "/")
+
 	for segment in path:gmatch("[^/]+") do
 		if segment == "tests" or segment == "examples" or segment == "vendor" or segment == "generated" or segment == "build" or segment == "node_modules" then
 			return {}
 		end
 	end
-	local parsed, ast = pcall(parser.parseBlock, context.source)
+
+	local parsed, ast = pcall(Parser.parseBlock, context.source)
 	if not parsed then
-		-- Lute reports syntax errors separately.
+		-- Lute reports Syntax errors separately.
 		return {}
 	end
 	local findings: { Diagnostic.Finding } = {}
+
 	for _, violation in lint(ast, path, nil) do
 		local span = violation.location
 		local related: { Diagnostic.Span } = {}
+
 		for _, assignment in violation.related or {} do
 			table.insert(related, {
 				line = assignment.beginLine, column = assignment.beginColumn,
 				endLine = assignment.endLine, endColumn = assignment.endColumn,
 			})
 		end
+
 		findings[#findings + 1] = {
 			line = span.beginLine,
 			column = span.beginColumn,

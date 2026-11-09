@@ -105,6 +105,7 @@ function Publication.Upload(repository: string, releaseId: number, name: string,
 	Publication.RequireSuccess(result.status, `Upload release asset {name}`)
 	return Publication.Record(Json.decode(result.body))
 end
+
 function Publication.RequireSuccess(status: number, operation: string): ()
 	if status < 200 or status >= 300 then
 		error(`{operation}: GitHub returned HTTP {status}; check run permissions and repository policies`, 0)

@@ -44,7 +44,7 @@ export type Project = {
 
 --# Constants
 
-local ROOT = ".github/work/projects"
+const ROOT = ".github/work/projects"
 local SCHEMA_PATH = `{ROOT}/project.schema.json`
 local SUPPORTED_SCHEMA_KEYS = {
 	"$schema",
@@ -173,12 +173,14 @@ local function validate(value: unknown, schema: { [string]: unknown }, path: str
 
 		for name, item in record do
 			local propertySchema = properties[name]
+
 			if propertySchema == nil then
 				if schema.additionalProperties == false then
 					error(`{path}: unknown property {name}`, 0)
 				end
 				continue
 			end
+
 			validate(item, Publication.Record(propertySchema), `{path}.{name}`)
 		end
 	elseif expected == "array" then

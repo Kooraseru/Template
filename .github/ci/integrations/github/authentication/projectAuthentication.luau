@@ -18,12 +18,14 @@ local function requirements(): { [string]: string }
 	local root = Publication.Record(Toml.decode(Fs.readFileToString(".github/automation/authorization/projects.toml")))
 	local app = Publication.Record(Publication.Record(root.app).organization)
 	local permissions: { [string]: string } = {}
+
 	for name, value in app do
 		if not name:match("^[a-z_]+$") or (value ~= "read" and value ~= "write") then
 			error("Invalid Projects App permission declaration", 0)
 		end
 		permissions[name] = value
 	end
+
 	if next(permissions) == nil then
 		error("Projects App permissions must not be empty", 0)
 	end
@@ -78,6 +80,7 @@ function ProjectAuthentication.Warn(
 	end)
 	Responses.Record("authorization/projects/" .. owner, text)
 end
+
 function ProjectAuthentication.Read(): Supplied
 	local supplied: Supplied = {
 		appId = Process.env.CI_CREDENTIAL_APP_ID,
@@ -95,6 +98,7 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 	local idName = configuration.credentials.app_id or "<github.credentials.app_id>"
 	local keyName = configuration.credentials.app_private_key or "<github.credentials.app_private_key>"
 	local tokenName = configuration.credentials.projects_token or "<github.credentials.projects_token>"
+
 	if supplied.appId and supplied.appId ~= "" and supplied.privateKey and supplied.privateKey ~= "" then
 		local permissions = requirements()
 		local status, account = Publication.Request("GET", `users/{Publication.Encode(owner)}`)
@@ -113,21 +117,26 @@ function ProjectAuthentication.Acquire(supplied: Supplied, repository: string, o
 			print(`::notice::User-owned Projects use user authorization; checking configured token secret {tokenName}`)
 		end
 	end
+
 	local token = supplied.token
+
 	if token and token ~= "" and tokenName:upper() ~= "GITHUB_TOKEN" and token ~= Process.env.GH_TOKEN then
 		local inspection = TokenPermissions.Inspect(token, combinedScopes(configuration))
 		if inspection.state == "insufficient" or inspection.state == "invalid" then
 			ProjectAuthentication.Warn(owner, "insufficient", inspection)
 			return nil
 		end
+
 		if inspection.state == "unverified" then
 			print(
 				`::warning::Credential {tokenName}: GitHub did not expose a verifiable scope inventory. Projects API access is still checked during synchronization.`
 			)
 		end
+
 		print(`Using configured Projects credential secret {tokenName} for {owner}`)
 		return { token = token, temporary = false, inspection = inspection }
 	end
+
 	print(
 		`::warning::Projects sync skipped for {owner}: configure secret {tokenName} with a Projects-capable user token, or for an organization configure App {idName}/{keyName}. See the run summary for personal and organization setup instructions. Store credential values in GitHub Secrets.`
 	)

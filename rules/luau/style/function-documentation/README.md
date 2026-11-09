@@ -1,8 +1,13 @@
-# LuaCATS annotation shape
+# Function documentation
+
+Document module-level functions declared on a local module table returned by the file, even when the body is only a getter. Explain what the returned value means to a caller.
+The same requirement applies when a function expression is assigned to a field of that returned table.
+
+A named function with at least three top-level conditional branches (including `elseif` branches) or twenty top-level statements needs an attached purpose description. Describe ordering, side effects, or failures when those details matter. Tags alone and comments inside the body do not satisfy this requirement. Small, obvious helpers can stay undocumented.
 
 Use triple-dash comments for LuaCATS annotations. This check reports a recognized tag written with two dashes, an empty supported tag, or an incomplete @param without a name and type. It reads actual Luau comment tokens.
 
-A triple-dash documentation block immediately above a named function also warns on a simple `@param` name absent from the declaration. Detached comments, nested parameter fields, and parameter binding in Moonwave blocks requires separate review. Native Luau types continue to describe the signature.
+A documentation block immediately above a named function warns on a simple `@param` name absent from the declaration. This applies to triple-dash comments and long comments. Detached comments and nested parameter fields require review. Native Luau types continue to describe the signature.
 
 Attached function documentation rejects `@readonly`, which describes properties, and `@function` or `@method` tags that redeclare an existing function.
 
@@ -14,7 +19,7 @@ Attached multiline Moonwave comments are checked for a blank line between prose 
 
 Use Moonwave-style documentation comments so `luau-lsp` can surface the contract in hover and signature assistance. Place the comment immediately before its function or method, with no unrelated statement between them.
 
-Prefer the long-comment form `--[=[ ... ]=]` for multiline API documentation. The prose inside can run naturally; do not wrap descriptions at an arbitrary column width. Short single-sentence comments can use `---`.
+Use `--[[ ... ]]` or `--[=[ ... ]=]` for multiline documentation. The validator accepts parameter descriptions with or without the optional `--` separator. The prose inside can run naturally. Short single-sentence comments can use `---`.
 
 ## Layout
 
@@ -58,5 +63,3 @@ Use tags supported by the tooling when they apply: `@deprecated version` and `@s
 Moonwave-style tags are documentation metadata, not a substitute for Luau types or runtime validation. Avoid `any` in the implementation just because the comment names a concrete type.
 
 References: [luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) and [Moonwave tags](https://eryn.io/moonwave/docs/TagList/).
-
-For single-line LuaCATS annotations, use the triple-dash form. See the [annotation shape validator](../../../../rules/luau/style/function-documentation/README.md) for enforced cases. Moonwave block documentation remains supported.

@@ -66,6 +66,7 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 	end
 	local existing: { [string]: { [string]: unknown } } = {}
 	local page = 1
+
 	while true do
 		local items = io.list(`repos/{repository}/releases/{releaseId}/assets?per_page=100&page={page}`)
 		for _, item in items do
@@ -77,6 +78,7 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 		end
 		page += 1
 	end
+
 	for _, asset in assets do
 		local previous = existing[asset.name]
 		if previous and previous.digest == asset.digest and previous.state == "uploaded" then
@@ -85,11 +87,13 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 		end
 		local temporaryName = asset.name .. ".ci-" .. asset.digest:sub(8)
 		local pending = existing[temporaryName]
+
 		if previous or pending then
 			-- Keep the old download available until its replacement is uploaded and verified.
 			local uploaded = pending or io.upload(repository, releaseId, temporaryName, asset.bytes)
 			verify(uploaded, asset)
 			local uploadedId = assetId(uploaded)
+
 			if previous then
 				local deleted = io.request("DELETE", `repos/{repository}/releases/assets/{assetId(previous)}`, nil)
 				Publication.RequireSuccess(
@@ -97,6 +101,7 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 					`Replace release asset {asset.name}; verified replacement remains as {temporaryName}`
 				)
 			end
+
 			local renamed =
 				io.request("PATCH", `repos/{repository}/releases/assets/{uploadedId}`, { name = asset.name })
 			Publication.RequireSuccess(
@@ -107,6 +112,7 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 			local uploaded = io.upload(repository, releaseId, asset.name, asset.bytes)
 			verify(uploaded, asset)
 		end
+
 		print(`Published release asset {asset.name} ({asset.digest})`)
 	end
 end

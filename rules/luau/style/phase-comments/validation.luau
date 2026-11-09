@@ -9,7 +9,7 @@ local Rule = require("@ruleLinter/rule")
 local Syntax = require("@std/syntax")
 local Visitor = require("@std/syntax/visitor")
 
-local MIN_STATEMENT_LINES = 20
+const MIN_STATEMENT_LINES = 20
 
 type Comment = { span: Syntax.Span, prose: boolean }
 

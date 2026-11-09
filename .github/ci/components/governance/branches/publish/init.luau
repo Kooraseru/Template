@@ -27,7 +27,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local repository = Publication.Begin("BRANCHES")
 	if not repository then
 		return "skipped"
@@ -63,6 +63,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			error("Unable to inspect destination branch", 0)
 		end
 		local parent: string? = nil
+
 		if lookup.stdout ~= "" then
 			git({
 				credential[1],
@@ -76,6 +77,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			}, directory)
 			parent = git({ "rev-parse", "FETCH_HEAD" }, directory)
 		end
+
 		git({ "add", "--all" }, directory)
 		local tree = git({ "write-tree" }, directory)
 		if parent and tree == git({ "rev-parse", parent .. "^{tree}" }, directory) then

@@ -48,6 +48,7 @@ function ReleasePublisher.Publish(
 	end
 	local assets = ReleaseAssetPublisher.Read(entry.assets)
 	local body = ""
+
 	if entry.notes then
 		local notes = Publication.Text(entry.notes)
 		if notes:find("..", 1, true) or notes:sub(1, 1) == "/" or notes:find("\\", 1, true) then
@@ -55,6 +56,7 @@ function ReleasePublisher.Publish(
 		end
 		body = Fs.readFileToString(`build/github/releases/{notes}`)
 	end
+
 	if entry.previousTag then
 		local previousTag = Publication.Text(entry.previousTag)
 		local notesStatus, generated = request("POST", `repos/{repository}/releases/generate-notes`, {
@@ -65,9 +67,11 @@ function ReleasePublisher.Publish(
 		Publication.RequireSuccess(notesStatus, `Generate release notes for {tag} from {previousTag}`)
 		body ..= "\n\n" .. Publication.Text(generated.body)
 	end
+
 	if tagStatus == 200 then
 		local object = Publication.Record(reference.object)
 		local depth = 0
+
 		while object.type == "tag" do
 			depth += 1
 			if depth > 10 then
@@ -78,15 +82,18 @@ function ReleasePublisher.Publish(
 			Publication.RequireSuccess(objectStatus, `Resolve annotated tag {tag}`)
 			object = Publication.Record(annotation.object)
 		end
+
 		if object.type ~= "commit" then
 			error(`Tag {tag} does not identify a commit`, 0)
 		end
+
 		if object.sha ~= commit then
 			local updated =
 				request("PATCH", `repos/{repository}/git/refs/tags/{encodedTag}`, { sha = commit, force = true })
 			Publication.RequireSuccess(updated, `Replace tag {tag}; tag protection and immutability remain enforced`)
 		end
 	end
+
 	local payload = {
 		tag_name = tag,
 		target_commitish = commit,
@@ -97,12 +104,15 @@ function ReleasePublisher.Publish(
 	}
 	local status: number
 	local published: { [string]: unknown }
+
 	if releaseStatus == 200 and type(releaseId) == "number" then
 		status, published = request("PATCH", `repos/{repository}/releases/{releaseId}`, payload)
 	else
 		status, published = request("POST", `repos/{repository}/releases`, payload)
 	end
+
 	Publication.RequireSuccess(status, `Publish release {tag}; a tag update may already have succeeded`)
+
 	if #assets > 0 then
 		local id = if releaseStatus == 200 then releaseId else published.id
 		if type(id) ~= "number" then
@@ -115,6 +125,7 @@ function ReleasePublisher.Publish(
 			Publication.RequireSuccess(finalized, `Publish completed draft release {tag}`)
 		end
 	end
+
 	print(`Published release https://github.com/{repository}/releases/tag/{tag} (on_existing = {policy})`)
 	return true
 end

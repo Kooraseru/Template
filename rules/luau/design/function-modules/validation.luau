@@ -37,11 +37,13 @@ local function namedWrapper(block: Syntax.CstStatBlock, stem: string): SourceRan
 	if receiver.tag ~= "local" or receiver["local"] ~= identity or result["local"] ~= identity then
 		return nil
 	end
+
 	for _, reference in Query.findAllFromRoot(method.func, Utils.isExprLocal).nodes do
 		if reference["local"] == identity then
 			return nil
 		end
 	end
+
 	return {
 		beginLine = binding.location.beginLine, beginColumn = binding.location.beginColumn,
 		endLine = returned.location.endLine, endColumn = returned.location.endColumn,

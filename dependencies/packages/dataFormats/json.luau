@@ -13,6 +13,7 @@ local function value(input: unknown): Json.Value
 		error(`Unsupported JSON type: {type(input)}`, 0)
 	end
 	local items = input :: { [string | number]: unknown }
+
 	if #items > 0 then
 		local result: Json.Array = {}
 		for key, item in items do
@@ -23,7 +24,9 @@ local function value(input: unknown): Json.Value
 		end
 		return result
 	end
+
 	local result: Json.Object = Json.object({})
+
 	for key, item in items do
 		if type(key) ~= "string" then
 			error("JSON object keys must be strings", 0)
@@ -42,6 +45,7 @@ local function plain(input: Json.Value): unknown
 		return input
 	end
 	local object = Json.asObject(input)
+
 	if object then
 		local result: { [string]: unknown } = {}
 		for key, item in object do
@@ -51,6 +55,7 @@ local function plain(input: Json.Value): unknown
 		end
 		return result
 	end
+
 	local result: { unknown } = {}
 	for _, item in input :: Json.Array do
 		table.insert(result, plain(item))

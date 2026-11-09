@@ -23,6 +23,7 @@ local SECRET_ROLES: { [string]: string } = {
 
 function Credentials.new(): Credentials
 	local supplied: { [string]: string } = {}
+
 	for role, environment in SECRET_ROLES do
 		local value = Process.env[environment]
 		Process.env[environment] = nil
@@ -30,12 +31,14 @@ function Credentials.new(): Credentials
 			supplied[role] = value
 		end
 	end
+
 	local appIdVariable = Process.env.CI_GITHUB_APP_ID_VARIABLE
 	Process.env.CI_GITHUB_APP_ID_VARIABLE = nil
 	-- Never consume or forward legacy blanket credential snapshots.
 	Process.env.CI_GITHUB_SECRETS = nil
 	Process.env.CI_GITHUB_VARIABLES = nil
 	local configuration = Configuration.new()
+
 	for role in configuration.credentials do
 		local environment = "CI_CREDENTIAL_" .. role:upper()
 		local value = Process.env[environment]
@@ -44,13 +47,16 @@ function Credentials.new(): Credentials
 			supplied[role] = value
 		end
 	end
+
 	local fields: Fields = { secrets = {}, variables = {} }
+
 	for role, value in supplied do
 		local name = configuration.credentials[role]
 		if name then
 			fields.secrets[name:upper()] = value
 		end
 	end
+
 	local appIdName = configuration.credentials.app_id
 	if appIdName and appIdVariable and appIdVariable ~= "" then
 		fields.variables[appIdName:upper()] = appIdVariable
@@ -107,6 +113,7 @@ function Credentials.Environment(self: Credentials, roles: { string }): { [strin
 	end
 	return result
 end
+
 function Credentials.Describe(self: Credentials, configuration: Configuration.Configuration): ()
 	local secretNames: { string } = {}
 	local variableNames: { string } = {}
@@ -129,15 +136,17 @@ function Credentials.Describe(self: Credentials, configuration: Configuration.Co
 		"Available selected variable names: "
 			.. (if #variableNames > 0 then table.concat(variableNames, ", ") else "none")
 	)
+
 	for _, role in roles do
 		local name = configuration.credentials[role]
 		local location = if self.secrets[name:upper()]
 			then "secret available"
-			else if self.variables[name:upper()]
+			elseif self.variables[name:upper()]
 				then "variable available"
-				else if not SECRET_ROLES[role] then "not requested by bootstrap" else "not available to this run"
+				elseif not SECRET_ROLES[role] then "not requested by bootstrap" else "not available to this run"
 		print(`{role} -> {name}: {location}`)
 	end
+
 	print("Values are resolved from GitHub at runtime; TOML contains names, never credentials.")
 	print("::endgroup::")
 end

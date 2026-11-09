@@ -217,6 +217,43 @@ test("automatic Rules refresh combines saves and disk events without prompting",
 	state.api.dispose();
 });
 
+test("checker changes refresh Rules and edits in a nested build source are checked", async () => {
+	const file = ".github/ci/components/governance/branches/build/branchBuilder.luau";
+	const document = { uri: fileUri("C:/repo/" + file), version: 1, isDirty: true, getText: () => "return true" };
+	const state = fixture("C:/repo", [document], true);
+	const actions = [];
+	state.api.start((action, payload) => {
+		actions.push(action === "file" ? JSON.parse(payload) : action);
+		return { scope: "file", findings: [] };
+	});
+	state.workspace.change({ document, contentChanges: [{}] });
+	await waitForFileCheck();
+	assert.equal(actions[0].file, file);
+	actions.length = 0;
+	state.watchers[0].change(fileUri("C:/repo/dependencies/packages/preflightChecker/index.ts"));
+	await new Promise(resolve => setTimeout(resolve, 850));
+	assert.ok(actions.includes("rules"));
+	assert.ok(actions.some(action => action.file === file));
+	state.api.dispose();
+});
+
+test("a workspace Rules run refreshes dirty buffers after provider setup", async () => {
+	const file = ".github/ci/components/governance/branches/build/branchBuilder.luau";
+	const document = { uri: fileUri("C:/repo/" + file), version: 1, isDirty: true, getText: () => "return true" };
+	const state = fixture("C:/repo", [document]);
+	const actions = [];
+	state.api.start((action, payload) => {
+		actions.push(action === "file" ? JSON.parse(payload) : action);
+		return { scope: "file", findings: [] };
+	});
+	state.api.beginSetup({ generation: 1 });
+	state.api.updateDependencies({ complete: true });
+	state.api.beginRules({ generation: 2, trigger: "manual" });
+	await waitForFileCheck();
+	assert.ok(actions.some(action => action.file === file));
+	state.api.dispose();
+});
+
 test("Rules failures leave a passing compile result and its diagnostics intact", () => {
 	const state = fixture("C:/repo");
 	state.api.updateDependencies({ complete: true });

@@ -32,25 +32,31 @@ end
 local function neutralCheckPermissions(): { [string]: string }
 	local path = ".github/automation/authorization/check-runs.toml"
 	local decoded = record(Toml.decode(Fs.readFileToString(path)))
+
 	for field in decoded do
 		if field ~= "app" then
 			error(`{path}: unknown authorization section {tostring(field)}`, 0)
 		end
 	end
+
 	local app = record(decoded.app)
+
 	for field in app do
 		if field ~= "repository" then
 			error(`{path}: unknown App permission scope {tostring(field)}`, 0)
 		end
 	end
+
 	local repository = record(app.repository)
 	local permissions: { [string]: string } = {}
+
 	for name, value in repository do
 		if not name:match("^[a-z_]+$") or (value ~= "read" and value ~= "write") then
 			error(`{path}: invalid repository permission declaration`, 0)
 		end
 		permissions[name] = value :: string
 	end
+
 	if permissions.checks ~= "write" then
 		error(`{path}: neutral runtime skips require app.repository.checks = "write"`, 0)
 	end
@@ -59,30 +65,39 @@ end
 
 function SkipPolicy.Conclusion(identity: string): string
 	local decoded = record(Toml.decode(Fs.readFileToString(".github/automation/execution.toml")))
+
 	for field in decoded do
 		if field ~= "skip" then
-			error(`Unknown CI execution setting {tostring(field)}`, 0)
+			error(`Unknown CI execution setting {field}`, 0)
 		end
 	end
+
 	local settings = record(decoded.skip)
+
 	for field in settings do
 		if field ~= "default" and field ~= "components" then
-			error(`Unknown CI skip setting {tostring(field)}`, 0)
+			error(`Unknown CI skip setting {field}`, 0)
 		end
 	end
-	local supported = { success = true, failure = true, neutral = true }
-	if type(settings.default) ~= "string" or not supported[settings.default] then
+
+	local function validConclusion(value: unknown): boolean
+		return value == "success" or value == "failure" or value == "neutral"
+	end
+
+	if type(settings.default) ~= "string" or not validConclusion(settings.default) then
 		error("skip.default must be success, failure, or neutral", 0)
 	end
 	local overrides = record(settings.components)
+
 	for name, value in overrides do
 		if type(name) ~= "string" or not Contract.ValidIdentity(name) then
 			error("Invalid skip component identity", 0)
 		end
-		if type(value) ~= "string" or not supported[value] then
+		if not validConclusion(value) then
 			error(`skip.components.{name} must be success, failure, or neutral`, 0)
 		end
 	end
+
 	local conclusion = overrides[identity]
 	if type(conclusion) ~= "string" then
 		conclusion = settings.default
@@ -122,6 +137,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 		print(`::notice::{identity}: neutral Check Run is not created during local act execution`)
 		return
 	end
+
 	if not credentials then
 		warnAuthorization(identity, "supported reporting credential unavailable", "unavailable")
 		error(
@@ -129,9 +145,11 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 			0
 		)
 	end
+
 	local configuration = Configuration.new()
 	local appId = credentials:Get(configuration, "app_id")
 	local privateKey = credentials:Get(configuration, "app_private_key", true)
+
 	if not appId or not privateKey then
 		warnAuthorization(
 			identity,
@@ -143,6 +161,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 			0
 		)
 	end
+
 	local repository = configuration:ResolveRepository(configuration.repository)
 	local sha = Process.env.CI_SOURCE_SHA or Process.env.GITHUB_SHA
 	if not sha or #sha ~= 40 or not sha:match("^%x+$") then
@@ -179,6 +198,7 @@ function SkipPolicy.ReportNeutral(identity: string, credentials: Credentials.Cre
 		}),
 	})
 	Authentication.Release(access)
+
 	if not response.ok then
 		if response.status == 401 or response.status == 403 or response.status == 404 then
 			warnAuthorization(identity, `Check Run access rejected (HTTP {response.status})`, "configured")

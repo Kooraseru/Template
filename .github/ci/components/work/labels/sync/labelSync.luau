@@ -15,6 +15,7 @@ function LabelSync.Sync(
 	local read = list or Publication.List
 	local remote: { string } = {}
 	local page = 1
+
 	while true do
 		local items = read(`repos/{repository}/labels?per_page=100&page={page}`)
 		for _, value in items do
@@ -25,11 +26,13 @@ function LabelSync.Sync(
 		end
 		page += 1
 	end
+
 	local declared: { [string]: boolean } = {}
 	for _, label in labels do
 		declared[label.name:lower()] = true
 	end
 	local changed = false
+
 	for _, label in labels do
 		local path = `repos/{repository}/labels/{Publication.Encode(label.name)}`
 		local status, current = request("GET", path, nil)
@@ -43,6 +46,7 @@ function LabelSync.Sync(
 			if current.archived_at ~= nil then
 				error(`Configured label {label.name} is archived; unarchive it before using it in templates`, 0)
 			end
+
 			if
 				current.name == label.name
 				and current.color == label.color
@@ -51,6 +55,7 @@ function LabelSync.Sync(
 				print(`Label {label.name} already matches its definition`)
 				continue
 			end
+
 			local updated =
 				request("PATCH", path, { new_name = label.name, color = label.color, description = label.description })
 			Publication.RequireSuccess(updated, `Update label {label.name}; issues write permission is required`)

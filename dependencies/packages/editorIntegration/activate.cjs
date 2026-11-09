@@ -38,6 +38,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 	let watchTimer;
 	let ruleNoticeTimer;
 	let ruleNoticeOpen = false;
+	let refreshOpenRules = () => {};
 	const pendingActions = new Set();
 
 	setupStatus.command = command("runSetup");
@@ -284,6 +285,8 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		for (const { uri } of compileFindings.values()) refreshCompileDiagnostics(uri);
 		const changed = new Set();
 		const isRuleInput = relative => relative.startsWith("rules/luau/") ||
+			relative.startsWith("dependencies/packages/ruleLinter/") ||
+			relative.startsWith("dependencies/packages/preflightChecker/") ||
 			relative === ".vscode/config/rules.json" || relative === ".vscode/config/rules.schema.json";
 		const watchedPath = uri => {
 			if (uri.scheme !== "file" || !isInWorkspace(uri)) return undefined;
@@ -294,7 +297,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		const openDocument = uri => vscode.workspace.textDocuments.find(document => document.uri.toString() === uri.toString());
 		const ruleSource = relative => relative.endsWith(".luau") &&
 			/^(source|[.]github\/ci|dependencies\/packages|rules\/luau)\//.test(relative) &&
-			!relative.split("/").some(part => ["build", "node_modules", "generated", "vendor", "examples"].includes(part));
+			!relative.split("/").some(part => ["node_modules", "generated", "vendor", "examples"].includes(part));
 		const fixtureRoot = relative => relative.match(/^(rules\/luau\/.*?\/tests)\//)?.[1];
 		// The bridge sends host objects as references. Use JSON for the request data.
 		const requestFile = request => callback?.("file", JSON.stringify({ scope: "file", ...request }));
@@ -371,8 +374,8 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 			diagnostics.delete(document.uri);
 			if (ruleSource(relative) && !fixtureRoot(relative)) queueFile(document.uri, relative, document);
 		}));
-		const diskWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{**/*.luau,rules/luau/**,.vscode/config/rules.json,.vscode/config/rules.schema.json}"));
-		const refreshOpenRules = () => {
+		const diskWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, "{**/*.luau,rules/luau/**,dependencies/packages/ruleLinter/**,dependencies/packages/preflightChecker/**,.vscode/config/rules.json,.vscode/config/rules.schema.json}"));
+		refreshOpenRules = () => {
 			for (const document of vscode.workspace.textDocuments) {
 				const file = watchedPath(document.uri);
 				if (file && document.isDirty && ruleSource(file) && !fixtureRoot(file)) queueFile(document.uri, file, document, true);
@@ -475,6 +478,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		check.fileSequence = fileSequence;
 		check.inputRevision = compileInputRevision;
 		check.policyRevision = policyRevision;
+		if (kind === "rules") refreshOpenRules();
 		check.progress?.finish();
 		check.progress = shouldNotify(trigger) ? beginProgress(check.config.notification) : undefined;
 		if (kind === "compile") {

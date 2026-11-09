@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { effective, loadPolicy, policyFile } from "../ruleLinter/policy.cjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const ignoredDirectories = new Set([".git", ".codex", "build", "node_modules", "vendor", "rules-old"]);
+const ignoredDirectories = new Set([".git", ".codex", "node_modules", "vendor", "rules-old"]);
 const configuration = ".vscode/config/typescript/tsconfig.json";
 const lute = path.join(root, "build/dependencies/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
 const typescript = path.join(root, "build/dependencies/npm/node_modules/typescript/bin/tsc");
@@ -20,8 +20,9 @@ function luauSources(directory = root, includeFixtures = false): string[] {
 	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isSymbolicLink()) continue;
 		const file = path.join(directory, entry.name);
+		const generatedBuild = directory === root && entry.name === "build";
 		const fixtureDirectory = ["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep + "luau" + path.sep);
-		if (entry.isDirectory() && !ignoredDirectories.has(entry.name) && (includeFixtures || !fixtureDirectory)) result.push(...luauSources(file, includeFixtures));
+		if (entry.isDirectory() && !generatedBuild && !ignoredDirectories.has(entry.name) && (includeFixtures || !fixtureDirectory)) result.push(...luauSources(file, includeFixtures));
 		else if (entry.isFile() && entry.name.endsWith(".luau")) result.push(path.relative(root, file));
 	}
 	return result.sort();

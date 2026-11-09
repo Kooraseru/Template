@@ -258,7 +258,7 @@ async function main() {
 			return;
 		}
 		bridgeClient.onClose(() => controller?.close());
-		const bridgeModule = await bridgeClient.loadModule({ path: "dependencies/packages/editorIntegration/activate.cjs" });
+		const bridgeModule = await bridgeClient.loadModule({ path: "dependencies/packages/editorIntegration/host.cjs" });
 		controller = createController(bridgeClient, bridgeModule, async () =>
 			JSON.parse(await bridgeClient.call({ target: bridgeModule, path: ["getLuauTools"], args: [] })));
 		await bridgeClient.call({

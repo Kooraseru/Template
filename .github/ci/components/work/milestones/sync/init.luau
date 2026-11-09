@@ -16,7 +16,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local index = Publication.Record(Json.decode(Fs.readFileToString("build/github/milestones/index.json")))
 	if type(index.milestones) ~= "table" then
 		error("Staged milestone plan is missing its milestones array", 0)
@@ -25,12 +25,14 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 	for _, value in index.milestones do
 		table.insert(milestones, Publication.Record(value) :: Catalog.Milestone)
 	end
+
 	if #milestones == 0 then
 		Fs.createDirectory("build/github/milestone-sync", { makeParents = true })
 		Fs.writeStringToFile("build/github/milestone-sync/index.json", '{"milestones":[],"applied":true,"changed":false}')
 		print("No planned release milestones; GitHub was not contacted")
 		return nil
 	end
+
 	local repository = Publication.Begin("MILESTONES")
 	if not repository then
 		return "skipped"

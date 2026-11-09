@@ -4,7 +4,7 @@
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 
-local CONFIG_PATH = ".github/targets.toml"
+const CONFIG_PATH = ".github/targets.toml"
 
 local Configuration = {}
 Configuration.__index = Configuration
@@ -60,6 +60,7 @@ function Configuration.new(): Configuration
 	local bootstrap = record(github.bootstrap, "github.bootstrap")
 	local credentialSource = record(github.credentials, "github.credentials")
 	local aliases: { [string]: string } = {}
+
 	for name, value in aliasSource do
 		if not name:match("^[%a][%w_-]*$") then
 			return invalid("alias names must start with a letter and contain letters, digits, underscores, or hyphens")
@@ -70,6 +71,7 @@ function Configuration.new(): Configuration
 		end
 		aliases[name] = resolved
 	end
+
 	local enabled = bootstrap.enabled
 	if type(enabled) ~= "boolean" then
 		return invalid("github.bootstrap.enabled must be boolean")
@@ -79,12 +81,14 @@ function Configuration.new(): Configuration
 		return invalid("github.bootstrap.branch_prefix must be a safe Git branch prefix")
 	end
 	local credentials: { [string]: string } = {}
+
 	for role, name in credentialSource do
 		if not role:match("^[%a][%w_]*$") then
 			return invalid(`invalid credential role {role}`)
 		end
 		credentials[role] = credentialName(name, `github.credentials.{role}`)
 	end
+
 	local fields: Fields = {
 		repository = text(github.repository, "github.repository"),
 		aliases = aliases,

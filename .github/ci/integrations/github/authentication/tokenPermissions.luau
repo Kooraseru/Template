@@ -27,22 +27,27 @@ function TokenPermissions.Required(
 ): { string }
 	local name = configuration.credentials[role]
 	local requested: { [string]: boolean } = {}
+
 	for _, selected in roles do
 		local selectedName = configuration.credentials[selected]
 		if name and selectedName and name:upper() == selectedName:upper() then
 			requested[selected] = true
 		end
 	end
+
 	local scopes: { [string]: boolean } = {}
+
 	for _, path in Glob.Find(".github/automation/authorization/*.toml") do
 		local root = Publication.Record(Toml.decode(Fs.readFileToString(path)))
 		local declaration = root.credential
+
 		if declaration == nil then
 			if root.classic ~= nil then
 				error(`{path}: classic scope declarations require credential.role`, 0)
 			end
 			continue
 		end
+
 		local owner = Publication.Text(Publication.Record(declaration).role)
 		if not owner:match("^[a-z][a-z0-9_]*$") then
 			error(`{path}: invalid credential.role`, 0)
@@ -54,6 +59,7 @@ function TokenPermissions.Required(
 		if type(required) ~= "table" or #required == 0 then
 			error(`{path}: classic.scopes must be a nonempty array`, 0)
 		end
+
 		for index, scope in required do
 			if type(index) ~= "number" or type(scope) ~= "string" or not scope:match("^[%w_:]+$") then
 				error(`{path}: invalid classic token scope`, 0)
@@ -61,6 +67,7 @@ function TokenPermissions.Required(
 			scopes[scope] = true
 		end
 	end
+
 	local result: { string } = {}
 	for scope in scopes do
 		table.insert(result, scope)
@@ -96,29 +103,35 @@ function TokenPermissions.Evaluate(status: number, headers: { [string]: string }
 		return result
 	end
 	local inventory: string? = nil
+
 	for key, value in headers do
 		if key:lower() == "x-oauth-scopes" then
 			inventory = if type(value) == "string" then value else table.concat(value, ",")
 		end
 	end
+
 	if inventory == nil then
 		return result
 	end
 	local granted: { [string]: boolean } = {}
 	local ordered: { string } = {}
+
 	for scope in inventory:gmatch("[%w_:]+") do
 		if not granted[scope] then
 			granted[scope] = true
 			table.insert(ordered, scope)
 		end
 	end
+
 	table.sort(ordered)
 	result.granted = ordered
+
 	for _, scope in required do
 		if not covers(granted, scope) then
 			table.insert(result.missing, scope)
 		end
 	end
+
 	result.state = if #result.missing > 0 then "insufficient" else "verified"
 	return result
 end

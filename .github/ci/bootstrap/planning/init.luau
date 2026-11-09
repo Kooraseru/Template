@@ -60,11 +60,13 @@ local function orderByDependencies(
 	end
 
 	local queue: { string } = {}
+
 	for identity, count in degree do
 		if count == 0 then
 			table.insert(queue, identity)
 		end
 	end
+
 	table.sort(queue)
 
 	local ordered: { string } = {}
@@ -75,22 +77,26 @@ local function orderByDependencies(
 		end
 		table.remove(queue, 1)
 		table.insert(ordered, identity)
+
 		for _, successor in successors[identity] do
 			degree[successor] -= 1
 			if degree[successor] == 0 then
 				table.insert(queue, successor)
 			end
 		end
+
 		table.sort(queue)
 	end
 
 	if #ordered ~= #names(active) then
 		local involved: { string } = {}
+
 		for identity, count in degree do
 			if count > 0 then
 				table.insert(involved, identity)
 			end
 		end
+
 		table.sort(involved)
 		fail(`dependency cycle involving: {table.concat(involved, ", ")}`)
 	end
@@ -110,11 +116,13 @@ local function resolveOutputs(active: { [string]: Contract.Contract }): ()
 					fail(`{identity}: output glob intersects protected source path {reserved}`)
 				end
 			end
+
 			for _, owner in ownership do
 				if Glob.Overlaps(output, owner.path) then
 					fail(`output collision: {owner.identity} ({owner.path}) and {identity} ({output})`)
 				end
 			end
+
 			table.insert(ownership, { identity = identity, path = output })
 		end
 	end
@@ -126,13 +134,8 @@ local function requireBoundary(component: Contract.Contract): ()
 	end
 end
 
-function Planner.Resolve(_self: Planner, components: { Contract.Contract }, event: string): { Contract.Task }
-	local supportedEvents: { [string]: boolean } = {
-		push = true,
-		pull_request = true,
-		workflow_dispatch = true,
-	}
-	if not supportedEvents[event] then
+function Planner.Resolve(self: Planner, components: { Contract.Contract }, event: string): { Contract.Task }
+	if not Contract.ValidEvent(event) then
 		fail(`unsupported GitHub event: {event}`)
 	end
 
@@ -156,6 +159,7 @@ function Planner.Resolve(_self: Planner, components: { Contract.Contract }, even
 	local dependencies: { [string]: { [string]: boolean } } = {}
 	for _, identity in names(active) do
 		local dependenciesForComponent: { [string]: boolean } = {}
+
 		for _, capability in active[identity].requires do
 			local provider = providers[capability]
 			if not provider then
@@ -163,17 +167,20 @@ function Planner.Resolve(_self: Planner, components: { Contract.Contract }, even
 			end
 			dependenciesForComponent[provider] = true
 		end
+
 		dependencies[identity] = dependenciesForComponent
 	end
 
 	resolveOutputs(active)
 	local ordered = orderByDependencies(active, dependencies)
 	local selected: { [string]: boolean } = {}
+
 	for _, identity in ordered do
 		if active[identity]:SupportsEvent(event) then
 			selected[identity] = true
 		end
 	end
+
 	for identity in selected do
 		for required in dependencies[identity] do
 			if not selected[required] then

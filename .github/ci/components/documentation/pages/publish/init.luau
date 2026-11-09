@@ -12,7 +12,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	if Process.env.CI_GRAPH_RUN ~= "true" then
 		if Process.env.CI_PUBLISH_PAGES == "false" then
 			print("Pages deployment skipped: disabled by configuration")

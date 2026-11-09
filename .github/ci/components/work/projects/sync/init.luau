@@ -19,7 +19,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local supplied = ProjectAuthentication.Read()
 	local projects = Catalog.Read()
 	local repository = Publication.Begin("PROJECTS")
@@ -43,6 +43,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		table.insert(orderedOwners, owner)
 	end
 	table.sort(orderedOwners)
+
 	for _, owner in orderedOwners do
 		local access = ProjectAuthentication.Acquire(supplied, repository, owner)
 		if not access then
@@ -54,8 +55,10 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			return client:Query(query, variables)
 		end)
 		Authentication.Release(access)
+
 		if not ok then
 			local problem = tostring(result)
+
 			if problem:find("PROJECT_AUTH:", 1, true) then
 				local name = configuration.credentials.projects_token or "<github.credentials.projects_token>"
 				print(
@@ -65,8 +68,10 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 				skipped = true
 				continue
 			end
+
 			error(problem, 0)
 		end
+
 		for _, receipt in result do
 			table.insert(receipts, receipt)
 		end
@@ -74,6 +79,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			changed = true
 		end
 	end
+
 	Fs.createDirectory("build/github/project-sync", { makeParents = true })
 	Fs.writeStringToFile(
 		"build/github/project-sync/index.json",

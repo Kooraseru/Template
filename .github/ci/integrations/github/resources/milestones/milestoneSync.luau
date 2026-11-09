@@ -52,6 +52,7 @@ function MilestoneSync.Sync(
 	local prefix = `repos/{repository}/milestones`
 	local existing: { { [string]: unknown } } = {}
 	local page = 1
+
 	while true do
 		local _, records = request(token, "GET", `{prefix}?state=all&per_page=100&page={page}`)
 		if type(records) ~= "table" then
@@ -65,7 +66,9 @@ function MilestoneSync.Sync(
 		end
 		page += 1
 	end
+
 	local byTitle: { [string]: { [string]: unknown } } = {}
+
 	for _, entry in existing do
 		local title = Publication.Text(entry.title)
 		if byTitle[title] then
@@ -73,13 +76,16 @@ function MilestoneSync.Sync(
 		end
 		byTitle[title] = entry
 	end
+
 	local receipts: { Receipt } = {}
 	local changed = false
+
 	for _, milestone in milestones do
 		local desired = body(milestone)
 		local current = byTitle[milestone.version]
 		local id: number
 		local state = desired.state :: string
+
 		if current then
 			id = current.number :: number
 			if type(id) ~= "number" then
@@ -111,6 +117,7 @@ function MilestoneSync.Sync(
 			changed = true
 			print(`Created milestone {milestone.version} ({state})`)
 		end
+
 		table.insert(receipts, { version = milestone.version, id = id, state = state })
 	end
 	-- Unlisted remote milestones are repository history and are never deleted or modified.

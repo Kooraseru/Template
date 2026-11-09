@@ -27,7 +27,7 @@ function Executor.new(credentials: Credentials.Credentials?): Executor
 	return setmetatable(fields, Executor)
 end
 
-function Executor.MissingOutputs(_self: Executor, outputs: { string }): { string }
+function Executor.MissingOutputs(self: Executor, outputs: { string }): { string }
 	local missing: { string } = {}
 	for _, pattern in outputs do
 		if pattern:find("*", 1, true) or pattern:find("?", 1, true) then
@@ -46,11 +46,13 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Ou
 	local environment: { [string]: string } = table.clone(Process.env)
 	environment.GH_TOKEN = if task.boundary == "privileged" then Process.env.GH_TOKEN or "" else ""
 	environment.CI_COMPONENT = task.identity
+
 	if self.credentials and task.boundary == "privileged" then
 		for name, value in self.credentials:Environment(task.credentials) do
 			environment[name] = value
 		end
 	end
+
 	local options: Process.ProcessRunOptions = {
 		cwd = Process.cwd(),
 		stdio = "inherit",
@@ -88,6 +90,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 
 		print(`::group::{task.identity}`)
 		local outcome: string
+
 		if #blockedBy > 0 then
 			outcome = "blocked"
 			print(`::error::{task.identity}: blocked by {table.concat(blockedBy, ", ")}`)
@@ -100,11 +103,13 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 			end
 			outcome = if #missing > 0 then "failed" else executed
 		end
+
 		print(`::notice::{task.identity}: {outcome} at {os.date("!%Y-%m-%dT%H:%M:%SZ")}`)
 		print("::endgroup::")
 
 		outcomes[task.identity] = outcome
 		local neutralReported = true
+
 		if outcome == "skipped" and skipConclusion == "neutral" then
 			local ok, failure = xpcall(function(): string
 				SkipPolicy.ReportNeutral(task.identity, self.credentials)
@@ -115,6 +120,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 				print(`::error::{task.identity}: unable to report neutral Check Run: {failure}`)
 			end
 		end
+
 		if
 			outcome == "failed"
 			or outcome == "blocked"
