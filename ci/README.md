@@ -4,11 +4,11 @@
 
 Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
 
-The GitHub workflow selects its own profile. PRs and manual validation use `validate`. Pushes and manual CI on the protected `source` branch use `source-ci`. The manual `remote-read` workflow uses its own read-only token. Local Preflight resolves the graph without hosted credentials.
+CI Check handles PRs and manual validation with the `validate` profile. CI Publish runs the full build, sync, and publication graph on pushes and manual runs on `source`. The manual `remote-read` workflow uses its own read-only token. Local Preflight resolves the graph without hosted credentials.
 
 The commented `credentials.json` catalog defines runtime sources, verifiers, roles, and profiles. GitHub Actions discovers GitHub PATs by token format without a naming convention. Classic scopes are inspected once per job. A read-only repository probe can establish visibility. GitHub still decides whether the actual write is allowed. Existing named bindings remain available for explicitly configured credentials and migration fallbacks.
 
-If a branch protection rule requires the former PR gate check, update it to require the `validate` job from **CI Validate** when rolling out the split.
+The source ruleset requires the `validate` job from **CI Check**.
 
 ### Credential providers
 

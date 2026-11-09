@@ -169,7 +169,7 @@ function checkedInstallation(result: unknown, stage: string, fingerprint: string
 	return { installed: { fingerprint, outputs: [...paths.keys()], exports, executable: executableDefinition(value.executable, exports) }, paths };
 }
 
-export async function load(workspace: string, generated: string, stage: string, update: boolean, progress: Progress, requested?: string) {
+export async function load(workspace: string, generated: string, stage: string, update: boolean, progress: Progress, requested?: string, only?: string[]) {
 	const { providers, ordered } = manifest(workspace);
 	if (requested && !ordered.some(dependency => dependency.id === requested)) throw new Error("Unknown dependency: " + requested);
 	const lockFile = contained(workspace, "dependencies/dependencies.lock");
@@ -242,8 +242,22 @@ export async function load(workspace: string, generated: string, stage: string, 
 	}
 	if (previous.size !== next.size) throw new Error("dependencies.lock contains removed dependencies; run --update-lock");
 
-	for (const [index, dependency] of ordered.entries()) {
-		progress("Loading dependencies", index, ordered.length, dependency.id);
+	const selectedIds = new Set<string>();
+	if (only) {
+		const byId = new Map(ordered.map(dependency => [dependency.id, dependency]));
+		const include = (id: string) => {
+			if (selectedIds.has(id)) return;
+			const dependency = byId.get(id);
+			if (!dependency) throw new Error("Unknown dependency: " + id);
+			selectedIds.add(id);
+			dependency.needs.forEach(include);
+		};
+		only.forEach(include);
+		if (requested) include(requested);
+	}
+	const selected = only ? ordered.filter(dependency => selectedIds.has(dependency.id)) : ordered;
+	for (const [index, dependency] of selected.entries()) {
+		progress("Loading dependencies", index, selected.length, dependency.id);
 		await prepare(dependency);
 	}
 	const owned = [...old].flatMap(([id, entry]) => entry.outputs.map(output => ({ id, output })));
@@ -262,14 +276,16 @@ export async function load(workspace: string, generated: string, stage: string, 
 			if (item.paths.has(output)) changes.set(output, item.paths.get(output));
 		}
 	}
-	for (const { output } of owned) {
-		if (!destinations.some(destination => destination.output === output)) changes.set(output, undefined);
+	for (const { id, output } of owned) {
+		if ((!only || selectedIds.has(id)) && !destinations.some(destination => destination.output === output)) changes.set(output, undefined);
 	}
+	const installed = new Map(only ? old : []);
+	for (const [id, item] of prepared) installed.set(id, item.installed);
 	if (changes.size || !fs.existsSync(contained(generated, stateName)) ||
-		digest(Object.fromEntries(old)) !== digest(Object.fromEntries([...prepared].map(([id, item]) => [id, item.installed])))) {
-		publish(generated, stage, Object.fromEntries([...prepared].map(([id, item]) => [id, item.installed])), changes);
+		digest(Object.fromEntries(old)) !== digest(Object.fromEntries(installed))) {
+		publish(generated, stage, Object.fromEntries(installed), changes);
 	}
-	progress("Dependencies ready", ordered.length, ordered.length);
+	progress("Dependencies ready", selected.length, selected.length);
 	if (requested) {
 		const install = prepared.get(requested)!.installed;
 		if (!install.executable) throw new Error("Dependency has no executable: " + requested);

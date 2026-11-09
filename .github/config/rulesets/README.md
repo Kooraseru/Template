@@ -19,7 +19,7 @@ repository Administration: write. A classic PAT needs the `repo` scope.
 Without an authorized credential, sync explicitly skips; plan/PR validation
 continues. Once authorized, API errors are failures, never successful skips.
 
-`source-gate.json` requires PRs and the `validate` check from CI Validate.
+`source-gate.json` requires PRs and the `validate` check from CI Check.
 Repository administrators have the Always allow bypass on this ruleset.
 `.github/config/rulesets/source-admin.json` is a disabled tombstone for the former administrator-only
 update restriction. Keep it disabled until it is safely retired from the remote

@@ -23,4 +23,8 @@ fi
 # Stream the component output to its log and preserve the CI process status.
 log_directory="build/run/$workflow_name/logs"
 mkdir -p "$log_directory"
-node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau "$@" 2>&1 | tee "$log_directory/$log_name.log"
+dependencies=()
+if [[ ${1:-} == --report ]]; then
+	dependencies=(--only workspace.npm)
+fi
+node dependencies/packages/core/dependencyLoader/index.ts "${dependencies[@]}" --exec luau.lute run ci/entry.luau "$@" 2>&1 | tee "$log_directory/$log_name.log"

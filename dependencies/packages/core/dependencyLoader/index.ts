@@ -65,6 +65,13 @@ function reportProgress(
 }
 
 export async function main(args: string[], workspace = root): Promise<number> {
+	const only = args[0] === "--only" ? args[1]?.split(",") : undefined;
+	if (args[0] === "--only") {
+		if (!only?.every(Boolean) || args[2] !== "--exec") {
+			throw new Error("Usage: dependency-loader --only ID[,ID...] --exec ID [arguments...]");
+		}
+		args = args.slice(2);
+	}
 	const update = args.length === 1 && args[0] === "--update-lock";
 	const requested = args[0] === "--exec" ? args[1] : undefined;
 	if (args.length && !update && !requested) {
@@ -72,7 +79,7 @@ export async function main(args: string[], workspace = root): Promise<number> {
 	}
 	const generated = contained(workspace, "build/dependencies");
 	const executable = await withStage(generated, async stage => {
-		const selected = await load(workspace, generated, stage, update, reportProgress, requested);
+		const selected = await load(workspace, generated, stage, update, reportProgress, requested, only);
 		if (!update) generateBridges(workspace);
 		return selected;
 	});

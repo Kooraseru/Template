@@ -275,7 +275,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			{
 				name = "Delete temporary branch for this run",
 				env = { GH_TOKEN = "${{ github.token }}" },
-				run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --cleanup-branch",
+				run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/entry.luau --cleanup-branch",
 			},
 		},
 	}

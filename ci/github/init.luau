@@ -117,7 +117,9 @@ function GitHub.Run(): ()
 		if component then
 			Responses.Prepare()
 		end
-		Bootstrap.new(event, profile):Run(component, reportOnly, profileName)
+		-- A manual run through the trusted source workflow has the same publication intent as a source push.
+		local planEvent = if profileName == "source-ci" and event == "workflow_dispatch" then "push" else event
+		Bootstrap.new(planEvent, profile):Run(component, reportOnly, profileName)
 		return true
 	end, tostring)
 	if not ok then
