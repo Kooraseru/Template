@@ -195,6 +195,18 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 			elseif skipped
 				then "skipped"
 				elseif result == "success" then "passed" elseif result == "skipped" then "blocked" else result
+		if outcomes[task.identity] == "blocked" then
+			local blockers: { string } = {}
+			for _, dependency in task.needs do
+				local prerequisite = results[Workflow.JobId(dependency)]
+				if type(prerequisite) ~= "table" or prerequisite.result ~= "success" then
+					table.insert(blockers, dependency)
+				end
+			end
+			if #blockers > 0 then
+				outcomes[task.identity] = "blocked (prerequisites: " .. table.concat(blockers, ", ") .. ")"
+			end
+		end
 		if result ~= "success" or (skipped and SkipPolicy.Conclusion(task.identity) == "failure") then
 			passed = false
 		end

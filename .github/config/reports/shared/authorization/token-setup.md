@@ -1,5 +1,5 @@
-<details open>
-<summary>GitHub CLI - copy/paste</summary>
+## GitHub CLI - copy/paste
+
 
 1. [Create the token with its name and scopes prefilled]({{token_url}}).
 2. Choose an expiration → **Generate token** → copy the token.
@@ -15,10 +15,9 @@
 
 4. [Open the run]({{actions_url}}).
 
-</details>
 
-<details>
-<summary>Keep the existing token - edit its scopes</summary>
+## Keep the existing token - edit its scopes
+
 
 1. [Open classic tokens]({{tokens_url}}) → select the token whose Note identifies `{{credential}}`.
 2. Under **Select scopes**, enable: {{required_scopes}}.
@@ -32,10 +31,9 @@
 If the token was regenerated, expired, or revoked, use the CLI or website setup
 to save a replacement value.
 
-</details>
 
-<details>
-<summary>GitHub website - click by click</summary>
+## GitHub website - click by click
+
 
 1. [Create the token with its name and scopes prefilled]({{token_url}}).
 2. Choose an expiration → **Generate token** → copy the token.
@@ -48,5 +46,3 @@ to save a replacement value.
 
 5. Paste the token into **Secret** → **Update secret** or **Add secret**.
 6. [Open the run]({{actions_url}}) → **Re-run jobs → Re-run failed jobs**.
-
-</details>

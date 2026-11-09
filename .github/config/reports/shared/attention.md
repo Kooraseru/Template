@@ -1,3 +1,3 @@
-### Next steps
+## What needs attention
 
-<p align="center">{{attention}}</p>
+{{attention}}

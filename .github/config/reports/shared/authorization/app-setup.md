@@ -1,7 +1,7 @@
 {{app_registration}}
 
-<details>
-<summary>Save credentials with GitHub CLI (Bash)</summary>
+## Save credentials with GitHub CLI (Bash)
+
 
 5. Run this block. Enter the App ID and the downloaded key's file path when asked:
 
@@ -23,10 +23,9 @@
 
 6. [Open the run]({{actions_url}}).
 
-</details>
 
-<details>
-<summary>Save credentials on GitHub</summary>
+## Save credentials on GitHub
+
 
 5. [Open repository Actions variables]({{variables_url}}) → **New repository variable** (or edit the existing variable). Use this **Name**:
 
@@ -46,6 +45,3 @@
    **Secret:** paste the copied `.pem` content, including BEGIN/END lines → **Add secret** or **Update secret**.
 
 8. [Open the run]({{actions_url}}) → **Re-run jobs → Re-run failed jobs**.
-
-</details>
-

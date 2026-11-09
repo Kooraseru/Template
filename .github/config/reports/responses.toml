@@ -83,7 +83,7 @@ order = 10
 [responses.start.children.attention]
 markdown = "shared/attention.md"
 if_value = "attention"
-order = 18
+order = 5
 
 [responses.start.children.components]
 markdown = "shared/components/root.md"
@@ -105,9 +105,18 @@ order = 20
 [responses.execution.children.attention]
 markdown = "shared/attention.md"
 if_value = "attention"
-order = 15
+order = 5
+
+[outcome_guidance]
+failure = "Open the component job and inspect its first failing step before retrying."
+blocked = "Check the job dependencies and run conditions. Resolve any unsuccessful prerequisites, then rerun CI."
+abandoned = "GitHub marked this job abandoned. Check the job and run annotations for a GitHub policy or review notice before retrying. The job did not establish a missing credential permission."
+cancelled = "Check why the job was cancelled and rerun if needed."
+timed_out = "Inspect the last running step before retrying; adjust the timeout only if the work needs more time."
 
 [templates]
+"outcome" = "shared/outcome.md"
+"authorization.unavailable" = "shared/authorization/unavailable.md"
 "components.group" = "shared/components/group/root.md"
 "components.component" = "shared/components/component/root.md"
 "records.record" = "shared/records/record/root.md"
@@ -141,6 +150,7 @@ order = 15
 "rulesets.authorization" = "shared/rulesets-authorization/permissions.md"
 
 [labels]
+"authorization/unavailable/**" = "Credential requirements"
 "authorization/check-runs" = "Enable neutral reporting"
 "authorization/token" = "Update credential permissions"
 "authorization/rulesets" = "Ruleset permissions and API diagnostic"

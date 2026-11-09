@@ -7,6 +7,8 @@ local Fs = require("@std/fs")
 local Configuration = require("@ci/github/configuration")
 local ProjectCatalog = require("@ci/github/resources/projects/projectCatalog")
 
+local Responses = require("@ci/github/reporting/responses")
+
 local Credentials = {}
 Credentials.__index = Credentials
 
@@ -349,7 +351,14 @@ function Credentials.WarnUnavailable(
 		end
 		table.sort(requirements)
 		local details = if #requirements == 0 then "" else " (" .. table.concat(requirements, ", ") .. ")"
-		print(`::warning::{task} on {profile}: credential {role.name} is unavailable{details}`)
+		print(`::warning::{task} on {profile}: credential role {id} is unavailable{details}`)
+		local report = Responses.Fill(Responses.Template("authorization.unavailable"), {
+			task = task,
+			profile = profile,
+			role = id,
+			requirements = if #requirements > 0 then table.concat(requirements, ", ") else "See the named binding in the credential catalog.",
+		})
+		Responses.Record("authorization/unavailable/" .. id, report, "warning")
 	end
 end
 

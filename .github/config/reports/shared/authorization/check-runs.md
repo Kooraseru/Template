@@ -2,15 +2,14 @@
 
 **Observed result:** {{status}}.
 
-<details open>
-<summary>Option 1: Enable neutral reporting</summary>
+## Option 1: Enable neutral reporting
+
 
 {{app_setup}}
 
-</details>
 
-<details>
-<summary>Option 2: Change how CI handles skipped work</summary>
+## Option 2: Change how CI handles skipped work
+
 
 1. [Edit execution settings]({{execution_config_url}}).
 2. In `[skip]`, set `default` to one of these values:
@@ -23,10 +22,9 @@
 
 3. Commit to the default branch. The new run uses this setting.
 
-</details>
 
-<details>
-<summary>Why this run failed and which permissions are required</summary>
+## Why this run failed and which permissions are required
+
 
 **Required Check Run repository permissions:**
 
@@ -39,5 +37,3 @@ A classic PAT cannot create Check Runs. Adding PAT scopes will not fix this
 operation. The PAT can continue serving other configured CI tasks.
 
 [GitHub Check Run requirements](https://docs.github.com/en/rest/checks/runs#create-a-check-run).
-
-</details>

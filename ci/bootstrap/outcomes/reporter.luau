@@ -44,7 +44,7 @@ function Reporter.Report(
 		end
 
 		displayed[identity] = outcome
-		failed = failed or outcome:find("fail", 1, true) ~= nil or outcome == "blocked"
+		failed = failed or Responses.FailedOutcome(outcome)
 		skipped = skipped or outcome:find("skipped", 1, true) ~= nil
 	end
 
@@ -52,7 +52,7 @@ function Reporter.Report(
 		selected_count = tostring(selectedCount),
 		color = if failed then "failure" elseif skipped then "warning" else "success",
 		result = if failed
-			then "Some work failed or was blocked. Open its details below."
+			then "Some work failed or was blocked. Review what needs attention below."
 			elseif skipped
 				then "Execution finished with skipped work. Review its outcome below."
 				else "Selected components completed successfully.",

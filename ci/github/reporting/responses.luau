@@ -370,21 +370,31 @@ local function keys<T>(map: { [string]: T }): { string }
 	return names
 end
 
+local function outcomeKind(outcome: string): string
+	local kind = outcome:match("^[%w_]+") or outcome
+	if kind == "failed" then
+		return "failure"
+	end
+	return kind
+end
+
+function Responses.FailedOutcome(outcome: string): boolean
+	local kind = outcomeKind(outcome)
+	return kind == "failure" or kind == "blocked" or kind == "abandoned" or kind == "cancelled" or kind == "timed_out"
+end
+
 local function outcomeColor(outcome: string): string
-	if outcome:find("fail", 1, true) then
+	if Responses.FailedOutcome(outcome) then
 		return "failure"
 	end
 	if outcome == "passed" or outcome == "success" then
 		return "success"
 	end
-	if outcome == "blocked" or outcome == "timed_out" then
-		return "warning"
-	end
 	return "neutral"
 end
 
 -- Keep Markdown diagnostics outside table cells where GitHub can wrap them naturally.
-local function readableNotes(markdown: string): string
+local function readableNotes(markdown: string, level: number): string
 	local lines: { string } = {}
 	local fenced = false
 	local tick = string.char(96)
@@ -392,8 +402,9 @@ local function readableNotes(markdown: string): string
 		if line:match("^%s*" .. tick .. tick .. tick) then
 			fenced = not fenced
 		elseif not fenced then
-			line = line:gsub("%*%*([^*\n]-)%*%*", "%1"):gsub("<strong>(.-)</strong>", "%1")
-			line = line:gsub("^%s*#+%s+(.-)%s*$", "%1")
+			line = line:gsub("^(#+)%s+", function(hashes)
+				return string.rep("#", math.min(6, level + #hashes - 1)) .. " "
+			end)
 			local pieces: { string } = {}
 			local inCode = false
 			local start = 1
@@ -474,36 +485,18 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 	local labels = Publication.Record(configuration().labels)
 	local anchors: { [number]: boolean } = {}
 
-	local function needsAttention(node: Branch): boolean
-		if node.outcome then
-			if node.outcome ~= "passed" and node.outcome ~= "success" then
-				return true
-			end
-			for _, entry in entries do
-				if entry.components[node.component] and (entry.color == "failure" or entry.color == "warning") then
-					return true
-				end
-			end
-			return false
-		end
-
-		for _, child in node.children do
-			if needsAttention(child) then
-				return true
-			end
-		end
-		return false
-	end
-
-	local function renderLeaf(node: Branch): (string, string)
+	local function renderLeaf(node: Branch, level: number): (string, string)
 		local attachments: { string } = {}
-		local count = 0
+		local links: { string } = {}
 
 		for _, entry in entries do
 			if not entry.components[node.component] then
 				continue
 			end
-			count += 1
+			table.insert(links, `<a href="#response-{entry.index}">Report {entry.index}</a>`)
+			if entry.color == "failure" or entry.color == "warning" or anchors[entry.index] then
+				continue
+			end
 			local label = entry.id
 
 			for _, selector in keys(labels) do
@@ -513,18 +506,16 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 				end
 			end
 
-			local anchor = ""
-			if not anchors[entry.index] then
-				anchor = '<a id="response-' .. tostring(entry.index) .. '"></a>'
-				anchors[entry.index] = true
-			end
+			anchors[entry.index] = true
+			local anchor = `<a id="response-{entry.index}"></a>`
 			table.insert(
 				attachments,
 				Responses.Fill(Responses.Template("records.record"), {
 					anchor = anchor,
+					heading = string.rep("#", level),
 					label = htmlAttribute(label),
 					component = htmlAttribute(node.name),
-					markdown = readableNotes(entry.markdown),
+					markdown = readableNotes(entry.markdown, level),
 				})
 			)
 		end
@@ -532,10 +523,8 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		local display, explanation = (node.outcome or "reported"):match("^(.-) %((.+)%)$")
 		local note = if explanation then htmlAttribute(explanation) else ""
 
-		if count > 0 then
-			note ..= (if note ~= "" then "; " else "") .. tostring(count) .. (if count == 1
-				then " attachment below"
-				else " attachments below")
+		if #links > 0 then
+			note ..= (if note ~= "" then "; " else "") .. table.concat(links, ", ")
 		end
 
 		if note == "" then
@@ -549,7 +538,7 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		return (result:gsub("\n+$", "")), table.concat(attachments, "\n\n")
 	end
 
-	local function renderGroup(node: Branch): string
+	local function renderGroup(node: Branch, level: number): string
 		local rows: { string } = {}
 		local notes: { string } = {}
 		local children: { string } = {}
@@ -557,13 +546,14 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		for _, name in keys(node.children) do
 			local child = node.children[name]
 			if child.outcome then
-				local row, details = renderLeaf(child)
+				local row, details = renderLeaf(child, math.clamp(level + 1, 3, 6))
 				table.insert(rows, row)
 				if details ~= "" then
 					table.insert(notes, details)
 				end
-			else
-				table.insert(children, renderGroup(child))
+			end
+			if next(child.children) then
+				table.insert(children, renderGroup(child, math.min(level + 1, 6)))
 			end
 		end
 
@@ -587,11 +577,11 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		local rendered = Responses.Fill(Responses.Template("components.group"), {
 			name = htmlAttribute(node.name),
 			content = content,
-			expanded = if (start and node.name == "bootstrap") or needsAttention(node) then " open" else "",
+			heading = string.rep("#", level),
 		})
 		return (rendered:gsub("\n+$", ""))
 	end
-	return renderGroup(tree)
+	return renderGroup(tree, 2)
 end
 
 function Responses.Render(
@@ -641,6 +631,9 @@ function Responses.Render(
 	end
 	local labels = Publication.Record(config.labels)
 	local attention: { string } = {}
+	local guidance = Publication.Record(config.outcome_guidance)
+	local reported: { [string]: boolean } = {}
+	local results = outcomes or {}
 
 	for _, entry in entries do
 		if entry.color ~= "warning" and entry.color ~= "failure" then
@@ -653,12 +646,33 @@ function Responses.Render(
 				break
 			end
 		end
-		-- Next-step links use the shared badge height and text color.
-		local button = badge(label, entry.color, "github", config)
-		table.insert(attention, `<a href="#response-{entry.index}">{button}</a>`)
+		local components = keys(entry.components)
+		if entry.color == "failure" then
+			for _, identity in components do
+				reported[identity] = true
+			end
+		end
+		table.insert(attention, Responses.Fill(Responses.Template("records.record"), {
+			anchor = `<a id="response-{entry.index}"></a>`,
+			heading = "###",
+			component = htmlAttribute(table.concat(components, ", ")),
+			label = htmlAttribute(label),
+			markdown = readableNotes(entry.markdown, 3),
+		}))
 	end
 
-	context.attention = table.concat(attention, " ")
+	for _, identity in keys(results) do
+		local outcome = results[identity]
+		if Responses.FailedOutcome(outcome) and not reported[identity] then
+			table.insert(attention, Responses.Fill(Responses.Template("outcome"), {
+				component = htmlAttribute(identity),
+				outcome = htmlAttribute(outcome),
+				guidance = Publication.Text(guidance[outcomeKind(outcome)]),
+			}))
+		end
+	end
+
+	context.attention = table.concat(attention, "\n\n")
 
 	local function render(node: { [string]: unknown }): string
 		if node.if_value and (context[Publication.Text(node.if_value)] or "") == "" then

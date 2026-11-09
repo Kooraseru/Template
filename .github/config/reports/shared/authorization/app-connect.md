@@ -2,8 +2,8 @@ Choose an App connection method, then save its credentials using one of the
 methods below. Only credential names belong in configuration. Store the private
 key in GitHub Actions secrets.
 
-<details>
-<summary>Connect an existing App</summary>
+## Connect an existing App
+
 
 {{app_existing}}
 
@@ -12,11 +12,8 @@ permission update:
 
 {{app_registration_permissions}}
 
-</details>
 
-<details>
-<summary>Register and connect a new App</summary>
+## Register and connect a new App
+
 
 {{app_registration}}
-
-</details>

@@ -31,8 +31,7 @@ The apply component tries:
    `app_private_key` roles, requesting **Organization Projects: write**. Repository
    Projects permission alone is insufficient. Install it for the organization
    and repositories it needs to link.
-2. The secret named by `roles.projects_token` in `.github/config/credentials.json`, currently
-   `CI_PROJECTS_TOKEN`. This can hold a Projects-capable App installation/user
+2. The secret named by `roles.projects_token` in `.github/config/credentials.json`. This can hold a Projects-capable App installation/user
    token or PAT. A classic PAT needs `project` scope and access to linked private
    repositories where applicable. Personal-account Projects need user authorization.
 

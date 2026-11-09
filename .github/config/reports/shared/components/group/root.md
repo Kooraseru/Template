@@ -1,6 +1,3 @@
-<details{{expanded}}>
-<summary><code>{{name}}</code></summary>
+{{heading}} {{name}}
 
 {{content}}
-
-</details>
