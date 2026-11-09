@@ -1,0 +1,2 @@
+local RETRY_LIMIT = 10_000
+return RETRY_LIMIT

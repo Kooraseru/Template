@@ -1,0 +1,6 @@
+provides = ["packages.generated"]
+requires = ["build.completed"]
+inputs = [".github/distribution/packages/settings.toml", ".github/distribution/packages/*/package.toml", ".github/distribution/packages/*/description.md"]
+outputs = ["build/github/packages/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"

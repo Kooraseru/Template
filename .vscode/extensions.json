@@ -1,7 +1,6 @@
 {
 	"recommendations": [
-		"kooraseru-hub.preflight",
-		"JohnnyMorganz.stylua",
+		"Kooraseru.workbench-bridge",
 		"JohnnyMorganz.luau-lsp"
 	]
 }

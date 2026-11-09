@@ -1,0 +1,8 @@
+[spacing]
+small = 4
+medium = 8
+large = 12
+
+[colors]
+text = "#ebebeb"
+panel = "#181a1e"

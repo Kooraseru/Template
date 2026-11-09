@@ -1,6 +1,0 @@
-provides = ["github.milestones.planned"]
-requires = []
-inputs = ["repo/content/releases/releases.json"]
-outputs = ["build/github/milestones/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"

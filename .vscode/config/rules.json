@@ -1,0 +1,39 @@
+{
+  "defaults": {
+    "severity": "warning",
+    "fixtureSeverity": "info"
+  },
+  "rules": {
+    "luau/module-roots": {
+      "severity": "info"
+    },
+    "luau/phase-comments": {
+      "severity": "info"
+    },
+    "luau/file-system": {
+      "settings": {
+        "sectionMarkers": {
+          "allowed": [
+            "Services",
+            "Modules",
+            "Types",
+            "Constants",
+            "Variables",
+            "Helpers",
+            "Constructor",
+            "Functions",
+            "Methods",
+            "Lifecycle",
+            "Initialization"
+          ],
+          "disallowed": [
+            "Imports",
+            "Module",
+            "Public Methods",
+            "Private Methods"
+          ]
+        }
+      }
+    }
+  }
+}

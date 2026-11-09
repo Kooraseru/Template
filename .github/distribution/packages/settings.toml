@@ -1,0 +1,5 @@
+# Shared GitHub Packages publishing policy. Each direct package directory is a package.
+[packages]
+# skip: preserve an existing version; fail: stop; replace: update where supported.
+# Registry adapters must fail clearly when replacement cannot be honored.
+on_existing = "replace"

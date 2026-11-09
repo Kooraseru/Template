@@ -1,6 +1,0 @@
-provides = ["branches.published"]
-requires = ["build.completed", "branches.generated"]
-inputs = ["build/github/branches/**", "repo/config/github.toml"]
-outputs = []
-events = ["push"]
-boundary = "privileged"

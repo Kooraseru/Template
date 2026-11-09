@@ -1,0 +1,12 @@
+{
+  "release": {
+    "on_existing": "replace",
+    "source": "HEAD",
+    "assets": [
+      "build/run/ci-execution/artifacts/application/*.exe"
+    ],
+    "format": "semver",
+    "prerelease_identifier": "pre",
+    "allow_build_metadata": false
+  }
+}

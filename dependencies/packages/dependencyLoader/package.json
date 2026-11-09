@@ -1,0 +1,8 @@
+{
+	"name": "workspace-dependency-loader",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=24"
+	}
+}

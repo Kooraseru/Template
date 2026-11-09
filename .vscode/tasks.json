@@ -1,14 +1,4 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "CI: Run local workflows",
-			"type": "process",
-			"command": "bash",
-			"args": ["dependencies/local-actions/run.sh"],
-			"options": { "cwd": "${workspaceFolder}" },
-			"runOptions": { "instanceLimit": 1 },
-			"problemMatcher": []
-		}
-	]
+  "version": "2.0.0",
+  "tasks": []
 }

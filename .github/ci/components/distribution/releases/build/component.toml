@@ -1,0 +1,6 @@
+provides = ["releases.generated"]
+requires = ["build.completed"]
+inputs = [".github/distribution/releases/settings.json", ".github/distribution/releases/*/release.json", ".github/distribution/releases/*/notes.md"]
+outputs = ["build/github/releases/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"

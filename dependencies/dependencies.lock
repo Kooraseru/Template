@@ -1,0 +1,277 @@
+{
+  "version": 2,
+  "entries": {
+    "luau.ruleLinter": {
+      "provider": "local",
+      "fingerprint": "61c59d461c7a57f00fc6b63b4d238f1e980dfeb5fc4f0003f00e53dbaf68f65d",
+      "resolution": null
+    },
+    "luau.lute": {
+      "provider": "github-release",
+      "fingerprint": "34cfe210b0b973862cd1ce8285d1fbcff54ad05bc926edf9f08b63a89604ab50",
+      "resolution": {
+        "version": "v1.0.1-nightly.20261104",
+        "platforms": {
+          "win32-x64": {
+            "asset": "lute-windows-x86_64.zip",
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-windows-x86_64.zip",
+            "digest": "sha256:ae92b5d2af1efb2e1405cab93169ffe3beefd9a5bc185c086ac3211a91f74727"
+          },
+          "win32-arm64": {
+            "asset": "lute-windows-x86_64.zip",
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-windows-x86_64.zip",
+            "digest": "sha256:ae92b5d2af1efb2e1405cab93169ffe3beefd9a5bc185c086ac3211a91f74727"
+          },
+          "linux-x64": {
+            "asset": "lute-linux-x86_64.zip",
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-linux-x86_64.zip",
+            "digest": "sha256:adfc6547080f79b9a0e9b88458564b197f82931ad0484f372cb7ad20f679e846"
+          },
+          "linux-arm64": {
+            "asset": "lute-linux-aarch64.zip",
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-linux-aarch64.zip",
+            "digest": "sha256:32659ec8cffaadf6a2d14ab39942bd6eb694990f455f793c212e974c8878f811"
+          },
+          "darwin-arm64": {
+            "asset": "lute-macos-aarch64.zip",
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-macos-aarch64.zip",
+            "digest": "sha256:d90f3d47876ec05d04c41d0c7371b5c587d1ba590e9cf7e7d517d438978745fb"
+          }
+        }
+      }
+    },
+    "tools.dependencyLoader": {
+      "provider": "local",
+      "fingerprint": "7909d6d60e024a82be443d21e7125a8a345710785c9dbd32000b373bef6a6305",
+      "resolution": null
+    },
+    "tools.dataFormats": {
+      "provider": "local",
+      "fingerprint": "eae7abf81ce9d49593afe71d57bb9a202298fbd6abf4cc841aedef950df8b759",
+      "resolution": null
+    },
+    "tools.preflightChecker": {
+      "provider": "local",
+      "fingerprint": "6d2bd310536728197b3bea9be4d82a82f30b995eeee5d434f238060f981ffd52",
+      "resolution": null
+    },
+    "tools.editorIntegration": {
+      "provider": "local",
+      "fingerprint": "d3eae08b05ea7bacbd495741017b5943762e7cf0b3d2a9d4ee9777be6fa141ef",
+      "resolution": null
+    },
+    "tools.workbenchBridgeClient": {
+      "provider": "local",
+      "fingerprint": "768df3b8d4147985d4c5e467a93f92f63791019a4e8a7c3da606fb05af4a9c81",
+      "resolution": null
+    },
+    "tools.pandoc": {
+      "provider": "github-release",
+      "fingerprint": "0e3fe578b9e56ca82814af94b60eeec380592ada39dacc2d893706bcfb2b67a3",
+      "resolution": {
+        "version": "3.13",
+        "platforms": {
+          "win32-x64": {
+            "asset": "pandoc-3.13-windows-x86_64.zip",
+            "url": "https://github.com/jgm/pandoc/releases/download/3.13/pandoc-3.13-windows-x86_64.zip",
+            "digest": "sha256:23e1f2e978a3df80db8bf65c9c59534f41a23140480cfb4f783a882ab7dc6a4e"
+          },
+          "win32-arm64": {
+            "asset": "pandoc-3.13-windows-x86_64.zip",
+            "url": "https://github.com/jgm/pandoc/releases/download/3.13/pandoc-3.13-windows-x86_64.zip",
+            "digest": "sha256:23e1f2e978a3df80db8bf65c9c59534f41a23140480cfb4f783a882ab7dc6a4e"
+          },
+          "linux-x64": {
+            "asset": "pandoc-3.13-linux-amd64.tar.gz",
+            "url": "https://github.com/jgm/pandoc/releases/download/3.13/pandoc-3.13-linux-amd64.tar.gz",
+            "digest": "sha256:38aa33b325a2bc96a4c39409631212db55702f564250bcdbead180b3bf646389"
+          },
+          "linux-arm64": {
+            "asset": "pandoc-3.13-linux-arm64.tar.gz",
+            "url": "https://github.com/jgm/pandoc/releases/download/3.13/pandoc-3.13-linux-arm64.tar.gz",
+            "digest": "sha256:21e1d4ba09bd0b334590d204580fd4f6629b21be4ab6a32b26cc98982e9e0c68"
+          },
+          "darwin-x64": {
+            "asset": "pandoc-3.13-x86_64-macOS.zip",
+            "url": "https://github.com/jgm/pandoc/releases/download/3.13/pandoc-3.13-x86_64-macOS.zip",
+            "digest": "sha256:1823278715aa405aaf21b59cde5dc789346aa8d4fc307467f9a9ee84162bedc5"
+          },
+          "darwin-arm64": {
+            "asset": "pandoc-3.13-arm64-macOS.zip",
+            "url": "https://github.com/jgm/pandoc/releases/download/3.13/pandoc-3.13-arm64-macOS.zip",
+            "digest": "sha256:f436d18bebbfb3ddd326597686dacab9fac5dc23bd060495020f35a28a43a7c3"
+          }
+        }
+      }
+    },
+    "tools.actionsLock": {
+      "provider": "github-release",
+      "fingerprint": "37e62866a1ef888fbec5aae6663f76a4021f274a25d4105a5f762395cea9180e",
+      "resolution": {
+        "version": "v0.4.1",
+        "platforms": {
+          "win32-x64": {
+            "asset": "windows-amd64.exe",
+            "url": "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/windows-amd64.exe",
+            "digest": "sha256:d3582b58f907c145d673f5f31ebfa21a6570df04f3aca9cce667d129a3c607dc"
+          },
+          "win32-arm64": {
+            "asset": "windows-arm64.exe",
+            "url": "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/windows-arm64.exe",
+            "digest": "sha256:6e769101eb05342b1e29585f39aa14b8a0be8cac8fe8cb9fd0b21177abe7294f"
+          },
+          "linux-x64": {
+            "asset": "linux-amd64",
+            "url": "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-amd64",
+            "digest": "sha256:39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e"
+          },
+          "linux-arm64": {
+            "asset": "linux-arm64",
+            "url": "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-arm64",
+            "digest": "sha256:aee61c993da36a5f09be2c77e6e4a1a22542a1b30ded4996bf8301c15dcf2b39"
+          },
+          "darwin-x64": {
+            "asset": "darwin-amd64",
+            "url": "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/darwin-amd64",
+            "digest": "sha256:4ef64599440398999f184321d5237df131721434901ecaaf3da6aa018bdd1f8f"
+          },
+          "darwin-arm64": {
+            "asset": "darwin-arm64",
+            "url": "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/darwin-arm64",
+            "digest": "sha256:f205ea5dbbda67165e08aab1fb6395290ca62f0a038bf27d4b684abd0816635c"
+          }
+        }
+      }
+    },
+    "workspace.npm": {
+      "provider": "npm",
+      "fingerprint": "6854cad5804917728f124f0c9efa9a93db3385c992845b133d7f92000ad316c8",
+      "resolution": {
+        "name": "template-workspace-tools",
+        "lockfileVersion": 3,
+        "requires": true,
+        "packages": {
+          "": {
+            "name": "template-workspace-tools",
+            "dependencies": {
+              "@types/node": "24.10.1",
+              "ajv": "8.17.1",
+              "jsonc-parser": "3.3.1",
+              "preflight": "https://codeload.github.com/Kooraseru-Hub/Preflight/tar.gz/a862ebdcb784a4e396224eb39c458ec7c864a4b1",
+              "typescript": "5.9.3",
+              "yaml": "2.8.1"
+            }
+          },
+          "node_modules/@types/node": {
+            "version": "24.10.1",
+            "resolved": "https://registry.npmjs.org/@types/node/-/node-24.10.1.tgz",
+            "integrity": "sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ==",
+            "license": "MIT",
+            "dependencies": {
+              "undici-types": "~7.16.0"
+            }
+          },
+          "node_modules/ajv": {
+            "version": "8.17.1",
+            "resolved": "https://registry.npmjs.org/ajv/-/ajv-8.17.1.tgz",
+            "integrity": "sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==",
+            "license": "MIT",
+            "dependencies": {
+              "fast-deep-equal": "^3.1.3",
+              "fast-uri": "^3.0.1",
+              "json-schema-traverse": "^1.0.0",
+              "require-from-string": "^2.0.2"
+            },
+            "funding": {
+              "type": "github",
+              "url": "https://github.com/sponsors/epoberezkin"
+            }
+          },
+          "node_modules/fast-deep-equal": {
+            "version": "3.1.3",
+            "resolved": "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz",
+            "integrity": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
+            "license": "MIT"
+          },
+          "node_modules/fast-uri": {
+            "version": "3.1.9",
+            "resolved": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.9.tgz",
+            "integrity": "sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==",
+            "funding": [
+              {
+                "type": "github",
+                "url": "https://github.com/sponsors/fastify"
+              },
+              {
+                "type": "opencollective",
+                "url": "https://opencollective.com/fastify"
+              }
+            ],
+            "license": "BSD-3-Clause"
+          },
+          "node_modules/json-schema-traverse": {
+            "version": "1.0.0",
+            "resolved": "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz",
+            "integrity": "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
+            "license": "MIT"
+          },
+          "node_modules/jsonc-parser": {
+            "version": "3.3.1",
+            "resolved": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+            "integrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+            "license": "MIT"
+          },
+          "node_modules/preflight": {
+            "version": "0.1.1",
+            "resolved": "https://codeload.github.com/Kooraseru-Hub/Preflight/tar.gz/a862ebdcb784a4e396224eb39c458ec7c864a4b1",
+            "integrity": "sha512-HwhgufZLnFkdqDWlTKoaZPu1+7JNaVhRw5OTVn83fAot0mkM5QbCg4SuIEVgcmCfyXbB4dE/c1/MQy2lnFwC+g==",
+            "license": "ISC",
+            "bin": {
+              "preflight": "bin/preflight.js"
+            },
+            "engines": {
+              "node": ">=22"
+            }
+          },
+          "node_modules/require-from-string": {
+            "version": "2.0.2",
+            "resolved": "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
+            "integrity": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
+            "license": "MIT",
+            "engines": {
+              "node": ">=0.10.0"
+            }
+          },
+          "node_modules/typescript": {
+            "version": "5.9.3",
+            "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+            "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+            "license": "Apache-2.0",
+            "bin": {
+              "tsc": "./bin/tsc",
+              "tsserver": "./bin/tsserver"
+            },
+            "engines": {
+              "node": ">=14.17"
+            }
+          },
+          "node_modules/undici-types": {
+            "version": "7.16.0",
+            "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-7.16.0.tgz",
+            "integrity": "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="
+          },
+          "node_modules/yaml": {
+            "version": "2.8.1",
+            "resolved": "https://registry.npmjs.org/yaml/-/yaml-2.8.1.tgz",
+            "integrity": "sha512-lcYcMxX2PO9XMGvAJkJ3OsNMw+/7FKes7/hgerGUYWIoWu5j/+YQqcZr5JnPZWzOsEBgMbSbiSTn/dv/69Mkpw==",
+            "bin": "./bin.mjs",
+            "license": "ISC",
+            "engines": {
+              "node": ">= 14.6"
+            }
+          }
+        }
+      }
+    }
+  }
+}

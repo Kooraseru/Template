@@ -1,0 +1,6 @@
+provides = ["build.completed"]
+requires = []
+inputs = ["source/**"]
+outputs = ["build/run/ci-execution/artifacts/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"

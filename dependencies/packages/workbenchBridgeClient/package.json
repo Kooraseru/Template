@@ -1,0 +1,7 @@
+{
+	"name": "workbench-bridge-client",
+	"private": true,
+	"main": "index.js",
+	"types": "client/index.d.ts",
+	"engines": { "node": ">=22" }
+}

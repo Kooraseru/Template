@@ -1,0 +1,7 @@
+provides = ["github.projects.synced"]
+requires = ["github.projects.planned"]
+inputs = [".github/work/projects/**", ".github/targets.toml", ".github/automation/authorization/**", ".github/automation/responses/**", "build/github/project-plans/**", ".github/ci/components/work/projects/sync/query.graphql"]
+outputs = ["build/github/project-sync/**"]
+events = ["push"]
+boundary = "privileged"
+credentials = ["app_id", "app_private_key", "projects_token"]

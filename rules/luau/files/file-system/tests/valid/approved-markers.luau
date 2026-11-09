@@ -1,0 +1,13 @@
+--!strict
+--# Services
+--# Modules
+--# Types
+--# Constants
+--# Variables
+--# Helpers
+--# Constructor
+--# Functions
+--# Methods
+--# Lifecycle
+--# Initialization
+return true
