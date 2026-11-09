@@ -1,0 +1,8 @@
+**
+!dependencies/
+!dependencies/**
+dependencies/**/node_modules/
+dependencies/**/.env*
+dependencies/**/.npmrc
+dependencies/**/*.pem
+dependencies/**/*.key

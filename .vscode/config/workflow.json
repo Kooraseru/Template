@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "command": ["node", "dependencies/packages/dependencyLoader/index.ts"],
+    "command": ["node", "dependencies/packages/core/dependencyLoader/index.ts"],
     "env": { "VSCODE_WORKSPACE_SETUP": "1" },
     "notification": "Preparing workspace providers",
     "status": {
@@ -10,7 +10,7 @@
     }
   },
   "checks": {
-    "command": ["node", "dependencies/packages/preflightChecker/index.ts", "--ci"],
+    "command": ["node", "dependencies/packages/checks/preflightChecker/index.ts", "--ci"],
     "notification": "Running CI Preflight",
     "status": {
       "passed": "$(check) CI Preflight passed",
@@ -19,12 +19,12 @@
     }
   },
   "rules": {
-    "command": ["node", "dependencies/packages/preflightChecker/index.ts", "--rules"],
+    "command": ["node", "dependencies/packages/checks/preflightChecker/index.ts", "--rules"],
     "autoRefresh": true,
     "notification": "Checking repository rules"
   },
   "watch": {
-    "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "source/**", "rules/luau/**", ".luaurc", "tsconfig.json"],
+    "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "ci/**", "source/**", "rules/luau/**", ".luaurc", "tsconfig.json"],
     "setupInputs": ["dependencies/dependencies.json", "dependencies/dependencies.lock", ".vscode/config/luau/.luaurc", ".vscode/config/typescript/tsconfig.json"]
   }
 }

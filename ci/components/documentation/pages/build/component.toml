@@ -1,0 +1,6 @@
+provides = ["pages.generated"]
+requires = []
+inputs = [".github/docs/templates/**", ".github/docs/i18n/**"]
+outputs = ["build/github/pages/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"

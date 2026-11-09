@@ -1,7 +1,0 @@
-provides = ["github.rulesets.synced"]
-requires = ["github.rulesets.planned"]
-inputs = [".github/governance/rulesets/**", ".github/targets.toml", ".github/automation/authorization/rulesets.toml", "build/github/ruleset-plans/**"]
-outputs = ["build/github/ruleset-sync/**"]
-events = ["push"]
-boundary = "privileged"
-credentials = ["app_id", "app_private_key", "rulesets_token"]

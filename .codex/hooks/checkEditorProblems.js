@@ -8,7 +8,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "../..");
 
 function readProblems() {
-	const client = path.join(root, "dependencies/packages/editorIntegration/client.cjs");
+	const client = path.join(root, "dependencies/packages/editor/editorIntegration/client.cjs");
 	const env = { ...process.env };
 	if (!env.WORKBENCH_BRIDGE_SESSION) {
 		const selection = path.join(root, "build/run/editor-problems/session-file.txt");

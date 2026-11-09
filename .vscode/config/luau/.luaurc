@@ -9,13 +9,13 @@
     "workspace": "../../..",
     "dependencies": "@workspace/dependencies",
 
-    "ci": "@workspace/.github/ci",
+    "ci": "@workspace/ci",
     "tooling": "@workspace/tooling",
     "build": "@workspace/build/run",
 
     // Internal dependencies/tooling
-    "ruleLinter": "@dependencies/packages/ruleLinter",
-    "formats": "@dependencies/packages/dataFormats",
+    "ruleLinter": "@dependencies/packages/checks/ruleLinter",
+    "formats": "@dependencies/packages/core/dataFormats",
 
     // External dependencies
     "lute": "@workspace/build/dependencies/types/lute",

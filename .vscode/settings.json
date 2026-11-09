@@ -2,7 +2,7 @@
 {
 	// Generic Workbench Bridge external workspace client.
 	"workbenchBridge.workspaceCommands": [
-		["node", "dependencies/packages/editorIntegration/client.cjs"]
+		["node", "dependencies/packages/editor/editorIntegration/client.cjs"]
 	],
 	// File Associations
 	"files.associations": {
@@ -68,9 +68,9 @@
 		},
 		{
 			"fileMatch": [
-				".github/work/projects/**/project.json"
+				".github/config/projects/**/project.json"
 			],
-			"url": "./.github/work/projects/project.schema.json"
+			"url": "./.github/config/projects/project.schema.json"
 		}
 	]
 }

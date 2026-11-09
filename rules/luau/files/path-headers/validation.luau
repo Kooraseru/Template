@@ -7,7 +7,7 @@ local Diagnostic = require("@ruleLinter/diagnostic")
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local path = context.path:gsub("\\", "/")
 	if not path:match("%.luau$") or not (
-		path:match("^source/") or path:match("^%.github/ci/") or path:match("^dependencies/packages/")
+		path:match("^source/") or path:match("^ci/") or path:match("^dependencies/packages/")
 	) then
 		return {}
 	end

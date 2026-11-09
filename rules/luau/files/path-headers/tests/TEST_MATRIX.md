@@ -7,4 +7,4 @@
 | invalid/mismatch.luau | source/mismatch.luau | One error at 1:1 |
 | invalid/missing.luau | source/tests/sample.luau | Excluded |
 
-Run `node dependencies/packages/dependencyLoader/index.ts --exec luau.lute run rules/luau/files/path-headers/tests/run.luau` from the repository root.
+Run `node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run rules/luau/files/path-headers/tests/run.luau` from the repository root.

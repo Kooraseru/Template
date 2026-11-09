@@ -1,6 +1,0 @@
-provides = ["branches.generated"]
-requires = []
-inputs = [".github/governance/branches/**", "source/**", "docs/templates/**", "docs/i18n/**"]
-outputs = ["build/github/branches/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"

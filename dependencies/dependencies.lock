@@ -3,7 +3,7 @@
   "entries": {
     "luau.ruleLinter": {
       "provider": "local",
-      "fingerprint": "61c59d461c7a57f00fc6b63b4d238f1e980dfeb5fc4f0003f00e53dbaf68f65d",
+      "fingerprint": "38df318530f67ad4c04420f99114e432872b201f184f2a3c3c41317b6a48823e",
       "resolution": null
     },
     "luau.lute": {
@@ -42,27 +42,32 @@
     },
     "tools.dependencyLoader": {
       "provider": "local",
-      "fingerprint": "7909d6d60e024a82be443d21e7125a8a345710785c9dbd32000b373bef6a6305",
+      "fingerprint": "142a84230b46e08d798a03440a096daec836635b3de4d07c0d13993f7b54df0c",
       "resolution": null
     },
     "tools.dataFormats": {
       "provider": "local",
-      "fingerprint": "eae7abf81ce9d49593afe71d57bb9a202298fbd6abf4cc841aedef950df8b759",
+      "fingerprint": "2c906504580562e394b12e3e8e1278e948291f64afdbcf769224b8ad09d09fa2",
       "resolution": null
     },
     "tools.preflightChecker": {
       "provider": "local",
-      "fingerprint": "6d2bd310536728197b3bea9be4d82a82f30b995eeee5d434f238060f981ffd52",
+      "fingerprint": "70c4bb8e345f116de5a9eca6af9229f80e37ce6d3c2644b8b9960058d60fbcf9",
+      "resolution": null
+    },
+    "tools.localActions": {
+      "provider": "local",
+      "fingerprint": "6913ebcf023b58aa67ae096f9eb6d80484e1a61af10827b1859d22a9a862920a",
       "resolution": null
     },
     "tools.editorIntegration": {
       "provider": "local",
-      "fingerprint": "d3eae08b05ea7bacbd495741017b5943762e7cf0b3d2a9d4ee9777be6fa141ef",
+      "fingerprint": "bd70e345a90be30b01c8b3c2b7da59edf7f9d51a9c9e6fa3e56efe5d61c1a1d3",
       "resolution": null
     },
     "tools.workbenchBridgeClient": {
       "provider": "local",
-      "fingerprint": "768df3b8d4147985d4c5e467a93f92f63791019a4e8a7c3da606fb05af4a9c81",
+      "fingerprint": "98b5c03643394928d98e0c1836d8469f33a65b26f854fc615a1673cdb6702cbd",
       "resolution": null
     },
     "tools.pandoc": {

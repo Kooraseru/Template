@@ -1,4 +1,13 @@
 {
   "version": "2.0.0",
-  "tasks": []
+  "tasks": [
+    {
+      "label": "Run GitHub Actions locally",
+      "type": "process",
+      "command": "node",
+      "args": ["${workspaceFolder}/dependencies/packages/ci/localActions/run.cjs"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
 }

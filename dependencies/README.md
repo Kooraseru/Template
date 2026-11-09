@@ -1,6 +1,6 @@
 # Workspace dependencies
 
-Edit `dependencies.json` and run `node dependencies/packages/dependencyLoader/index.ts --update-lock` to resolve changes. Commit the manifest and `dependencies.lock` together. Normal setup reads the lock and installs into `build/dependencies/`. The npm provider writes a native manifest and lock under `build/dependencies/npm/` and runs `npm ci --ignore-scripts`. Release executables live under `build/dependencies/bin/`. Use `--exec luau.lute --version` to set up dependencies and run a provider's executable.
+Edit `dependencies.json` and run `node dependencies/packages/core/dependencyLoader/index.ts --update-lock` to resolve changes. Commit the manifest and `dependencies.lock` together. Normal setup reads the lock and installs into `build/dependencies/`. The npm provider writes a native manifest and lock under `build/dependencies/npm/` and runs `npm ci --ignore-scripts`. Release executables live under `build/dependencies/bin/`. Use `--exec luau.lute --version` to set up dependencies and run a provider's executable.
 
 ## Provider declarations
 

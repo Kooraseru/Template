@@ -1,0 +1,6 @@
+provides = ["github.milestones.planned"]
+requires = []
+inputs = [".github/config/issues/milestones/records/**"]
+outputs = ["build/github/milestones/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"

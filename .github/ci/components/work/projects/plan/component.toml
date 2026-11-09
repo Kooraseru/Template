@@ -1,6 +1,0 @@
-provides = ["github.projects.planned"]
-requires = []
-inputs = [".github/work/projects/**", ".github/targets.toml"]
-outputs = ["build/github/project-plans/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"

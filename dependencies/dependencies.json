@@ -14,7 +14,7 @@
     "luau.ruleLinter": {
       "provider": "local",
       "options": {
-        "path": "packages/ruleLinter"
+        "path": "packages/checks/ruleLinter"
       }
     },
     "luau.lute": {
@@ -60,31 +60,35 @@
     "tools.dependencyLoader": {
       "provider": "local",
       "options": {
-        "path": "packages/dependencyLoader"
+        "path": "packages/core/dependencyLoader"
       }
     },
     "tools.dataFormats": {
       "provider": "local",
       "options": {
-        "path": "packages/dataFormats"
+        "path": "packages/core/dataFormats"
       }
     },
     "tools.preflightChecker": {
       "provider": "local",
       "options": {
-        "path": "packages/preflightChecker"
+        "path": "packages/checks/preflightChecker"
       }
+    },
+    "tools.localActions": {
+      "provider": "local",
+      "options": { "path": "packages/ci/localActions" }
     },
     "tools.editorIntegration": {
       "provider": "local",
       "options": {
-        "path": "packages/editorIntegration"
+        "path": "packages/editor/editorIntegration"
       }
     },
     "tools.workbenchBridgeClient": {
       "provider": "local",
       "options": {
-        "path": "packages/workbenchBridgeClient"
+        "path": "packages/editor/workbenchBridgeClient"
       }
     },
     "tools.pandoc": {

@@ -1,12 +1,12 @@
 # CI architecture and operating rules
 
-GitHub automation owns its configuration and implementation under `.github/`. The committed workflow is `.github/workflows/ci.yml`; it starts the scheduler in `.github/ci/entry.luau`. Do not add another maintained workflow or move planning and scheduling into YAML.
+GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. The committed workflow is `.github/workflows/ci.yml`; it starts the scheduler in `ci/entry.luau`. Do not add another maintained workflow or move planning and scheduling into YAML.
 
 ## Discovery and component contracts
 
-The Luau bootstrap recursively discovers components under `.github/ci/components/`. A component is identified by its path relative to that directory and owns a `component.toml`, `init.luau`, and private implementation modules. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
+The Luau bootstrap recursively discovers components under `ci/components/`. A component is identified by its path relative to that directory and owns a `component.toml`, `init.luau`, and private implementation modules. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
 
-`.github/automation/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
+`.github/config/ci/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
 
 Host build implementations belong under `source/hosts/<host>/`. The source build component discovers `host.toml` files, loads the adjacent `init.luau`, and checks all declared artifact paths. Hosts own their toolchain, artifact list, and optional launch artifact. The CI launcher does not maintain host names or executable lookups and must work when a project has no launchable application.
 
@@ -22,13 +22,13 @@ Generated output belongs under ignored `build/`. GitHub products use `build/gith
 
 Configuration and authored records live with their owner:
 
-- `.github/targets.toml` stores repository identity, aliases, and credential names.
-- `.github/governance/branches/` contains one branch source record per branch.
-- `.github/governance/rulesets/` contains desired ruleset records.
-- `.github/work/` owns labels, milestones, and project blueprints.
-- `.github/distribution/` owns release, package, and attestation records.
+- `.github/config/targets.toml` stores repository identity, aliases, and credential names.
+- `.github/config/branches/` contains one branch source record per branch.
+- `.github/config/rulesets/` contains desired ruleset records.
+- `.github/config/issues/` owns labels and milestones. `.github/config/projects/` owns project blueprints.
+- `.github/config/publishing/` owns release, package, and attestation records.
 - `.github/publication/` owns Pages and Wiki publication settings when supported.
-- `.github/automation/` owns CI policy, authorization, tool pins, and response text.
+- `.github/config/ci/` owns CI policy. Permissions and report templates live in `config/permissions/` and `config/reports/` under `.github/`.
 
 Discover records from their owner directory. Adding a host, milestone, branch, project, ruleset, release, or package record should not require a CI registry edit. Malformed present records fail with a path-specific diagnostic. Preserve user project items, fields, options, and views during reconciliation. Preserve the existing source-gate and source-admin enforcement semantics. Do not treat planned Wiki ownership as implemented publication.
 

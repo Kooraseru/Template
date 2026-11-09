@@ -1,6 +1,6 @@
 # Declarative-data acceptance matrix
 
-The separate test system executes each fixture. Run the fixture suite from the repository root with `node dependencies/packages/dependencyLoader/index.ts --exec luau.lute run rules/luau/design/declarative-data/tests/run.luau`. Production validation never reads this directory.
+The separate test system executes each fixture. Run the fixture suite from the repository root with `node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run rules/luau/design/declarative-data/tests/run.luau`. Production validation never reads this directory.
 
 | Case | Expected | Fixture |
 | --- | --- | --- |
