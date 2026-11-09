@@ -51,11 +51,18 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Resolve bootstrap credential names
+        id: credentials
+        if: needs.select-provider.outputs.context != 'true'
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --credential-names
       - name: Start bootstrap
         env:
           CI_PROFILE: source-ci
           CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
+          CI_CREDENTIAL_APP_ID: ${{ needs.select-provider.outputs.context != 'true' && (secrets[steps.credentials.outputs.app_id] || vars[steps.credentials.outputs.app_id]) || '' }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ needs.select-provider.outputs.context != 'true' && secrets[steps.credentials.outputs.app_private_key] || '' }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ needs.select-provider.outputs.context != 'true' && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
           CI_SECRETS: ${{ needs.select-provider.outputs.context == 'true' && toJSON(secrets) || '{}' }}
           CI_VARIABLES: ${{ needs.select-provider.outputs.context == 'true' && toJSON(vars) || '{}' }}
         run: build/dependencies/bin/lute/lute run ci/entry.luau

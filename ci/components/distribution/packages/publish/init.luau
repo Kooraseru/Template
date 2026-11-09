@@ -1,10 +1,10 @@
 -- ci/components/distribution/packages/publish/init.luau
 --!strict
 
-local Publication = require("@ci/github/publication")
-local Fs = require("@std/fs")
-local Json = require("@formats/json")
-local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+const Publication = require("@ci/github/publication")
+const Fs = require("@std/fs")
+const Json = require("@formats/json")
+const ConflictPolicy = require("@ci/github/publication/conflictPolicy")
 
 local Component = {}
 Component.__index = Component

@@ -75,7 +75,7 @@ function load(file = ".github/config/credentials.json") {
 		const transports = sources.filter(source => source.provider !== "command");
 		if (transports.length > 1) throw new Error("Choose one hosted credential transport per profile");
 		const [transport] = transports;
-		profile.githubContext = transport?.provider === "github-context";
+		profile.githubContext = transport?.provider === "github-context" && transport.discovery !== "named";
 		profile.contextKeys = profile.githubContext ? (transport.secrets ?? []) : [];
 		profile.usesCommands = sources.some(source => source.provider === "command");
 		if (name === "source-ci") profile.credentialProvider = transport?.provider ?? "github-context";

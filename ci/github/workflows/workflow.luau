@@ -76,8 +76,9 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 
 		local profile = configuration.profiles["source-ci"]
-		-- Generated jobs bind individual catalog keys or use the configured broker.
-		local active = #credentialRoles > 0 and Process.env.ACT ~= "true" and (profile.credentialProvider == "oidc" or profile.usesCommands)
+		-- The selector needs the Actions inventory to discover capability-based credentials.
+		local active = #credentialRoles > 0 and Process.env.ACT ~= "true"
+			and (profile.credentialProvider == "oidc" or profile.usesCommands or profile.githubContext)
 		local oidc = active and profile.credentialProvider == "oidc"
 		local credentialEnvironment: { [string]: string } = {}
 		if active then
@@ -86,6 +87,10 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				run = "node dependencies/packages/core/dependencyLoader/index.ts",
 			})
 			credentialEnvironment.CI_SELECTOR_ROLES = table.concat(credentialRoles, ",")
+			if profile.githubContext then
+				credentialEnvironment.CI_SECRETS = "${{ toJSON(secrets) }}"
+				credentialEnvironment.CI_VARIABLES = "${{ toJSON(vars) }}"
+			end
 		end
 		if #credentialRoles > 0 then
 			appendStep(steps, {
