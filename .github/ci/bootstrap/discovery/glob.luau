@@ -23,6 +23,7 @@ local function matchSegment(name: string, pattern: string): boolean
 	local expression = expressions[pattern]
 	if not expression then
 		local fragments: { string } = { "^" }
+
 		for index = 1, #pattern do
 			local character = pattern:sub(index, index)
 			if character == "*" then
@@ -35,6 +36,7 @@ local function matchSegment(name: string, pattern: string): boolean
 				table.insert(fragments, character)
 			end
 		end
+
 		table.insert(fragments, "$")
 		expression = table.concat(fragments)
 		expressions[pattern] = expression
@@ -42,16 +44,21 @@ local function matchSegment(name: string, pattern: string): boolean
 	return name:match(expression) ~= nil
 end
 
+--[[
+	Matches the remaining path segments. A recursive wildcard can match nothing or consume one segment and stay active.
+]]
 local function matches(path: { string }, pattern: { string }, position: number, index: number): boolean
 	if index > #pattern then
 		return position > #path
 	end
+
 	if pattern[index] == "**" then
 		if matches(path, pattern, position, index + 1) then
 			return true
 		end
 		return position <= #path and matches(path, pattern, position + 1, index)
 	end
+
 	if position > #path or not matchSegment(path[position], pattern[index]) then
 		return false
 	end
@@ -86,6 +93,9 @@ function Glob.Find(pattern: string, root: string?): { string }
 	local start = table.concat(prefix, "/")
 	local maxDepth: number? = if table.find(parts, "**") then nil else #parts
 
+	--[[
+		Walks the literal prefix subtree in stable order. Rejects symlinks before descending so the search cannot follow them outside its root.
+	]]
 	local function visit(relative: string)
 		local absolute = if relative == "" then base else `{base}/{relative}`
 		if not Fs.exists(absolute) then
@@ -127,6 +137,9 @@ Both * / ? inside segments and ** spanning segments are considered.
 ]]
 local function segmentOverlaps(left: string, right: string): boolean
 	local visited: { [string]: boolean } = {}
+	--[[
+		Searches pairs of character offsets for a shared match. Remembering visited pairs keeps wildcard paths from revisiting the same state.
+	]]
 	local function visit(i: number, j: number): boolean
 		local key = `{i}:{j}`
 		if visited[key] then
@@ -141,12 +154,15 @@ local function segmentOverlaps(left: string, right: string): boolean
 		if a == "*" and visit(i + 1, j) then
 			return true
 		end
+
 		if b == "*" and visit(i, j + 1) then
 			return true
 		end
+
 		if a and b and (a == "*" or b == "*" or a == "?" or b == "?" or a == b) then
 			return visit(if a == "*" then i else i + 1, if b == "*" then j else j + 1)
 		end
+
 		return false
 	end
 	return visit(1, 1)
@@ -156,6 +172,9 @@ function Glob.Overlaps(left: string, right: string): boolean
 	local one = split(left)
 	local two = split(right)
 	local visited: { [string]: boolean } = {}
+	--[[
+		Searches pairs of path-segment offsets for an overlap, allowing a recursive wildcard to consume zero or more segments.
+	]]
 	local function visit(i: number, j: number): boolean
 		local key = `{i}:{j}`
 		if visited[key] then
@@ -170,12 +189,15 @@ function Glob.Overlaps(left: string, right: string): boolean
 		if a == "**" and visit(i + 1, j) then
 			return true
 		end
+
 		if b == "**" and visit(i, j + 1) then
 			return true
 		end
+
 		if a and b and (a == "**" or b == "**" or segmentOverlaps(a, b)) then
 			return visit(if a == "**" then i else i + 1, if b == "**" then j else j + 1)
 		end
+
 		return false
 	end
 	return visit(1, 1)

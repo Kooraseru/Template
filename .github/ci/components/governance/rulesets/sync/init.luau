@@ -33,7 +33,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local configuration = Configuration.new()
 	local repository = configuration:ResolveRepository(configuration.repository)
 	local definitions = RulesetCatalog.Read()
@@ -55,6 +55,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			print("::warning::GitHub App could not obtain repository Administration: write for rulesets")
 		end
 	end
+
 	if not access and token and token ~= "" and token ~= Process.env.GH_TOKEN then
 		local required = TokenPermissions.Required(configuration, { "rulesets_token" }, "rulesets_token")
 		local inspection = TokenPermissions.Inspect(token, required)
@@ -63,6 +64,7 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 			access = tokenAccess
 		end
 	end
+
 	if not access then
 		local secret = configuration.credentials.rulesets_token or "<github.credentials.rulesets_token>"
 		local problem = `No App or {secret} credential with repository Administration: write was available.`
@@ -70,15 +72,18 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		report(configuration, "Skipped: authorization unavailable", problem, "warning")
 		return "skipped"
 	end
+
 	local authorizedAccess = access :: Authentication.Access
 	local ok, receipts, changed = pcall(RulesetSync.Sync, repository, authorizedAccess.token, definitions)
 	Authentication.Release(authorizedAccess)
+
 	if not ok then
 		-- Rejected API changes must remain failures and include a reviewable permissions record.
 		local problem = tostring(receipts)
 		report(configuration, "Failed: GitHub rejected the ruleset operation", problem, "failure")
 		error(problem, 0)
 	end
+
 	Fs.createDirectory("build/github/ruleset-sync", { makeParents = true })
 	Fs.writeStringToFile("build/github/ruleset-sync/index.json", Json.encode({ applied = true, rulesets = receipts }))
 	if not changed then

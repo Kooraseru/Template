@@ -24,4 +24,4 @@ Public data fields on a returned, locally owned table cannot use a single unders
 
 This check covers declarations. Runtime names and references to types from another module require context and are outside this validator.
 
-See [Luau naming](../../../../rules-old/languages/luau/language/naming.md) and the [fixture matrix](tests/TEST_MATRIX.md).
+See [Luau naming](guidance.md) and the [fixture matrix](tests/TEST_MATRIX.md).

@@ -20,6 +20,7 @@ local function replacesTostring(block: Syntax.CstStatBlock): boolean
 			end
 		end
 	end
+
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
 		if declaration.name.tag == "global" and declaration.name.name.text == "tostring" then
 			return true
@@ -47,6 +48,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 	local findings: { Diagnostic.Finding } = {}
+
 	local function report(span: Syntax.Span, message: string)
 		findings[#findings + 1] = {
 			line = span.beginLine, column = span.beginColumn,
@@ -54,6 +56,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			severity = "warning", message = message,
 		}
 	end
+
 	for _, node in Query.findAllFromRoot(block, Utils.isExprBinary).nodes do
 		local left = node.lhsOperand
 		local right = node.rhsOperand
@@ -68,7 +71,9 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			report(node.location, "Include the literal text inside the interpolated string.")
 		end
 	end
+
 	local builtinTostring = not replacesTostring(block)
+
 	for _, node in Query.findAllFromRoot(block, Utils.isExprInterpString).nodes do
 		for _, expression in node.expressions do
 			if isQuotedLiteral(expression) then
@@ -78,6 +83,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			end
 		end
 	end
+
 	for _, call in Query.findAllFromRoot(block, Utils.isExprCall).nodes do
 		local callee = call.func
 		if callee.tag ~= "indexname" or callee.accessor.text ~= "." or callee.index.text ~= "format" or #call.arguments ~= 2 then

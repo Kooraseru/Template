@@ -36,6 +36,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	end
 	local findings: { Diagnostic.Finding } = {}
 	local lines = context.source:split("\n")
+
 	for _, reference in Query.findAllFromRoot(ast, Utils.isTypeReference).nodes do
 		if reference.prefix ~= nil or reference.name.text ~= "any" then
 			continue
@@ -47,6 +48,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			severity = "error", message = "Use unknown or an explicit type instead of any in Luau annotations.",
 		}
 	end
+
 	for _, assertion in Query.findAllFromRoot(ast, Utils.isExprTypeAssertion).nodes do
 		local outer = assertion.annotation
 		if outer.tag == "reference" and not outer.prefix and outer.name.text == "any" then

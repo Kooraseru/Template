@@ -4,4 +4,4 @@ A module that returns an API should keep private functions local and declare met
 
 It leaves local forward declarations, table methods, and entry points without a final module return outside this check. Global lifecycle callbacks in those entry points require runtime context.
 
-See [Luau function guidance](../../../../rules-old/languages/luau/language/functions.md) and the [fixture matrix](tests/TEST_MATRIX.md).
+See [Luau function guidance](guidance.md) and the [fixture matrix](tests/TEST_MATRIX.md).

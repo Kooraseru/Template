@@ -40,13 +40,16 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 		return
 	end
 	local configuration = Publication.Record(Toml.decode(Fs.readFileToString(path)))
+
 	for field in configuration do
 		if field ~= "permissions" and field ~= "environment" and field ~= "steps" then
 			error(`{path}: unsupported native job field {field}`, 0)
 		end
 	end
+
 	if configuration.permissions then
 		local permissions = strings(configuration.permissions)
+
 		for _, permission in permissions do
 			if permission ~= "read" and permission ~= "write" and permission ~= "none" then
 				error(`{path}: invalid native permission value`, 0)
@@ -55,8 +58,10 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 				error(`{path}: native write permissions require a privileged component`, 0)
 			end
 		end
+
 		job.permissions = permissions
 	end
+
 	if configuration.environment then
 		job.environment = strings(configuration.environment)
 	end
@@ -64,8 +69,10 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 	if type(nativeSteps) ~= "table" then
 		error(`{path}: expected native steps array`, 0)
 	end
+
 	for _, value in nativeSteps do
 		local record = Publication.Record(value)
+
 		for field in record do
 			if
 				field ~= "name"
@@ -80,6 +87,7 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 				error(`{path}: unsupported native step field {field}`, 0)
 			end
 		end
+
 		local continueOnError = record["continue-on-error"]
 		if continueOnError ~= nil and type(continueOnError) ~= "boolean" then
 			error(`{path}: continue-on-error must be boolean`, 0)

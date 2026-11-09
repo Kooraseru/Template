@@ -5,7 +5,7 @@ local Process = require("@lute/process")
 local Outcome = require("@ci/bootstrap/outcomes/outcome")
 local Contract = require("@ci/bootstrap/contracts/contract")
 
-local COMPONENTS_MODULE_PREFIX = "@ci/components"
+const COMPONENTS_MODULE_PREFIX = "@ci/components"
 
 type ComponentInstance = {
 	Run: (self: ComponentInstance, context: { event: string }) -> unknown,
@@ -21,6 +21,7 @@ local event = Process.args[3]
 if not entry then
 	error("invalid CI component entry", 0)
 end
+
 if event ~= "push" and event ~= "pull_request" and event ~= "workflow_dispatch" then
 	error("invalid CI event", 0)
 end
@@ -35,6 +36,7 @@ local loaded, implementation = xpcall(require, tostring, modulePath)
 if not loaded then
 	error(`CI component failed to load: {implementation}`, 0)
 end
+
 if type(implementation) ~= "table" or type(implementation.new) ~= "function" then
 	error(`CI component must expose a class constructor: {entry}`, 0)
 end

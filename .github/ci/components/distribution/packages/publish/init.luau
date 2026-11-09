@@ -14,7 +14,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local index = Publication.Record(Json.decode(Fs.readFileToString("build/github/packages/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged packages")
 	print(`GitHub Packages existing-version policy: {policy}`)
@@ -23,12 +23,14 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 	for _, value in Publication.ReadIndex("build/github/packages/index.json", "packages") do
 		local package = Publication.Record(value)
 		local name = Publication.Text(package.name)
+
 		if not package.format or not package.repository or not package.version then
 			print(
 				`Package {name}: registry publication skipped; configure format, version, and repository in .github/distribution/packages/{name}/package.toml`
 			)
 			continue
 		end
+
 		local repository = Publication.Begin("PACKAGES")
 		if not repository then
 			return "skipped"

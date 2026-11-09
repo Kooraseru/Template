@@ -79,3 +79,5 @@ The imported `validation.luau` implementation uses Lute's syntax tree to track l
 The separate test system owns the [acceptance cases](tests/TEST_MATRIX.md). It executes the fixtures independently; the validator never loads `tests/`. Template reports supported violations on workspace source using the configured Rules severity. Review cases remain advisory.
 
 An interpolated string with only primitive literals is static data. A runtime value or a potentially custom conversion stays in Luau. An inline table passed to a function can also be an ordinary runtime value and is not automatically a data module.
+
+See [data boundaries](boundaries.md) for schema, loader, and runtime ownership.

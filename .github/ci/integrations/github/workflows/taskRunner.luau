@@ -14,7 +14,7 @@ local Credentials = require("@ci/integrations/github/authentication/credentials"
 local SkipPolicy = require("@ci/bootstrap/outcomes/skipPolicy")
 local Responses = require("@ci/integrations/github/reporting/responses")
 
-local ARTIFACT_ROOT = "build/run/ci-execution/artifacts"
+const ARTIFACT_ROOT = "build/run/ci-execution/artifacts"
 
 local TaskRunner = {}
 
@@ -30,11 +30,13 @@ local function declared(path: string, outputs: { string }): boolean
 	if path:sub(1, 1) == "/" or path:find("\\", 1, true) or path:find("[:%c]") then
 		return false
 	end
+
 	for segment in path:gmatch("[^/]+") do
 		if segment == "." or segment == ".." then
 			return false
 		end
 	end
+
 	for _, pattern in outputs do
 		if Glob.Match(path, pattern) then
 			return true
@@ -51,6 +53,7 @@ local function validateArchive(path: string, task: Contract.Task): ()
 			error(`{task.identity}: output archive contains a link or special file`, 0)
 		end
 	end
+
 	for name in command({ "-tf", path }):gmatch("[^\r\n]+") do
 		local normalized = name:gsub("/+$", "")
 		if not declared(normalized, task.outputs) then
@@ -62,6 +65,7 @@ end
 local function bundle(task: Contract.Task): ()
 	local paths: { string } = {}
 	local seen: { [string]: boolean } = {}
+
 	for _, pattern in task.outputs do
 		for _, path in Glob.Find(pattern) do
 			if seen[path] then
@@ -74,6 +78,7 @@ local function bundle(task: Contract.Task): ()
 			table.insert(paths, path)
 		end
 	end
+
 	table.sort(paths)
 	Fs.createDirectory(ARTIFACT_ROOT, { makeParents = true })
 	local archive = `{ARTIFACT_ROOT}/{Contract.Key(task.identity)}.tar`
@@ -101,6 +106,7 @@ function TaskRunner.Run(
 		error(`component {identity} is not in the validated execution plan`, 0)
 	end
 	local skipConclusion = SkipPolicy.Conclusion(identity)
+
 	for _, dependency in selected.needs do
 		local provider = indexed[dependency]
 		if not provider then
@@ -116,9 +122,11 @@ function TaskRunner.Run(
 		validateArchive(archive, provider)
 		command({ "--extract", "--file", archive, "--no-same-owner", "--no-same-permissions" })
 	end
+
 	local executor = Executor.new(credentials)
 	print(`::notice::Starting {identity}`)
 	local outcome = executor:Invoke(selected, event)
+
 	if outcome == "skipped" then
 		Publication.Output("outcome", "skipped")
 		Publication.Output("skipped", "true")
@@ -130,6 +138,7 @@ function TaskRunner.Run(
 		end
 		return
 	end
+
 	if outcome == "failed" then
 		error(`component {identity} failed`, 0)
 	end
@@ -155,17 +164,20 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 		error("CI_JOB_RESULTS must contain a job-result object", 0)
 	end
 	local results: { [string]: unknown } = {}
+
 	for name, value in decoded do
 		if type(name) == "string" then
 			results[name] = value
 		end
 	end
+
 	local outcomes: { [string]: string } = {}
 	local responseTransferFailed = Process.env.CI_RESPONSE_DOWNLOAD_OUTCOME == "failure"
 	local passed = not responseTransferFailed
 	if responseTransferFailed then
 		Responses.Record("execution/response-transfer", Responses.Template("execution.response-transfer"), "warning")
 	end
+
 	for _, task in tasks do
 		local value = results[Workflow.JobId(task.identity)]
 		local result = if type(value) == "table" and type(value.result) == "string" then value.result else "skipped"
@@ -176,13 +188,14 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 				and result ~= "success"
 				and SkipPolicy.Conclusion(task.identity) == "neutral"
 			then "skipped (neutral Check Run failed)"
-			else if skipped
+			elseif skipped
 				then "skipped"
-				else if result == "success" then "passed" else if result == "skipped" then "blocked" else result
+				elseif result == "success" then "passed" elseif result == "skipped" then "blocked" else result
 		if result ~= "success" or (skipped and SkipPolicy.Conclusion(task.identity) == "failure") then
 			passed = false
 		end
 	end
+
 	Reporter.new():Report(outcomes, #tasks, responseTransferFailed)
 	if not passed then
 		error("one or more discovered CI components failed or were blocked", 0)

@@ -17,6 +17,7 @@ local function diagnostic(body: string): string
 	end
 	local decodedRecord = decoded :: { [string]: unknown }
 	local parts: { string } = {}
+
 	local function append(value: unknown): ()
 		if type(value) ~= "string" or value == "" then
 			return
@@ -24,7 +25,9 @@ local function diagnostic(body: string): string
 		local cleaned = value:gsub("[%c]", " "):sub(1, 240)
 		table.insert(parts, cleaned)
 	end
+
 	append(decodedRecord.message)
+
 	if type(decodedRecord.errors) == "table" then
 		for _, entry in decodedRecord.errors do
 			if type(entry) == "table" then
@@ -50,6 +53,7 @@ local function encodeRequestBody(value: unknown): string
 		return encoded
 	end
 	local request = value :: { [string]: unknown }
+
 	local function replaceEmptyArray(field: string): ()
 		local original = '"' .. field .. '":{}'
 		local replacement = '"' .. field .. '":[]'
@@ -59,11 +63,13 @@ local function encodeRequestBody(value: unknown): string
 		end
 		encoded = converted
 	end
+
 	local bypass = request.bypass_actors
 	if type(bypass) == "table" and next(bypass) == nil then
 		replaceEmptyArray("bypass_actors")
 	end
 	local conditions = request.conditions
+
 	if type(conditions) == "table" then
 		local conditionRecord = conditions :: { [string]: unknown }
 		local refName = conditionRecord.ref_name
@@ -90,6 +96,7 @@ local function request(token: string, method: string, path: string, body: unknow
 		},
 		body = if body ~= nil then encodeRequestBody(body) else nil,
 	})
+
 	if response.status == 401 or response.status == 403 then
 		error(
 			`Rulesets API rejected Administration: write authorization (HTTP {response.status}){diagnostic(
@@ -98,6 +105,7 @@ local function request(token: string, method: string, path: string, body: unknow
 			0
 		)
 	end
+
 	if response.status < 200 or response.status >= 300 then
 		error(`Rulesets API {method} failed (HTTP {response.status}){diagnostic(response.body)}`, 0)
 	end
@@ -131,6 +139,7 @@ function RulesetSync.Sync(
 	local prefix = `repos/{repository}/rulesets`
 	local existing: { { [string]: unknown } } = {}
 	local page = 1
+
 	while true do
 		local _, records = request(token, "GET", `{prefix}?includes_parents=false&per_page=100&page={page}`)
 		if type(records) ~= "table" then
@@ -144,7 +153,9 @@ function RulesetSync.Sync(
 		end
 		page += 1
 	end
+
 	local byName: { [string]: { [string]: unknown } } = {}
+
 	for _, entry in existing do
 		local name = Publication.Text(entry.name):lower()
 		if byName[name] then
@@ -152,13 +163,16 @@ function RulesetSync.Sync(
 		end
 		byName[name] = entry
 	end
+
 	local receipts: { Receipt } = {}
 	local changed = false
+
 	for _, ruleset in definitions do
 		local definition = ruleset.definition
 		local name = Publication.Text(definition.name)
 		local current = byName[name:lower()]
 		local id: number
+
 		if current then
 			id = current.id :: number
 			if type(id) ~= "number" then
@@ -182,6 +196,7 @@ function RulesetSync.Sync(
 			changed = true
 			print(`Created managed ruleset {ruleset.identity}`)
 		end
+
 		table.insert(receipts, { identity = ruleset.identity, id = id })
 	end
 	-- Never delete a remote ruleset that cannot be tied to one of our flat TOML files.

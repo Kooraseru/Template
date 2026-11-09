@@ -40,12 +40,15 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 		if pattern == "" or pattern:sub(1, 1) == "/" or pattern:find("\\", 1, true) then
 			error(`{recordPath}: source entries must be safe repository-relative globs`, 0)
 		end
+
 		for segment in pattern:gmatch("[^/]+") do
 			if segment == "." or segment == ".." then
 				error(`{recordPath}: unsafe source glob {pattern}`, 0)
 			end
 		end
+
 		local matched = false
+
 		for _, source in Glob.Find(pattern) do
 			local metadata = (if Fs.exists(source) then Fs.type(source) else nil)
 			if metadata == "dir" then
@@ -81,7 +84,7 @@ local function overlayTranslations(branchRoot: string, defaultLocale: string, br
 		end
 		local relativePath = source:gsub(`^{CONTENT_ROOT}/`, "")
 		local translationStem = relativePath:gsub("%.md$", ".toml")
-		for _, locale in TagRenderer.Locales(nil) do
+		for _, locale in TagRenderer.Locales() do
 			if locale == defaultLocale then
 				continue
 			end

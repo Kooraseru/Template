@@ -7,39 +7,45 @@ local Yaml = require("@formats/yaml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/integrations/github/publication")
 
-local CONFIG_PATH = ".github/work/labels.toml"
-local FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
+const CONFIG_PATH = ".github/work/labels.toml"
+const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
 
 local LabelCatalog = {}
 export type Label = { name: string, color: string, description: string }
 
 function LabelCatalog.Parse(source: string): { Label }
 	local root = Publication.Record(Toml.decode(source))
+
 	for field in root do
 		if field ~= "labels" then
 			error(`{CONFIG_PATH}: unknown field {field}`, 0)
 		end
 	end
+
 	local entries = root.labels
 	if type(entries) ~= "table" then
 		error(`{CONFIG_PATH}: expected [[labels]] entries`, 0)
 	end
 	local result: { Label } = {}
 	local seen: { [string]: boolean } = {}
+
 	for index, entry in entries do
 		if type(index) ~= "number" then
 			error(`{CONFIG_PATH}: labels must be an array`, 0)
 		end
 		local record = Publication.Record(entry)
+
 		for field in record do
 			if field ~= "name" and field ~= "color" and field ~= "description" then
 				error(`{CONFIG_PATH}: unknown label field {field}`, 0)
 			end
 		end
+
 		local name = Publication.Text(record.name)
 		local color = Publication.Text(record.color)
 		local description = record.description
 		local nameLength = utf8.len(name)
+
 		if
 			not nameLength
 			or nameLength > 50
@@ -50,6 +56,7 @@ function LabelCatalog.Parse(source: string): { Label }
 		then
 			error(`{CONFIG_PATH}: invalid or duplicate label name {name}`, 0)
 		end
+
 		if #color ~= 6 or not color:match("^%x+$") then
 			error(`{CONFIG_PATH}: {name} color must be six hexadecimal digits without #`, 0)
 		end
@@ -63,6 +70,7 @@ function LabelCatalog.Parse(source: string): { Label }
 		seen[name:lower()] = true
 		table.insert(result, { name = name, color = color:lower(), description = description })
 	end
+
 	table.sort(result, function(left: Label, right: Label): boolean
 		return left.name < right.name
 	end)
@@ -84,6 +92,7 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 			continue
 		end
 		local names: { string } = {}
+
 		if type(references) == "string" then
 			for name in references:gmatch("[^,]+") do
 				table.insert(names, (name:gsub("^%s+", ""):gsub("%s+$", "")))
@@ -98,6 +107,7 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 		else
 			error(`{path}: labels must be a string array or comma-separated text`, 0)
 		end
+
 		for _, name in names do
 			if not declared[name:lower()] then
 				error(`{path}: label {name} is not declared in {CONFIG_PATH}`, 0)

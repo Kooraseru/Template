@@ -15,12 +15,14 @@ end
 
 local function configure(module: unknown, settings: unknown): Rule.Rule
 	local result = module
+
 	if type(module) == "table" then
 		local create = (module :: { [string]: unknown }).Create
 		if type(create) == "function" then
 			result = (create :: (unknown) -> unknown)(settings)
 		end
 	end
+
 	if type(result) ~= "table" or type(result.Check) ~= "function" then
 		error("Rule does not implement Check", 0)
 	end

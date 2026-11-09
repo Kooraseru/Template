@@ -6,7 +6,7 @@ local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/integrations/github/publication")
 
-local CONFIG_PATH = ".github/work/milestones/records"
+const CONFIG_PATH = ".github/work/milestones/records"
 
 local MilestoneCatalog = {}
 
@@ -29,11 +29,13 @@ function MilestoneCatalog.Read(): { Milestone }
 			continue
 		end
 		local entry = Publication.Record(Json.decode(Fs.readFileToString(path)))
+
 		for field in entry do
 			if field ~= "version" and field ~= "status" and field ~= "due_on" and field ~= "description" then
 				error(`{CONFIG_PATH}: unsupported planned milestone field {tostring(field)}`, 0)
 			end
 		end
+
 		local version = Publication.Text(entry.version)
 		if #version > 256 or version:find("[%c]") then
 			error(`{CONFIG_PATH}: planned milestone version must be at most 256 printable characters`, 0)
@@ -51,12 +53,14 @@ function MilestoneCatalog.Read(): { Milestone }
 			error(`{CONFIG_PATH}: planned milestone {version} due_on must be an RFC 3339 UTC timestamp`, 0)
 		end
 		local description = entry.description
+
 		if description ~= nil and (type(description) ~= "string" or #description > 1024) then
 			error(
 				`{CONFIG_PATH}: planned milestone {version} description must be a string of at most 1024 characters`,
 				0
 			)
 		end
+
 		versions[version] = true
 		table.insert(result, {
 			version = version,

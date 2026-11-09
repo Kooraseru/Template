@@ -13,7 +13,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local labels = LabelCatalog.Read()
 	local repository = Publication.Begin("LABELS")
 	if not repository then

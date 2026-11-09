@@ -11,8 +11,8 @@ local Contract = require("@ci/bootstrap/contracts/contract")
 local Configuration = require("@ci/integrations/github/configuration")
 local Publication = require("@ci/integrations/github/publication")
 
-local ROOT = ".github/automation/responses"
-local RECORDS = "build/run/ci-execution/responses"
+const ROOT = ".github/automation/responses"
+const RECORDS = "build/run/ci-execution/responses"
 
 local Responses = {}
 local written = false
@@ -181,6 +181,7 @@ local function headerBadges(root: string, status: string, repository: string, co
 	local name = Process.env.CI_RUNNER_LABEL
 	local runnerColor = "runner_other"
 	local icon = "lu:Server"
+
 	if name == "ubuntu-latest" or (not name and os == "Linux") then
 		name = name or "ubuntu-latest"
 		runnerColor = "runner_ubuntu"
@@ -194,24 +195,19 @@ local function headerBadges(root: string, status: string, repository: string, co
 		runnerColor = "runner_macos"
 		icon = "apple"
 	end
+
 	name = name or "runner unknown"
 	local badges = {
 		headerBadge("", name, headerColor(palette, runnerColor), icon, "FFFFFF"),
 	}
-	local description = if status == "failure"
-		then "failed"
-		else if status == "success"
-			then "success"
-			else if status == "warning"
-				then "warning"
-				else if status == "pending"
-					then "pending"
-					else if status == "cancelled" then "cancelled" else "unknown"
+	local description = if status == "failure" then "failed"
+		elseif status == "success" or status == "warning" or status == "pending" or status == "cancelled" then status
+		else "unknown"
 	local dot = if status == "failure"
 		then "failure_dot"
-		else if status == "success"
+		elseif status == "success"
 			then "success_dot"
-			else if status == "warning" or status == "pending" then "pending_dot" else "neutral_dot"
+			elseif status == "warning" or status == "pending" then "pending_dot" else "neutral_dot"
 	table.insert(
 		badges,
 		headerBadge(
@@ -223,6 +219,7 @@ local function headerBadges(root: string, status: string, repository: string, co
 			10
 		)
 	)
+
 	if root == "execution" then
 		table.insert(
 			badges,
@@ -243,6 +240,7 @@ local function color(name: string, label: string?): (string, string)
 	local aliases = Publication.Record(config.colors)
 	local text = label or name
 	local seen: { [string]: boolean } = {}
+
 	while not name:match("^github%.") do
 		if seen[name] then
 			error("Response color alias cycle", 0)
@@ -250,19 +248,13 @@ local function color(name: string, label: string?): (string, string)
 		seen[name] = true
 		name = Publication.Text(aliases[name])
 	end
-	local styles = {
-		["github.note"] = { "", "NOTE" },
-		["github.tip"] = { "", "TIP" },
-		["github.important"] = { "", "IMPORTANT" },
-		["github.warning"] = { "", "WARNING" },
-		["github.caution"] = { "", "CAUTION" },
-	}
-	local style = styles[name]
-	if not style then
+
+	local annotation = name:match("^github%.([a-z]+)$")
+	if annotation ~= "note" and annotation ~= "tip" and annotation ~= "important" and annotation ~= "warning" and annotation ~= "caution" then
 		error(`Unsupported GitHub response color: {name}`, 0)
 	end
 	local colors = Publication.Record(config.status_colors)
-	return badge(text, Publication.Text(colors[name]), nil, config), style[2]
+	return badge(text, Publication.Text(colors[name]), nil, config), annotation:upper()
 end
 
 local function shieldcnButton(name: string, values: { [string]: string }, config: { [string]: unknown }): string
@@ -283,17 +275,18 @@ function Responses.ResetLocal(): ()
 	if Process.env.ACT ~= "true" then
 		error("Response reset is restricted to local act runs", 0)
 	end
+
 	for _, path in { "build", "build/run", "build/run/ci-execution", RECORDS } do
 		if Fs.exists(path) and Fs.type(path) == "link" then
 			error(`Refusing to write through a symlink: {path}`, 0)
 		end
 	end
+
 	if Fs.exists(RECORDS) then
-		if Fs.type(RECORDS) == "dir" then
-			Fs.removeDirectory(RECORDS, { recursive = true })
-		else
+		if Fs.type(RECORDS) ~= "dir" then
 			error(`Expected a directory: {RECORDS}`, 0)
 		end
+		Fs.removeDirectory(RECORDS, { recursive = true })
 	end
 end
 
@@ -350,6 +343,7 @@ local function combine(source: { Record }): { Entry }
 	for _, record in source do
 		local key = record.id .. "\0" .. record.markdown .. "\0" .. record.color
 		local entry = known[key]
+
 		if not entry then
 			entry = {
 				id = record.id,
@@ -361,6 +355,7 @@ local function combine(source: { Record }): { Entry }
 			known[key] = entry
 			table.insert(result, entry)
 		end
+
 		entry.components[record.component] = true
 	end
 	return result
@@ -402,6 +397,7 @@ local function readableNotes(markdown: string): string
 			local pieces: { string } = {}
 			local inCode = false
 			local start = 1
+
 			for index = 1, #line do
 				if line:sub(index, index) == tick then
 					local part = line:sub(start, index - 1)
@@ -415,6 +411,7 @@ local function readableNotes(markdown: string): string
 					start = index + 1
 				end
 			end
+
 			local rest = line:sub(start)
 			if not inCode then
 				rest = rest:gsub("(CI_[A-Z0-9_]+)", tick .. "%1" .. tick)
@@ -428,27 +425,36 @@ local function readableNotes(markdown: string): string
 	return (table.concat(lines, "\n"):gsub("\n+$", ""))
 end
 
+local function newBranch(name: string): Branch
+	return { name = name, children = {}, component = "" }
+end
+
 local function componentTree(outcomes: { [string]: string }, entries: { Entry }, start: boolean, status: string): string
-	local tree: Branch = { name = "", children = {}, component = "" }
+	local tree: Branch = newBranch("")
 	local assigned: { [string]: boolean } = {}
+
 	local function insert(identity: string, outcome: string): ()
 		local node = tree
+
 		for segment in identity:gmatch("[^/]+") do
 			if not node.children[segment] then
-				node.children[segment] = { name = segment, children = {}, component = "" }
+				node.children[segment] = newBranch(segment)
 			end
 			node = node.children[segment]
 		end
+
 		node.outcome = outcome
 		node.component = if start and identity == "bootstrap/auth" then "bootstrap" else identity
 		assigned[node.component] = true
 	end
+
 	if start then
 		insert(
 			"bootstrap/auth",
-			if status == "failure" then "failed" else if status == "warning" then "warning" else "passed"
+			if status == "failure" then "failed" elseif status == "warning" then "warning" else "passed"
 		)
 	end
+
 	for identity, outcome in outcomes do
 		if identity == "bootstrap" and start then
 			insert("bootstrap/auth", outcome)
@@ -456,6 +462,7 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 			insert(identity, outcome)
 		end
 	end
+
 	for _, entry in entries do
 		for identity in entry.components do
 			if not assigned[identity] then
@@ -463,8 +470,10 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 			end
 		end
 	end
+
 	local labels = Publication.Record(configuration().labels)
 	local anchors: { [number]: boolean } = {}
+
 	local function needsAttention(node: Branch): boolean
 		if node.outcome then
 			if node.outcome ~= "passed" and node.outcome ~= "success" then
@@ -477,6 +486,7 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 			end
 			return false
 		end
+
 		for _, child in node.children do
 			if needsAttention(child) then
 				return true
@@ -484,21 +494,25 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		end
 		return false
 	end
+
 	local function renderLeaf(node: Branch): (string, string)
 		local attachments: { string } = {}
 		local count = 0
+
 		for _, entry in entries do
 			if not entry.components[node.component] then
 				continue
 			end
 			count += 1
 			local label = entry.id
+
 			for _, selector in keys(labels) do
 				if Glob.Match(entry.id, selector) then
 					label = Publication.Text(labels[selector])
 					break
 				end
 			end
+
 			local anchor = ""
 			if not anchors[entry.index] then
 				anchor = '<a id="response-' .. tostring(entry.index) .. '"></a>'
@@ -514,13 +528,16 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 				})
 			)
 		end
+
 		local display, explanation = (node.outcome or "reported"):match("^(.-) %((.+)%)$")
 		local note = if explanation then htmlAttribute(explanation) else ""
+
 		if count > 0 then
 			note ..= (if note ~= "" then "; " else "") .. tostring(count) .. (if count == 1
 				then " attachment below"
 				else " attachments below")
 		end
+
 		if note == "" then
 			note = "No additional notes"
 		end
@@ -531,10 +548,12 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 		})
 		return (result:gsub("\n+$", "")), table.concat(attachments, "\n\n")
 	end
+
 	local function renderGroup(node: Branch): string
 		local rows: { string } = {}
 		local notes: { string } = {}
 		local children: { string } = {}
+
 		for _, name in keys(node.children) do
 			local child = node.children[name]
 			if child.outcome then
@@ -547,17 +566,20 @@ local function componentTree(outcomes: { [string]: string }, entries: { Entry },
 				table.insert(children, renderGroup(child))
 			end
 		end
+
 		local tableText = if #rows > 0
 			then '<table width="100%">\n<thead><tr><th align="left" width="19%">Component / Attachment</th><th align="center" width="15%">Outcome</th><th align="left" width="66%">Additional notes</th></tr></thead>\n<tbody>\n'
 				.. table.concat(rows, "\n")
 				.. "\n</tbody>\n</table>"
 			else ""
 		local sections: { string } = {}
+
 		for _, section in { tableText, table.concat(notes, "\n\n"), table.concat(children, "\n\n") } do
 			if section ~= "" then
 				table.insert(sections, section)
 			end
 		end
+
 		local content = table.concat(sections, "\n\n")
 		if node.name == "" then
 			return content
@@ -595,6 +617,7 @@ function Responses.Render(
 	context.artifacts_button = shieldcnButton("artifacts", context, config)
 	context.repository_button = shieldcnButton("repository", context, config)
 	context.selected_count = context.selected_count or tostring(#keys(outcomes or {}))
+
 	if context.color == "success" then
 		for _, entry in entries do
 			if entry.color == "failure" then
@@ -605,6 +628,7 @@ function Responses.Render(
 			end
 		end
 	end
+
 	context.component_tree = componentTree(outcomes or {}, entries, root == "start", context.color or "info")
 	context.header_badges = headerBadges(root, context.color or "info", repository, config)
 	context.status_marker, context.status_alert = color(context.color or "info")
@@ -617,6 +641,7 @@ function Responses.Render(
 	end
 	local labels = Publication.Record(config.labels)
 	local attention: { string } = {}
+
 	for _, entry in entries do
 		if entry.color ~= "warning" and entry.color ~= "failure" then
 			continue
@@ -632,7 +657,9 @@ function Responses.Render(
 		local button = badge(label, entry.color, "github", config)
 		table.insert(attention, `<a href="#response-{entry.index}">{button}</a>`)
 	end
+
 	context.attention = table.concat(attention, " ")
+
 	local function render(node: { [string]: unknown }): string
 		if node.if_value and (context[Publication.Text(node.if_value)] or "") == "" then
 			return ""
@@ -652,12 +679,14 @@ function Responses.Render(
 			return if left == right then a < b else left < right
 		end)
 		local renderedChildren: { string } = {}
+
 		for _, name in names do
 			local child = render(Publication.Record(children[name]))
 			if child ~= "" then
 				table.insert(renderedChildren, child)
 			end
 		end
+
 		localValues.children = table.concat(renderedChildren, "\n\n")
 		local markdown = Responses.Fill(read(Publication.Text(node.markdown)), localValues)
 		return (markdown:gsub("\n+$", ""))
@@ -678,6 +707,7 @@ function Responses.Write(root: string, values: { [string]: string }, outcomes: {
 	print(`CI {root} response assembled.`)
 end
 
+--- Reports whether this process has written a CI response, so callers can avoid a duplicate summary.
 function Responses.Written(): boolean
 	return written
 end

@@ -23,7 +23,7 @@ Filesystem metadata may follow symlinks on supported platforms. The
 checked-out Git tree supplies the authoritative type of tracked entries;
 reject links before walking a discovered extension point.
 ]]
-function Discovery.RejectLinkedEntries(_self: Discovery): ()
+function Discovery.RejectLinkedEntries(self: Discovery): ()
 	local result = Process.run({ "git", "ls-files", "--stage", "--", ".github/ci/components" })
 	if not result.ok then
 		error(`unable to inspect tracked component entry types: {result.stderr}`, 0)
@@ -57,13 +57,16 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 	if type(settings.default) ~= "boolean" or type(settings.enabled) ~= "table" then
 		error(`{settingsPath}: expected boolean default and an [enabled] table`, 0)
 	end
+
 	for key in settings do
 		if key ~= "default" and key ~= "enabled" then
 			error(`{settingsPath}: unknown setting {tostring(key)}`, 0)
 		end
 	end
+
 	local overrides: { [string]: boolean } = {}
 	local enabledOverrides = settings.enabled :: { [string]: unknown }
+
 	for identity, enabled in enabledOverrides do
 		if type(identity) ~= "string" or not Contract.ValidIdentity(identity) or type(enabled) ~= "boolean" then
 			error(`{settingsPath}: enabled entries require valid component identities and booleans`, 0)
@@ -74,17 +77,20 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 	local components: { Contract.Contract } = {}
 	local identities: { [string]: string } = {}
 	local packages: { string } = {}
+
 	for _, path in Glob.Find(".github/ci/components/**") do
 		if path == ".github/ci/components" then
 			continue
 		end
 		local private = false
+
 		for _, package in packages do
 			if path:sub(1, #package + 1) == package .. "/" then
 				private = true
 				break
 			end
 		end
+
 		if private then
 			continue
 		end
@@ -130,6 +136,7 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		overrides[identity] = nil
 		table.insert(components, component)
 	end
+
 	for identity in overrides do
 		error(`{settingsPath}: no discovered component matches {identity}`, 0)
 	end

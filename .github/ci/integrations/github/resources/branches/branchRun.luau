@@ -15,27 +15,37 @@ local TokenPermissions = require("@ci/integrations/github/authentication/tokenPe
 local Responses = require("@ci/integrations/github/reporting/responses")
 
 local BranchRun = {}
-local PR_EXECUTION_TIMEOUT_SECONDS = 3600
-local PR_EXECUTION_START_TIMEOUT_SECONDS = 120
-local PR_EXECUTION_POLL_SECONDS = 8
+const PR_EXECUTION_TIMEOUT_SECONDS = 3600
+const PR_EXECUTION_START_TIMEOUT_SECONDS = 120
+const PR_EXECUTION_POLL_SECONDS = 8
 
+--[[
+	Classifies Git failures without echoing remote output, which can contain credentials. Specific GitHub rejections take precedence over the generic permission error.
+
+	@param stderr string Raw Git error output. Never include it in the returned message.
+	@return string A safe, actionable failure summary.
+]]
 local function gitFailure(stderr: string): string
-	-- Classify failures without printing raw remote output that may contain credentials.
 	if stderr:find("could not read Username", 1, true) or stderr:find("Authentication failed", 1, true) then
 		return "Git HTTPS authentication failed; verify the scoped App/PAT token and credential helper"
 	end
+
 	if stderr:find("refusing to allow", 1, true) and stderr:find("workflow", 1, true) then
 		return "GitHub rejected workflow file writes; verify Workflows: write permission"
 	end
+
 	if stderr:find("GH013", 1, true) or stderr:find("protected branch", 1, true) then
 		return "GitHub rulesets or branch protection rejected the generated CI branch"
 	end
+
 	if stderr:find("Permission denied", 1, true) or stderr:find("403", 1, true) then
 		return "GitHub rejected repository write permission for the generated CI branch"
 	end
+
 	if stderr:find("non-fast-forward", 1, true) then
 		return "the generated CI branch already exists at an unexpected commit"
 	end
+
 	return "Git returned no recognized failure category; verify the App installation and generated branch restrictions"
 end
 
@@ -43,15 +53,18 @@ local function git(arguments: { string }, cwd: string?, token: string?): string
 	local command = table.clone(arguments)
 	table.insert(command, 1, "git")
 	local environment = table.clone(Process.env)
+
 	if token then
 		environment.CI_GIT_BOOTSTRAP_TOKEN = token
 		environment.CI_GIT_SERVER_URL = Process.env.GITHUB_SERVER_URL or "https://github.com"
 		environment.GIT_TERMINAL_PROMPT = "0"
 	end
+
 	local result = Process.run(command, {
 		cwd = cwd,
 		env = environment,
 	})
+
 	if not result.ok then
 		error(
 			`GitHub branch bootstrap Git operation failed with exit code {result.exitcode}: {gitFailure(result.stderr)}`,
@@ -61,6 +74,9 @@ local function git(arguments: { string }, cwd: string?, token: string?): string
 	return (result.stdout:gsub("%s+$", ""))
 end
 
+--[[
+	Renders the native workflow at the source commit and pushes it from a detached worktree. The worktree is removed even if locking, committing, or pushing fails.
+]]
 local function launch(
 	tasks: { Contract.Task },
 	event: string,
@@ -87,7 +103,7 @@ local function launch(
 	Fs.writeStringToFile("build/run/ci-start/artifacts/workflow.yml", yaml)
 	git({ "worktree", "add", "--detach", worktree, sha })
 	local stage = "writing generated workflow"
-	local ok, failure = (xpcall :: any)(function(): ()
+	local ok, failure = xpcall(function(): boolean
 		Fs.createDirectory(`{worktree}/.github/workflows`, { makeParents = true })
 		Fs.writeStringToFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
 		stage = "locking generated workflow dependencies"
@@ -126,6 +142,7 @@ local function launch(
 			`{server}/{repository}.git`,
 			`HEAD:refs/heads/{branch}`,
 		}, worktree, access.token)
+		return true
 	end, tostring)
 	local removed = Process.run({ "git", "worktree", "remove", "--force", worktree })
 	if not removed.ok then
@@ -162,7 +179,8 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			error(`Cannot inspect native PR execution (HTTP {response.status}); gate needs Actions: read`, 0)
 		end
 		local decoded: unknown = Json.decode(response.body)
-		local runs: { any }
+		local runs: { unknown }
+
 		if observedId then
 			if type(decoded) ~= "table" or type(decoded.id) ~= "number" or decoded.id ~= observedId then
 				error("GitHub returned an invalid native PR execution run", 0)
@@ -172,12 +190,14 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			if type(decoded) ~= "table" or type(decoded.workflow_runs) ~= "table" then
 				error("GitHub returned an invalid workflow run list", 0)
 			end
-			runs = decoded.workflow_runs :: { any }
+			runs = decoded.workflow_runs :: { unknown }
 		end
+
 		for _, item in runs do
 			if type(item) ~= "table" then
 				continue
 			end
+
 			if not observedId then
 				local path = item.path
 				if type(path) ~= "string" or not path:find(".github/workflows/ci-execution.yml", 1, true) then
@@ -192,6 +212,7 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 				observedId = item.id
 				print(`::notice::PR gate is waiting for native CI Execution run {tostring(item.id)}`)
 			end
+
 			if item.status == "completed" then
 				if item.conclusion == "success" then
 					print(`::notice::Native PR execution passed: {tostring(item.html_url)}`)
@@ -201,11 +222,14 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 			end
 			break
 		end
+
 		if not observedId and os.time() - started >= PR_EXECUTION_START_TIMEOUT_SECONDS then
 			error("GitHub did not schedule CI Execution for the generated PR branch within two minutes", 0)
 		end
 		Task.wait(PR_EXECUTION_POLL_SECONDS)
 	end
+
+	-- Distinguish a run that never started from one that outlasted the gate.
 	error(
 		if observedId
 			then "Native PR execution did not finish within the gate timeout"
@@ -214,7 +238,13 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 	)
 end
 
+--[[
+	Prepares local act artifacts or launches native CI on a generated branch. Pull request plans may contain only read-boundary tasks.
+
+	@return boolean Whether this function handled execution instead of leaving it to the caller.
+]]
 function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credentials: Credentials.Credentials): boolean
+	-- Local act generates the workflow for a separate invocation instead of publishing a branch.
 	if Process.env.ACT == "true" and Process.env.CI_GRAPH_RUN ~= "true" then
 		local head = git({ "rev-parse", "HEAD" })
 		if #head ~= 40 or not head:match("^%x+$") then
@@ -237,6 +267,8 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		print(`::notice::Generated local CI Execution workflow at {directory}/workflow.yml`)
 		return true
 	end
+
+	-- Only the initial GitHub Actions run should publish a native execution branch.
 	if
 		Process.env.GITHUB_ACTIONS ~= "true"
 		or Process.env.CI_GRAPH_RUN == "true"
@@ -244,6 +276,8 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	then
 		return false
 	end
+
+	-- Reject privileged tasks before requesting credentials or generating a PR execution branch.
 	if event == "pull_request" then
 		for _, task in tasks do
 			if task.boundary ~= "read" then
@@ -251,6 +285,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 			end
 		end
 	end
+
 	local configuration = Configuration.new()
 	credentials:Describe(configuration)
 	if not configuration.enabled then
@@ -259,15 +294,18 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end
 	local repository = configuration:ResolveRepository(configuration.repository)
 	local currentRepository = Process.env.GITHUB_REPOSITORY
+
 	if not currentRepository or repository:lower() ~= currentRepository:lower() then
 		print(
 			"::warning::github.repository must identify the repository running this bootstrap. Cross-repository publishing aliases do not redirect CI execution. Using the Luau scheduler."
 		)
 		return false
 	end
+
 	local sha = Process.env.GITHUB_SHA
 	local runId = Process.env.GITHUB_RUN_ID
 	local attempt = Process.env.GITHUB_RUN_ATTEMPT or "1"
+
 	if
 		not sha
 		or #sha ~= 40
@@ -278,25 +316,33 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	then
 		error("GitHub bootstrap context has an invalid commit or run identity", 0)
 	end
+
 	local roles = { "bootstrap_token" }
+
 	for _, task in tasks do
 		for _, role in task.credentials do
 			table.insert(roles, role)
 		end
 	end
+
 	local access = Authentication.Acquire(configuration, credentials, repository, roles)
 	if not access then
 		return false
 	end
 	local branch = `{configuration.branchPrefix}{runId}-{attempt}`
-	local ok, failure = (xpcall :: any)(launch, tostring, tasks, event, repository, branch, sha, access)
+	local ok, failure = xpcall(function(): boolean
+		launch(tasks, event, repository, branch, sha, access)
+		return true
+	end, tostring)
 	Authentication.Release(access)
+
 	if not ok then
 		if access.inspection then
 			TokenPermissions.Warn(configuration, "bootstrap_token", access.inspection, true)
 		end
 		error(`Native CI Execution could not be started: {failure}`, 0)
 	end
+
 	if event == "pull_request" then
 		waitForPullRequestExecution(repository, branch)
 	end
@@ -323,8 +369,9 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	return true
 end
 
--- Cleanup is restricted to this generated run's unchanged branch. Its ordinary
--- job token can delete a ref without needing the App's workflow-write access.
+--[[
+	Deletes the generated branch only while it still points at this run's original commit. The ordinary job token can delete the ref without the App's workflow-write access.
+]]
 function BranchRun.Cleanup(): ()
 	if Process.env.ACT == "true" then
 		print("Local act execution: no remote CI branch was created")

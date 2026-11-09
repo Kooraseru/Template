@@ -54,6 +54,7 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 		return Publication.Record(Publication.Record(data.node).fields)
 	end)
 	local byName: { [string]: { [string]: unknown } } = {}
+
 	for _, field in existing do
 		local name = Publication.Text(field.name):lower()
 		if byName[name] then
@@ -61,26 +62,32 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 		end
 		byName[name] = field
 	end
+
 	local declared: { [string]: boolean } = {}
 	local changed = false
+
 	for _, field in desired do
 		local key = field.name:lower()
 		declared[key] = true
 		local current = byName[key]
+
 		if current and current.isIssueField == true then
 			error(
 				`Project field {field.name} is an organization issue field; it cannot be overwritten as a project field`,
 				0
 			)
 		end
+
 		if current and current.dataType ~= field.dataType then
 			error(
 				`Project field {field.name} has a different type; refusing to delete its existing item values to change type`,
 				0
 			)
 		end
+
 		local options: { { [string]: unknown } }? = nil
 		local sameOptions = true
+
 		if field.options then
 			options = {}
 			local oldOptions = if current then array(current.options, "field options") else {}
@@ -110,6 +117,7 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 				end
 			end
 		end
+
 		if not current then
 			query("CreateField", {
 				input = {
@@ -127,6 +135,7 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 			changed = true
 		end
 	end
+
 	for _, field in existing do
 		local name = Publication.Text(field.name)
 		local dataType = Publication.Text(field.dataType)
@@ -145,6 +154,7 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		return Publication.Record(Publication.Record(data.node).views)
 	end)
 	local byName: { [string]: { [string]: unknown } } = {}
+
 	for _, view in existing do
 		local name = Publication.Text(view.name):lower()
 		if byName[name] then
@@ -152,10 +162,12 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		end
 		byName[name] = view
 	end
+
 	local fields = connection(query, "Fields", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).fields)
 	end)
 	local fieldIds: { [string]: string } = {}
+
 	for _, field in fields do
 		local name = Publication.Text(field.name):lower()
 		if fieldIds[name] then
@@ -163,10 +175,13 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		end
 		fieldIds[name] = Publication.Text(field.id)
 	end
+
 	local changed = false
+
 	for _, view in desired do
 		local current = byName[view.name:lower()]
 		local visibleIds: { string }? = nil
+
 		if view.visibleFields then
 			visibleIds = {}
 			for _, name in view.visibleFields do
@@ -177,7 +192,9 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 				table.insert(visibleIds, id)
 			end
 		end
+
 		local configuration = if visibleIds then { visibleFieldIds = visibleIds } else nil
+
 		if not current then
 			local result = query("CreateView", {
 				input = {
@@ -197,7 +214,9 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 			changed = true
 			continue
 		end
+
 		local sameFields = true
+
 		if visibleIds then
 			local remote = connection(query, "VisibleFields", { id = Publication.Text(current.id) }, function(data)
 				return Publication.Record(Publication.Record(Publication.Record(data.node).configuration).visibleFields)
@@ -228,13 +247,16 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 			changed = true
 		end
 	end
+
 	local declared: { [string]: boolean } = {}
 	for _, view in desired do
 		declared[view.name:lower()] = true
 	end
 	local retainedViewId: string? = nil
+
 	if #desired == 0 and #existing > 0 then
 		local retainedName: string? = nil
+
 		for _, current in existing do
 			local name = Publication.Text(current.name)
 			if retainedName == nil or name:lower() < retainedName:lower() then
@@ -242,10 +264,12 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 				retainedViewId = Publication.Text(current.id)
 			end
 		end
+
 		print(
 			`::notice::GitHub requires every Project to keep a view; no views are declared, so retaining {retainedName} and removing only the other views`
 		)
 	end
+
 	for _, current in existing do
 		local name = Publication.Text(current.name)
 		if declared[name:lower()] or (retainedViewId ~= nil and current.id == retainedViewId) then
@@ -282,6 +306,7 @@ function ProjectSync.Owner(
 	local desiredKeys: { [string]: boolean } = {}
 	local receipts: { Receipt } = {}
 	local changed = false
+
 	for _, project in projects do
 		if project.owner ~= owner then
 			continue
@@ -289,6 +314,7 @@ function ProjectSync.Owner(
 		local marker = `<!-- repository-project:{project.managementKey} -->`
 		desiredKeys[marker] = true
 		local current: { [string]: unknown }? = nil
+
 		for _, candidate in existing do
 			if type(candidate.readme) == "string" and candidate.readme:find(marker, 1, true) then
 				if current then
@@ -297,6 +323,7 @@ function ProjectSync.Owner(
 				current = candidate
 			end
 		end
+
 		if not current then
 			local created = query("CreateProject", {
 				input = { ownerId = ownerId, title = project.title, repositoryId = repositoryId },
@@ -304,11 +331,13 @@ function ProjectSync.Owner(
 			current = Publication.Record(Publication.Record(created.createProjectV2).projectV2)
 			changed = true
 		end
+
 		if not current then
 			error("Projects API did not return the created project", 0)
 		end
 		local id = Publication.Text(current.id)
 		local readme = project.readme .. "\n\n" .. marker
+
 		if
 			current.title ~= project.title
 			or current.readme ~= readme
@@ -328,15 +357,18 @@ function ProjectSync.Owner(
 			})
 			changed = true
 		end
+
 		local repositories = connection(query, "Repositories", { id = id }, function(data)
 			return Publication.Record(Publication.Record(data.node).repositories)
 		end)
 		local linked = false
+
 		for _, linkedRepository in repositories do
 			if linkedRepository.id == repositoryId then
 				linked = true
 			end
 		end
+
 		if not linked then
 			query("LinkRepository", { input = { projectId = id, repositoryId = repositoryId } })
 			changed = true
@@ -350,7 +382,9 @@ function ProjectSync.Owner(
 		table.insert(receipts, { identity = project.identity, id = id, url = Publication.Text(current.url) })
 		print(`Reconciled GitHub Project {project.identity}: {Publication.Text(current.url)}`)
 	end
+
 	local prefix = `<!-- repository-project:{repository}:`
+
 	for _, project in existing do
 		if type(project.readme) ~= "string" or project.closed == true then
 			continue

@@ -6,7 +6,7 @@ local Json = require("@formats/json")
 local Net = require("@lute/net/client")
 local Publication = require("@ci/integrations/github/publication")
 
-local QUERY_PATH = ".github/ci/components/work/projects/sync/query.graphql"
+const QUERY_PATH = ".github/ci/components/work/projects/sync/query.graphql"
 
 local ProjectClient = {}
 ProjectClient.__index = ProjectClient
@@ -46,6 +46,7 @@ function ProjectClient.Query(
 			break
 		end
 		local message = if type(first.message) == "string" then first.message else "Unknown GraphQL error"
+
 		if
 			first.type == "FORBIDDEN"
 			or first.type == "INSUFFICIENT_SCOPES"
@@ -53,6 +54,7 @@ function ProjectClient.Query(
 		then
 			error("PROJECT_AUTH: Projects credential needs account-level Projects read/write access", 0)
 		end
+
 		error(`Projects API: {message}`, 0)
 	end
 	return Publication.Record(result.data)

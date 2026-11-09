@@ -15,7 +15,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): string?
+function Component.Run(self: Component, _: { event: string }): string?
 	local index = Publication.Record(Json.decode(Fs.readFileToString("build/github/releases/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged releases")
 	local repository = Publication.Begin("RELEASES")
@@ -23,11 +23,13 @@ function Component.Run(_self: Component, _context: { event: string }): string?
 		return "skipped"
 	end
 	local published = false
+
 	for _, value in Publication.ReadIndex("build/github/releases/index.json", "releases") do
 		if ReleasePublisher.Publish(repository, Publication.Record(value), policy, Publication.Request) then
 			published = true
 		end
 	end
+
 	if not published then
 		return "skipped"
 	end

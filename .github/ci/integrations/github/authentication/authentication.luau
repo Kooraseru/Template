@@ -12,7 +12,7 @@ local TokenPermissions = require("@ci/integrations/github/authentication/tokenPe
 
 local Authentication = {}
 export type Access = { token: string, temporary: boolean, inspection: TokenPermissions.Inspection? }
-local BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+const BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 local function mask(value: string): ()
 	if Process.env.GITHUB_ACTIONS ~= "true" then
@@ -125,6 +125,7 @@ function Authentication.Acquire(
 ): Access?
 	local id = credentials:Get(configuration, "app_id")
 	local key = credentials:Get(configuration, "app_private_key", true)
+
 	if id and key then
 		local ok, access = xpcall(appAccess, tostring, id, key, repository)
 		if ok then
@@ -136,8 +137,10 @@ function Authentication.Acquire(
 			"::warning::App authentication failed. Check the configured app_id and app_private_key, repository installation, and Contents/Workflows write permissions."
 		)
 	end
+
 	local token = credentials:Get(configuration, "bootstrap_token", true)
 	local name = configuration.credentials.bootstrap_token
+
 	if token and name and name:upper() ~= "GITHUB_TOKEN" then
 		mask(token)
 		local scopes = TokenPermissions.Required(configuration, roles or { "bootstrap_token" }, "bootstrap_token")
@@ -153,6 +156,7 @@ function Authentication.Acquire(
 		)
 		return { token = token, temporary = false, inspection = inspection }
 	end
+
 	local idName = configuration.credentials.app_id or "<configure github.credentials.app_id>"
 	local keyName = configuration.credentials.app_private_key or "<configure github.credentials.app_private_key>"
 	local tokenName = name or "<configure github.credentials.bootstrap_token>"

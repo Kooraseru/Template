@@ -13,7 +13,7 @@ function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
-function Component.Run(_self: Component, _context: { event: string }): ()
+function Component.Run(self: Component, _: { event: string }): ()
 	local projects = ProjectCatalog.Read()
 	Fs.createDirectory("build/github/project-plans", { makeParents = true })
 	Fs.writeStringToFile(
