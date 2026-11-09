@@ -6,6 +6,7 @@
 	],
 	// File Associations
 	"files.associations": {
+		"**/.github/config/credentials.json": "jsonc",
 		".luaurc": "jsonc"
 	},
 
@@ -54,6 +55,7 @@
 
 	// JSON Schemas
 	"json.schemas": [
+		{ "fileMatch": ["/.github/config/credentials.json"], "url": "./.github/config/credentials.schema.json" },
 		{
 			"fileMatch": ["/dependencies/dependencies.json"],
 			"url": "./dependencies/dependencies.schema.json"

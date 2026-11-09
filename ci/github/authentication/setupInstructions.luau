@@ -76,17 +76,16 @@ function SetupInstructions.Values(
 	local base = "https://github.com/" .. repository
 	local repoPermissions = table.clone(repositoryPermissions or {})
 
-	local function mergeRepository(path: string): ()
-		local root = Publication.Record(Toml.decode(Fs.readFileToString(path)))
-		for name, access in Publication.Record(Publication.Record(root.app).repository) do
+	local function mergeRepository(permissions: { [string]: string }): ()
+		for name, access in permissions do
 			if repoPermissions[name] ~= "write" then
-				repoPermissions[name] = Publication.Text(access)
+				repoPermissions[name] = access
 			end
 		end
 	end
 
 	if configuration.enabled then
-		mergeRepository(".github/config/permissions/bootstrap.toml")
+		mergeRepository(configuration.roles.bootstrap_token.permissions.repository)
 	end
 	local execution = Publication.Record(Toml.decode(Fs.readFileToString(".github/config/ci/execution.toml")))
 	local skip = Publication.Record(execution.skip)
@@ -95,7 +94,7 @@ function SetupInstructions.Values(
 		neutral = neutral or conclusion == "neutral"
 	end
 	if neutral then
-		mergeRepository(".github/config/permissions/check-runs.toml")
+		mergeRepository(configuration.neutralCheck)
 	end
 	local appQuery = "?name="
 		.. Publication.Encode(repository:gsub("/", "-") .. "-CI")
@@ -141,8 +140,8 @@ function SetupInstructions.Values(
 		actions_url = base .. "/actions" .. (if run and run:match("^%d+$") then "/runs/" .. run else ""),
 		retry_command = retry,
 		execution_config_url = base .. "/blob/HEAD/.github/config/ci/execution.toml",
-		app_id = configuration.credentials.app_id or "<github.credentials.app_id>",
-		app_private_key = configuration.credentials.app_private_key or "<github.credentials.app_private_key>",
+		app_id = configuration.credentials.app_id or "<credentials.json roles.app_id>",
+		app_private_key = configuration.credentials.app_private_key or "<credentials.json roles.app_private_key>",
 	}
 end
 

@@ -14,26 +14,6 @@ repository = "Kooraseru/Template"
 enabled = true
 branch_prefix = "ci/run-"
 
-[github.credentials]
-# IMPORTANT: These values are NAMES of GitHub secrets/variables, NOT credentials.
-# Create the actual secret in GitHub Settings > Secrets and variables > Actions.
-# Never paste a token, password, or private key into this file or any script.
-# Example: bootstrap_token = "MY_BOOTSTRAP_TOKEN" means look up the GitHub
-# secret NAMED MY_BOOTSTRAP_TOKEN. Its actual value stays in GitHub Secrets.
-# Prefer an installed App. App ID can be a variable; keys and tokens are secrets.
-app_id = "CI_APP_ID"
-app_private_key = "CI_APP_PRIVATE_KEY"
-# The same secret can serve bootstrap and Projects when it has both permissions.
-bootstrap_token = "CI_PROJECTS_TOKEN"
-# This is the GitHub Actions SECRET NAME, never the token value.
-projects_token = "CI_PROJECTS_TOKEN"
-# Rulesets need a separate repository Administration: write credential.
-rulesets_token = "CI_RULESETS_TOKEN"
-# release_token = "MY_RELEASE_SECRET"
-# organization_token = "MY_ORGANIZATION_SECRET"
-
-# Repository identity and credential mappings are configured here.
-
 [github.publication]
 # Omitted switches default to enabled on eligible pushes.
 releases = true

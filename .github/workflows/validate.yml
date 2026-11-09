@@ -1,0 +1,43 @@
+name: CI Validate
+
+on:
+  pull_request:
+    branches: [source]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Validate
+        env:
+          CI_PROFILE: validate
+          CI_EVENT: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/github/workflows/run-logged.sh ci-start validate
+      - name: Collect validation output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-validation
+          path: |
+            build/run/ci-start/logs/
+            build/run/ci-start/responses/
+          if-no-files-found: ignore

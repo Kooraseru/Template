@@ -24,7 +24,7 @@ local function report(
 	local markdown = Responses.Fill(Responses.Template("rulesets.authorization"), {
 		state = state,
 		diagnostic = diagnostic,
-		token_name = configuration.credentials.rulesets_token or "<github.credentials.rulesets_token>",
+		token_name = configuration.credentials.rulesets_token or "<credentials.json roles.rulesets_token>",
 	})
 	Responses.Record("authorization/rulesets", markdown, selectedColor)
 end
@@ -40,15 +40,17 @@ function Component.Run(self: Component, _: { event: string }): string?
 	local appId = Process.env.CI_CREDENTIAL_APP_ID
 	local privateKey = Process.env.CI_CREDENTIAL_APP_PRIVATE_KEY
 	local token = Process.env.CI_CREDENTIAL_RULESETS_TOKEN
+	local verified = Process.env.CI_CREDENTIAL_RULESETS_TOKEN_VERIFIED == "true"
 	Process.env.CI_CREDENTIAL_APP_ID = nil
 	Process.env.CI_CREDENTIAL_APP_PRIVATE_KEY = nil
 	Process.env.CI_CREDENTIAL_RULESETS_TOKEN = nil
+	Process.env.CI_CREDENTIAL_RULESETS_TOKEN_VERIFIED = nil
 	local access: Authentication.Access? = nil
 
 	-- Administration: write is not part of the ordinary read-only or publication GITHUB_TOKEN.
 	if appId and appId ~= "" and privateKey and privateKey ~= "" then
 		local ok, result =
-			pcall(Authentication.AppAccess, appId, privateKey, repository, { administration = "write" }, nil)
+			pcall(Authentication.AppAccess, appId, privateKey, repository, configuration.roles.rulesets_token.permissions.repository, nil)
 		if ok then
 			access = result :: Authentication.Access
 		else
@@ -58,7 +60,9 @@ function Component.Run(self: Component, _: { event: string }): string?
 
 	if not access and token and token ~= "" and token ~= Process.env.GH_TOKEN then
 		local required = TokenPermissions.Required(configuration, { "rulesets_token" }, "rulesets_token")
-		local inspection = TokenPermissions.Inspect(token, required)
+		local inspection: TokenPermissions.Inspection = if verified
+			then { state = "verified", required = required, missing = {} }
+			else TokenPermissions.Inspect(token, required)
 		if inspection.state ~= "invalid" and inspection.state ~= "insufficient" then
 			local tokenAccess: Authentication.Access = { token = token, temporary = false, inspection = inspection }
 			access = tokenAccess
@@ -66,7 +70,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 	end
 
 	if not access then
-		local secret = configuration.credentials.rulesets_token or "<github.credentials.rulesets_token>"
+		local secret = configuration.credentials.rulesets_token or "<credentials.json roles.rulesets_token>"
 		local problem = `No App or {secret} credential with repository Administration: write was available.`
 		print(`::warning::Rulesets sync skipped: {problem} PR validation remains available.`)
 		report(configuration, "Skipped: authorization unavailable", problem, "warning")

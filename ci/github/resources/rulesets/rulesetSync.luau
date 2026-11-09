@@ -172,6 +172,7 @@ function RulesetSync.Sync(
 		local name = Publication.Text(definition.name)
 		local current = byName[name:lower()]
 		local id: number
+		local applied = false
 
 		if current then
 			id = current.id :: number
@@ -182,8 +183,7 @@ function RulesetSync.Sync(
 			if not matches(detail, definition) then
 				print(`::notice::Applying ruleset update {ruleset.identity} (ID {id})`)
 				request(token, "PUT", `{prefix}/{id}`, definition)
-				changed = true
-				print(`Updated managed ruleset {ruleset.identity}`)
+				applied = true
 			end
 		else
 			print(`::notice::Creating managed ruleset {ruleset.identity}`)
@@ -193,8 +193,16 @@ function RulesetSync.Sync(
 			if type(id) ~= "number" then
 				error(`Rulesets API did not return an ID for {name}`, 0)
 			end
+			applied = true
+		end
+
+		if applied then
+			local _, detail = request(token, "GET", `{prefix}/{id}`)
+			if not matches(detail, definition) then
+				error(`GitHub did not persist the declared ruleset {ruleset.identity} (ID {id})`, 0)
+			end
 			changed = true
-			print(`Created managed ruleset {ruleset.identity}`)
+			print(`Verified managed ruleset {ruleset.identity} (ID {id}) after applying changes`)
 		end
 
 		table.insert(receipts, { identity = ruleset.identity, id = id })

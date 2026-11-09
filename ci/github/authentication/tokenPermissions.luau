@@ -1,13 +1,9 @@
 -- ci/github/authentication/tokenPermissions.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Toml = require("@formats/toml")
 local Net = require("@lute/net/client")
 local Process = require("@lute/process")
-local Glob = require("@ci/bootstrap/discovery/glob")
 local Configuration = require("@ci/github/configuration")
-local Publication = require("@ci/github/publication")
 local SetupInstructions = require("@ci/github/authentication/setupInstructions")
 local Responses = require("@ci/github/reporting/responses")
 
@@ -30,40 +26,15 @@ function TokenPermissions.Required(
 
 	for _, selected in roles do
 		local selectedName = configuration.credentials[selected]
-		if name and selectedName and name:upper() == selectedName:upper() then
+		if selected == role or (name and selectedName and name:upper() == selectedName:upper()) then
 			requested[selected] = true
 		end
 	end
 
 	local scopes: { [string]: boolean } = {}
 
-	for _, path in Glob.Find(".github/config/permissions/*.toml") do
-		local root = Publication.Record(Toml.decode(Fs.readFileToString(path)))
-		local declaration = root.credential
-
-		if declaration == nil then
-			if root.classic ~= nil then
-				error(`{path}: classic scope declarations require credential.role`, 0)
-			end
-			continue
-		end
-
-		local owner = Publication.Text(Publication.Record(declaration).role)
-		if not owner:match("^[a-z][a-z0-9_]*$") then
-			error(`{path}: invalid credential.role`, 0)
-		end
-		if not requested[owner] then
-			continue
-		end
-		local required = Publication.Record(root.classic).scopes
-		if type(required) ~= "table" or #required == 0 then
-			error(`{path}: classic.scopes must be a nonempty array`, 0)
-		end
-
-		for index, scope in required do
-			if type(index) ~= "number" or type(scope) ~= "string" or not scope:match("^[%w_:]+$") then
-				error(`{path}: invalid classic token scope`, 0)
-			end
+	for selected in requested do
+		for _, scope in configuration.roles[selected].permissions.classic do
 			scopes[scope] = true
 		end
 	end

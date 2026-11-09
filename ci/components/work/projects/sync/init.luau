@@ -60,7 +60,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 			local problem = tostring(result)
 
 			if problem:find("PROJECT_AUTH:", 1, true) then
-				local name = configuration.credentials.projects_token or "<github.credentials.projects_token>"
+				local name = configuration.credentials.projects_token or "<credentials.json roles.projects_token>"
 				print(
 					`::warning::Projects sync skipped for {owner}: verify Projects access for the configured App or secret {name}. See the run summary for personal and organization setup instructions. Partial earlier operations may have succeeded.`
 				)

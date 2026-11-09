@@ -1,6 +1,7 @@
 -- ci/bootstrap/init.luau
 --!strict
 
+local Process = require("@lute/process")
 local Executor = require("@self/execution/executor")
 local Reporter = require("@self/outcomes/reporter")
 local Discovery = require("@self/discovery")
@@ -9,13 +10,17 @@ local Contract = require("@self/contracts/contract")
 local BranchRun = require("@ci/github/resources/branches/branchRun")
 local Credentials = require("@ci/github/authentication/credentials")
 local TaskRunner = require("@ci/github/workflows/taskRunner")
+local Responses = require("@ci/github/reporting/responses")
 local Publication = require("@ci/github/publication")
+
+local Configuration = require("@ci/github/configuration")
 
 local Bootstrap = {}
 Bootstrap.__index = Bootstrap
 
 type BootstrapFields = {
 	event: string,
+	profile: Configuration.Profile?,
 	executor: Executor.Executor,
 	reporter: Reporter.Reporter,
 	discovery: Discovery.Discovery,
@@ -25,10 +30,11 @@ type BootstrapFields = {
 
 export type Bootstrap = setmetatable<BootstrapFields, typeof(Bootstrap)>
 
-function Bootstrap.new(event: string): Bootstrap
-	local credentials = Credentials.new()
+function Bootstrap.new(event: string, profile: Configuration.Profile?): Bootstrap
+	local credentials = Credentials.new(profile)
 	local fields: BootstrapFields = {
 		event = event,
+		profile = profile,
 		executor = Executor.new(credentials),
 		reporter = Reporter.new(),
 		discovery = Discovery.new(),
@@ -40,10 +46,19 @@ end
 
 function Bootstrap.BuildPlan(self: Bootstrap): { Contract.Task }
 	local components = self.discovery:Discover()
-	return self.planner:Resolve(components, self.event)
+	local tasks = self.planner:Resolve(components, self.event)
+	local roles = Configuration.new().roles
+	for _, task in tasks do
+		for _, role in task.credentials do
+			if not roles[role] then
+				error(`{task.identity}: unknown credential role {role}`, 0)
+			end
+		end
+	end
+	return tasks
 end
 
-function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?): ()
+function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?, profileName: string?): ()
 	local tasks = self:BuildPlan()
 	if component or reportOnly then
 		if component then
@@ -54,12 +69,27 @@ function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?
 		return
 	end
 
-	if BranchRun.TryLaunch(tasks, self.event, self.credentials) then
-		Publication.Output("delegated", "true")
-		return
+	local restriction: ("validate" | "source-ci")? = nil
+	if self.profile then
+		restriction = if profileName == "source-ci" then "source-ci" else "validate"
 	end
-	local result = self.executor:Execute(tasks, self.event)
-	self.reporter:Report(result.outcomes, #tasks)
+	if restriction ~= "validate" and (not self.profile or self.profile.delegate) then
+		if restriction == "source-ci" and not (Process.env.ACT == "true") then
+			local ok, launched = pcall(BranchRun.TryLaunch, tasks, self.event, self.credentials)
+			if ok and launched then
+				Publication.Output("delegated", "true")
+				return
+			end
+			local reason = if ok then "delegation unavailable; see credential and repository notices" else tostring(launched)
+			print(`::warning::Source CI delegation failed: {reason}`)
+			Responses.Record("execution/delegation", "### Source CI delegation failed\n\n" .. reason, "failure")
+		elseif BranchRun.TryLaunch(tasks, self.event, self.credentials) then
+			Publication.Output("delegated", "true")
+			return
+		end
+	end
+	local result = self.executor:Execute(tasks, self.event, restriction)
+	self.reporter:Report(result.outcomes, #tasks, nil, restriction ~= nil)
 	if not result.passed then
 		error("one or more discovered CI components failed or were blocked", 0)
 	end

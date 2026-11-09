@@ -7,6 +7,13 @@ workflows:
         - 'actions/checkout@v7'
         - 'actions/setup-node@v4'
         - 'actions/upload-artifact@v7'
+    '.github/workflows/remote-read.yml':
+        - 'actions/checkout@v7'
+        - 'actions/setup-node@v4'
+    '.github/workflows/validate.yml':
+        - 'actions/checkout@v7'
+        - 'actions/setup-node@v4'
+        - 'actions/upload-artifact@v7'
 dependencies:
     'actions/checkout@v7':
         ref: 'v7'

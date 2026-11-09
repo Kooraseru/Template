@@ -10,6 +10,7 @@ local Glob = require("@ci/bootstrap/discovery/glob")
 local Reporter = require("@ci/bootstrap/outcomes/reporter")
 local Workflow = require("@ci/github/workflows/workflow")
 local Publication = require("@ci/github/publication")
+local Configuration = require("@ci/github/configuration")
 local Credentials = require("@ci/github/authentication/credentials")
 local SkipPolicy = require("@ci/bootstrap/outcomes/skipPolicy")
 local Responses = require("@ci/github/reporting/responses")
@@ -126,6 +127,9 @@ function TaskRunner.Run(
 	local executor = Executor.new(credentials)
 	print(`::notice::Starting {identity}`)
 	local outcome = executor:Invoke(selected, event)
+	if outcome ~= "passed" and credentials and Process.env.CI_GRAPH_RUN == "true" and Process.env.ACT ~= "true" then
+		credentials:WarnUnavailable(Configuration.new(), "source-ci", identity, selected.credentials)
+	end
 
 	if outcome == "skipped" then
 		Publication.Output("outcome", "skipped")

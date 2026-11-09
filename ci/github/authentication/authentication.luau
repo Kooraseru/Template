@@ -102,7 +102,7 @@ local function appAccess(
 	local repositoryName = repository:match("/([^/]+)$")
 	local created = request(jwt, "POST", `/app/installations/{decoded.id}/access_tokens`, {
 		repositories = if organization then nil else { repositoryName },
-		permissions = permissions or { contents = "write", workflows = "write" },
+		permissions = permissions,
 	})
 	if not created.ok then
 		error(`App installation token request returned HTTP {created.status}`, 0)
@@ -127,7 +127,7 @@ function Authentication.Acquire(
 	local key = credentials:Get(configuration, "app_private_key", true)
 
 	if id and key then
-		local ok, access = xpcall(appAccess, tostring, id, key, repository)
+		local ok, access = xpcall(appAccess, tostring, id, key, repository, configuration.roles.bootstrap_token.permissions.repository)
 		if ok then
 			print("::notice::Using a repository-scoped GitHub App installation token for branch bootstrap")
 			return access
@@ -144,7 +144,9 @@ function Authentication.Acquire(
 	if token and name and name:upper() ~= "GITHUB_TOKEN" then
 		mask(token)
 		local scopes = TokenPermissions.Required(configuration, roles or { "bootstrap_token" }, "bootstrap_token")
-		local inspection = TokenPermissions.Inspect(token, scopes)
+		local inspection: TokenPermissions.Inspection = if credentials.selected and credentials.selected.bootstrap_token == token
+			then { state = "verified", required = scopes, missing = {} }
+			else TokenPermissions.Inspect(token, scopes)
 		if inspection.state ~= "verified" then
 			TokenPermissions.Warn(configuration, "bootstrap_token", inspection)
 		end
@@ -152,14 +154,15 @@ function Authentication.Acquire(
 			return nil
 		end
 		print(
-			`::notice::Using configured bootstrap_token secret {name}; scope audit: {inspection.state}. GitHub still enforces repository access on push.`
+			`::notice::Using credential for bootstrap_token; scope audit: {inspection.state}. GitHub still enforces repository access on push.`
 		)
 		return { token = token, temporary = false, inspection = inspection }
 	end
 
-	local idName = configuration.credentials.app_id or "<configure github.credentials.app_id>"
-	local keyName = configuration.credentials.app_private_key or "<configure github.credentials.app_private_key>"
-	local tokenName = name or "<configure github.credentials.bootstrap_token>"
+	credentials:WarnUnavailable(configuration, "source-ci", "Bootstrap delegation", { "app_id", "app_private_key", "bootstrap_token" })
+	local idName = configuration.credentials.app_id or "<configure credentials.json roles.app_id>"
+	local keyName = configuration.credentials.app_private_key or "<configure credentials.json roles.app_private_key>"
+	local tokenName = name or "<configure credentials.json roles.bootstrap_token>"
 	print(
 		`::notice::Native job graph unavailable. Configure GitHub App variable/secret {idName} and private-key secret {keyName}, or bootstrap-token secret {tokenName}. Continuing with the Luau scheduler.`
 	)

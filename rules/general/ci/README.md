@@ -1,6 +1,6 @@
 # CI architecture and operating rules
 
-GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. The committed workflow is `.github/workflows/ci.yml`; it starts the scheduler in `ci/entry.luau`. Do not add another maintained workflow or move planning and scheduling into YAML.
+GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. The committed workflows route source CI, validation, and remote reads through `ci/entry.luau`. Bootstrap owns planning and scheduling.
 
 ## Discovery and component contracts
 
@@ -22,13 +22,13 @@ Generated output belongs under ignored `build/`. GitHub products use `build/gith
 
 Configuration and authored records live with their owner:
 
-- `.github/config/targets.toml` stores repository identity, aliases, and credential names.
+- `.github/config/targets.toml` stores repository identity, aliases, and publication policy.
 - `.github/config/branches/` contains one branch source record per branch.
 - `.github/config/rulesets/` contains desired ruleset records.
 - `.github/config/issues/` owns labels and milestones. `.github/config/projects/` owns project blueprints.
 - `.github/config/publishing/` owns release, package, and attestation records.
 - `.github/publication/` owns Pages and Wiki publication settings when supported.
-- `.github/config/ci/` owns CI policy. Permissions and report templates live in `config/permissions/` and `config/reports/` under `.github/`.
+- `.github/config/ci/` owns CI policy. Credential roles and permissions live in `config/credentials.json`. Report templates live in `config/reports/`.
 
 Discover records from their owner directory. Adding a host, milestone, branch, project, ruleset, release, or package record should not require a CI registry edit. Malformed present records fail with a path-specific diagnostic. Preserve user project items, fields, options, and views during reconciliation. Preserve the existing source-gate and source-admin enforcement semantics. Do not treat planned Wiki ownership as implemented publication.
 

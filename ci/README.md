@@ -1,8 +1,23 @@
 # CI implementation
 
-`.github/workflows/ci.yml` is the committed workflow. It invokes the Luau coordinator at `ci/entry.luau`, which discovers component manifests under `ci/components/` and schedules isolated component runs. Grouping folders do not establish order; dependencies come from declared capabilities.
+`ci.yml`, `validate.yml`, and `remote-read.yml` own separate GitHub triggers. They share the Luau entry point at `ci/entry.luau`, which discovers component manifests under `ci/components/` and schedules isolated component runs. Credential names and requirements live in `.github/config/credentials.json`. Grouping folders do not establish order; dependencies come from declared capabilities.
 
-Edit CI behavior and component implementations under `ci/`. Edit credential names and publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and permissions live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
+Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
+
+The GitHub workflow selects its own profile. PRs and manual validation use `validate`. Pushes and manual CI on the protected `source` branch use `source-ci`. The manual `remote-read` workflow uses its own read-only token. Local Preflight resolves the graph without hosted credentials.
+
+The commented `credentials.json` catalog defines runtime sources, verifiers, roles, and profiles. GitHub Actions discovers GitHub PATs by token format without a naming convention. Classic scopes are inspected once per job. A read-only repository probe can establish visibility. GitHub still decides whether the actual write is allowed. Existing named bindings remain available for explicitly configured credentials and migration fallbacks.
+
+If a branch protection rule requires the former PR gate check, update it to require the `validate` job from **CI Validate** when rolling out the split.
+
+### Credential providers
+
+Set `profiles.source-ci.sources` to the ordered source IDs to use. Select at most one hosted transport. The default GitHub-context source passes the context only to the source gate and credential-selection steps that need it. The selector forwards only the selected values to component processes. A project can opt into listed discovery with `discovery: "listed"` and a `secrets` array of GitHub key names.
+
+To use a broker, configure an `oidc` source with its HTTPS `endpoint` and `audience`, then reference it from the profile. The broker receives a GitHub identity token in the Authorization header and a JSON body with `profile`, `roles`, and `requests`. Each request carries the role, service, operation, target, target list, and requirements. Return named credentials as strings in `credentials`. For capability credentials, return `{ "value": "...", "grants": { "operation": "...", "targets": ["..."], "repository": {}, "organization": {}, "classic": [] } }` keyed by role. A legacy string response can still qualify through the verifier. Configure broker policy to validate signed GitHub claims and authorize each requested operation and target independently. Bootstrap runs on protected source and generated jobs run on temporary CI branches.
+
+Command sources and verifiers receive JSON on stdin and return JSON on stdout. A source receives `{profile, requests}` and returns an array of candidates with `value`, optional `role`, and optional provider metadata. A verifier receives `{request, candidate}` and returns `{state, missing?, extraPermissions?, kind?, targetAccess?}`. Custom verifier roles declare `candidateSources` to opt into specific sources. Adapters run without the ambient workflow credential context. Keep all values and provider responses out of logs.
+
 
 ## VS Code setup
 

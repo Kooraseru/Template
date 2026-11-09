@@ -1,8 +1,0 @@
-[app.repository]
-administration = "write"
-
-[classic]
-scopes = ["repo"]
-
-[credential]
-role = "rulesets_token"

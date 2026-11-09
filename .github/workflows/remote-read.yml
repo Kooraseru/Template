@@ -1,0 +1,32 @@
+name: CI Remote Read
+
+on: workflow_dispatch
+
+permissions: {}
+
+jobs:
+  remote-read:
+    if: github.ref == 'refs/heads/source'
+    permissions:
+      contents: read
+      issues: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Resolve configured publication inputs
+        env:
+          CI_PROFILE: remote-read
+        run: |
+          node dependencies/packages/core/dependencyLoader/index.ts
+          build/dependencies/bin/lute/lute run ci/entry.luau --profile-check
+          build/dependencies/bin/lute/lute run dependencies/packages/checks/preflightChecker/bootstrap/inputs.luau > "$RUNNER_TEMP/template-preflight-inputs.json"
+      - name: Check GitHub prerequisites
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node dependencies/packages/checks/preflightChecker/bootstrap/remoteRead.cjs "$RUNNER_TEMP/template-preflight-inputs.json"

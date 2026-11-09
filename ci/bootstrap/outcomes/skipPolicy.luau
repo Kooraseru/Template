@@ -30,37 +30,7 @@ local function record(value: unknown): { [string]: unknown }
 end
 
 local function neutralCheckPermissions(): { [string]: string }
-	local path = ".github/config/permissions/check-runs.toml"
-	local decoded = record(Toml.decode(Fs.readFileToString(path)))
-
-	for field in decoded do
-		if field ~= "app" then
-			error(`{path}: unknown authorization section {tostring(field)}`, 0)
-		end
-	end
-
-	local app = record(decoded.app)
-
-	for field in app do
-		if field ~= "repository" then
-			error(`{path}: unknown App permission scope {tostring(field)}`, 0)
-		end
-	end
-
-	local repository = record(app.repository)
-	local permissions: { [string]: string } = {}
-
-	for name, value in repository do
-		if not name:match("^[a-z_]+$") or (value ~= "read" and value ~= "write") then
-			error(`{path}: invalid repository permission declaration`, 0)
-		end
-		permissions[name] = value :: string
-	end
-
-	if permissions.checks ~= "write" then
-		error(`{path}: neutral runtime skips require app.repository.checks = "write"`, 0)
-	end
-	return permissions
+	return Configuration.new().neutralCheck
 end
 
 function SkipPolicy.Conclusion(identity: string): string

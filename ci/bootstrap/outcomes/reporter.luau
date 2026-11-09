@@ -18,7 +18,8 @@ function Reporter.Report(
 	self: Reporter,
 	outcomes: { [string]: string },
 	selectedCount: number,
-	reportingFailed: boolean?
+	reportingFailed: boolean?,
+	suppressNeutral: boolean?
 ): ()
 	local identities: { string } = {}
 	for identity in outcomes do
@@ -36,6 +37,7 @@ function Reporter.Report(
 			local conclusion = SkipPolicy.Conclusion(identity)
 			outcome = if conclusion == "neutral" and Process.env.ACT == "true"
 				then "skipped (local run; no neutral Check Run created)"
+				elseif conclusion == "neutral" and suppressNeutral then "skipped (no separate Check Run for this profile)"
 				elseif conclusion == "neutral"
 					then "skipped (separate Check Run: neutral)"
 					else `skipped (configured job conclusion: {conclusion})`

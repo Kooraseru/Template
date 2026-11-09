@@ -76,7 +76,7 @@ function Executor.Invoke(self: Executor, task: Contract.Task, event: string): Ou
 	return outcome
 end
 
-function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: string): Result
+function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: string, restriction: ("validate" | "source-ci")?): Result
 	local outcomes: Outcomes = {}
 	local passed = true
 	for _, task in tasks do
@@ -91,7 +91,20 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		print(`::group::{task.identity}`)
 		local outcome: string
 
-		if #blockedBy > 0 then
+		local privileged = task.boundary == "privileged" or #task.credentials > 0
+		local outsideProfile = restriction == "validate" and privileged
+		for _, dependency in blockedBy do
+			if restriction == "validate" and outcomes[dependency] == "outside profile" then
+				outsideProfile = true
+			end
+		end
+		if outsideProfile then
+			outcome = "outside profile"
+			print(`::notice::{task.identity}: outside the validate profile`)
+		elseif restriction == "source-ci" and privileged then
+			outcome = "blocked"
+			print(`::error::{task.identity}: privileged work requires delegated execution`)
+		elseif #blockedBy > 0 then
 			outcome = "blocked"
 			print(`::error::{task.identity}: blocked by {table.concat(blockedBy, ", ")}`)
 		else
@@ -110,7 +123,7 @@ function Executor.Execute(self: Executor, tasks: { Contract.Task }, event: strin
 		outcomes[task.identity] = outcome
 		local neutralReported = true
 
-		if outcome == "skipped" and skipConclusion == "neutral" then
+		if outcome == "skipped" and skipConclusion == "neutral" and not restriction then
 			local ok, failure = xpcall(function(): string
 				SkipPolicy.ReportNeutral(task.identity, self.credentials)
 				return "reported"

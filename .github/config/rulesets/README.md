@@ -13,13 +13,14 @@ ruleset's GitHub display name currently requires renaming its existing remote
 rule manually; otherwise the new name creates a separate ruleset.
 
 The standard GITHUB_TOKEN cannot administer repository rulesets. Configure
-`github.credentials.rulesets_token` (default secret `CI_RULESETS_TOKEN`)
+`roles.rulesets_token` in `.github/config/credentials.json` (default secret `CI_RULESETS_TOKEN`)
 with repository Administration: write, or provide an installed GitHub App with
 repository Administration: write. A classic PAT needs the `repo` scope.
 Without an authorized credential, sync explicitly skips; plan/PR validation
 continues. Once authorized, API errors are failures, never successful skips.
 
-`source-gate.json` requires PRs and the `gate` check with no bypass.
+`source-gate.json` requires PRs and the `validate` check from CI Validate.
+Repository administrators have the Always allow bypass on this ruleset.
 `.github/config/rulesets/source-admin.json` is a disabled tombstone for the former administrator-only
 update restriction. Keep it disabled until it is safely retired from the remote
 ruleset catalog. The active PR and CI gate remains the only source branch rule
