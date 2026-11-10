@@ -1,10 +1,5 @@
 # Track the shared hooks and keep local Codex state private.
-/.codex/*
-!/.codex/config.toml
-!/.codex/hooks/
-/.codex/hooks/*
-!/.codex/hooks/checkEditorProblems.js
-!/.codex/hooks/ruleAudit.js
+/.codex/
 
 # CI and local build outputs.
 /build/

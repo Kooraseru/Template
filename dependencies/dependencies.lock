@@ -150,7 +150,7 @@
     },
     "workspace.npm": {
       "provider": "npm",
-      "fingerprint": "6854cad5804917728f124f0c9efa9a93db3385c992845b133d7f92000ad316c8",
+      "fingerprint": "8c95b1154e3b1f6960c3c85255de8369d3df369bae2b12b314ab454503b18038",
       "resolution": {
         "name": "template-workspace-tools",
         "lockfileVersion": 3,
@@ -159,12 +159,38 @@
           "": {
             "name": "template-workspace-tools",
             "dependencies": {
+              "@modelcontextprotocol/server": "2.4.0",
               "@types/node": "24.10.1",
               "ajv": "8.17.1",
               "jsonc-parser": "3.3.1",
               "preflight": "https://codeload.github.com/Kooraseru-Hub/Preflight/tar.gz/a862ebdcb784a4e396224eb39c458ec7c864a4b1",
               "typescript": "5.9.3",
               "yaml": "2.8.1"
+            }
+          },
+          "node_modules/@modelcontextprotocol/core": {
+            "version": "2.4.0",
+            "resolved": "https://registry.npmjs.org/@modelcontextprotocol/core/-/core-2.4.0.tgz",
+            "integrity": "sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==",
+            "license": "Apache-2.0",
+            "dependencies": {
+              "zod": "^4.2.0"
+            },
+            "engines": {
+              "node": ">=20"
+            }
+          },
+          "node_modules/@modelcontextprotocol/server": {
+            "version": "2.4.0",
+            "resolved": "https://registry.npmjs.org/@modelcontextprotocol/server/-/server-2.4.0.tgz",
+            "integrity": "sha512-rgR9yxSaAJ+bcsi/XroT/S2AfPiIWloXAnrdfYSCms9ivVju0ishu/wW0J21Ho6+ZOR1r7RyeRbjiRuF87ix5Q==",
+            "license": "Apache-2.0",
+            "dependencies": {
+              "@modelcontextprotocol/core": "2.4.0",
+              "zod": "^4.2.0"
+            },
+            "engines": {
+              "node": ">=20"
             }
           },
           "node_modules/@types/node": {
@@ -273,6 +299,15 @@
             "license": "ISC",
             "engines": {
               "node": ">= 14.6"
+            }
+          },
+          "node_modules/zod": {
+            "version": "4.6.7",
+            "resolved": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+            "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+            "license": "MIT",
+            "funding": {
+              "url": "https://github.com/sponsors/colinhacks"
             }
           }
         }
