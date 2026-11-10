@@ -77,16 +77,26 @@ local function appAccess(
 	local temporaryDirectory = temporaryDirectoryResult.stdout:gsub("%s+$", "")
 	local messagePath = `{temporaryDirectory}/message.jwt`
 	local keyPath = `{temporaryDirectory}/private-key.pem`
+	local signaturePath = `{temporaryDirectory}/signature.bin`
 	local ok, signature = xpcall(function(): Process.ProcessResult
 		Fs.writeStringToFile(messagePath, message)
 		Fs.writeStringToFile(keyPath, key)
-		return Process.run({ "openssl", "dgst", "-sha256", "-sign", keyPath, messagePath })
+		-- The process API captures stdout as text. Encode the binary signature before reading it.
+		local signed = Process.run({ "openssl", "dgst", "-sha256", "-sign", keyPath, "-out", signaturePath, messagePath })
+		if not signed.ok then
+			return signed
+		end
+		return Process.run({ "openssl", "base64", "-A", "-in", signaturePath })
 	end, tostring)
 	Fs.removeDirectory(temporaryDirectory, { recursive = true })
 	if not ok or not signature.ok then
 		error("Unable to sign GitHub App authentication request", 0)
 	end
-	local jwt = message .. "." .. base64url(signature.stdout)
+	local encodedSignature = signature.stdout:gsub("%s", ""):gsub("%+", "-"):gsub("/", "_"):gsub("=+$", "")
+	if encodedSignature == "" or not encodedSignature:match("^[%w_-]+$") then
+		error("Unable to sign GitHub App authentication request", 0)
+	end
+	local jwt = message .. "." .. encodedSignature
 	mask(jwt)
 	local installationPath = if organization
 		then `/orgs/{organization}/installation`
