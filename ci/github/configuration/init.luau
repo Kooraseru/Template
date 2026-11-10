@@ -20,11 +20,13 @@ export type Oidc = { endpoint: string, audience: string }
 export type Profile = {
 	bootstrap: { string },
 	delegate: boolean,
-	credentialProvider: ("github-context" | "oidc")?,
+	credentialProvider: ("github-context" | "oidc" | "environment")?,
 	oidc: Oidc?,
 	githubContext: boolean,
 	contextKeys: { string },
 	usesCommands: boolean,
+	bootstrapEnvironment: string?,
+	reportingEnvironment: string?,
 }
 
 local Configuration = {}
@@ -39,6 +41,7 @@ type Fields = {
 	roles: { [string]: Role },
 	profiles: { [string]: Profile },
 	neutralCheck: { [string]: string },
+	environments: { [string]: { [string]: string } },
 	publication: { [string]: boolean },
 }
 
@@ -102,7 +105,7 @@ end
 local cachedText: string? = nil
 local cachedCatalog: unknown = nil
 
-local function readCatalog(): ({ [string]: Role }, { [string]: Profile }, { [string]: string })
+local function readCatalog(): ({ [string]: Role }, { [string]: Profile }, { [string]: string }, { [string]: { [string]: string } })
 	local source = Fs.readFileToString(CREDENTIAL_PATH)
 	if source ~= cachedText then
 		local environment: { [string]: string } = {}
@@ -174,7 +177,7 @@ local function readCatalog(): ({ [string]: Role }, { [string]: Profile }, { [str
 		local provider = profile.credentialProvider
 		local oidc: Oidc? = nil
 		if id == "source-ci" then
-			if provider ~= "github-context" and provider ~= "oidc" then
+			if provider ~= "github-context" and provider ~= "oidc" and provider ~= "environment" then
 				catalogError(label .. ".credentialProvider")
 			end
 			if provider == "oidc" then
@@ -191,8 +194,10 @@ local function readCatalog(): ({ [string]: Role }, { [string]: Profile }, { [str
 		end
 		profiles[id] = {
 			bootstrap = bootstrap, delegate = delegate :: boolean,
-			credentialProvider = provider :: ("github-context" | "oidc")?, oidc = oidc,
+			credentialProvider = provider :: ("github-context" | "oidc" | "environment")?, oidc = oidc,
 			githubContext = profile.githubContext == true, usesCommands = profile.usesCommands == true,
+			bootstrapEnvironment = if type(profile.bootstrapEnvironment) == "string" then profile.bootstrapEnvironment else nil,
+			reportingEnvironment = if type(profile.reportingEnvironment) == "string" then profile.reportingEnvironment else nil,
 			contextKeys = stringList(profile.contextKeys, label .. ".contextKeys", "^[%w_]+$"),
 		}
 	end
@@ -205,7 +210,15 @@ local function readCatalog(): ({ [string]: Role }, { [string]: Profile }, { [str
 	if neutralCheck.checks ~= "write" then
 		catalogError("neutralCheck.checks")
 	end
-	return roles, profiles, neutralCheck
+	local environments: { [string]: { [string]: string } } = {}
+	for name, rawBindings in record(root.environments or {}, "environments") do
+		local bindings: { [string]: string } = {}
+		for role, alias in record(rawBindings, name) do
+			bindings[role] = text(alias, name .. "." .. role)
+		end
+		environments[name] = bindings
+	end
+	return roles, profiles, neutralCheck, environments
 end
 
 function Configuration.new(): Configuration
@@ -214,7 +227,7 @@ function Configuration.new(): Configuration
 	local github = record(root.github, "github")
 	local aliasSource = record(github.aliases, "github.aliases")
 	local bootstrap = record(github.bootstrap, "github.bootstrap")
-	local roles, profiles, neutralCheck = readCatalog()
+	local roles, profiles, neutralCheck, environments = readCatalog()
 	local aliases: { [string]: string } = {}
 
 	for name, value in aliasSource do
@@ -259,6 +272,7 @@ function Configuration.new(): Configuration
 		roles = roles,
 		profiles = profiles,
 		neutralCheck = neutralCheck,
+		environments = environments,
 		publication = publication,
 	}
 	return setmetatable(fields, Configuration)

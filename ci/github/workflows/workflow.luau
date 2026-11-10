@@ -5,7 +5,6 @@ local Configuration = require("@ci/github/configuration")
 local Process = require("@lute/process")
 local Json = require("@formats/json")
 local Contract = require("@ci/bootstrap/contracts/contract")
-local SkipPolicy = require("@ci/bootstrap/outcomes/skipPolicy")
 local NativeJob = require("@ci/github/workflows/nativeJob")
 
 local Workflow = {}
@@ -21,6 +20,41 @@ function Workflow.JobId(identity: string): string
 end
 
 -- This consumes the scheduler's validated tasks, not a second component list.
+local function credentialBindings(name: string, bindings: { [string]: string }): { [string]: string }
+	local environment = { CI_CREDENTIAL_ENVIRONMENT = name }
+	for role, alias in bindings do
+		environment["CI_CREDENTIAL_" .. role:upper()] = "${{ " .. alias .. " }}"
+	end
+	return environment
+end
+
+local function componentEnvironment(configuration: Configuration.Configuration, profile: Configuration.Profile, task: Contract.Task): string
+	local match: string? = nil
+	for name, bindings in configuration.environments do
+		if name == profile.bootstrapEnvironment or name == profile.reportingEnvironment then
+			continue
+		end
+		local count = 0
+		for _ in bindings do
+			count += 1
+		end
+		if count ~= #task.credentials then
+			continue
+		end
+		local covers = true
+		for _, role in task.credentials do
+			covers = covers and bindings[role] ~= nil
+		end
+		if covers then
+			if match then
+				error(`{task.identity}: ambiguous credential environments for {table.concat(task.credentials, ", ")}`, 0)
+			end
+			match = name
+		end
+	end
+	return match or error(`{task.identity}: no credential environment for {table.concat(task.credentials, ", ")}`, 0)
+end
+
 function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string): string
 	if event == "pull_request" then
 		for _, task in tasks do
@@ -37,6 +71,11 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		then "actions/download-artifact@v4"
 		else "actions/download-artifact@v8"
 	local configuration = Configuration.new()
+	local profile = configuration.profiles["source-ci"]
+	local hostedPush = event == "push" and Process.env.ACT ~= "true"
+	if hostedPush and profile.credentialProvider ~= "environment" and profile.credentialProvider ~= "oidc" then
+		error("Hosted execution requires environment or OIDC credential transport", 0)
+	end
 	local jobs: { [string]: unknown } = {}
 	local identities: { [string]: Contract.Task } = {}
 	local jobIds: { string } = {}
@@ -46,11 +85,6 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 
 	for _, task in tasks do
 		local needs: { string } = {}
-		local credentialRoles = table.clone(task.credentials)
-		if SkipPolicy.Conclusion(task.identity) == "neutral" then
-			table.insert(credentialRoles, "app_id")
-			table.insert(credentialRoles, "app_private_key")
-		end
 		local steps: { Step } = {
 			{
 				uses = "actions/checkout@v7",
@@ -75,66 +109,35 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			end
 		end
 
-		local profile = configuration.profiles["source-ci"]
-		-- The selector needs the Actions inventory to discover capability-based credentials.
-		local active = #credentialRoles > 0 and Process.env.ACT ~= "true"
-			and (profile.credentialProvider == "oidc" or profile.usesCommands or profile.githubContext)
-		local oidc = active and profile.credentialProvider == "oidc"
-		local credentialEnvironment: { [string]: string } = {}
+		local active = #task.credentials > 0 and hostedPush and profile.credentialProvider == "oidc"
+		local environmentName: string? = nil
+		local runEnvironment: { [string]: string } = {}
+		if task.boundary == "privileged" then
+			runEnvironment.GH_TOKEN = "${{ github.token }}"
+		end
+		if #task.credentials > 0 and hostedPush and profile.credentialProvider == "environment" then
+			environmentName = componentEnvironment(configuration, profile, task)
+			for key, value in credentialBindings(environmentName, configuration.environments[environmentName]) do
+				runEnvironment[key] = value
+			end
+		end
 		if active then
 			appendStep(steps, {
 				name = "Install dependencies",
 				run = "node dependencies/packages/core/dependencyLoader/index.ts",
 			})
-			credentialEnvironment.CI_SELECTOR_ROLES = table.concat(credentialRoles, ",")
-			if profile.githubContext then
-				credentialEnvironment.CI_SECRETS = "${{ toJSON(secrets) }}"
-				credentialEnvironment.CI_VARIABLES = "${{ toJSON(vars) }}"
-			end
-		end
-		if #credentialRoles > 0 then
-			appendStep(steps, {
-				name = "Resolve credential names",
-				id = "credentials",
-				run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --credential-names",
-			})
-			for _, role in credentialRoles do
-				local entry = configuration.roles[role]
-				if entry.selection == "named" or entry.fallbackName then
-					local output = "steps.credentials.outputs." .. role
-					local bindings: { string } = {}
-					for _, source in entry.sources do
-						local context = if source == "secret" then "secrets" else "vars"
-						table.insert(bindings, context .. "[" .. output .. "]")
-					end
-					credentialEnvironment["CI_CREDENTIAL_" .. role:upper()] = "${{ " .. table.concat(bindings, " || ") .. " }}"
-				end
-			end
+			runEnvironment.CI_SELECTOR_ROLES = table.concat(task.credentials, ",")
 		end
 
 		appendStep(steps, {
 			name = `Run {task.identity}`,
 			id = "component",
-			env = if task.boundary == "privileged"
-				then {
-					GH_TOKEN = "${{ github.token }}",
-				}
-				else nil,
+			env = if next(runEnvironment) then runEnvironment else nil,
 			run = if active then `build/dependencies/bin/lute/lute run ci/entry.luau --component {task.identity}`
 				else `bash ci/github/workflows/run-logged.sh ci-execution {Contract.Key(
 				task.identity
 			)} --component {task.identity}`,
 		})
-		local runStep = steps[#steps]
-
-		if #credentialRoles > 0 then
-			local environment = runStep.env or {}
-			for name, value in credentialEnvironment do
-				environment[name] = value
-			end
-			runStep.env = environment
-		end
-
 		if #task.outputs > 0 then
 			appendStep(steps, {
 				name = `Publish {task.identity} outputs`,
@@ -163,7 +166,13 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		end
 		local nativeStart = #steps + 1
 		NativeJob.Configure(task.identity, task.boundary, steps, job)
-		if oidc then
+		if environmentName then
+			if job.environment then
+				error(`{task.identity}: credential environment conflicts with native job environment`, 0)
+			end
+			job.environment = { name = environmentName, deployment = false }
+		end
+		if active then
 			local permissions = (job.permissions or { contents = "read" }) :: { [string]: string }
 			permissions["id-token"] = "write"
 			job.permissions = permissions
@@ -212,7 +221,15 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		table.insert(jobIds, jobId)
 	end
 
+	local reportEnvironment = if hostedPush then profile.reportingEnvironment else nil
+	local reportBindings = if reportEnvironment
+		then credentialBindings(reportEnvironment, configuration.environments[reportEnvironment])
+		else {} :: { [string]: string }
+	reportBindings.CI_JOB_RESULTS = "${{ toJSON(needs) }}"
+	reportBindings.CI_RESPONSE_DOWNLOAD_OUTCOME = "${{ steps.responses.outcome }}"
+	reportBindings.GH_TOKEN = "${{ github.token }}"
 	jobs.report = {
+		environment = if reportEnvironment then { name = reportEnvironment, deployment = false } else nil,
 		name = "CI result",
 		permissions = { contents = "read", actions = "read" },
 		env = { CI_COMPONENT = "response" },
@@ -239,11 +256,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			{
 				name = "Report component results",
 				["if"] = "${{ always() }}",
-				env = {
-					CI_JOB_RESULTS = "${{ toJSON(needs) }}",
-					CI_RESPONSE_DOWNLOAD_OUTCOME = "${{ steps.responses.outcome }}",
-					GH_TOKEN = "${{ github.token }}",
-				},
+				env = reportBindings,
 				run = "bash ci/github/workflows/run-logged.sh ci-execution report --report",
 			},
 			{

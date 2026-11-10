@@ -137,8 +137,6 @@ function TaskRunner.Run(
 		print(`::notice::Skipped {identity}`)
 		if skipConclusion == "failure" then
 			error(`component outcome is skipped; configured native job conclusion is failure`, 0)
-		elseif skipConclusion == "neutral" then
-			SkipPolicy.ReportNeutral(identity, credentials)
 		end
 		return
 	end
@@ -158,7 +156,7 @@ function TaskRunner.Run(
 	print(`::notice::Completed {identity}`)
 end
 
-function TaskRunner.Report(tasks: { Contract.Task }): ()
+function TaskRunner.Report(tasks: { Contract.Task }, credentials: Credentials.Credentials): ()
 	local encoded = Process.env.CI_JOB_RESULTS
 	if not encoded then
 		error("CI_JOB_RESULTS is missing", 0)
@@ -188,13 +186,16 @@ function TaskRunner.Report(tasks: { Contract.Task }): ()
 		local job: { [string]: unknown } = if type(value) == "table" then Publication.Record(value) else {}
 		local outputs = job.outputs
 		local skipped = type(outputs) == "table" and Publication.Record(outputs).outcome == "skipped"
-		outcomes[task.identity] = if skipped
-				and result ~= "success"
-				and SkipPolicy.Conclusion(task.identity) == "neutral"
-			then "skipped (neutral Check Run failed)"
-			elseif skipped
-				then "skipped"
-				elseif result == "success" then "passed" elseif result == "skipped" then "blocked" else result
+		outcomes[task.identity] = if skipped then "skipped"
+			elseif result == "success" then "passed" elseif result == "skipped" then "blocked" else result
+		if skipped and result == "success" and SkipPolicy.Conclusion(task.identity) == "neutral" then
+			local reported, problem = pcall(SkipPolicy.ReportNeutral, task.identity, credentials)
+			if not reported then
+				print(`::error::{problem}`)
+				outcomes[task.identity] = "skipped (neutral Check Run failed)"
+				passed = false
+			end
+		end
 		if outcomes[task.identity] == "blocked" then
 			local blockers: { string } = {}
 			for _, dependency in task.needs do

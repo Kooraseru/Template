@@ -4,4 +4,4 @@ inputs = [".github/config/rulesets/**", ".github/config/targets.toml", ".github/
 outputs = ["build/github/ruleset-sync/**"]
 events = ["push"]
 boundary = "privileged"
-credentials = ["app_id", "app_private_key", "rulesets_token"]
+credentials = ["app_id", "app_private_key"]

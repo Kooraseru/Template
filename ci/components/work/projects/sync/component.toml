@@ -4,4 +4,4 @@ inputs = [".github/config/projects/**", ".github/config/targets.toml", ".github/
 outputs = ["build/github/project-sync/**"]
 events = ["push"]
 boundary = "privileged"
-credentials = ["app_id", "app_private_key", "projects_token"]
+credentials = ["projects_token"]

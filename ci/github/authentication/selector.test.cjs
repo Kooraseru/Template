@@ -11,10 +11,16 @@ const requests = ["bootstrap_token", "projects_token", "rulesets_token"].map(rol
 	role, service: "github", operation: role, target: repo,
 }));
 
+function automaticCatalog() {
+	const catalog = load();
+	catalog.sources.actions = { provider: "github-context", discovery: "automatic" };
+	return catalog;
+}
+
 test("discovers a renamed PAT, ranks narrow grants, and caches duplicate probes", async () => {
 	const probes = new Map();
 	const result = await select({
-		catalog: load(), profile: "source-ci", requests,
+		catalog: automaticCatalog(), profile: "source-ci", requests,
 		secrets: {
 			Renamed: "ghp_shared", Alias: "ghp_shared", Narrow: "ghp_narrow",
 			Denied: "ghp_denied", Expired: "ghp_expired", Fine: "github_pat_dummy",
@@ -45,7 +51,7 @@ test("discovers a renamed PAT, ranks narrow grants, and caches duplicate probes"
 
 test("leaves unverified fine-grained credentials unselected", async () => {
 	const result = await select({
-		catalog: load(), profile: "source-ci", requests,
+		catalog: automaticCatalog(), profile: "source-ci", requests,
 		secrets: { Unverified: "github_pat_dummy" }, environment: {},
 		fetcher: () => assert.fail("No probe should be sent"),
 	});

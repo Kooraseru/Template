@@ -64,7 +64,7 @@ function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?
 		if component then
 			TaskRunner.Run(tasks, self.event, component, self.credentials)
 		else
-			TaskRunner.Report(tasks)
+			TaskRunner.Report(tasks, self.credentials)
 		end
 		return
 	end

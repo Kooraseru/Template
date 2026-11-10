@@ -19,7 +19,6 @@ jobs:
       contents: read
     outputs:
       provider: ${{ steps.select.outputs.provider }}
-      context: ${{ steps.select.outputs.context }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -35,8 +34,11 @@ jobs:
 
   gate:
     needs: select-provider
-    if: needs.select-provider.outputs.provider == 'github-context'
+    if: needs.select-provider.outputs.provider == 'environment'
     name: gate
+    environment:
+      name: ci-bootstrap
+      deployment: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,20 +53,15 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
-      - name: Resolve bootstrap credential names
-        id: credentials
-        if: needs.select-provider.outputs.context != 'true'
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --credential-names
       - name: Start bootstrap
         env:
           CI_PROFILE: source-ci
           CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
-          CI_CREDENTIAL_APP_ID: ${{ needs.select-provider.outputs.context != 'true' && (secrets[steps.credentials.outputs.app_id] || vars[steps.credentials.outputs.app_id]) || '' }}
-          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ needs.select-provider.outputs.context != 'true' && secrets[steps.credentials.outputs.app_private_key] || '' }}
-          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ needs.select-provider.outputs.context != 'true' && secrets[steps.credentials.outputs.bootstrap_token] || '' }}
-          CI_SECRETS: ${{ needs.select-provider.outputs.context == 'true' && toJSON(secrets) || '{}' }}
-          CI_VARIABLES: ${{ needs.select-provider.outputs.context == 'true' && toJSON(vars) || '{}' }}
+          CI_CREDENTIAL_ENVIRONMENT: ci-bootstrap
+          CI_CREDENTIAL_APP_ID: ${{ vars.CI_APP_ID }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets.CI_TOKEN }}
         run: build/dependencies/bin/lute/lute run ci/entry.luau
       # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output

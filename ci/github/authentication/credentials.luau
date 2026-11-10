@@ -91,6 +91,19 @@ function Credentials.new(profile: Configuration.Profile?): Credentials
 		end
 	end
 
+	local environmentName = Process.env.CI_CREDENTIAL_ENVIRONMENT
+	Process.env.CI_CREDENTIAL_ENVIRONMENT = nil
+	if environmentName then
+		local bindings = configuration.environments[environmentName]
+		if not bindings then
+			error(`Unknown credential environment {environmentName}`, 0)
+		end
+		for role, alias in bindings do
+			if not supplied[role] and role ~= "bootstrap_token" then
+				print(`::warning::Environment {environmentName} did not supply {role} from {alias}`)
+			end
+		end
+	end
 	local fields: Fields = { secrets = {}, variables = {} }
 
 	for role, value in supplied do
@@ -128,7 +141,7 @@ function Credentials.new(profile: Configuration.Profile?): Credentials
 	local active = if profile and profile.credentialProvider then profile
 		elseif delegatedRoles and Process.env.CI_GRAPH_RUN == "true" then configuration.profiles["source-ci"]
 		else nil
-	if active and Process.env.ACT ~= "true" then
+	if active and active.credentialProvider ~= "environment" and Process.env.ACT ~= "true" then
 		local roles = if profile then profile.bootstrap else (delegatedRoles or ""):split(",")
 		for _, id in roles do
 			if not configuration.roles[id] then

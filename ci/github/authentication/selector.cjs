@@ -114,6 +114,8 @@ async function select({ catalog, profile, requests, secrets = {}, variables = {}
 	}
 	for (const sourceId of profileConfig.sources) {
 		const source = catalog.sources[sourceId];
+		// The workflow binds environment credentials before the selector runs.
+		if (source.provider === "environment") continue;
 		const pending = scopedRequests.filter(request => !Object.hasOwn(chosen, request.role));
 		if (!pending.length) break;
 		let supplied;

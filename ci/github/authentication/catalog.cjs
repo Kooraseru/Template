@@ -64,6 +64,12 @@ function load(file = ".github/config/credentials.json") {
 		// Keep compatibility with existing role-based reports and named consumers.
 		role.name ??= role.fallbackName ?? id;
 	}
+	catalog.environments ??= {};
+	for (const [name, bindings] of Object.entries(catalog.environments)) {
+		for (const role of Object.keys(bindings)) {
+			if (!Object.hasOwn(catalog.roles, role)) throw new Error("Unknown credential role " + role + " in " + name);
+		}
+	}
 	for (const [name, profile] of Object.entries(catalog.profiles)) {
 		const sources = profile.sources.map(id => {
 			if (!Object.hasOwn(catalog.sources, id)) throw new Error("Unknown source in profile " + name);
@@ -75,6 +81,24 @@ function load(file = ".github/config/credentials.json") {
 		const transports = sources.filter(source => source.provider !== "command");
 		if (transports.length > 1) throw new Error("Choose one hosted credential transport per profile");
 		const [transport] = transports;
+		if (transport?.provider === "environment") {
+			const bootstrap = catalog.environments[profile.bootstrapEnvironment];
+			const reporting = catalog.environments[profile.reportingEnvironment];
+			// CI Publish is checked in, so these aliases must match its literal bindings.
+			if (profile.bootstrapEnvironment !== "ci-bootstrap"
+				|| Object.keys(bootstrap ?? {}).length !== 3
+				|| bootstrap.app_id !== "vars.CI_APP_ID"
+				|| bootstrap.app_private_key !== "secrets.CI_APP_PRIVATE_KEY"
+				|| bootstrap.bootstrap_token !== "secrets.CI_TOKEN"
+				|| profile.bootstrap.length !== 3
+				|| !profile.bootstrap.every(role => Object.hasOwn(bootstrap, role))) {
+				throw new Error("Bootstrap environment must match the fixed CI Publish bindings");
+			}
+			if (!reporting?.app_id || !reporting?.app_private_key || Object.keys(reporting).length !== 2
+				|| profile.reportingEnvironment === profile.bootstrapEnvironment) {
+				throw new Error("Reporting environment requires its own App bindings");
+			}
+		}
 		profile.githubContext = transport?.provider === "github-context" && transport.discovery !== "named";
 		profile.contextKeys = profile.githubContext ? (transport.secrets ?? []) : [];
 		profile.usesCommands = sources.some(source => source.provider === "command");
