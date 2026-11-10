@@ -1,6 +1,6 @@
 # Workspace dependencies
 
-Edit `dependencies.json` and run `node dependencies/packages/core/dependencyLoader/index.ts --update-lock` to resolve changes. Commit the manifest and `dependencies.lock` together. Normal setup reads the lock and installs into `build/dependencies/`. The npm provider writes a native manifest and lock under `build/dependencies/npm/` and runs `npm ci --ignore-scripts`. Release executables live under `build/dependencies/bin/`. Use `--exec luau.lute --version` to set up dependencies and run a provider's executable.
+Edit `dependencies.json` and run `node dependencies/packages/core/dependencyLoader/index.ts --update-lock` to resolve changes. Commit the manifest and `dependencies.lock` together. Normal setup reads the lock and installs into `dependencies/managed/`. The npm provider writes a native manifest and lock under `dependencies/managed/npm/` and runs `npm ci --ignore-scripts`. Release executables live under `dependencies/managed/bin/`. Use `--exec luau.lute --version` to set up dependencies and run a provider's executable.
 
 ## Provider declarations
 
@@ -15,14 +15,18 @@ The loader runs the command from the workspace root with one JSON request on std
 Both actions receive `action`, `id`, `options`, absolute `workspace` and `stage` paths, Node's `platform` and `arch` names, and `prerequisites`. The latter maps prerequisite IDs to their named exports as absolute paths.
 
 - **Resolve** receives optional `previous` resolution data from the lock. Return `{ "resolution": ... }` with all pins needed to repeat the install, or `null` for a dependency with no external resolution. Keep resolution data portable between supported platforms and free of secrets. If any resolve fails, the tracked lock stays as it was.
-- **Install** receives the selected `resolution`. Write new artifacts under `stage` and return a publication description like the following. Build exports refer to the final destination. Workspace exports refer to an existing workspace file or directory outside `build/`. An executable names an export and can specify an interpreter argument array. The loader appends the exported file and the user's arguments.
+- **Install** receives the selected `resolution`. Write new artifacts under `stage` and return a publication description like the following. Managed exports refer to the final destination. Workspace exports refer to an existing workspace file or directory outside generated and local state locations. An executable names an export and can specify an interpreter argument array. The loader appends the exported file and the user's arguments.
 
 ```json
 {
   "outputs": [{ "from": "tool", "to": "bin/example" }],
-  "exports": { "cli": { "root": "build", "path": "bin/example/cli.mjs" } },
+  "exports": { "cli": { "root": "managed", "path": "bin/example/cli.mjs" } },
   "executable": { "export": "cli", "interpreter": ["node"] }
 }
 ```
 
-Use forward slashes in output paths. Paths in `from` are relative to the stage and paths in `to` are relative to `build/dependencies/`. An output can be a file or a directory. Return `"outputs": []` when exposing only existing workspace files. The loader rejects overlapping destinations and escaping links. It stages the whole install before publication and can recover an interrupted publication on the next run.
+Use forward slashes in output paths. Paths in `from` are relative to the stage and paths in `to` are relative to `dependencies/managed/`. An output can be a file or a directory. Return `"outputs": []` when exposing only existing workspace files. The loader rejects overlapping destinations and escaping links. It stages the whole install before publication and can recover an interrupted publication on the next run.
+
+The export root `managed` resolves inside `dependencies/managed/`. Legacy provider responses with `root: "build"` remain accepted as an alias during migration; they do not resolve inside `build/`.
+
+`build/` is disposable output. `dependencies/managed/` holds installed dependencies and loader state; `.workspace/` holds persistent local editor, agent, and CI execution state. Both are ignored. Setup copies old `build/dependencies/` under the old loader lock and publishes the copy atomically; the original remains a recovery copy. Existing new-layout installations take precedence. Session selections from `build/run/editor-problems/` are copied without overwriting existing selections. Setup never cleans `.workspace/`. Remove legacy copies only after verifying your installation; no user data is deleted by this migration.

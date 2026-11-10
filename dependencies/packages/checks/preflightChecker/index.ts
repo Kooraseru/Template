@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 import { effective, loadPolicy, policyFile } from "../ruleLinter/policy.cjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const ignoredDirectories = new Set([".git", ".codex", "node_modules", "vendor", "rules-old"]);
+const ignoredDirectories = new Set([".git", ".codex", ".workspace", "node_modules", "vendor", "rules-old"]);
 const configuration = ".vscode/config/typescript/tsconfig.json";
-const lute = path.join(root, "build/dependencies/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
-const typescript = path.join(root, "build/dependencies/npm/node_modules/typescript/bin/tsc");
+const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+const typescript = path.join(root, "dependencies/managed/npm/node_modules/typescript/bin/tsc");
 
 function finding(file: string, line: number, column: number, severity: string, source: string, message: string): void {
 	console.log(`${path.resolve(root, file)}:${line}:${column}: ${severity}: [${source}] ${message}`);
@@ -20,7 +20,8 @@ function luauSources(directory = root, includeFixtures = false): string[] {
 	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isSymbolicLink()) continue;
 		const file = path.join(directory, entry.name);
-		const generatedBuild = directory === root && entry.name === "build";
+		const generatedBuild = (directory === root && entry.name === "build") ||
+			(directory === path.join(root, "dependencies") && (entry.name === "managed" || entry.name.startsWith(".managed-migration-")));
 		const fixtureDirectory = ["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep + "luau" + path.sep);
 		if (entry.isDirectory() && !generatedBuild && !ignoredDirectories.has(entry.name) && (includeFixtures || !fixtureDirectory)) result.push(...luauSources(file, includeFixtures));
 		else if (entry.isFile() && entry.name.endsWith(".luau")) result.push(path.relative(root, file));
@@ -33,8 +34,8 @@ async function dependenciesReady(): Promise<boolean> {
 		lute,
 		typescript,
 		path.join(root, ".luaurc"),
-		path.join(root, "build/dependencies/.loader-state.json"),
-		path.join(root, "build/dependencies/npm/node_modules/@types/node/index.d.ts"),
+		path.join(root, "dependencies/managed/.loader-state.json"),
+		path.join(root, "dependencies/managed/npm/node_modules/@types/node/index.d.ts"),
 	];
 	const deadline = Date.now() + 120000;
 	while (required.some(file => !fs.existsSync(file))) {
@@ -69,7 +70,7 @@ function check(program: string, args: string[], source: string): void {
 }
 
 function checkCiPlans(): void {
-	const cli = path.join(root, "build/dependencies/npm/node_modules/preflight/bin/preflight.js");
+	const cli = path.join(root, "dependencies/managed/npm/node_modules/preflight/bin/preflight.js");
 	const provider = "dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs";
 	for (const entry of ["pull_request", "push", "workflow_dispatch"]) {
 		const source = "Bootstrap plan (" + entry + ")";

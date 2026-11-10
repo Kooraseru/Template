@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { contained } from "./contract.ts";
+import { migrateLayout } from "./migration.ts";
 import { load } from "./loader.ts";
 import { execute } from "./providers.ts";
 import { withStage } from "./publication.ts";
@@ -77,7 +78,8 @@ export async function main(args: string[], workspace = root): Promise<number> {
 	if (args.length && !update && !requested) {
 		throw new Error("Usage: dependency-loader [--update-lock | --exec ID [arguments...]]");
 	}
-	const generated = contained(workspace, "build/dependencies");
+	await migrateLayout(workspace);
+	const generated = contained(workspace, "dependencies/managed");
 	const executable = await withStage(generated, async stage => {
 		const selected = await load(workspace, generated, stage, update, reportProgress, requested, only);
 		if (!update) generateBridges(workspace);

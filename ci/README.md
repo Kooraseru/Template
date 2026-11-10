@@ -48,7 +48,7 @@ node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute lint ci
 ```
 
-The loader writes managed package/runtime files to `build/dependencies/packages/`, executables to `build/dependencies/bin/`, and generated type definitions to `build/dependencies/types/`. These build outputs are ignored. The npm provider writes its manifest, native lock, and install to build/dependencies/npm/. See the [dependency provider contract](../dependencies/README.md). Local source packages stay checked in under `dependencies/packages/`.
+The loader writes managed package/runtime files to `dependencies/managed/packages/`, executables to `dependencies/managed/bin/`, and generated type definitions to `dependencies/managed/types/`. These managed installations are ignored and survive deletion of `build/`. The npm provider writes its manifest, native lock, and install to dependencies/managed/npm/. See the [dependency provider contract](../dependencies/README.md). Local source packages stay checked in under `dependencies/packages/`.
 
 ## Configuration
 
@@ -65,7 +65,7 @@ node dependencies/packages/core/dependencyLoader/index.ts
 Analyze the actual Bootstrap graph for an event:
 
 ```powershell
-node build/dependencies/npm/node_modules/preflight/bin/preflight.js plan --provider dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs --entry pull_request
+node dependencies/managed/npm/node_modules/preflight/bin/preflight.js plan --provider dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs --entry pull_request
 ```
 
 For a release plan, use `--entry push --target distribution/releases/publish`. Preflight includes the selected task's upstream dependencies. Plan analysis resolves the graph without running its tasks.
@@ -73,7 +73,7 @@ For a release plan, use `--entry push --target distribution/releases/publish`. P
 To show the pull-request plan in VS Code, add this command to the workspace's `workbenchBridge.workspaceCommands` after installing the package:
 
 ```json
-["node", "build/dependencies/npm/node_modules/preflight/bin/preflight.js", "workspace", "--provider", "dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs", "--bridge-client", "dependencies/packages/editor/workbenchBridgeClient"]
+["node", "dependencies/managed/npm/node_modules/preflight/bin/preflight.js", "workspace", "--provider", "dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs", "--bridge-client", "dependencies/packages/editor/workbenchBridgeClient"]
 ```
 
 Template owns editor workflow settings in `.vscode/config/workflow.json`. Each command is an argument array with an executable followed by its arguments. The same file controls status labels, the dependency progress notification, and which paths trigger a rerun. Reload the VS Code window after changing this configuration.

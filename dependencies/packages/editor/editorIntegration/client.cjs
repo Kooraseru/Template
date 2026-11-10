@@ -250,7 +250,7 @@ async function main() {
 	let bridgeClient;
 	let controller;
 	try {
-		bridgeClient = await connect({ sessionFile: process.env.WORKBENCH_BRIDGE_SESSION, workspace: root });
+		bridgeClient = await connect({ sessionFile: require("./session.cjs").selectedSession(root), workspace: root });
 		if (process.argv.includes("--problems")) {
 			const module = await bridgeClient.loadModule({ path: "dependencies/packages/editor/editorIntegration/problems.cjs" });
 			const problems = await bridgeClient.call({ target: module, path: ["snapshot"], args: [] });

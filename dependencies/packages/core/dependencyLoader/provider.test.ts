@@ -16,7 +16,7 @@ function workspace(t: TestContext) {
 		fs.writeFileSync(full, content);
 	};
 	const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
-	const installed = "build/dependencies/bin/example/tool.cjs";
+	const installed = "dependencies/managed/bin/example/tool.cjs";
 	const lock = "dependencies/dependencies.lock";
 	const adapter = ["node", "dependencies/providers/fixture.cjs"];
 	write(adapter[1], fs.readFileSync(new URL("./tests/provider.cjs", import.meta.url), "utf8"));
@@ -68,7 +68,7 @@ test("stale locks, failed resolves, and failed installs preserve the last usable
 	write("fail-install-tool", "");
 	await assert.rejects(main([], root), /tool.example install failed/);
 	assert.equal(read(installed), originalInstall);
-	assert.equal(read("build/dependencies/share/seed/value"), "first");
+	assert.equal(read("dependencies/managed/share/seed/value"), "first");
 	fs.unlinkSync(path.join(root, "fail-install-tool"));
 	await main([], root);
 	assert.match(read(installed), /second/);
@@ -88,20 +88,31 @@ test("missing prerequisites, cycles, and output conflicts fail clearly", async t
 	save();
 	await main(["--update-lock"], root);
 	await assert.rejects(main([], root), /Conflicting output/);
-	assert.equal(fs.existsSync(path.join(root, "build/dependencies/share/seed")), false);
+	assert.equal(fs.existsSync(path.join(root, "dependencies/managed/share/seed")), false);
 });
 
 test("setup recovers an interrupted publication before starting the next one", async t => {
 	const { root, write, read } = workspace(t);
 	const stage = ".loader-stage-interrupted";
-	write("build/dependencies/bin/tool/value", "interrupted");
-	write("build/dependencies/" + stage + "/.backup/0/value", "previous");
-	write("build/dependencies/.loader-journal.json", JSON.stringify({
+	write("dependencies/managed/bin/tool/value", "interrupted");
+	write("dependencies/managed/" + stage + "/.backup/0/value", "previous");
+	write("dependencies/managed/.loader-journal.json", JSON.stringify({
 		stage, changes: [{ to: "bin/tool", source: "source", existed: true }],
 	}));
-	const build = path.join(root, "build/dependencies");
+	const build = path.join(root, "dependencies/managed");
 	await withStage(build, async () => {
-		assert.equal(read("build/dependencies/bin/tool/value"), "previous");
+		assert.equal(read("dependencies/managed/bin/tool/value"), "previous");
 		assert.equal(fs.existsSync(path.join(build, ".loader-journal.json")), false);
 	});
+});
+
+test("legacy provider export roots resolve to managed installations", async t => {
+	const fixture = workspace(t);
+	const provider = "dependencies/providers/fixture.cjs";
+	fixture.write(provider, fixture.read(provider).replaceAll('root: "managed"', 'root: "build"'));
+	await main(["--update-lock"], fixture.root);
+	await main([], fixture.root);
+	assert.ok(fs.existsSync(path.join(fixture.root, fixture.installed)));
+	const state = JSON.parse(fixture.read("dependencies/managed/.loader-state.json"));
+	assert.equal(state.entries["tool.example"].exports.cli.root, "managed");
 });

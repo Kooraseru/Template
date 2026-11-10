@@ -23,7 +23,7 @@ function toolError(error) {
 
 async function main() {
 	// The workspace dependency loader owns the SDK installation and lockfile.
-	const requireWorkspace = createRequire(path.join(root, "build/dependencies/npm/package.json"));
+	const requireWorkspace = createRequire(path.join(root, "dependencies/managed/npm/package.json"));
 	let McpServer, fromJsonSchema, serveStdio;
 	try {
 		({ McpServer, fromJsonSchema } = await import(pathToFileURL(requireWorkspace.resolve("@modelcontextprotocol/server")).href));

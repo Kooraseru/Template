@@ -32,7 +32,8 @@
 	"luau-lsp.analyzeLuaFiles": false,
 	"luau-lsp.ignoreGlobs": [
 		"**/_Index/**",
-		"**/build/dependencies/**",
+		"**/dependencies/managed/**",
+		"**/.workspace/**",
 		"rules-old/**"
 	],
 	"luau-lsp.diagnostics.workspace": true,

@@ -29,7 +29,7 @@ if (action === "resolve") {
 	console.log(JSON.stringify({
 		outputs: [{ from: "output", to: options.target }],
 		exports: {
-			[options.kind === "seed" ? "value" : "cli"]: { root: "build", path: options.target + "/" + output },
+			[options.kind === "seed" ? "value" : "cli"]: { root: "managed", path: options.target + "/" + output },
 		},
 		...(options.kind === "seed" ? {} : { executable: { export: "cli", interpreter: ["node"] } }),
 	}));

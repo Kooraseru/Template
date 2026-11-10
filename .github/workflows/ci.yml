@@ -62,7 +62,7 @@ jobs:
           CI_CREDENTIAL_APP_ID: ${{ vars.CI_APP_ID }}
           CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
           CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets.CI_TOKEN }}
-        run: build/dependencies/bin/lute/lute run ci/entry.luau
+        run: dependencies/managed/bin/lute/lute run ci/entry.luau
       # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output
         if: ${{ always() }}
@@ -100,7 +100,7 @@ jobs:
           CI_PROFILE: source-ci
           CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
-        run: build/dependencies/bin/lute/lute run ci/entry.luau
+        run: dependencies/managed/bin/lute/lute run ci/entry.luau
       # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output
         if: ${{ always() }}

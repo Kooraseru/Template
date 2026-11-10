@@ -59,9 +59,9 @@ async function main() {
 	assert.ok(supported.includes(scenario), "Unsupported rehearsal scenario.");
 	const config = fs.readFileSync(".vscode/config/luau/.luaurc", "utf8");
 	fs.writeFileSync(".luaurc", config.replace(/("workspace"\s*:\s*)"\.\.\/\.\.\/\.\."/u, '$1"."'));
-	fs.mkdirSync("build/dependencies", { recursive: true });
-	fs.symlinkSync("/tools/build/dependencies/types", "build/dependencies/types", "dir");
-	fs.symlinkSync("/tools/build/dependencies/npm", "build/dependencies/npm", "dir");
+	fs.mkdirSync("dependencies/managed", { recursive: true });
+	fs.symlinkSync("/tools/dependencies/managed/types", "dependencies/managed/types", "dir");
+	fs.symlinkSync("/tools/dependencies/managed/npm", "dependencies/managed/npm", "dir");
 	const { startMock } = require("./githubMock.cjs");
 
 	const loaded = run(["lute", "run", "dependencies/packages/checks/preflightChecker/bootstrap/inputs.luau"]);
