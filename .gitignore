@@ -20,3 +20,6 @@
 
 # Interrupted dependency layout migration copies.
 /dependencies/.managed-migration-*/
+
+# act discovery file generated from .vscode/config/act/actrc.
+/.actrc

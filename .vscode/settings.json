@@ -13,6 +13,7 @@
 	// Explorer
 	// Generated discovery files; edit the canonical files under .vscode/config.
 	"files.exclude": {
+		".actrc": true,
 		".luaurc": true,
 		"tsconfig.json": true
 	},

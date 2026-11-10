@@ -116,3 +116,14 @@ test("legacy provider export roots resolve to managed installations", async t =>
 	const state = JSON.parse(fixture.read("dependencies/managed/.loader-state.json"));
 	assert.equal(state.entries["tool.example"].exports.cli.root, "managed");
 });
+
+test("setup regenerates act discovery options from the canonical config", async t => {
+	const fixture = workspace(t);
+	fixture.write(".vscode/config/act/actrc", "--detect-event\n--pull=false\n");
+	await main(["--update-lock"], fixture.root);
+	await main([], fixture.root);
+	assert.equal(fixture.read(".actrc"), "--detect-event\n--pull=false\n");
+	fixture.write(".vscode/config/act/actrc", "--detect-event\n--pull=true\n");
+	await main([], fixture.root);
+	assert.equal(fixture.read(".actrc"), "--detect-event\n--pull=true\n");
+});

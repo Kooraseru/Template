@@ -11,7 +11,7 @@ Base inspected before implementation: `source` at `51e3799793383dc7cc33c481a9fe5
 
 ## Verified after migration
 
-- All 58 discovered Node tests under `dependencies/packages/` pass, including existing editor/rule policy/bootstrap tests and new focused coverage.
+- All 60 discovered Node tests under `dependencies/packages/` pass, including existing editor/rule policy/bootstrap tests and new focused coverage.
 - Normal setup migrates the existing installation and succeeds. A second incremental reload leaves installation-state contents and modification time unchanged. Executing Lute through the loader succeeds.
 - Provider tests install staged dependencies, exercise incremental invalidation, stale locks, failed resolve/install preservation, output conflicts and interrupted publication recovery. Legacy `root: "build"` exports are accepted and normalized to `managed`.
 - Migration tests preserve original installed files and editor selection, avoid overwriting newer selections, and verify that deleting an isolated fixture's `build/` leaves dependencies and workspace state intact. The user's build tree was not deleted.
@@ -25,11 +25,24 @@ Base inspected before implementation: `source` at `51e3799793383dc7cc33c481a9fe5
 
 ## Limits and remaining verification
 
-- Local CI execution remains blocked by the baseline `act` schema failure. Hosted workflows and publication were not run as validation of this branch.
-- Full host/container artifact compilation and a fresh network download of every dependency were not performed. Existing dependencies were migrated; provider installation was tested in isolated fixtures.
+- The original local launch failures were fixed in the Local Actions follow-up below. Hosted workflows and publication were not run as validation of this branch.
+- The follow-up CI Check execution compiled host/container artifacts. A cold download of every dependency on every supported platform was not performed.
 - Live editor mutations were not performed on the user's active workspace. Permission/edit behavior uses a VS Code API fixture; native undo and editor races still benefit from an isolated Extension Development Host test.
 - Physical multiple-window discovery and other platform desktop sessions were not created; disconnected/ambiguous behavior uses injected bridge connections.
 - Client-specific Codex/Gemini/Antigravity subscription rendering is unverified. Polling remains available and correctness never depends on notifications.
 - Dependency readiness is an installed-state/output-existence observation, not proof of lock freshness or successful compilation. Run the loader/checks for that proof.
 - CI status exposes recorded local `act` invocation outcomes, exit codes and failure summaries. Per-workflow/component state and arbitrary extension history are unavailable; terminal/build logs supply detailed output. Interrupted records become unknown when their recorder process no longer exists.
 - Legacy dependency/session copies remain for recovery. Setup does not clean `.workspace/`; no user state is deleted.
+
+
+## Local Actions follow-up
+
+The user supplied separate CI Check and CI Publish button failures after the initial PR. CI Check defaulted to an unsupported `push` event; CI Publish was rejected by act 0.2.89's schema for `environment.deployment`. Setup now generates `.actrc` with canonical `--detect-event` options, the local PR route accepts an omitted hosted payload only under ACT, and provider selection delegates source-ref enforcement to the already-guarded entry. An integration test verifies hosted feature refs are rejected and hosted source/local ACT refs are accepted before credentials or tasks are read.
+
+The first real CI Check execution passed its components, including source host builds, then exposed a further v7 uploader incompatibility: act's artifact server rejects the `mime_type` field. Authored workflows now retain v7 uploads on GitHub and use v4 locally, with shared artifact inputs. The named bootstrap environment is retained; omitting `deployment: false` restores default GitHub deployment-record metadata for that job.
+
+- Both authored workflows pass act discovery and dry-run with no explicit event argument.
+- Real CI Check execution succeeds through validation, local artifact upload, post-actions and completion using the cached local actions/image. Host compilation executed in Docker.
+- Real CI Publish execution succeeds through provider selection, bootstrap, generated local execution-plan output, local artifact upload and completion. The configured OIDC alternative is correctly skipped for the environment provider.
+- The full Node suite is now 60/60; TypeScript, Lute and the three bootstrap plans pass.
+- The ignored `.actrc` was generated in the current checkout; no extension code or private extension storage was changed.

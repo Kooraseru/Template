@@ -25,6 +25,6 @@
   },
   "watch": {
     "paths": ["dependencies/**", ".vscode/config/**", ".vscode/settings.json", ".github/**", "ci/**", "source/**", "rules/luau/**", ".luaurc", "tsconfig.json"],
-    "setupInputs": ["dependencies/dependencies.json", "dependencies/dependencies.lock", ".vscode/config/luau/.luaurc", ".vscode/config/typescript/tsconfig.json"]
+    "setupInputs": [".vscode/config/act/actrc", "dependencies/dependencies.json", "dependencies/dependencies.lock", ".vscode/config/luau/.luaurc", ".vscode/config/typescript/tsconfig.json"]
   }
 }

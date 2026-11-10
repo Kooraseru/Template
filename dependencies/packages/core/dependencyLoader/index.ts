@@ -10,6 +10,8 @@ import { withStage } from "./publication.ts";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 function generateBridges(root: string) {
+	const actrc = path.join(root, ".vscode/config/act/actrc");
+	if (fs.existsSync(actrc)) fs.copyFileSync(actrc, path.join(root, ".actrc"));
 	const luaurcPath = path.join(root, ".vscode", "config", "luau", ".luaurc");
 	if (fs.existsSync(luaurcPath)) {
 		const source = fs.readFileSync(luaurcPath, "utf8");

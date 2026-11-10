@@ -33,11 +33,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash ci/github/workflows/run-logged.sh ci-start validate
       - name: Collect validation output
-        if: ${{ always() }}
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
-        with:
+        with: &validation-output
           name: ci-validation
           path: |
             build/run/ci-start/logs/
             build/run/ci-start/responses/
           if-no-files-found: ignore
+      - name: Collect validation output locally
+        if: ${{ always() && env.ACT }}
+        uses: actions/upload-artifact@v4
+        with: *validation-output

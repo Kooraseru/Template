@@ -99,3 +99,20 @@ See the [Rules settings contract](../rules/general/workflows/review/checker-cont
 ## Local GitHub Actions
 
 From the repository root, run `node dependencies/packages/ci/localActions/run.cjs` or use the **Run GitHub Actions locally** VS Code task.
+
+
+## Local Actions compatibility
+
+Workspace setup generates the ignored root `.actrc` from `.vscode/config/act/actrc`, just as it generates the language discovery files. Both plain `act` and the GitHub Local Actions extension discover it automatically. Edit the canonical file; changing it triggers workspace setup. `--detect-event` lets a workflow button with no event select an event that its workflow actually handles, instead of defaulting to `push`. A local detected `pull_request` can omit the hosted PR payload; only `ACT=true` permits that omission. Hosted PR validation still requires base branch `source`.
+
+For deterministic CLI runs, pass an explicit event:
+
+```sh
+node dependencies/packages/core/dependencyLoader/index.ts
+act workflow_dispatch --workflows .github/workflows/validate.yml
+act workflow_dispatch --workflows .github/workflows/ci.yml
+```
+
+CI Publish's provider-selection entry enforces the hosted source-ref check in `ci/github/init.luau`; local ACT checkouts can generate the local execution workflow from a feature branch. The named `ci-bootstrap` environment and credential checks remain. Its authored job uses the environment syntax understood by act 0.2.89. Removing the optional `deployment: false` restores GitHub's default creation of an environment deployment record for that bootstrap job; it does not authorize release publication. See [GitHub environment behavior](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/deploy-to-environment).
+
+The authored workflows retain the hosted v7 artifact uploader and select v4 for local ACT runs, matching the generated workflow's existing artifact protocol adaptation. YAML aliases keep each artifact's paths and options authoritative in one place. CI Publish locally generates and uploads the execution plan; it does not represent completed hosted publication.

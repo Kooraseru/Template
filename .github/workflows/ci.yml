@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   select-provider:
-    if: github.ref == 'refs/heads/source'
+    # The entry validates the source ref on GitHub and allows local ACT checkouts.
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,7 +38,6 @@ jobs:
     name: gate
     environment:
       name: ci-bootstrap
-      deployment: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -65,9 +64,9 @@ jobs:
         run: dependencies/managed/bin/lute/lute run ci/entry.luau
       # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output
-        if: ${{ always() }}
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
-        with:
+        with: &bootstrap-output
           name: ci-start
           path: |
             build/run/ci-start/logs/
@@ -75,6 +74,10 @@ jobs:
             build/run/ci-start/artifacts/workflow.yml
             build/run/ci-execution/
           if-no-files-found: ignore
+      - name: Collect bootstrap output locally
+        if: ${{ always() && env.ACT }}
+        uses: actions/upload-artifact@v4
+        with: *bootstrap-output
 
   gate-oidc:
     needs: select-provider
@@ -103,13 +106,10 @@ jobs:
         run: dependencies/managed/bin/lute/lute run ci/entry.luau
       # Artifacts are diagnostic output; no publication operation occurs in this job.
       - name: Collect bootstrap output
-        if: ${{ always() }}
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
-        with:
-          name: ci-start
-          path: |
-            build/run/ci-start/logs/
-            build/run/ci-start/responses/
-            build/run/ci-start/artifacts/workflow.yml
-            build/run/ci-execution/
-          if-no-files-found: ignore
+        with: *bootstrap-output
+      - name: Collect bootstrap output locally
+        if: ${{ always() && env.ACT }}
+        uses: actions/upload-artifact@v4
+        with: *bootstrap-output

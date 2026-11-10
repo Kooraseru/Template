@@ -30,3 +30,5 @@ Use forward slashes in output paths. Paths in `from` are relative to the stage a
 The export root `managed` resolves inside `dependencies/managed/`. Legacy provider responses with `root: "build"` remain accepted as an alias during migration; they do not resolve inside `build/`.
 
 `build/` is disposable output. `dependencies/managed/` holds installed dependencies and loader state; `.workspace/` holds persistent local editor, agent, and CI execution state. Both are ignored. Setup copies old `build/dependencies/` under the old loader lock and publishes the copy atomically; the original remains a recovery copy. Existing new-layout installations take precedence. Session selections from `build/run/editor-problems/` are copied without overwriting existing selections. Setup never cleans `.workspace/`. Remove legacy copies only after verifying your installation; no user data is deleted by this migration.
+
+Workspace setup also generates the ignored root `.actrc` from `.vscode/config/act/actrc` so standard act and editor workflow buttons share the same local options.

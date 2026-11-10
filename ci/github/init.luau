@@ -20,7 +20,7 @@ local function hostedProfile(name: string): Configuration.Profile
 	local allowed = if name == "source-ci"
 		then (source or Process.env.ACT == "true") and (event == "push" or event == "workflow_dispatch")
 		elseif name == "validate"
-			then event == "workflow_dispatch" or (event == "pull_request" and Process.env.GITHUB_BASE_REF == "source")
+			then event == "workflow_dispatch" or (event == "pull_request" and (Process.env.ACT == "true" or Process.env.GITHUB_BASE_REF == "source"))
 			else name == "remote-read" and source and event == "workflow_dispatch"
 
 	local profile = Configuration.new().profiles[name]
