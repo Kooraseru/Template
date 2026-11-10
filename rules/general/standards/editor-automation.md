@@ -12,7 +12,7 @@ Automatic checks must be non-destructive, scoped to changed inputs, debounced, a
 
 Codex loads the root `AGENTS.md` in a Template project session. Read the linked policy for the area being changed. Keep the entry point short so each task loads only the rules it needs.
 
-Review the shared Problems hooks in Codex under **Settings → Hooks** (or `/hooks` in the CLI). Once trusted, a new or resumed project session receives a compact Problems summary. Shell and patch tools take a baseline and report changes when available. Diagnostics can arrive after the tool returns, so an immediate empty delta is insufficient evidence that an edit is clean.
+Use the agent-neutral workspace MCP `workspace_status` and `editor_get_problems` capabilities for compact Problems summaries. Diagnostics can arrive after an edit, so an immediate empty delta is insufficient evidence that an edit is clean. No repository-local `.codex/` hooks are required.
 
 For a fresh snapshot, run `node dependencies/packages/editor/editorIntegration/client.cjs --problems` from the repository root. This uses the existing VS Code extension host without focusing or launching a window. If multiple sessions match, select the intended private discovery record using `WORKBENCH_BRIDGE_SESSION`. For clients that do not inherit that variable, write the record's absolute path to `.workspace/editor-problems/session-file.txt`. Keep the record and its credentials out of reports and Git.
 

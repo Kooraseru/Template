@@ -1,10 +1,10 @@
 # workspace MCP tooling
 
-status: initial implementation. The existing `.codex/` hooks remain active until lifecycle parity can be verified.
+Status: agent-neutral stdio MCP capabilities. No repository-local agent hooks are required.
 
 ## goal
 
-Provide agent-neutral, workspace-owned MCP capabilities for editor diagnostics and Luau rule discovery without modifying Workbench Bridge. After the lifecycle migration, repository-local `.codex/` hooks should no longer be necessary.
+Provide agent-neutral, workspace-owned MCP capabilities for editor diagnostics and Luau rule discovery without modifying Workbench Bridge. All clients use the same capability and authorization contract.
 
 ## architecture
 
@@ -19,9 +19,13 @@ Provide agent-neutral, workspace-owned MCP capabilities for editor diagnostics a
 | capability | behavior |
 | --- | --- |
 | `editor_get_problems` | Return current workspace-scoped VS Code diagnostics, including paths, ranges, severity, source, and code. Optional `file`, `severity`, and `limit` filters; response includes counts and a truncation flag. A disconnected editor produces a tool error. |
+| `workspace_status` | Summarize editor connectivity, diagnostic counts, recorded installed-output existence and local CI. Missing information is explicit; this does not run checks or prove lock freshness. |
+| `editor_get_document` | Read an existing VS Code document, including unsaved text, version, dirty state and language. `file` is required; `offset` and `limit` paginate UTF-16 text (default 16,000; maximum 64,000 units). |
+| `ci_get_status` | Discover workflow names from their YAML declarations and read the latest recorded local `act` invocations (default 5; maximum 20). Per-workflow and private extension execution state is explicitly unavailable. |
+| `workspace_apply_edit` | Apply 1-20 replacements in one existing document, guarded by version and authorization. Does not save files. |
 | `rules_list` | Discover Luau validator directories and count `.luau` fixtures under `valid`, `invalid`, and `review`. Optional `id` filter accepts an exact rule ID or unambiguous name. An inventory is not a validation result. |
 
-The server also supplies instructions through MCP initialization so clients can discover the intended workflow without inspecting this repository. Both tools are read-only and return structured data plus text.
+The server also supplies instructions through MCP initialization so clients can discover the intended workflow without inspecting this repository. Read tools return compact structured data plus text. Only `workspace_apply_edit` mutates editor buffers.
 
 ## setup
 
@@ -84,3 +88,28 @@ The current `/rule-audit` behavior provides instructions and an inventory; it do
 - [ ] Existing editor integration and rule tests continue passing. An existing editor-integration assertion (`activate.test.cjs`, dirty document generation, expected 1 diagnostic set but received 2) fails in this Linux checkout; the new MCP tests pass independently.
 - The final migration removes tracked `.codex/` files and updates `.gitignore` and `AGENTS.md` only after equivalent behavior is verified.
 - No changes to Workbench Bridge, repository settings, or GitHub Actions workflows.
+
+
+## Filesystem and migration
+
+`build/` contains disposable compilation, CI products, logs and reports. Installed packages, binaries, types and loader state belong in `dependencies/managed/`. Persistent editor selections and local CI invocation records belong in `.workspace/`. The latter two locations are ignored; dependency implementations remain tracked under `dependencies/packages/`, and the manifest/lock remain authoritative in `dependencies/`.
+
+Run normal dependency setup to migrate an existing checkout. It copies legacy dependencies under the old loader lock, publishes the new installation atomically, and retains the old tree. Interrupted copies are not treated as installed. Existing new-layout installations take precedence. The legacy editor selection is copied without overwriting an existing `.workspace/editor-problems/session-file.txt`. No migration deletes user state. After setup, deleting `build/` leaves installations and persistent state intact. Do not clean `.workspace/` as build output.
+
+## Authorization and edits
+
+The server is read-only by default. An operator can enable the edit capability with `WORKSPACE_MCP_ALLOW_WRITES=1` in the MCP server environment. This is an independent gate from the per-call `authorize: true`, which the client must set only after explicit user approval for those exact replacements. Tool annotations are discovery hints, not authorization enforcement.
+
+Read `editor_get_document` first, then pass its `version`, `file`, and `edits: [{start, end, text}]` to `workspace_apply_edit`, with `authorize: true`. Offsets are zero-based UTF-16 units; `end` is exclusive. Combine adjacent edits and keep removed plus inserted text within 64,000 units. Trust, existing-file scope, real paths, ranges, overlaps, authorization and version are checked before dispatch. Private `.git/`, `.workspace/`, managed installations, and links to them or outside the workspace are excluded. No create/delete/rename, save, commands, shell, or raw bridge RPC is exposed.
+
+Version checking and dispatch happen together in the editor host using supported `WorkspaceEdit` and `workspace.applyEdit` APIs. VS Code can still reject an edit. On `VERSION_CONFLICT` or `EDIT_REJECTED`, read the document again and review the new content before retrying. Successful edits remain dirty and participate in VS Code undo; saving is a separate user action.
+
+## CI availability
+
+The existing local Actions task records its invocations atomically under `.workspace/ci/runs/`, including start/end time, state, exit code and a bounded failure summary. A surviving incomplete record whose recorder process is gone is `unknown`, never a claimed running or passing workflow. The CLI terminal and existing `build/run/` logs contain component-level details. No commands, arguments, credentials or terminal dumps are stored by this recorder.
+
+Workflow names are discovered from `.github/workflows/`; their existence does not prove execution. The interface does not access other extensions' private storage or invent task history. Old invocations do not prove the current revision passes. Existing CI execution failures are independent of status availability.
+
+## Optional status updates
+
+`workspace://status` is an `application/json` resource with the same data as `workspace_status`. Clients may use `resources/subscribe` and `resources/unsubscribe` for opt-in `notifications/resources/updated` invalidations. While subscribed, the server samples status every five seconds and sends an invalidation only on change; read the resource again for content. Sampling stops on unsubscribe or connection close and does not overlap. The installed SDK accepts these legacy subscription methods alongside current stdio initialization. Clients using a different notification transport or without subscription support should poll the resource/tool on demand. No notification is required for correctness.
