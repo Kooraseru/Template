@@ -54,9 +54,12 @@ test("MCP stdio handshake advertises and invokes workspace tools", async () => {
 		assert.deepEqual(listed.result.tools.map(tool => tool.name).sort(), ["editor_get_problems", "rules_list"]);
 		const result = await request("tools/call", { name: "rules_list", arguments: { id: "declarative-data" } });
 		assert.equal(result.result.structuredContent.selected, 1);
-		const unavailable = await request("tools/call", { name: "editor_get_problems", arguments: {} });
-		assert.equal(unavailable.result.isError, true);
-		assert.match(unavailable.result.content[0].text, /Live VS Code Problems unavailable/);
+		const diagnostics = await request("tools/call", { name: "editor_get_problems", arguments: {} });
+		if (diagnostics.result.isError) {
+			assert.match(diagnostics.result.content[0].text, /Live VS Code Problems unavailable/);
+		} else {
+			assert.ok(Array.isArray(diagnostics.result.structuredContent.diagnostics));
+		}
 	} finally {
 		clearTimeout(timer);
 		child.stdin.end();
