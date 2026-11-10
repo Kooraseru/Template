@@ -117,6 +117,28 @@ end
 
 Authentication.AppAccess = appAccess
 
+local function appFailureReason(failure: unknown): string
+	if type(failure) ~= "string" then
+		return "unexpected App authentication error"
+	end
+
+	local lookupStatus = failure:match("^GitHub App installation lookup returned HTTP (%d%d%d)$")
+	if lookupStatus then
+		return `installation lookup returned HTTP {lookupStatus}`
+	end
+
+	local tokenStatus = failure:match("^App installation token request returned HTTP (%d%d%d)$")
+	if tokenStatus then
+		return `installation token request returned HTTP {tokenStatus}`
+	end
+
+	if failure == "Unable to sign GitHub App authentication request" then
+		return "JWT signing failed"
+	end
+
+	return "unexpected App authentication error"
+end
+
 function Authentication.Acquire(
 	configuration: Configuration.Configuration,
 	credentials: Credentials.Credentials,
@@ -132,9 +154,8 @@ function Authentication.Acquire(
 			print("::notice::Using a repository-scoped GitHub App installation token for branch bootstrap")
 			return access
 		end
-		-- Do not print errors that could contain credential material from a library.
 		print(
-			"::warning::App authentication failed. Check the configured app_id and app_private_key, repository installation, and Contents/Workflows write permissions."
+			`::warning::App authentication failed: {appFailureReason(access)}. Check the configured App ID and private key, repository installation, and Contents/Workflows write permissions.`
 		)
 	end
 
