@@ -38,8 +38,8 @@ npm, NuGet, Maven, RubyGems, or OCI implementations.
 
 The existing Windows folders are compilation/staging fixtures, with publication
 metadata deliberately omitted. They do not define the template's package formats.
-The registry publication component is disabled in `../../ci/components.toml`.
-Enable it after adding a registry adapter and configuring the packages it will publish.
+CI accepts the registry publication skip for these fixtures. To publish a package,
+add a registry adapter and configure the package metadata.
 
 Shared policy:
 

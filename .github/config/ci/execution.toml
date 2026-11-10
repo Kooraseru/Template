@@ -9,6 +9,8 @@
 default = "neutral"
 
 [skip.components]
+# The sample packages are staging fixtures with no registry metadata.
+"distribution/packages/publish" = "success"
 # Missing optional account/repository administration credentials are accepted skips.
 # Runtime errors after authorization still fail the component.
 "projects/sync" = "success"

@@ -2,5 +2,4 @@
 default = true
 
 [enabled]
-# The sample packages are staged build fixtures. Enable publishing after adding a registry adapter and package metadata.
-"distribution/packages/publish" = false
+# "distribution/packages/publish" = false
