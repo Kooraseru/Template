@@ -136,8 +136,8 @@ local function readCatalog(): ({ [string]: Role }, { [string]: Profile }, { [str
 		if #sources == 0 then
 			catalogError(label .. ".sources")
 		end
-		for _, source in sources do
-			if source ~= "secret" and source ~= "variable" then
+		for _, credentialSource in sources do
+			if credentialSource ~= "secret" and credentialSource ~= "variable" then
 				catalogError(label .. ".sources")
 			end
 		end
