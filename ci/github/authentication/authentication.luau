@@ -52,51 +52,21 @@ local function appAccess(
 	local keyPath = `{temporaryDirectory}/private-key.pem`
 	local ok, signed = xpcall(function(): Process.ProcessResult
 		Fs.writeStringToFile(keyPath, key)
-		return Process.run({ "node", "ci/github/authentication/signAppJwt.cjs", id, keyPath })
+		return Process.run({
+			"node", "ci/github/authentication/signAppJwt.cjs", id, keyPath,
+			repository, Json.encode(permissions), organization or "",
+		})
 	end, tostring)
 	Fs.removeDirectory(temporaryDirectory, { recursive = true })
-	if not ok or not signed.ok then
+	if not ok then
 		error("Unable to sign GitHub App authentication request", 0)
 	end
-	local jwt = signed.stdout:match("^%s*([%w_-]+%.[%w_-]+%.[%w_-]+)%s*$")
-	if not jwt then
-		error("Unable to sign GitHub App authentication request", 0)
+	if not signed.ok then
+		-- Only fixed diagnostic text and HTTP status codes may leave this process.
+		local failure = signed.stdout:match("^%s*(.-)%s*$")
+		error(failure or "Unable to sign GitHub App authentication request", 0)
 	end
-	mask(jwt)
-	local installationPath = if organization
-		then `/orgs/{organization}/installation`
-		else `/repos/{repository}/installation`
-	local installation = request(jwt, "GET", installationPath)
-	if not installation.ok then
-		if installation.status == 401 then
-			local decodedOk, body = pcall(Json.decode, installation.body)
-			if decodedOk and type(body) == "table" then
-				if body.message == "A JSON web token could not be decoded" then
-					error("GitHub could not decode the App JWT", 0)
-				elseif body.message == "'Issued at' claim ('iat') must be an Integer representing the time that the assertion was issued" then
-					error("GitHub rejected the App JWT issue time", 0)
-				elseif body.message == "Invalid issuer (iss) claim" then
-					error("GitHub rejected the App JWT issuer", 0)
-				elseif body.message == "JWT signature could not be verified" then
-					error("GitHub could not verify the App JWT signature", 0)
-				end
-			end
-		end
-		error(`GitHub App installation lookup returned HTTP {installation.status}`, 0)
-	end
-	local decoded: unknown = Json.decode(installation.body)
-	if type(decoded) ~= "table" or type(decoded.id) ~= "number" then
-		error("GitHub returned an invalid App installation ID", 0)
-	end
-	local repositoryName = repository:match("/([^/]+)$")
-	local created = request(jwt, "POST", `/app/installations/{decoded.id}/access_tokens`, {
-		repositories = if organization then nil else { repositoryName },
-		permissions = permissions,
-	})
-	if not created.ok then
-		error(`App installation token request returned HTTP {created.status}`, 0)
-	end
-	local token: unknown = Json.decode(created.body)
+	local token: unknown = Json.decode(signed.stdout)
 	if type(token) ~= "table" or type(token.token) ~= "string" or token.token == "" then
 		error("GitHub returned an invalid App installation token", 0)
 	end
@@ -125,9 +95,10 @@ local function appFailureReason(failure: unknown): string
 		return "JWT signing failed"
 	end
 	if failure == "GitHub could not decode the App JWT"
-		or failure == "GitHub rejected the App JWT issue time"
 		or failure == "GitHub rejected the App JWT issuer"
 		or failure == "GitHub could not verify the App JWT signature"
+		or failure == "GitHub App exchange failed"
+		or failure == "GitHub returned an invalid App installation ID"
 	then
 		return failure
 	end
