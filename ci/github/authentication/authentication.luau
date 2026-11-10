@@ -103,6 +103,20 @@ local function appAccess(
 		else `/repos/{repository}/installation`
 	local installation = request(jwt, "GET", installationPath)
 	if not installation.ok then
+		if installation.status == 401 then
+			local decodedOk, body = pcall(Json.decode, installation.body)
+			if decodedOk and type(body) == "table" then
+				if body.message == "A JSON web token could not be decoded" then
+					error("GitHub could not decode the App JWT", 0)
+				elseif body.message == "'Issued at' claim ('iat') must be an Integer representing the time that the assertion was issued" then
+					error("GitHub rejected the App JWT issue time", 0)
+				elseif body.message == "Invalid issuer (iss) claim" then
+					error("GitHub rejected the App JWT issuer", 0)
+				elseif body.message == "JWT signature could not be verified" then
+					error("GitHub could not verify the App JWT signature", 0)
+				end
+			end
+		end
 		error(`GitHub App installation lookup returned HTTP {installation.status}`, 0)
 	end
 	local decoded: unknown = Json.decode(installation.body)
@@ -144,6 +158,13 @@ local function appFailureReason(failure: unknown): string
 
 	if failure == "Unable to sign GitHub App authentication request" then
 		return "JWT signing failed"
+	end
+	if failure == "GitHub could not decode the App JWT"
+		or failure == "GitHub rejected the App JWT issue time"
+		or failure == "GitHub rejected the App JWT issuer"
+		or failure == "GitHub could not verify the App JWT signature"
+	then
+		return failure
 	end
 
 	return "unexpected App authentication error"
