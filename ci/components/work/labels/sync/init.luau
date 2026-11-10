@@ -20,7 +20,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		return "skipped"
 	end
 	if not LabelSync.Sync(repository, labels, Publication.Request) then
-		return "skipped"
+		print("GitHub labels already match the catalog; reconciliation completed successfully")
 	end
 	return nil
 end

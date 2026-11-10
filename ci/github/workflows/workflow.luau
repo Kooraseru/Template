@@ -92,7 +92,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				with = { ref = sourceSha, ["fetch-depth"] = 0, ["persist-credentials"] = false },
 			},
 		}
-		appendStep(steps, { uses = "actions/setup-node@v4", with = { ["node-version"] = "24" } })
+		appendStep(steps, { uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } })
 
 		for _, dependency in task.needs do
 			table.insert(needs, Workflow.JobId(dependency))
@@ -242,7 +242,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				["if"] = "${{ !env.ACT }}",
 				with = { ref = sourceSha, ["persist-credentials"] = false },
 			},
-			{ uses = "actions/setup-node@v4", with = { ["node-version"] = "24" } },
+			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
 			{
 				name = "Receive component response fragments",
 				id = "responses",
@@ -283,7 +283,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				["if"] = "${{ !env.ACT }}",
 				with = { ref = sourceSha, ["persist-credentials"] = false },
 			},
-			{ uses = "actions/setup-node@v4", with = { ["node-version"] = "24" } },
+			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
 			{
 				name = "Delete temporary branch for this run",
 				env = { GH_TOKEN = "${{ github.token }}" },

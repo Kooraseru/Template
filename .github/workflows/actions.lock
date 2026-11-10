@@ -5,14 +5,14 @@ version: 'v0.0.3'
 workflows:
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7'
-        - 'actions/setup-node@v4'
+        - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v7'
     '.github/workflows/remote-read.yml':
         - 'actions/checkout@v7'
-        - 'actions/setup-node@v4'
+        - 'actions/setup-node@v7.1.0'
     '.github/workflows/validate.yml':
         - 'actions/checkout@v7'
-        - 'actions/setup-node@v4'
+        - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v7'
 dependencies:
     'actions/checkout@v7':
@@ -20,9 +20,9 @@ dependencies:
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
-    'actions/setup-node@v4':
-        ref: 'v4'
-        commit: 'sha1-49933ea5288caeca8642d1e84afbd3f7d6820020'
+    'actions/setup-node@v7.1.0':
+        ref: 'v7.1.0'
+        commit: 'sha1-949feb2413d6458794dcd2491c4babbbce0c15c1'
         owner_id: 44036562
         repo_id: 189476904
     'actions/upload-artifact@v7':
