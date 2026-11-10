@@ -26,7 +26,11 @@ function ProjectClient.Query(
 ): { [string]: unknown }
 	local response = Net.request("https://api.github.com/graphql", {
 		method = "POST",
-		headers = { Authorization = `Bearer {self.token}`, ["Content-Type"] = "application/json" },
+		headers = {
+			Authorization = `Bearer {self.token}`,
+			["Content-Type"] = "application/json",
+			["User-Agent"] = "Template-CI",
+		},
 		body = Json.encode({
 			query = self.document,
 			operationName = operation,
