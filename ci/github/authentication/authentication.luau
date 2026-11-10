@@ -12,7 +12,6 @@ local TokenPermissions = require("@ci/github/authentication/tokenPermissions")
 
 local Authentication = {}
 export type Access = { token: string, temporary: boolean, inspection: TokenPermissions.Inspection? }
-const BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 local function mask(value: string): ()
 	if Process.env.GITHUB_ACTIONS ~= "true" then
@@ -20,27 +19,6 @@ local function mask(value: string): ()
 	end
 	local escaped = value:gsub("%%", "%%25"):gsub("\r", "%%0D"):gsub("\n", "%%0A")
 	print("::add-mask::" .. escaped)
-end
-
-local function base64url(value: string): string
-	local encoded = table.create(math.ceil(#value / 3) * 4)
-	for index = 1, #value, 3 do
-		local first = string.byte(value, index)
-		local second = string.byte(value, index + 1) or 0
-		local third = string.byte(value, index + 2) or 0
-		table.insert(encoded, BASE64URL:sub(math.floor(first / 4) + 1, math.floor(first / 4) + 1))
-		local secondIndex = (first % 4) * 16 + math.floor(second / 16) + 1
-		table.insert(encoded, BASE64URL:sub(secondIndex, secondIndex))
-		if index + 1 <= #value then
-			local thirdIndex = (second % 16) * 4 + math.floor(third / 64) + 1
-			table.insert(encoded, BASE64URL:sub(thirdIndex, thirdIndex))
-		end
-		if index + 2 <= #value then
-			local fourthIndex = third % 64 + 1
-			table.insert(encoded, BASE64URL:sub(fourthIndex, fourthIndex))
-		end
-	end
-	return table.concat(encoded)
 end
 
 local function request(token: string, method: string, path: string, body: unknown?): Net.Response
@@ -66,37 +44,24 @@ local function appAccess(
 	if string.lower(System.os) ~= "linux" then
 		error("GitHub App signing currently requires the Linux Actions runner", 0)
 	end
-	local now = math.floor(os.time())
-	local message = base64url(Json.encode({ alg = "RS256", typ = "JWT" }))
-		.. "."
-		.. base64url(Json.encode({ iat = now - 60, exp = now + 540, iss = id }))
 	local temporaryDirectoryResult = Process.run({ "mktemp", "-d", "-p", System.tmpdir(), "ci-app-signing.XXXXXXXX" })
 	if not temporaryDirectoryResult.ok then
 		error("Unable to create a private temporary directory for App authentication", 0)
 	end
 	local temporaryDirectory = temporaryDirectoryResult.stdout:gsub("%s+$", "")
-	local messagePath = `{temporaryDirectory}/message.jwt`
 	local keyPath = `{temporaryDirectory}/private-key.pem`
-	local signaturePath = `{temporaryDirectory}/signature.bin`
-	local ok, signature = xpcall(function(): Process.ProcessResult
-		Fs.writeStringToFile(messagePath, message)
+	local ok, signed = xpcall(function(): Process.ProcessResult
 		Fs.writeStringToFile(keyPath, key)
-		-- The process API captures stdout as text. Encode the binary signature before reading it.
-		local signed = Process.run({ "openssl", "dgst", "-sha256", "-sign", keyPath, "-out", signaturePath, messagePath })
-		if not signed.ok then
-			return signed
-		end
-		return Process.run({ "openssl", "base64", "-A", "-in", signaturePath })
+		return Process.run({ "node", "ci/github/authentication/signAppJwt.cjs", id, keyPath })
 	end, tostring)
 	Fs.removeDirectory(temporaryDirectory, { recursive = true })
-	if not ok or not signature.ok then
+	if not ok or not signed.ok then
 		error("Unable to sign GitHub App authentication request", 0)
 	end
-	local encodedSignature = signature.stdout:gsub("%s", ""):gsub("%+", "-"):gsub("/", "_"):gsub("=+$", "")
-	if encodedSignature == "" or not encodedSignature:match("^[%w_-]+$") then
+	local jwt = signed.stdout:match("^%s*([%w_-]+%.[%w_-]+%.[%w_-]+)%s*$")
+	if not jwt then
 		error("Unable to sign GitHub App authentication request", 0)
 	end
-	local jwt = message .. "." .. encodedSignature
 	mask(jwt)
 	local installationPath = if organization
 		then `/orgs/{organization}/installation`
