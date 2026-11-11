@@ -317,8 +317,8 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
 			{ name = "Remove owned temporary branch", env = { GH_TOKEN = "${{ github.token }}" }, run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/entry.luau --cleanup-branch" },
 		} }
-	files["execution.yml"] = Json.encode({ name = if operation == "validation" then "Validation" elseif Process.env.ACT == "true" then "Build" else "Build / Publish",
-		["run-name"] = `{operation} for {sourceSha:sub(1, 12)}`, on = { push = { branches = { branch } } },
+	files["pipeline.yml"] = Json.encode({ name = "Pipeline",
+		["run-name"] = `pipeline for {sourceSha:sub(1, 12)}`, on = { push = { branches = { branch } } },
 		permissions = {}, jobs = jobs })
 	return files
 end

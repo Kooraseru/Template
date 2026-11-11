@@ -85,7 +85,7 @@ function main(args = process.argv.slice(2)) {
 			const executionArgs = [];
 			const excluded = new Set(["-W", "--workflows", "--input", "--input-file", "-e", "--eventpath", "-j", "--job", "--artifact-server-path", "--artifact-server-port"]);
 			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
-			execute(["push", "--workflows", ".github/workflows/execution.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
+			execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			artifacts.receiveDiagnostics(runRoot);
 			record.reports = record.runDirectory + "/" + selected.operation;

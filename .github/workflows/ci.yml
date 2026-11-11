@@ -23,8 +23,8 @@ concurrency:
     github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 jobs:
-  start:
-    name: Start
+  resolve:
+    name: Resolve
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,24 +56,10 @@ jobs:
         env:
           CI_PROFILE: source-ci
         run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --credential-provider
-  validate:
-    name: validate
-    needs:
-      - start
-      - validation
-    if: always() && (github.event_name == 'pull_request' || needs.start.outputs.operation == 'validation')
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Require completed Validation
-        env:
-          START_RESULT: ${{ needs.start.result }}
-          VALIDATION_RESULT: ${{ needs.validation.result }}
-        run: test "$START_RESULT" = success && test "$VALIDATION_RESULT" = success
-  build-environment:
-    name: Start Build
-    needs: start
-    if: needs.start.outputs.operation == 'build' && needs.start.outputs.provider == 'environment'
+  bootstrap-environment:
+    name: Bootstrap
+    needs: resolve
+    if: needs.resolve.outputs.operation == 'build' && needs.resolve.outputs.provider == 'environment'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,10 +102,10 @@ jobs:
           name: start
           path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
           if-no-files-found: error
-  build-oidc:
-    name: Start Build (OIDC)
-    needs: start
-    if: needs.start.outputs.operation == 'build' && needs.start.outputs.provider == 'oidc'
+  bootstrap-oidc:
+    name: Bootstrap (OIDC)
+    needs: resolve
+    if: needs.resolve.outputs.operation == 'build' && needs.resolve.outputs.provider == 'oidc'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -159,8 +145,8 @@ jobs:
           if-no-files-found: error
   readiness:
     name: Readiness
-    needs: start
-    if: needs.start.outputs.operation == 'readiness'
+    needs: resolve
+    if: needs.resolve.outputs.operation == 'readiness'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -187,10 +173,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node dependencies/packages/checks/preflightChecker/bootstrap/remoteRead.cjs "$RUNNER_TEMP/readiness.json"
-  validation:
-    name: Validation
-    needs: start
-    if: needs.start.outputs.operation == 'validation'
+  validate:
+    name: validate
+    needs: resolve
+    if: always() && (github.event_name == 'pull_request' || needs.resolve.outputs.operation == 'validation')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -200,6 +186,10 @@ jobs:
       CI_PROFILE: validate
       CI_EVENT: ${{ github.event_name }}
     steps:
+      - name: Require successful resolution
+        env:
+          RESOLVE_RESULT: ${{ needs.resolve.result }}
+        run: test "$RESOLVE_RESULT" = success
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
