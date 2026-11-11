@@ -14,4 +14,4 @@ The profile defaults to `create`. To exercise other cases, pass a profile with t
 
 The mock implements the subset of the GitHub REST contract used by the pilot. It runs inside the same container as the tasks and rejects unmatched operations. The rehearsal uses current tracked source files, dummy credentials, and Docker's isolated loopback network. It records the operations exercised and leaves live write acceptance unverified.
 
-Dispatch **CI Remote Read** on the `source` branch from GitHub Actions to inspect configured labels and destination branches. The workflow issues only allowlisted REST reads. Missing or inaccessible state remains unverified. An archived configured label or an attempted publication to the default branch fails the check.
+Dispatch **CI** with `operation=readiness` on the `source` branch from GitHub Actions to inspect configured labels and destination branches. The workflow issues only allowlisted REST reads. Missing or inaccessible state remains unverified. An archived configured label or an attempted publication to the default branch fails the check.

@@ -81,7 +81,7 @@ async function main() {
 			["editor_get_document", "Read the current VS Code text buffer, including unsaved text, version and dirty state. UTF-16 pagination keeps responses bounded; reread after version conflicts.", {
 				file, offset: { type: "integer", minimum: 0, default: 0 }, limit: { type: "integer", minimum: 1, maximum: 64000, default: 16000 },
 			}, ["file"], args => workspace.documentOperation({ root, operation: "getDocument", args })],
-			["ci_get_status", "Read workflow names and actual recorded local act invocations. Provides invocation states and failure details; reports per-workflow/private extension state as unavailable. Does not execute CI.", {
+			["ci_get_status", "Read workflow names and recorded local pipelines, including operation, stage outcomes, source revision and readable output locations. Legacy invocation records remain supported; private extension history is unavailable. Does not execute CI.", {
 				limit: { type: "integer", minimum: 1, maximum: 20, default: 5 },
 			}, [], args => ci.getStatus({ root, ...args })],
 			["workspace_apply_edit", "WRITE: apply 1..20 narrowly scoped replacements in one existing VS Code document, without saving. Requires WORKSPACE_MCP_ALLOW_WRITES=1, explicit user authorization represented by authorize=true, trusted workspace, and the version from editor_get_document. No create/delete/rename or arbitrary API execution. On conflict reread and review; never retry blindly.", {

@@ -60,6 +60,12 @@ end
 
 function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?, profileName: string?): ()
 	local tasks = self:BuildPlan()
+	if reportOnly then
+		local phase = if Process.env.CI_PHASE == "publish" then "publish" else "build"
+		local selected: { Contract.Task } = {}
+		for _, task in tasks do if task.phase == phase then table.insert(selected, task) end end
+		tasks = selected
+	end
 	if component or reportOnly then
 		if component then
 			TaskRunner.Run(tasks, self.event, component, self.credentials)
@@ -72,6 +78,9 @@ function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?
 	local restriction: ("validate" | "source-ci")? = nil
 	if self.profile then
 		restriction = if profileName == "source-ci" then "source-ci" else "validate"
+	end
+	if Process.env.ACT == "true" and Process.env.CI_GRAPH_RUN ~= "true" then
+		if BranchRun.TryLaunch(tasks, self.event, self.credentials) then return end
 	end
 	if restriction ~= "validate" and (not self.profile or self.profile.delegate) then
 		if restriction == "source-ci" and not (Process.env.ACT == "true") then

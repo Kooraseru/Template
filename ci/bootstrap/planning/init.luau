@@ -22,6 +22,9 @@ local RESERVED_OUTPUTS: { string } = {
 	"ci/bootstrap/**",
 	".github/workflows/**",
 	".git/**",
+	".workspace/**",
+	"dependencies/managed/**",
+	"build/run/**",
 }
 
 local function fail(message: string): never
@@ -111,6 +114,9 @@ local function resolveOutputs(active: { [string]: Contract.Contract }): ()
 	local ownership: { { identity: string, path: string } } = {}
 	for _, identity in names(active) do
 		for _, output in active[identity].outputs do
+			if output:sub(1, 16) ~= "build/artifacts/" and output:sub(1, 13) ~= "build/github/" then
+				fail(`{identity}: outputs must stay under build/artifacts/ or build/github/`)
+			end
 			for _, reserved in RESERVED_OUTPUTS do
 				if Glob.Overlaps(output, reserved) then
 					fail(`{identity}: output glob intersects protected source path {reserved}`)
@@ -164,6 +170,9 @@ function Planner.Resolve(self: Planner, components: { Contract.Contract }, event
 			local provider = providers[capability]
 			if not provider then
 				fail(`{identity}: missing required capability {capability}`)
+			end
+			if active[identity].phase == "build" and active[provider].phase == "publish" then
+				fail(`{identity}: Build cannot depend on Publish component {provider}`)
 			end
 			dependenciesForComponent[provider] = true
 		end

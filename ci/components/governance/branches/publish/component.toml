@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["branches.published"]
 requires = ["build.completed", "branches.generated"]
 inputs = ["build/github/branches/**", ".github/config/targets.toml", ".github/config/branches/**"]

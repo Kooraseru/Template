@@ -23,3 +23,20 @@ test("hosted publication rejects feature refs while local ACT accepts the checko
 		else { assert.notEqual(result.status, 0); assert.match(result.stdout, /unavailable for this event and ref/); }
 	}
 });
+
+test("local launcher selects safe defaults and respects explicit operations and events", () => {
+	const { options } = require("./run.cjs");
+	assert.equal(options([]).event, "workflow_dispatch"); assert.equal(options([]).operation, "validation");
+	assert.equal(options(["push"]).operation, "build"); assert.equal(options(["--input", "operation=build"]).operation, "build");
+	assert.equal(options(["--workflows", "push", "--input=operation=readiness"]).operation, "readiness");
+	assert.equal(options(["--actor", "push"]).event, "workflow_dispatch");
+	assert.equal(options(["--list"]).informational, true);
+	assert.throws(() => options(["pull_request", "--input", "operation=build"]), /Validation only/);
+	assert.throws(() => options(["--input", "operation=anything"]), /Unknown/);
+});
+
+test("dotenv input files and event payload operation are respected", t => {
+	const { options } = require("./run.cjs"), temporary = fs.mkdtempSync(path.join(os.tmpdir(), "act-inputs-")); t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+	const input = path.join(temporary, "inputs"), event = path.join(temporary, "event.json"); fs.writeFileSync(input, "# inputs\noperation='build'\n"); fs.writeFileSync(event, JSON.stringify({ inputs: { operation: "readiness" } }));
+	assert.equal(options(["--input-file", input]).operation, "build"); assert.equal(options(["--eventpath", event]).operation, "readiness"); assert.equal(options(["--input-file", input, "--input", "operation=validation"]).operation, "validation");
+});

@@ -8,11 +8,11 @@ tree. `order` affects display only; it does not change component execution.
 responses/
   responses.toml
   start/
-    root.md              CI Start root
-    overview/root.md     CI Start summary and navigation buttons
+    root.md              Start root
+    overview/root.md     Start summary and navigation buttons
   execution/
-    root.md              CI Execution root
-    overview/root.md     CI Execution summary and navigation buttons
+    root.md              execution stage root
+    overview/root.md     execution stage summary and navigation buttons
   shared/
     components/
       root.md            component tree
@@ -54,15 +54,17 @@ The header, overview, and navigation are centred. The component groups and
 results tables use the available width, with a narrow outcome column and
 wrapping notes. HTML table values are escaped by the renderer.
 
-Only the CI Start job and CI Execution's final reporting job write job summaries.
+Only the Start job and execution stage's final reporting job write job summaries.
 Component jobs upload fragments even when they fail. Their logs and job results
 remain independent of this presentation layer.
 
 The CI header uses independent Shieldcn badges at default size. The runner badge
 uses the actual job operating system (or `CI_RUNNER_LABEL` when explicitly set),
 the status uses a fixed charcoal background and a conclusion-colored circle,
-and CI Execution reads the current workflow artifact count through the GitHub
+and execution stage reads the current workflow artifact count through the GitHub
 Actions API and includes the known final `ci-report` upload. The reporting job
 requests Actions: read for that lookup. If the API is unavailable, the badge
 shows `?` rather than claiming an unverified total. A failed final upload can
 leave that projected count one higher than the eventual artifact inventory.
+
+Stage headings are validated from the execution context and share the existing execution templates. Local readable reports and logs are retained under `build/run/<id>/`; ZIP/TAR files under transport are not the public output interface.

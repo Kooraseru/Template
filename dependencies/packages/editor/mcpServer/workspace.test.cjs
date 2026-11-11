@@ -42,3 +42,10 @@ test("status distinguishes unavailable diagnostics, absent CI, failures and corr
 	assert.equal(result.available, true); assert.equal(result.executions[0].state, "failed");
 	assert.equal(result.executions[0].failure, "recorded failure"); assert.ok(result.issues.some(issue => issue.includes("eeee.json")));
 });
+
+test("status reads v2 stage outcomes without claiming local Publish completed", async t => {
+	const root = fs.mkdtempSync(path.join(os.tmpdir(), "workspace-pipeline-")); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+	const directory = path.join(root, ".workspace/ci/runs"); fs.mkdirSync(directory, { recursive: true });
+	fs.writeFileSync(path.join(directory, "abcd.json"), JSON.stringify({ version: 2, runner: "act", startedAt: "2026-11-11T12:00:00Z", state: "failed", operation: "build", source: "a".repeat(40), stages: { start: "passed", build: "passed", export: "failed", publish: "disabled" }, failureStage: "export" }));
+	const result = ci.getStatus({ root }); assert.equal(result.executions[0].scope, "pipeline"); assert.equal(result.executions[0].stages.build, "passed"); assert.equal(result.executions[0].stages.publish, "disabled"); assert.equal(result.executions[0].failureStage, "export"); assert.equal(result.executions[0].currentCheckout, null);
+});

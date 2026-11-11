@@ -1,2 +1,2 @@
-artifacts = ["build/run/ci-execution/artifacts/application/windows-amd.exe"]
-run = "build/run/ci-execution/artifacts/application/windows-amd.exe"
+artifacts = ["build/artifacts/application/windows-amd.exe"]
+run = "build/artifacts/application/windows-amd.exe"

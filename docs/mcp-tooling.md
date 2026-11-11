@@ -113,3 +113,10 @@ Workflow names are discovered from `.github/workflows/`; their existence does no
 ## Optional status updates
 
 `workspace://status` is an `application/json` resource with the same data as `workspace_status`. Clients may use `resources/subscribe` and `resources/unsubscribe` for opt-in `notifications/resources/updated` invalidations. While subscribed, the server samples status every five seconds and sends an invalidation only on change; read the resource again for content. Sampling stops on unsubscribe or connection close and does not overlap. The installed SDK accepts these legacy subscription methods alongside current stdio initialization. Clients using a different notification transport or without subscription support should poll the resource/tool on demand. No notification is required for correctness.
+
+
+## Consolidated CI pipelines
+
+The single authored CI workflow selects Validation by default, or explicit Build/Readiness. Local Build runs through the generated Build workflow and exports ordinary files under `build/artifacts/` and `build/github/`, with a snapshot under `build/run/<id>/outputs/`. Local Publish is disabled.
+
+`ci_get_status` reads both v1 invocation records and v2 pipeline records. V2 includes operation, source revision, stage outcomes, export failures, and readable manifest/artifact paths. `sourceRevisionMatchesHead` compares commit identity; `currentCheckout` compares the tracked working-copy digest and is null when unavailable. Build success with failed export is an overall failure, and disabled publication never implies publication completed. Private extension history remains unavailable. Status subscriptions continue to invalidate on changes.

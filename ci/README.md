@@ -1,14 +1,14 @@
 # CI implementation
 
-`ci.yml`, `validate.yml`, and `remote-read.yml` own separate GitHub triggers. They share the Luau entry point at `ci/entry.luau`, which discovers component manifests under `ci/components/` and schedules isolated component runs. Credential names and requirements live in `.github/config/credentials.json`. Grouping folders do not establish order; dependencies come from declared capabilities.
+`.github/workflows/ci.yml` is the only authored workflow. It routes pull requests to Validation, source pushes to Build then Publish, and manual runs to `validation` (default), `build`, or `readiness`. Disposable branches contain the generated controller and only its required reusable stage workflows.
 
 Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
 
-CI Check handles PRs and manual validation with the `validate` profile. CI Publish runs the full build, sync, and publication graph on pushes and manual runs on `source`. The manual `remote-read` workflow uses its own read-only token. Local Preflight resolves the graph without hosted credentials.
+Validation uses the `validate` profile. Source Build prepares products; Publish owns every external mutation under existing credential/environment gates. Readiness uses the read-only `remote-read` profile on source. Preflight resolves the same discovered graph without hosted credentials. Fork/PR Validation remains an inline read-only graph, since creating an execution branch would require publication authority.
 
 The commented `credentials.json` catalog defines runtime sources, verifiers, roles, and profiles. GitHub Actions discovers GitHub PATs by token format without a naming convention. Classic scopes are inspected once per job. A read-only repository probe can establish visibility. GitHub still decides whether the actual write is allowed. Existing named bindings remain available for explicitly configured credentials and migration fallbacks.
 
-The source ruleset requires the `validate` job from **CI Check**.
+The source ruleset requires the `validate` job from **CI**.
 
 ### Credential providers
 
@@ -101,18 +101,19 @@ See the [Rules settings contract](../rules/general/workflows/review/checker-cont
 From the repository root, run `node dependencies/packages/ci/localActions/run.cjs` or use the **Run GitHub Actions locally** VS Code task.
 
 
-## Local Actions compatibility
+## Local execution
 
-Workspace setup generates the ignored root `.actrc` from `.vscode/config/act/actrc`, just as it generates the language discovery files. Both plain `act` and the GitHub Local Actions extension discover it automatically. Edit the canonical file; changing it triggers workspace setup. `--detect-event` lets a workflow button with no event select an event that its workflow actually handles, instead of defaulting to `push`. A local detected `pull_request` can omit the hosted PR payload; only `ACT=true` permits that omission. Hosted PR validation still requires base branch `source`.
-
-For deterministic CLI runs, pass an explicit event:
+Run normal dependency setup, then use the **CI: Run locally** task or GitHub Local Actions workflow button. The extension's supported `actCommand` setting routes through the same repository launcher. `act` must be on PATH. Informational flags (`--help`, `--version`, `--list`) pass through without starting a pipeline.
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts
-act workflow_dispatch --workflows .github/workflows/validate.yml
-act workflow_dispatch --workflows .github/workflows/ci.yml
+node dependencies/packages/ci/localActions/run.cjs
+node dependencies/packages/ci/localActions/run.cjs --input operation=build
+node dependencies/packages/ci/localActions/run.cjs --input operation=readiness
 ```
 
-CI Publish's provider-selection entry enforces the hosted source-ref check in `ci/github/init.luau`; local ACT checkouts can generate the local execution workflow from a feature branch. The named `ci-bootstrap` environment and credential checks remain. Its authored job uses the environment syntax understood by act 0.2.89. Removing the optional `deployment: false` restores GitHub's default creation of an environment deployment record for that bootstrap job; it does not authorize release publication. See [GitHub environment behavior](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/deploy-to-environment).
+The default is `workflow_dispatch` with `operation=validation`. Explicit events, `--input operation=...`, dotenv input files, and event payloads are honored. Local Build automatically runs the generated controller and reusable Build workflow in an isolated checkout, then exports verified ordinary files. Publish is omitted locally. The launcher suppresses ambient GitHub-token discovery and default secret-file loading for local execution. Readiness needs explicit read authorization; no publication is performed as verification.
 
-The authored workflows retain the hosted v7 artifact uploader and select v4 for local ACT runs, matching the generated workflow's existing artifact protocol adaptation. YAML aliases keep each artifact's paths and options authoritative in one place. CI Publish locally generates and uploads the execution plan; it does not represent completed hosted publication.
+Current compiled outputs live under `build/artifacts/`; generated products stay under `build/github/`. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.
+
+Current-output ownership and v2 pipeline records live under ignored `.workspace/ci/`. Old v1 invocation records remain readable. Do not delete `.workspace/` as build cleanup. Archives are transport state; consumers inspect or launch the exported files directly.

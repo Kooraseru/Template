@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["pages.deployment-ready"]
 requires = ["build.completed", "pages.generated"]
 inputs = ["build/github/pages/**"]

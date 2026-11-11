@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["releases.published"]
 requires = ["releases.generated"]
 inputs = ["build/github/releases/**"]

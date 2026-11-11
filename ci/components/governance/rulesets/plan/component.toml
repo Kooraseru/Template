@@ -1,3 +1,4 @@
+phase = "build"
 provides = ["github.rulesets.planned"]
 requires = []
 inputs = [".github/config/rulesets/**"]

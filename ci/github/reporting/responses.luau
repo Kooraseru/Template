@@ -12,7 +12,8 @@ local Configuration = require("@ci/github/configuration")
 local Publication = require("@ci/github/publication")
 
 const ROOT = ".github/config/reports"
-const RECORDS = "build/run/ci-execution/responses"
+local Artifacts = require("@ci/github/workflows/artifacts")
+const RECORDS = `{Artifacts.Stage()}/responses`
 
 local Responses = {}
 local written = false
@@ -276,7 +277,7 @@ function Responses.ResetLocal(): ()
 		error("Response reset is restricted to local act runs", 0)
 	end
 
-	for _, path in { "build", "build/run", "build/run/ci-execution", RECORDS } do
+	for _, path in { "build", "build/run", `build/run/{Artifacts.RunId()}`, Artifacts.Stage(), RECORDS } do
 		if Fs.exists(path) and Fs.type(path) == "link" then
 			error(`Refusing to write through a symlink: {path}`, 0)
 		end
@@ -593,6 +594,8 @@ function Responses.Render(
 	local config = configuration()
 	local entries = combine(source or records())
 	local context = table.clone(values)
+	local titles = { start = "Start", validation = "Validation", readiness = "Readiness", build = "Build", publish = "Publish" }
+	context.stage_title = titles[Process.env.CI_PHASE or "start"] or error("Unknown report stage", 0)
 	local repository = Process.env.GITHUB_REPOSITORY or Configuration.new().repository
 	local base = (Process.env.GITHUB_SERVER_URL or "https://github.com") .. "/" .. repository
 	local run = Process.env.GITHUB_RUN_ID
@@ -710,7 +713,7 @@ end
 
 function Responses.Write(root: string, values: { [string]: string }, outcomes: { [string]: string }?): ()
 	local markdown = Responses.Render(root, values, outcomes)
-	local directory = if root == "start" then "build/run/ci-start/responses" else RECORDS
+	local directory = `{Artifacts.Stage()}/responses`
 	Fs.createDirectory(directory, { makeParents = true })
 	Fs.writeStringToFile(`{directory}/{root}.md`, markdown)
 	local path = Process.env.GITHUB_STEP_SUMMARY

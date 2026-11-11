@@ -23,7 +23,7 @@ my-library/
 
 ```toml
 # my-library/package.toml
-files = ["build/run/ci-execution/artifacts/MyLibrary.1.0.0.nupkg"]
+files = ["build/artifacts/MyLibrary.1.0.0.nupkg"]
 format = "nuget"
 version = "1.0.0"
 repository = "your-account/your-repository"

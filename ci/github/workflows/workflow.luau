@@ -55,11 +55,16 @@ local function componentEnvironment(configuration: Configuration.Configuration, 
 	return match or error(`{task.identity}: no credential environment for {table.concat(task.credentials, ", ")}`, 0)
 end
 
-function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string): string
+function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string, phase: string?): string
+	local selectedPhase = phase or "build"
+	local stage = if selectedPhase == "publish" then "publish" elseif Process.env.CI_OPERATION == "build" then "build" else "validation"
+	local runRoot = "build/run/${{ inputs.run-id }}"
+	local stageRoot = `{runRoot}/{stage}`
+	local transport = `{runRoot}/transport/bundles`
 	if event == "pull_request" then
 		for _, task in tasks do
 			if task.boundary ~= "read" then
-				error(`Refusing privileged task {task.identity} in PR CI Execution`, 0)
+				error(`Refusing privileged task {task.identity} in Validation execution`, 0)
 			end
 		end
 	end
@@ -72,7 +77,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		else "actions/download-artifact@v8"
 	local configuration = Configuration.new()
 	local profile = configuration.profiles["source-ci"]
-	local hostedPush = event == "push" and Process.env.ACT ~= "true"
+	local hostedPush = selectedPhase == "publish" and event == "push" and Process.env.ACT ~= "true"
 	if hostedPush and profile.credentialProvider ~= "environment" and profile.credentialProvider ~= "oidc" then
 		error("Hosted execution requires environment or OIDC credential transport", 0)
 	end
@@ -84,27 +89,29 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	end
 
 	for _, task in tasks do
+		if task.phase ~= selectedPhase then continue end
 		local needs: { string } = {}
 		local steps: { Step } = {
 			{
 				uses = "actions/checkout@v7",
-				["if"] = "${{ !env.ACT }}",
-				with = { ref = sourceSha, ["fetch-depth"] = 0, ["persist-credentials"] = false },
+				with = { ref = if Process.env.ACT == "true" then nil else sourceSha, ["fetch-depth"] = 0, ["persist-credentials"] = false },
 			},
 		}
 		appendStep(steps, { uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } })
 
 		for _, dependency in task.needs do
-			table.insert(needs, Workflow.JobId(dependency))
+			if identities[dependency] and identities[dependency].phase == selectedPhase then
+				table.insert(needs, Workflow.JobId(dependency))
+			end
 			local provider = identities[dependency]
 			if not provider then
 				error(`{task.identity}: unknown planned dependency {dependency}`, 0)
 			end
-			if #provider.outputs > 0 then
+			do
 				appendStep(steps, {
 					name = `Receive {dependency} outputs`,
 					uses = downloadArtifact,
-					with = { name = `ci-{Contract.Key(dependency)}`, path = "build/run/ci-execution/artifacts" },
+					with = { name = `outputs-{Contract.Key(dependency)}`, path = `{transport}/{Contract.Key(dependency)}` },
 				})
 			end
 		end
@@ -133,19 +140,19 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			name = `Run {task.identity}`,
 			id = "component",
 			env = if next(runEnvironment) then runEnvironment else nil,
-			run = if active then `dependencies/managed/bin/lute/lute run ci/entry.luau --component {task.identity}`
-				else `bash ci/github/workflows/run-logged.sh ci-execution {Contract.Key(
+			run = if active then `bash ci/github/workflows/run-logged.sh {stage} {Contract.Key(task.identity)} --component {task.identity}`
+				else `bash ci/github/workflows/run-logged.sh {stage} {Contract.Key(
 				task.identity
 			)} --component {task.identity}`,
 		})
-		if #task.outputs > 0 then
+		do
 			appendStep(steps, {
 				name = `Publish {task.identity} outputs`,
-				["if"] = "${{ steps.component.outputs.skipped != toJSON(true) }}",
+
 				uses = uploadArtifact,
 				with = {
-					name = `ci-{Contract.Key(task.identity)}`,
-					path = `build/run/ci-execution/artifacts/{Contract.Key(task.identity)}.tar`,
+					name = `outputs-{Contract.Key(task.identity)}`,
+					path = `{transport}/{Contract.Key(task.identity)}/`,
 					["if-no-files-found"] = "error",
 				},
 			})
@@ -153,7 +160,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 
 		local job: { [string]: unknown } = {
 			name = task.identity,
-			env = { CI_COMPONENT = task.identity },
+			env = { CI_COMPONENT = task.identity, CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
 			["runs-on"] = "ubuntu-latest",
 			steps = steps,
 			outputs = {
@@ -197,8 +204,8 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			["if"] = "${{ always() }}",
 			uses = uploadArtifact,
 			with = {
-				name = `ci-logs-{Contract.Key(task.identity)}`,
-				path = "build/run/ci-execution/logs/",
+				name = `logs-{stage}-{Contract.Key(task.identity)}`,
+				path = `{stageRoot}/logs/`,
 				["if-no-files-found"] = "ignore",
 			},
 		})
@@ -207,8 +214,8 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			["if"] = "${{ always() }}",
 			uses = uploadArtifact,
 			with = {
-				name = `ci-response-{Contract.Key(task.identity)}`,
-				path = "build/run/ci-execution/responses/",
+				name = `response-{stage}-{Contract.Key(task.identity)}`,
+				path = `{stageRoot}/responses/`,
 				["if-no-files-found"] = "ignore",
 			},
 		})
@@ -230,17 +237,16 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	reportBindings.GH_TOKEN = "${{ github.token }}"
 	jobs.report = {
 		environment = if reportEnvironment then { name = reportEnvironment, deployment = false } else nil,
-		name = "CI result",
+		name = `{stage} result`,
 		permissions = { contents = "read", actions = "read" },
-		env = { CI_COMPONENT = "response" },
+		env = { CI_COMPONENT = "response", CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
 		["runs-on"] = "ubuntu-latest",
 		needs = if #jobIds > 0 then jobIds else nil,
 		["if"] = "${{ always() }}",
 		steps = {
 			{
 				uses = "actions/checkout@v7",
-				["if"] = "${{ !env.ACT }}",
-				with = { ref = sourceSha, ["persist-credentials"] = false },
+				with = { ref = if Process.env.ACT == "true" then nil else sourceSha, ["persist-credentials"] = false },
 			},
 			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
 			{
@@ -248,60 +254,73 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 				id = "responses",
 				uses = downloadArtifact,
 				with = {
-					pattern = "ci-response-*",
+					pattern = `response-{stage}-*`,
 					["merge-multiple"] = true,
-					path = "build/run/ci-execution/responses",
+					path = `{stageRoot}/responses`,
 				},
 			},
 			{
 				name = "Report component results",
 				["if"] = "${{ always() }}",
 				env = reportBindings,
-				run = "bash ci/github/workflows/run-logged.sh ci-execution report --report",
+				run = `bash ci/github/workflows/run-logged.sh {stage} report --report`,
 			},
 			{
 				name = "Collect final report and logs",
 				["if"] = "${{ always() }}",
 				uses = uploadArtifact,
 				with = {
-					name = "ci-report",
-					path = "build/run/ci-execution/responses/execution.md\nbuild/run/ci-execution/logs/",
+					name = `report-{stage}`,
+					path = `{stageRoot}/responses/execution.md\n{stageRoot}/logs/`,
 					["if-no-files-found"] = "ignore",
 				},
 			},
 		},
 	}
-	jobs.cleanup = {
-		name = "Remove temporary CI branch",
-		["runs-on"] = "ubuntu-latest",
-		needs = { "report" },
-		["if"] = "${{ always() }}",
-		permissions = { contents = "write" },
-		steps = {
-			{
-				uses = "actions/checkout@v7",
-				["if"] = "${{ !env.ACT }}",
-				with = { ref = sourceSha, ["persist-credentials"] = false },
-			},
-			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
-			{
-				name = "Delete temporary branch for this run",
-				env = { GH_TOKEN = "${{ github.token }}" },
-				run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/entry.luau --cleanup-branch",
-			},
-		},
-	}
 	-- JSON is a YAML subset. Validate the document before adding its YAML comment header.
 	local document = Json.encode({
-		name = "CI Execution",
-		["run-name"] = `CI Execution for {sourceSha:sub(1, 12)}`,
-		on = { push = { branches = { branch } } },
+		name = if stage == "validation" then "Validation" elseif stage == "build" then "Build" else "Publish",
+
+		on = { workflow_call = { inputs = { ["run-id"] = { required = true, type = "string" } } } },
 		permissions = { contents = "read" },
-		env = { CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch },
+
 		jobs = jobs,
 	})
 	Json.decode(document)
 	return "# Generated by ci/github/workflows/workflow.luau; do not edit.\n" .. document
+end
+
+--- Render native reusable stages and one controller from the same validated plan.
+function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string): { [string]: string }
+	local operation = Process.env.CI_OPERATION or "validation"
+	if operation ~= "validation" and operation ~= "build" then error("Unsupported generated operation", 0) end
+	local stage = if operation == "build" then "build" else "validation"
+	local files = { [stage .. ".yml"] = Workflow.Render(tasks, sourceSha, branch, event, "build") }
+	local jobs: { [string]: unknown } = {
+		[stage] = { name = if stage == "build" then "Build" else "Validation", uses = `./.github/workflows/{stage}.yml`,
+			permissions = { contents = "read", actions = "read" },
+			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } },
+	}
+	local needs = { stage }
+	if operation == "build" and Process.env.ACT ~= "true" then
+		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
+		jobs.publish = { name = "Publish", needs = { stage }, uses = "./.github/workflows/publish.yml",
+			permissions = { contents = "write", actions = "read", ["id-token"] = "write" },
+			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } }
+		table.insert(needs, "publish")
+	end
+	jobs.cleanup = { name = "Finish", needs = needs, ["if"] = "${{ always() }}", ["runs-on"] = "ubuntu-latest",
+		permissions = { contents = "write" },
+		env = { CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_OPERATION = operation },
+		steps = {
+			{ uses = "actions/checkout@v7", with = { ref = if Process.env.ACT == "true" then nil else sourceSha, ["persist-credentials"] = false } },
+			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
+			{ name = "Remove owned temporary branch", env = { GH_TOKEN = "${{ github.token }}" }, run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/entry.luau --cleanup-branch" },
+		} }
+	files["execution.yml"] = Json.encode({ name = if operation == "validation" then "Validation" elseif Process.env.ACT == "true" then "Build" else "Build / Publish",
+		["run-name"] = `{operation} for {sourceSha:sub(1, 12)}`, on = { push = { branches = { branch } } },
+		permissions = {}, jobs = jobs })
+	return files
 end
 
 return Workflow

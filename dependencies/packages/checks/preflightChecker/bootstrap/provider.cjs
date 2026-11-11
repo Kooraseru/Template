@@ -24,6 +24,7 @@ async function resolve({ workspace, entry = "pull_request", signal }) {
 		entry,
 		steps: tasks.map(task => ({
 			id: task.identity,
+			phase: task.phase,
 			needs: list(task.needs),
 			inputs: list(task.inputs),
 			outputs: list(task.outputs),
