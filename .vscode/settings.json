@@ -1,6 +1,7 @@
 
 {
 	// Generic Workbench Bridge external workspace client.
+	"githubLocalActions.actCommand": "node dependencies/packages/ci/localActions/run.cjs",
 	"workbenchBridge.workspaceCommands": [
 		["node", "dependencies/packages/editor/editorIntegration/client.cjs"]
 	],

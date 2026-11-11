@@ -1,47 +1,89 @@
-name: CI Publish
-
+name: CI
 on:
   push:
-    branches: [source]
+    branches:
+      - source
+  pull_request:
+    branches:
+      - source
   workflow_dispatch:
-
+    inputs:
+      operation:
+        description: Operation to execute
+        type: choice
+        options:
+          - validation
+          - build
+          - readiness
+        default: validation
+        required: true
 permissions: {}
-
 concurrency:
-  group: ci-source
+  group: ci-${{ github.event_name == 'push' && 'build' || inputs.operation || 'validation' }}-${{
+    github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
-
 jobs:
-  select-provider:
-    # The entry validates the source ref on GitHub and allows local ACT checkouts.
+  start:
+    name: Start
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
-      provider: ${{ steps.select.outputs.provider }}
+      operation: ${{ steps.route.outputs.operation }}
+      provider: ${{ steps.provider.outputs.provider }}
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-      - name: Select credential provider
-        id: select
+      - name: Select operation
+        id: route
+        env:
+          REQUESTED_OPERATION: ${{ inputs.operation }}
+          EVENT: ${{ github.event_name }}
+        run: |-
+          operation="${REQUESTED_OPERATION:-validation}"
+          if [ "$EVENT" = push ]; then operation=build; fi
+          case "$operation" in validation|build|readiness) ;; *) echo 'Unknown operation' >&2; exit 2;; esac
+          if [ "$EVENT" = pull_request ] && [ "$operation" != validation ]; then exit 2; fi
+          echo "operation=$operation" >> "$GITHUB_OUTPUT"
+      - name: Select Build credential provider
+        id: provider
+        if: steps.route.outputs.operation == 'build'
         env:
           CI_PROFILE: source-ci
         run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --credential-provider
-
-  gate:
-    needs: select-provider
-    if: needs.select-provider.outputs.provider == 'environment'
-    name: gate
-    environment:
-      name: ci-bootstrap
+  validate:
+    name: validate
+    needs:
+      - start
+      - validation
+    if: always() && (github.event_name == 'pull_request' || needs.start.outputs.operation == 'validation')
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require completed Validation
+        env:
+          START_RESULT: ${{ needs.start.result }}
+          VALIDATION_RESULT: ${{ needs.validation.result }}
+        run: test "$START_RESULT" = success && test "$VALIDATION_RESULT" = success
+  build-environment:
+    name: Start Build
+    needs: start
+    if: needs.start.outputs.operation == 'build' && needs.start.outputs.provider == 'environment'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
+    env:
+      CI_OPERATION: build
+      CI_PROFILE: source-ci
+      CI_EVENT: ${{ github.event_name }}
+    environment:
+      name: ci-bootstrap
     steps:
       - uses: actions/checkout@v7
         with:
@@ -52,42 +94,41 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
-      - name: Start bootstrap
+      - name: Generate Build pipeline
         env:
-          CI_PROFILE: source-ci
-          CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
           CI_CREDENTIAL_ENVIRONMENT: ci-bootstrap
           CI_CREDENTIAL_APP_ID: ${{ vars.CI_APP_ID }}
           CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
           CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets.CI_TOKEN }}
-        run: dependencies/managed/bin/lute/lute run ci/entry.luau
-      # Artifacts are diagnostic output; no publication operation occurs in this job.
-      - name: Collect bootstrap output
+        run: bash ci/github/workflows/run-logged.sh start build
+      - name: Collect Start output
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
-        with: &bootstrap-output
-          name: ci-start
-          path: |
-            build/run/ci-start/logs/
-            build/run/ci-start/responses/
-            build/run/ci-start/artifacts/workflow.yml
-            build/run/ci-execution/
-          if-no-files-found: ignore
-      - name: Collect bootstrap output locally
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: error
+      - name: Collect Start output locally
         if: ${{ always() && env.ACT }}
         uses: actions/upload-artifact@v4
-        with: *bootstrap-output
-
-  gate-oidc:
-    needs: select-provider
-    if: needs.select-provider.outputs.provider == 'oidc'
-    name: gate (OIDC)
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: error
+  build-oidc:
+    name: Start Build (OIDC)
+    needs: start
+    if: needs.start.outputs.operation == 'build' && needs.start.outputs.provider == 'oidc'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
       id-token: write
+    env:
+      CI_OPERATION: build
+      CI_PROFILE: source-ci
+      CI_EVENT: ${{ github.event_name }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -98,18 +139,91 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
-      - name: Start bootstrap
+      - name: Generate Build pipeline
         env:
-          CI_PROFILE: source-ci
-          CI_EVENT: ${{ github.event_name }}
           GH_TOKEN: ${{ github.token }}
-        run: dependencies/managed/bin/lute/lute run ci/entry.luau
-      # Artifacts are diagnostic output; no publication operation occurs in this job.
-      - name: Collect bootstrap output
+        run: bash ci/github/workflows/run-logged.sh start build
+      - name: Collect Start output
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
-        with: *bootstrap-output
-      - name: Collect bootstrap output locally
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: error
+      - name: Collect Start output locally
         if: ${{ always() && env.ACT }}
         uses: actions/upload-artifact@v4
-        with: *bootstrap-output
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: error
+  readiness:
+    name: Readiness
+    needs: start
+    if: needs.start.outputs.operation == 'readiness'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    env:
+      CI_PROFILE: remote-read
+      CI_OPERATION: readiness
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Validate read-only route
+        run: dependencies/managed/bin/lute/lute run ci/entry.luau --profile-check
+      - name: Read configured prerequisites
+        run: dependencies/managed/bin/lute/lute run dependencies/packages/checks/preflightChecker/bootstrap/inputs.luau >
+          "$RUNNER_TEMP/readiness.json"
+      - name: Readiness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node dependencies/packages/checks/preflightChecker/bootstrap/remoteRead.cjs "$RUNNER_TEMP/readiness.json"
+  validation:
+    name: Validation
+    needs: start
+    if: needs.start.outputs.operation == 'validation'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CI_OPERATION: validation
+      CI_PROFILE: validate
+      CI_EVENT: ${{ github.event_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/github/workflows/run-logged.sh start validation
+      - name: Collect Start output
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: error
+      - name: Collect Start output locally
+        if: ${{ always() && env.ACT }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: error

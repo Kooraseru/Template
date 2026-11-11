@@ -84,7 +84,7 @@ function load(file = ".github/config/credentials.json") {
 		if (transport?.provider === "environment") {
 			const bootstrap = catalog.environments[profile.bootstrapEnvironment];
 			const reporting = catalog.environments[profile.reportingEnvironment];
-			// CI Publish is checked in, so these aliases must match its literal bindings.
+			// CI Build is checked in, so these aliases must match its literal bindings.
 			if (profile.bootstrapEnvironment !== "ci-bootstrap"
 				|| Object.keys(bootstrap ?? {}).length !== 3
 				|| bootstrap.app_id !== "vars.CI_APP_ID"
@@ -92,7 +92,7 @@ function load(file = ".github/config/credentials.json") {
 				|| bootstrap.bootstrap_token !== "secrets.CI_TOKEN"
 				|| profile.bootstrap.length !== 3
 				|| !profile.bootstrap.every(role => Object.hasOwn(bootstrap, role))) {
-				throw new Error("Bootstrap environment must match the fixed CI Publish bindings");
+				throw new Error("Bootstrap environment must match the fixed CI Build bindings");
 			}
 			if (!reporting?.app_id || !reporting?.app_private_key || Object.keys(reporting).length !== 2
 				|| profile.reportingEnvironment === profile.bootstrapEnvironment) {

@@ -1,4 +1,4 @@
-<h1 align="center">CI Execution</h1>
+<h1 align="center">{{stage_title}}</h1>
 
 <p align="center">{{header_badges}}</p>
 

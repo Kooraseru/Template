@@ -8,6 +8,8 @@ Contract.__index = Contract
 
 --# Types
 
+export type Phase = "build" | "publish"
+
 type ContractFields = {
 	identity: string,
 	entry: string,
@@ -18,7 +20,7 @@ type ContractFields = {
 	outputs: { string },
 	events: { string },
 	boundary: string,
-	phase: string,
+	phase: Phase,
 	credentials: { string },
 	enabled: boolean,
 }
@@ -27,7 +29,7 @@ export type Contract = setmetatable<ContractFields, typeof(Contract)>
 
 export type Task = {
 	boundary: string,
-	phase: string,
+	phase: Phase,
 	credentials: { string },
 	identity: string,
 	invoker: string,

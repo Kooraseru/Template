@@ -15,7 +15,8 @@ local Credentials = require("@ci/github/authentication/credentials")
 local SkipPolicy = require("@ci/bootstrap/outcomes/skipPolicy")
 local Responses = require("@ci/github/reporting/responses")
 
-const ARTIFACT_ROOT = "build/run/ci-execution/artifacts"
+local Artifacts = require("@ci/github/workflows/artifacts")
+const ARTIFACT_ROOT = Artifacts.Transport()
 
 local TaskRunner = {}
 
@@ -63,11 +64,11 @@ local function validateArchive(path: string, task: Contract.Task): ()
 	end
 end
 
-local function bundle(task: Contract.Task): ()
+local function bundle(task: Contract.Task, outcome: string?): ()
 	local paths: { string } = {}
 	local seen: { [string]: boolean } = {}
 
-	for _, pattern in task.outputs do
+	for _, pattern in (if outcome == "skipped" then {} else task.outputs) do
 		for _, path in Glob.Find(pattern) do
 			if seen[path] then
 				continue
@@ -82,7 +83,10 @@ local function bundle(task: Contract.Task): ()
 
 	table.sort(paths)
 	Fs.createDirectory(ARTIFACT_ROOT, { makeParents = true })
-	local archive = `{ARTIFACT_ROOT}/{Contract.Key(task.identity)}.tar`
+	local directory = `{ARTIFACT_ROOT}/{Contract.Key(task.identity)}`
+	Fs.createDirectory(directory, { makeParents = true })
+	local archive = `{directory}/outputs.tar`
+	Fs.writeStringToFile(`{directory}/manifest.json`, Json.encode(Artifacts.Manifest(task, outcome)))
 	local manifest = `{ARTIFACT_ROOT}/files-{Process.pid()}.txt`
 	Fs.writeStringToFile(manifest, table.concat(paths, "\0") .. (if #paths > 0 then "\0" else ""))
 	command({ "-cf", archive, "--no-recursion", "--null", "--files-from", manifest })
@@ -106,6 +110,8 @@ function TaskRunner.Run(
 	if not selected then
 		error(`component {identity} is not in the validated execution plan`, 0)
 	end
+	if Process.env.ACT == "true" and selected.phase == "publish" then error("Local publication is disabled", 0) end
+	if selected.phase ~= (if Process.env.CI_PHASE == "publish" then "publish" else "build") then error("Component is outside the selected execution phase", 0) end
 	local skipConclusion = SkipPolicy.Conclusion(identity)
 
 	for _, dependency in selected.needs do
@@ -113,15 +119,14 @@ function TaskRunner.Run(
 		if not provider then
 			error(`{identity}: dependency {dependency} is not in the plan`, 0)
 		end
-		if #provider.outputs == 0 then
-			continue
-		end
-		local archive = `{ARTIFACT_ROOT}/{Contract.Key(dependency)}.tar`
+				local directory = `{ARTIFACT_ROOT}/{Contract.Key(dependency)}`
+		local archive = `{directory}/outputs.tar`
 		if not Fs.exists(archive) or Fs.type(archive) ~= "file" then
 			error(`{identity}: missing dependency artifact {dependency}`, 0)
 		end
 		validateArchive(archive, provider)
 		command({ "--extract", "--file", archive, "--no-same-owner", "--no-same-permissions" })
+		if Artifacts.Verify(`{directory}/manifest.json`, provider) ~= "passed" then error(`{identity}: prerequisite {dependency} was skipped`, 0) end
 	end
 
 	local executor = Executor.new(credentials)
@@ -132,6 +137,7 @@ function TaskRunner.Run(
 	end
 
 	if outcome == "skipped" then
+		bundle(selected, "skipped")
 		Publication.Output("outcome", "skipped")
 		Publication.Output("skipped", "true")
 		print(`::notice::Skipped {identity}`)
@@ -148,9 +154,7 @@ function TaskRunner.Run(
 	if #missing > 0 then
 		error(`{identity}: missing declared outputs {table.concat(missing, ", ")}`, 0)
 	end
-	if #selected.outputs > 0 then
-		bundle(selected)
-	end
+	bundle(selected)
 	Publication.Output("outcome", "passed")
 	Publication.Output("skipped", "false")
 	print(`::notice::Completed {identity}`)
@@ -180,6 +184,8 @@ function TaskRunner.Report(tasks: { Contract.Task }, credentials: Credentials.Cr
 		Responses.Record("execution/response-transfer", Responses.Template("execution.response-transfer"), "warning")
 	end
 
+	local expected: { [string]: boolean } = {}
+	for _, task in tasks do expected[task.identity] = true end
 	for _, task in tasks do
 		local value = results[Workflow.JobId(task.identity)]
 		local result = if type(value) == "table" and type(value.result) == "string" then value.result else "skipped"
@@ -188,7 +194,7 @@ function TaskRunner.Report(tasks: { Contract.Task }, credentials: Credentials.Cr
 		local skipped = type(outputs) == "table" and Publication.Record(outputs).outcome == "skipped"
 		outcomes[task.identity] = if skipped then "skipped"
 			elseif result == "success" then "passed" elseif result == "skipped" then "blocked" else result
-		if skipped and result == "success" and SkipPolicy.Conclusion(task.identity) == "neutral" then
+		if skipped and result == "success" and SkipPolicy.Conclusion(task.identity) == "neutral" and Process.env.CI_PHASE == "publish" then
 			local reported, problem = pcall(SkipPolicy.ReportNeutral, task.identity, credentials)
 			if not reported then
 				print(`::error::{problem}`)
@@ -200,7 +206,7 @@ function TaskRunner.Report(tasks: { Contract.Task }, credentials: Credentials.Cr
 			local blockers: { string } = {}
 			for _, dependency in task.needs do
 				local prerequisite = results[Workflow.JobId(dependency)]
-				if type(prerequisite) ~= "table" or prerequisite.result ~= "success" then
+				if expected[dependency] and (type(prerequisite) ~= "table" or prerequisite.result ~= "success") then
 					table.insert(blockers, dependency)
 				end
 			end

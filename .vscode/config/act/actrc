@@ -1,4 +1,2 @@
-# Local workflow buttons do not supply an event; select one the workflow handles.
---detect-event
 --artifact-server-path=build/run/local-actions/artifacts/act
 --pull=false

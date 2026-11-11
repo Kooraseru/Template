@@ -16,6 +16,7 @@ local Responses = require("@ci/github/reporting/responses")
 
 local GitFailure = require("@ci/github/publication/gitFailure")
 
+local Artifacts = require("@ci/github/workflows/artifacts")
 local BranchRun = {}
 const PR_EXECUTION_TIMEOUT_SECONDS = 3600
 const PR_EXECUTION_START_TIMEOUT_SECONDS = 120
@@ -56,13 +57,13 @@ local function launch(
 	branch: string,
 	sha: string,
 	access: Authentication.Access
-): ()
+): string
 	local runId = Process.env.GITHUB_RUN_ID
 	local attempt = Process.env.GITHUB_RUN_ATTEMPT or "1"
 	if not runId or not runId:match("^%d+$") or not attempt:match("^%d+$") then
 		error("GitHub branch bootstrap requires a valid run ID and attempt", 0)
 	end
-	local worktree = `build/run/ci-start/artifacts/worktree-{runId}-{attempt}`
+	local worktree = `{Artifacts.Stage("start")}/worktree-{runId}-{attempt}`
 	if Fs.exists(worktree) then
 		error("Refusing to reuse an existing bootstrap worktree", 0)
 	end
@@ -70,26 +71,28 @@ local function launch(
 	if not valid.ok then
 		error("github.bootstrap.branch_prefix produced an invalid branch", 0)
 	end
-	local yaml = Workflow.Render(tasks, sha, branch, event)
-	Fs.createDirectory("build/run/ci-start/artifacts", { makeParents = true })
-	Fs.writeStringToFile("build/run/ci-start/artifacts/workflow.yml", yaml)
+	local files = Workflow.Bundle(tasks, sha, branch, event)
+	Fs.createDirectory(`{Artifacts.Stage("start")}/workflows`, { makeParents = true })
+	for name, contents in files do Fs.writeStringToFile(`{Artifacts.Stage("start")}/workflows/{name}`, contents) end
 	git({ "worktree", "add", "--detach", worktree, sha })
+	local revision = ""
 	local stage = "writing generated workflow"
 	local ok, failure = xpcall(function(): boolean
 		Fs.createDirectory(`{worktree}/.github/workflows`, { makeParents = true })
-		Fs.writeStringToFile(`{worktree}/.github/workflows/ci-execution.yml`, yaml)
-		stage = "locking generated workflow dependencies"
-		local loader = `{Process.cwd()}/dependencies/packages/core/dependencyLoader/index.ts`
-		local locked = Process.run({ "node", loader, "--exec", "tools.actionsLock", "--no-interactive", "--no-narrow", ".github/workflows/ci-execution.yml" }, { cwd = worktree })
-		if not locked.ok then
-			error(`Official GitHub Actions lockfile generation failed: {locked.stderr}`, 0)
-		end
-		local verified = Process.run({ "node", loader, "--exec", "tools.actionsLock", "--verify-local", ".github/workflows/ci-execution.yml" }, { cwd = worktree })
-		if not verified.ok then
-			error(`Generated workflow is not covered by actions.lock: {verified.stderr}`, 0)
+		for name, contents in files do
+			Fs.writeStringToFile(`{worktree}/.github/workflows/{name}`, contents)
+			stage = `locking {name}`
+			local loader = `{Process.cwd()}/dependencies/packages/core/dependencyLoader/index.ts`
+			for _, arguments in { { "--no-interactive", "--no-narrow" }, { "--verify-local" } } do
+				local command = { "node", loader, "--exec", "tools.actionsLock" }
+				for _, argument in arguments do table.insert(command, argument) end
+				table.insert(command, `.github/workflows/{name}`)
+				local result = Process.run(command, { cwd = worktree })
+				if not result.ok then error(`Generated workflow lock failed for {name}: {result.stderr}`, 0) end
+			end
 		end
 		stage = "committing generated workflow"
-		git({ "add", "--", ".github/workflows/ci-execution.yml", ".github/workflows/actions.lock" }, worktree)
+		git({ "add", "--", ".github/workflows" }, worktree)
 		git({
 			"-c",
 			"user.name=CI bootstrap",
@@ -102,7 +105,8 @@ local function launch(
 			"-m",
 			`CI execution graph for {sha}`,
 		}, worktree)
-		stage = "pushing the CI execution branch"
+		revision = git({ "rev-parse", "HEAD" }, worktree)
+		stage = "pushing the execution branch"
 		local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 		git({
 			"-c",
@@ -121,14 +125,15 @@ local function launch(
 		print("::warning::Could not remove the temporary bootstrap worktree")
 	end
 	if not ok then
-		error(`Native CI Execution launch failed while {stage}: {failure}`, 0)
+		error(`Native execution launch failed while {stage}: {failure}`, 0)
 	end
+	return revision
 end
 
-local function waitForPullRequestExecution(repository: string, branch: string): ()
+local function waitForPullRequestExecution(repository: string, branch: string, revision: string): ()
 	local token = Process.env.GH_TOKEN
 	if not token or token == "" then
-		error("PR gate needs the read-only GITHUB_TOKEN to observe native CI Execution", 0)
+		error("PR gate needs the read-only GITHUB_TOKEN to observe native execution", 0)
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
 	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
@@ -172,7 +177,7 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 
 			if not observedId then
 				local path = item.path
-				if type(path) ~= "string" or not path:find(".github/workflows/ci-execution.yml", 1, true) then
+				if type(path) ~= "string" or (path ~= ".github/workflows/execution.yml" and path ~= `.github/workflows/execution.yml@refs/heads/{branch}`) then
 					continue
 				end
 				if type(item.head_branch) ~= "string" or item.head_branch ~= branch then
@@ -182,9 +187,12 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 					continue
 				end
 				observedId = item.id
-				print(`::notice::PR gate is waiting for native CI Execution run {tostring(item.id)}`)
+				print(`::notice::PR gate is waiting for native execution run {tostring(item.id)}`)
 			end
 
+			if item.head_sha ~= revision or type(item.path) ~= "string" or (item.path ~= ".github/workflows/execution.yml" and item.path ~= `.github/workflows/execution.yml@refs/heads/{branch}`) then
+				error("Observed execution does not match the generated workflow revision", 0)
+			end
 			if item.status == "completed" then
 				if item.conclusion == "success" then
 					print(`::notice::Native PR execution passed: {tostring(item.html_url)}`)
@@ -196,7 +204,7 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 		end
 
 		if not observedId and os.time() - started >= PR_EXECUTION_START_TIMEOUT_SECONDS then
-			error("GitHub did not schedule CI Execution for the generated PR branch within two minutes", 0)
+			error("GitHub did not schedule execution for the generated PR branch within two minutes", 0)
 		end
 		Task.wait(PR_EXECUTION_POLL_SECONDS)
 	end
@@ -205,7 +213,7 @@ local function waitForPullRequestExecution(repository: string, branch: string): 
 	error(
 		if observedId
 			then "Native PR execution did not finish within the gate timeout"
-			else "GitHub did not schedule CI Execution for the generated PR branch",
+			else "GitHub did not schedule execution for the generated PR branch",
 		0
 	)
 end
@@ -223,20 +231,21 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 			error("Local CI execution requires a checked-out commit", 0)
 		end
 		local branch = `{Configuration.new().branchPrefix}1-1`
-		local workflow = Workflow.Render(tasks, head, branch, event)
+		local files = Workflow.Bundle(tasks, head, branch, event)
 		-- act binds one shared workspace for every job and every invocation.
 		Responses.ResetLocal()
-		local directory = "build/run/ci-start/artifacts"
+		local directory = `{Artifacts.Stage("start")}/workflows`
 		Fs.createDirectory(directory, { makeParents = true })
-		Fs.writeStringToFile(`{directory}/workflow.yml`, workflow)
+		for name, contents in files do Fs.writeStringToFile(`{directory}/{name}`, contents) end
+		Fs.writeStringToFile(`{directory}/plan.json`, Json.encode(tasks))
 		Fs.writeStringToFile(`{directory}/event.json`, Json.encode({ ref = `refs/heads/{branch}` }))
 		Responses.Write("start", {
 			color = "success",
-			result = "Local CI Execution workflow generated. Run it with the local Actions task.",
+			result = "Local execution workflow generated. Run it with the local Actions runner.",
 			selected_count = tostring(#tasks),
 			source_sha = head,
 		})
-		print(`::notice::Generated local CI Execution workflow at {directory}/workflow.yml`)
+		print(`::notice::Generated local execution workflow at {directory}/execution.yml`)
 		return true
 	end
 
@@ -291,19 +300,14 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 
 	local roles = { "bootstrap_token" }
 
-	for _, task in tasks do
-		for _, role in task.credentials do
-			table.insert(roles, role)
-		end
-	end
-
 	local access = Authentication.Acquire(configuration, credentials, repository, roles)
 	if not access then
 		return false
 	end
 	local branch = `{configuration.branchPrefix}{runId}-{attempt}`
+	local revision = ""
 	local ok, failure = xpcall(function(): boolean
-		launch(tasks, event, repository, branch, sha, access)
+		revision = launch(tasks, event, repository, branch, sha, access)
 		return true
 	end, tostring)
 	Authentication.Release(access)
@@ -312,12 +316,10 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		if access.inspection then
 			TokenPermissions.Warn(configuration, "bootstrap_token", access.inspection, true)
 		end
-		error(`Native CI Execution could not be started: {failure}`, 0)
+		error(`Native execution could not be started: {failure}`, 0)
 	end
 
-	if event == "pull_request" then
-		waitForPullRequestExecution(repository, branch)
-	end
+	waitForPullRequestExecution(repository, branch, revision)
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local query = branch:gsub("([^%w_.~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
@@ -327,15 +329,15 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	Responses.Write("start", {
 		color = "success",
 		result = if event == "pull_request"
-			then "PR gate passed after native CI Execution completed."
-			else "Bootstrap completed. CI Execution was started.",
+			then "PR gate passed after native execution completed."
+			else "Bootstrap completed. execution was started.",
 		selected_count = tostring(#tasks),
 		execution_url = url,
 		source_sha = sha,
 	})
-	Fs.createDirectory("build/run/ci-start/responses", { makeParents = true })
+	Fs.createDirectory(`{Artifacts.Stage("start")}/responses`, { makeParents = true })
 	Fs.writeStringToFile(
-		"build/run/ci-start/responses/launch.json",
+		`{Artifacts.Stage("start")}/responses/launch.json`,
 		Json.encode({ branch = branch, source = sha, url = url })
 	)
 	return true

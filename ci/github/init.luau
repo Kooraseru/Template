@@ -75,6 +75,14 @@ function GitHub.Run(): ()
 
 	local ok, problem = xpcall(function(): boolean
 		local profileName = Process.env.CI_PROFILE
+		if not argument and Process.env.CI_GRAPH_RUN ~= "true" then
+			local operation = Process.env.CI_OPERATION or (if event == "push" then "build" else "validation")
+			if operation ~= "validation" and operation ~= "build" and operation ~= "readiness" then error("Unknown CI operation", 0) end
+			if event == "pull_request" and operation ~= "validation" then error("Pull requests permit Validation only", 0) end
+			Process.env.CI_OPERATION = operation
+			profileName = if operation == "build" then "source-ci" elseif operation == "readiness" then "remote-read" else "validate"
+			Process.env.CI_PROFILE = profileName
+		end
 		local profile = if profileName then hostedProfile(profileName) else nil
 		if profileCheck then
 			if profileName ~= "remote-read" then

@@ -54,7 +54,7 @@ logo = "github"
 color = "info"
 
 [buttons.execution]
-label = "Open CI Execution"
+label = "Open execution"
 target = "execution_url"
 logo = "githubactions"
 color = "pending"
