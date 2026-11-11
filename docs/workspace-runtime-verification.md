@@ -46,3 +46,31 @@ The first real CI Check execution passed its components, including source host b
 - Real CI Publish execution succeeds through provider selection, bootstrap, generated local execution-plan output, local artifact upload and completion. The configured OIDC alternative is correctly skipped for the environment provider.
 - The full Node suite is now 60/60; TypeScript, Lute and the three bootstrap plans pass.
 - The ignored `.actrc` was generated in the current checkout; no extension code or private extension storage was changed.
+
+
+## Consolidated CI and readable-output migration (2026-11-11)
+
+Baseline before this migration: 60/60 Node tests passed on branch `capability/workspace-runtime-mcp`, starting at commit `18813ba`.
+
+Implemented one authored `ci.yml`, with PR/manual Validation, explicit Readiness, and source Build/Publish routing. The required `validate` status remains a separate compatibility gate and fails if Start or Validation does not succeed. Generated branches contain a controller plus the required reusable stages. Publish has a native dependency on Build, uses the same execution run's verified output manifests, and is absent from local generated workflows. Hosted PR/fork Validation retains the inline read-only graph: generating a branch would require write authority that those jobs intentionally do not receive.
+
+Verification completed:
+
+- All 75 discovered Node tests pass. TypeScript/Lute checks and bootstrap plans for push, pull_request and workflow_dispatch pass.
+- The only authored YAML is `ci.yml`; act lists Start, Validation, Readiness, Build routing and the `validate` compatibility check. Authored action locking/coverage verification passes. A rendered hosted controller, Build and Publish set also passes official Actions lock generation and offline coverage verification without creating a remote branch.
+- Default local Validation completes Start, generated Validation, reporting and output export. Explicit local Build completes Start, generated Build, reporting and export. The final Build run used a frozen tracked working-copy snapshot for both invocations.
+- Final local Build record: `da5f010a-616d-4742-ba41-d7185b8b9a70`. Start, Build and export are passed; Publish is disabled. It exports 36 files from eight discovered Build components, including windows-amd.exe, windows-arm64.exe and windows-intel.exe directly under `build/artifacts/application/`. Current files match manifest hashes and a separate readable snapshot remains under the run's outputs directory. The stage Markdown report and logs are also ordinary files.
+- Local execution records retain the original HEAD plus the working-copy digest; tests used saved tracked snapshots while logical commits were assembled, rather than rewriting execution history to claim a different commit.
+- Focused tests cover phase validation, backwards phase dependencies, output provenance, archive traversal/special entries/Windows names, undeclared paths, tampered hashes, ownership conflicts, stale-file removal, interrupted promotion recovery, junction boundaries, safe CLI defaults/input files, and v1/v2 status compatibility.
+- The live editor configuration reports `githubLocalActions.actCommand = node dependencies/packages/ci/localActions/run.cjs`. Launcher discovery/version pass-through works. No focus change, extension modification, or private extension storage access was used.
+- Focused live Problems checks for changed Luau integration files returned no errors. Workbench Bridge remains unchanged.
+
+Integration findings resolved during implementation: LF shell-script handling on Windows; act's advertised-port behavior when port 0 is supplied (the launcher selects an available concrete port); portable isolated-checkout Git metadata/origin; and checkout population for local reusable workflow jobs. Failed runs retained their records/logs and did not replace current successful outputs.
+
+Remaining limits:
+
+- Hosted execution/publication, environment approvals, OIDC acquisition and remote branch lifecycle have not been exercised against production. Generated structure, guards, action locks and existing read/rehearsal tests provide local coverage; no live publication or ruleset mutation was performed.
+- Readiness keeps its source-ref and read-token restrictions. Live authenticated readiness was not exercised during this migration.
+- The extension's configured command and CLI execution were verified without moving focus. Actual workflow-button rendering/task launch in an isolated Extension Development Host remains unverified.
+- The local snapshot covers saved tracked files, including staged additions. Unsaved editor buffers and untracked files are outside the CI source snapshot; stage required new files before running local CI.
+- Client-specific MCP subscription presentation and live editor undo/races retain the earlier verification limits. Status polling and recorded execution data do not depend on those clients.

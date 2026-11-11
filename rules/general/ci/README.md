@@ -1,6 +1,6 @@
 # CI architecture and operating rules
 
-GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. The committed workflows route source CI, validation, and remote reads through `ci/entry.luau`. Bootstrap owns planning and scheduling.
+GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. The single authored ci.yml routes source Build/Publish, Validation, and Readiness through `ci/entry.luau`. Bootstrap owns planning and scheduling.
 
 ## Discovery and component contracts
 
@@ -16,7 +16,9 @@ Pull requests use the same discovery and plan as source pushes but execute only 
 
 When native execution is available, generated jobs preserve declared dependency edges and exchange the actual component artifacts. Generated workflow files and execution branches are temporary run output. Never write generated commits to the trusted `source` branch. If native scheduling fails after privileged credentials are acquired, report failure instead of silently switching execution modes. Local `act` runs remain unauthenticated and use the same generated execution workflow and artifact boundaries.
 
-Generated output belongs under ignored `build/`. GitHub products use `build/github/`; workflow-specific logs, responses, artifacts, dependency caches, and local action artifacts use `build/run/`. Producers, artifact uploads, and consumers must agree on exact paths. Create optional output folders only when a component actually produces output; a skipped component must not leave a passing or misleading artifact.
+Components declare `phase = "build"` or `phase = "publish"` independently of authority. Build is read-only and cannot require credentials or depend on Publish; Publish owns all external changes.
+
+Generated output belongs under ignored `build/`. Compiled products use `build/artifacts/`; per-run stage logs, readable snapshots and transport bundles use `build/run/<id>/`. Installed dependencies remain under `dependencies/managed/`, and persistent records/ownership under `.workspace/`. GitHub products use `build/github/`; workflow-specific logs, responses, artifacts, dependency caches, and local action artifacts use `build/run/`. Producers, artifact uploads, and consumers must agree on exact paths. Create optional output folders only when a component actually produces output; a skipped component must not leave a passing or misleading artifact.
 
 ## GitHub configuration and operations
 
