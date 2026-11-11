@@ -7,7 +7,7 @@
       "@root/*": ["../../../*"]
     },
     "typeRoots": [
-      "../../../build/dependencies/npm/node_modules/@types"
+      "../../../dependencies/managed/npm/node_modules/@types"
     ],
     "types": ["node"],
     "allowJs": true,
@@ -26,6 +26,8 @@
     "../../../**/node_modules",
     "../../../**/vendor",
     "../../../build",
+    "../../../dependencies/managed",
+    "../../../.workspace",
     "../../../rules/luau/**/tests/**",
     "../../../rules-old"
   ]

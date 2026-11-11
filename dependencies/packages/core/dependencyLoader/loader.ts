@@ -92,8 +92,8 @@ function readLock(file: string, update: boolean): Map<string, LockEntry> {
 function exportDefinitions(value: unknown): Record<string, Export> {
 	return Object.fromEntries(Object.entries(record(value ?? {}, "Invalid provider exports")).map(([name, value]) => {
 		const entry = record(value, "Invalid export " + name);
-		if (entry.root !== "workspace" && entry.root !== "build") throw new Error("Invalid export root for " + name);
-		return [name, { root: entry.root, path: relativePath(entry.path) }];
+		if (entry.root !== "workspace" && entry.root !== "managed" && entry.root !== "build") throw new Error("Invalid export root for " + name);
+		return [name, { root: entry.root === "build" ? "managed" : entry.root, path: relativePath(entry.path) }];
 	}));
 }
 
@@ -132,7 +132,7 @@ function absoluteExports(workspace: string, generated: string, install: Installe
 	for (const [name, value] of Object.entries(install.exports)) {
 		let resolved: string;
 		if (value.root === "workspace") {
-			if (value.path === "build" || value.path.startsWith("build/")) throw new Error("Use a build export for generated output: " + value.path);
+			if (["build", "dependencies/managed", ".workspace"].some(root => value.path === root || value.path.startsWith(root + "/"))) throw new Error("Use a managed export for installed output; build and local state cannot be dependency sources: " + value.path);
 			resolved = contained(workspace, value.path);
 		} else {
 			const output = outputRoot(install.outputs, value.path);

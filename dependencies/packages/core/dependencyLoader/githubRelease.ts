@@ -229,7 +229,7 @@ export const githubRelease: Provider = {
 		}
 		return {
 			outputs,
-			exports: { executable: { root: "build", path: executablePath }, package: { root: "build", path: spec.packagePath } },
+			exports: { executable: { root: "managed", path: executablePath }, package: { root: "managed", path: spec.packagePath } },
 			executable: { export: "executable" },
 		};
 	},

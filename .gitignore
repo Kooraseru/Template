@@ -1,10 +1,12 @@
-# Track the shared hooks and keep local Codex state private.
+# Keep legacy local agent state private.
 /.codex/
 
 # CI and local build outputs.
 /build/
 
-# Generated dependency packages, binaries, and type definitions are under /build.
+# Installed dependencies and persistent machine-local workspace state.
+/dependencies/managed/
+/.workspace/
 
 # Installed Node packages used by the dependency loader and editor tooling.
 **/node_modules/
@@ -15,3 +17,9 @@
 # Tool discovery files generated from the canonical configs in .vscode/config/.
 /.luaurc
 /tsconfig.json
+
+# Interrupted dependency layout migration copies.
+/dependencies/.managed-migration-*/
+
+# act discovery file generated from .vscode/config/act/actrc.
+/.actrc

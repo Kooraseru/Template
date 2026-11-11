@@ -8,7 +8,7 @@ const { randomUUID } = require("node:crypto");
 
 const targets = new Set(["work/labels/sync", "governance/branches/publish"]);
 const runner = "dependencies/packages/checks/preflightChecker/bootstrap/rehearsal.cjs";
-const { executeServiceRehearsal } = require("../../../../../build/dependencies/npm/node_modules/preflight/src/rehearsal.js");
+const { executeServiceRehearsal } = require("../../../../../dependencies/managed/npm/node_modules/preflight/src/rehearsal.js");
 
 function extraFiles(workspace) {
 	return execFileSync("git", ["ls-files", "-z", "--others", "--exclude-standard", "--",

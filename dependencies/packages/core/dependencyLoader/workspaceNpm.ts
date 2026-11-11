@@ -43,13 +43,13 @@ export const workspaceNpm: Provider = {
 		npm(directory, ["ci"]);
 		fs.mkdirSync(path.join(directory, "node_modules"), { recursive: true });
 		const exports: Record<string, Export> = {
-			project: { root: "build", path: target },
-			manifest: { root: "build", path: target + "/package.json" },
-			lock: { root: "build", path: target + "/package-lock.json" },
-			modules: { root: "build", path: target + "/node_modules" },
+			project: { root: "managed", path: target },
+			manifest: { root: "managed", path: target + "/package.json" },
+			lock: { root: "managed", path: target + "/package-lock.json" },
+			modules: { root: "managed", path: target + "/node_modules" },
 		};
 		for (const name of Object.keys(record(manifest.dependencies ?? {}, "Invalid npm dependencies"))) {
-			exports["package:" + name] = { root: "build", path: relativePath(target + "/node_modules/" + name + "/package.json") };
+			exports["package:" + name] = { root: "managed", path: relativePath(target + "/node_modules/" + name + "/package.json") };
 		}
 		return { outputs: [{ from: "project", to: target }], exports };
 	},

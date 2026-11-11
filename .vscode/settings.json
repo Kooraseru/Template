@@ -13,6 +13,7 @@
 	// Explorer
 	// Generated discovery files; edit the canonical files under .vscode/config.
 	"files.exclude": {
+		".actrc": true,
 		".luaurc": true,
 		"tsconfig.json": true
 	},
@@ -32,7 +33,8 @@
 	"luau-lsp.analyzeLuaFiles": false,
 	"luau-lsp.ignoreGlobs": [
 		"**/_Index/**",
-		"**/build/dependencies/**",
+		"**/dependencies/managed/**",
+		"**/.workspace/**",
 		"rules-old/**"
 	],
 	"luau-lsp.diagnostics.workspace": true,

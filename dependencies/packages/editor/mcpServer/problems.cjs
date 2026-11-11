@@ -1,14 +1,9 @@
 "use strict";
 
-const fs = require("node:fs");
 const path = require("node:path");
 const { connect } = require("../workbenchBridgeClient");
 
-function selectedSession(root) {
-	if (process.env.WORKBENCH_BRIDGE_SESSION) return process.env.WORKBENCH_BRIDGE_SESSION;
-	const selection = path.join(root, "build/run/editor-problems/session-file.txt");
-	return fs.existsSync(selection) ? fs.readFileSync(selection, "utf8").trim() || undefined : undefined;
-}
+const { selectedSession } = require("../editorIntegration/session.cjs");
 
 function normalizeFile(file) {
 	if (file === undefined) return undefined;
@@ -57,4 +52,4 @@ async function getProblems({ root, file, severity, limit = 25, connectBridge = c
 	}
 }
 
-module.exports = { getProblems, normalizeFile };
+module.exports = { getProblems, normalizeFile, selectedSession };

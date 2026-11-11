@@ -48,7 +48,7 @@ node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute lint ci
 ```
 
-The loader writes managed package/runtime files to `build/dependencies/packages/`, executables to `build/dependencies/bin/`, and generated type definitions to `build/dependencies/types/`. These build outputs are ignored. The npm provider writes its manifest, native lock, and install to build/dependencies/npm/. See the [dependency provider contract](../dependencies/README.md). Local source packages stay checked in under `dependencies/packages/`.
+The loader writes managed package/runtime files to `dependencies/managed/packages/`, executables to `dependencies/managed/bin/`, and generated type definitions to `dependencies/managed/types/`. These managed installations are ignored and survive deletion of `build/`. The npm provider writes its manifest, native lock, and install to dependencies/managed/npm/. See the [dependency provider contract](../dependencies/README.md). Local source packages stay checked in under `dependencies/packages/`.
 
 ## Configuration
 
@@ -65,7 +65,7 @@ node dependencies/packages/core/dependencyLoader/index.ts
 Analyze the actual Bootstrap graph for an event:
 
 ```powershell
-node build/dependencies/npm/node_modules/preflight/bin/preflight.js plan --provider dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs --entry pull_request
+node dependencies/managed/npm/node_modules/preflight/bin/preflight.js plan --provider dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs --entry pull_request
 ```
 
 For a release plan, use `--entry push --target distribution/releases/publish`. Preflight includes the selected task's upstream dependencies. Plan analysis resolves the graph without running its tasks.
@@ -73,7 +73,7 @@ For a release plan, use `--entry push --target distribution/releases/publish`. P
 To show the pull-request plan in VS Code, add this command to the workspace's `workbenchBridge.workspaceCommands` after installing the package:
 
 ```json
-["node", "build/dependencies/npm/node_modules/preflight/bin/preflight.js", "workspace", "--provider", "dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs", "--bridge-client", "dependencies/packages/editor/workbenchBridgeClient"]
+["node", "dependencies/managed/npm/node_modules/preflight/bin/preflight.js", "workspace", "--provider", "dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs", "--bridge-client", "dependencies/packages/editor/workbenchBridgeClient"]
 ```
 
 Template owns editor workflow settings in `.vscode/config/workflow.json`. Each command is an argument array with an executable followed by its arguments. The same file controls status labels, the dependency progress notification, and which paths trigger a rerun. Reload the VS Code window after changing this configuration.
@@ -99,3 +99,20 @@ See the [Rules settings contract](../rules/general/workflows/review/checker-cont
 ## Local GitHub Actions
 
 From the repository root, run `node dependencies/packages/ci/localActions/run.cjs` or use the **Run GitHub Actions locally** VS Code task.
+
+
+## Local Actions compatibility
+
+Workspace setup generates the ignored root `.actrc` from `.vscode/config/act/actrc`, just as it generates the language discovery files. Both plain `act` and the GitHub Local Actions extension discover it automatically. Edit the canonical file; changing it triggers workspace setup. `--detect-event` lets a workflow button with no event select an event that its workflow actually handles, instead of defaulting to `push`. A local detected `pull_request` can omit the hosted PR payload; only `ACT=true` permits that omission. Hosted PR validation still requires base branch `source`.
+
+For deterministic CLI runs, pass an explicit event:
+
+```sh
+node dependencies/packages/core/dependencyLoader/index.ts
+act workflow_dispatch --workflows .github/workflows/validate.yml
+act workflow_dispatch --workflows .github/workflows/ci.yml
+```
+
+CI Publish's provider-selection entry enforces the hosted source-ref check in `ci/github/init.luau`; local ACT checkouts can generate the local execution workflow from a feature branch. The named `ci-bootstrap` environment and credential checks remain. Its authored job uses the environment syntax understood by act 0.2.89. Removing the optional `deployment: false` restores GitHub's default creation of an environment deployment record for that bootstrap job; it does not authorize release publication. See [GitHub environment behavior](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/deploy-to-environment).
+
+The authored workflows retain the hosted v7 artifact uploader and select v4 for local ACT runs, matching the generated workflow's existing artifact protocol adaptation. YAML aliases keep each artifact's paths and options authoritative in one place. CI Publish locally generates and uploads the execution plan; it does not represent completed hosted publication.

@@ -133,7 +133,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			name = `Run {task.identity}`,
 			id = "component",
 			env = if next(runEnvironment) then runEnvironment else nil,
-			run = if active then `build/dependencies/bin/lute/lute run ci/entry.luau --component {task.identity}`
+			run = if active then `dependencies/managed/bin/lute/lute run ci/entry.luau --component {task.identity}`
 				else `bash ci/github/workflows/run-logged.sh ci-execution {Contract.Key(
 				task.identity
 			)} --component {task.identity}`,

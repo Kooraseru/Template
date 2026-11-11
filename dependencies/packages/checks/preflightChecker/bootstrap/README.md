@@ -5,7 +5,7 @@ From the Template root, install the workspace dependencies and build the pilot i
 ```text
 node dependencies/packages/core/dependencyLoader/index.ts
 docker build -f dependencies/packages/checks/preflightChecker/bootstrap/rehearsal.Dockerfile -t template-preflight:local .
-node build/dependencies/npm/node_modules/preflight/bin/preflight.js rehearse --provider dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs --environment dependencies/packages/checks/preflightChecker/bootstrap/environment.cjs --profile dependencies/packages/checks/preflightChecker/bootstrap/profile.json --entry push --target work/labels/sync --json
+node dependencies/managed/npm/node_modules/preflight/bin/preflight.js rehearse --provider dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs --environment dependencies/packages/checks/preflightChecker/bootstrap/environment.cjs --profile dependencies/packages/checks/preflightChecker/bootstrap/profile.json --entry push --target work/labels/sync --json
 ```
 
 Use `governance/branches/publish` as the target to rehearse publishing generated content to a local bare repository. The branch rehearsal reports source compilation as skipped because it requires Docker builds. It still exercises branch generation and publication, which use separate artifacts. A successful branch publisher outcome therefore accompanies an incomplete overall rehearsal.

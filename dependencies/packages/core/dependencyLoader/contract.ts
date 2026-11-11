@@ -4,7 +4,7 @@ import path from "node:path";
 
 export type RecordValue = Record<string, unknown>;
 export type Output = { from: string; to: string };
-export type Export = { root: "workspace" | "build"; path: string };
+export type Export = { root: "workspace" | "managed"; path: string };
 export type Executable = { export: string; interpreter?: string[] };
 export type Installation = { outputs: Output[]; exports?: Record<string, Export>; executable?: Executable };
 export type ProviderRequest = {

@@ -2,7 +2,7 @@
 
 const http = require("node:http");
 const assert = require("node:assert/strict");
-const Ajv = require("../../../../../build/dependencies/npm/node_modules/ajv");
+const Ajv = require("../../../../../dependencies/managed/npm/node_modules/ajv");
 const validateLabelCreate = new Ajv().compile(require("./githubLabelCreate.schema.json"));
 
 async function startMock({ repository, labels }, scenario) {

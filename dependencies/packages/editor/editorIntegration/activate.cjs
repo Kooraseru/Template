@@ -291,7 +291,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		const watchedPath = uri => {
 			if (uri.scheme !== "file" || !isInWorkspace(uri)) return undefined;
 			const relative = path.relative(root, uri.fsPath).split(path.sep).join("/");
-			if (/^rules\/.*\/examples\//.test(relative)) return undefined;
+			if (/^rules\/.*\/examples\//.test(relative) || relative.startsWith("dependencies/managed/") || relative.startsWith("dependencies/.managed-migration-")) return undefined;
 			return workflow.watch.paths.some(glob => path.posix.matchesGlob(relative, glob)) ? relative : undefined;
 		};
 		const openDocument = uri => vscode.workspace.textDocuments.find(document => document.uri.toString() === uri.toString());

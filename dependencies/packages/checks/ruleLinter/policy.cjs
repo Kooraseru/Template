@@ -5,7 +5,7 @@ const path = require("node:path");
 
 const policyFile = ".vscode/config/rules.json";
 const schemaFile = ".vscode/config/rules.schema.json";
-const modules = path.resolve(__dirname, "../../../../build/dependencies/npm/node_modules");
+const modules = path.resolve(__dirname, "../../../../dependencies/managed/npm/node_modules");
 const jsonTools = () => require(path.join(modules, "jsonc-parser"));
 const namePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const ignored = new Set(["tests", "examples", "validation", "vendor", "generated"]);

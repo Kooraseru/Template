@@ -18,7 +18,7 @@
     "formats": "@dependencies/packages/core/dataFormats",
 
     // External dependencies
-    "lute": "@workspace/build/dependencies/types/lute",
+    "lute": "@workspace/dependencies/managed/types/lute",
     "std": "@lute/std"
   }
 }

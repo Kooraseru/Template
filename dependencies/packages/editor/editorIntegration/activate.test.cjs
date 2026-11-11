@@ -350,3 +350,13 @@ test("checks with an omitted trigger stay quiet", () => {
 	assert.equal(state.progress.length, 0);
 	state.api.dispose();
 });
+
+test("managed dependency changes do not trigger editor compile or rule refresh", async () => {
+	const state = fixture("C:/repo"); const actions = [];
+	state.api.start((...args) => actions.push(args));
+	const uri = fileUri(path.join("C:/repo", "dependencies/managed/types/lute/init.luau"));
+	state.watchers[0].change(uri);
+	await new Promise(resolve => setTimeout(resolve, 500));
+	assert.equal(actions.length, 0);
+	state.api.dispose();
+});

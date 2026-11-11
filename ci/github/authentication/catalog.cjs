@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const modules = path.resolve(__dirname, "../../../build/dependencies/npm/node_modules");
+const modules = path.resolve(__dirname, "../../../dependencies/managed/npm/node_modules");
 const { parseTree, getNodeValue, visit } = require(path.join(modules, "jsonc-parser"));
 const Ajv = require(path.join(modules, "ajv"));
 const schema = require("../../../.github/config/credentials.schema.json");
