@@ -108,7 +108,7 @@ function GitHub.Run(): ()
 			return true
 		end
 		if profile and (profileName == "remote-read" or (event ~= Process.env.GITHUB_EVENT_NAME
-			and not (stage == "publish" and profileName == "source-ci" and event == "push"
+			and not ((stage == "publish" or stageReport) and profileName == "source-ci" and event == "push"
 				and Process.env.GITHUB_EVENT_NAME == "workflow_dispatch"))
 			or (argument ~= nil and not (profileName == "source-ci" and (stage == "publish" or stageReport)))) then
 			error("Invalid entry command or event for the selected CI profile", 0)

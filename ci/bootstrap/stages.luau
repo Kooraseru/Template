@@ -109,10 +109,12 @@ function Stages.Report(event: string): ()
 	local passed = true
 	Process.env.CI_SELECTOR_ROLES = "app_id,app_private_key"
 	local credentials = Credentials.new(nil)
+	local publicationCount = 0
 	for _, task in tasks do
 		if task.phase ~= "publish" then
 			continue
 		end
+		publicationCount += 1
 		local group = publishGroup(task, configuration)
 		if not groups[group] then
 			error(`Publication group {group} is not available`, 0)
@@ -139,7 +141,7 @@ function Stages.Report(event: string): ()
 			end
 		end
 	end
-	Reporter.new():Report(outcomes, #tasks, not passed)
+	Reporter.new():Report(outcomes, publicationCount, not passed)
 	if not passed then
 		error("Publication did not complete successfully", 0)
 	end
