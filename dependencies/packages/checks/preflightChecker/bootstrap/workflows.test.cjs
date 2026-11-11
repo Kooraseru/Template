@@ -28,13 +28,13 @@ test("hybrid CI keeps a required validation gate and separates publication crede
 	assert.match(workflow, /^  build:\n    name: Build Project Components$/m);
 	assert.match(workflow, /^  tests:\n    name: Execute Test Suites$/m);
 	assert.match(workflow, /^  validate:\n    name: validate$/m);
-	assert.match(workflow, /test "\\$BUILD_RESULT" = success/);
-	assert.match(workflow, /test "\\$TEST_RESULT" = success/);
+	assert.match(workflow, /test "\$BUILD_RESULT" = success/);
+	assert.match(workflow, /test "\$TEST_RESULT" = success/);
 	assert.match(workflow, /^  publish-general:/m);
 	assert.match(workflow, /^  publish-projects:/m);
 	assert.match(workflow, /^  publish-rulesets:/m);
 	assert.doesNotMatch(workflow, /^  bootstrap-environment:/m);
-	assert.doesNotMatch(workflow, /ci\/run-\\$\\{/);
+	assert.doesNotMatch(workflow, /^  bootstrap-oidc:/m);
 });
 test("optional administration components use their current skip policies", t => {
 	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),default=S.Conclusion("source/build")}))';

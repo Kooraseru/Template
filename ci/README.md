@@ -1,6 +1,6 @@
 # CI implementation
 
-`.github/workflows/ci.yml` is the only authored workflow. Resolve selects the operation and credential provider; Bootstrap plans and launches source Build/Publish on a temporary branch. Pull requests run the required `validate` job directly, while manual runs select `validation` (default), `build`, or `readiness`. Disposable branches contain the generated Pipeline controller and only its required reusable stage workflows.
+`.github/workflows/ci.yml` is the only authored workflow. It runs Build, Tests, the required `validate` check, and isolated publication jobs on trusted source events. Legacy generated workflow execution remains available in the underlying Luau modules only, not in the authored workflow.
 
 Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
 
@@ -22,6 +22,20 @@ Command sources and verifiers receive JSON on stdin and return JSON on stdout. A
 ## VS Code setup
 
 Install the recommended [Workbench Bridge](https://marketplace.visualstudio.com/items?itemName=Kooraseru.workbench-bridge) extension when working in VS Code. The trusted workspace command starts `dependencies/packages/editor/editorIntegration/client.cjs`, which runs dependency setup and native preflight checks through the bridge. Setup progress, failures, checker findings, and reruns appear in the workspace status bar, output channel, and Problems panel. The same loader and checker remain available directly from the command line.
+
+## Local CI and GitHub stages
+
+Run the complete contributor validation path with one command from the repository root:
+
+```sh
+bash ci/run.sh
+```
+
+The launcher uses the existing dependency installer, runs all eligible read-only Build components through the Luau planner, then runs the repository's Node test suites. It does not require GitHub credentials or run publication components. GitHub runs the same Luau Build entry and the same `ci/test.sh` test entry as separate jobs.
+
+`.github/workflows/ci.yml` now owns Build, Test, the required `validate` check, and Publish stages. Publication is available only on trusted `source` pushes or an explicitly publishing manual dispatch. Components are executed by Luau within each stage; they are not rendered as temporary branch workflows. Verified component archives and manifests are transferred between jobs. GitHub-specific credential environments remain isolated in separate publication jobs.
+
+The previous generated Pipeline implementation remains temporarily in the repository for compatibility and regression tests, but is not used by the authored GitHub workflow. Do not assume that legacy `act` paths reproduce the staged workflow. The old source/delegation documentation below refers to the retained legacy entry point.
 
 ## Dependencies and local checks
 
