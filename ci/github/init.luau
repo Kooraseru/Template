@@ -3,6 +3,7 @@
 
 local Configuration = require("@ci/github/configuration")
 local Bootstrap = require("@ci/bootstrap")
+local Stages = require("@ci/bootstrap/stages")
 local Process = require("@lute/process")
 local Credentials = require("@ci/github/authentication/credentials")
 local BranchRun = require("@ci/github/resources/branches/branchRun")
@@ -42,6 +43,8 @@ function GitHub.Run(): ()
 	local pagesOptions = argument == "--pages-options"
 	local attestationOptions = argument == "--attestation-options"
 	local attestationReport = argument == "--attestation-report"
+	local stage = if argument == "--stage" then Process.args[argumentIndex + 1] else nil
+	local stageReport = argument == "--stage-report"
 
 	if
 		argument
@@ -54,9 +57,11 @@ function GitHub.Run(): ()
 		and not pagesOptions
 		and not attestationOptions
 		and not attestationReport
+		and not stage
+		and not stageReport
 	then
 		error(
-			"expected --component <identity>, --report, --credential-names, --credential-provider, --profile-check, --cleanup-branch, --pages-options, --attestation-options, --attestation-report, or no arguments",
+			"expected --stage <build|publish>, --stage-report, --component <identity>, --report, --credential-names, --credential-provider, --profile-check, --cleanup-branch, --pages-options, --attestation-options, --attestation-report, or no arguments",
 			0
 		)
 	end
@@ -102,8 +107,10 @@ function GitHub.Run(): ()
 			Credentials.ExportNames(profile)
 			return true
 		end
-		if profile and (profileName == "remote-read" or event ~= Process.env.GITHUB_EVENT_NAME
-			or argument ~= nil) then
+		if profile and (profileName == "remote-read" or (event ~= Process.env.GITHUB_EVENT_NAME
+			and not (stage == "publish" and profileName == "source-ci" and event == "push"
+				and Process.env.GITHUB_EVENT_NAME == "workflow_dispatch"))
+			or (argument ~= nil and not (profileName == "source-ci" and (stage == "publish" or stageReport)))) then
 			error("Invalid entry command or event for the selected CI profile", 0)
 		end
 		if cleanupBranch then
@@ -124,6 +131,21 @@ function GitHub.Run(): ()
 		end
 		if component then
 			Responses.Prepare()
+		end
+		if stage or stageReport then
+			if stage and stage ~= "build" and stage ~= "publish" then error("Invalid CI stage", 0) end
+			if stage == "publish" or stageReport then
+				if profileName ~= "source-ci" then error("Publication requires the trusted source-ci profile", 0) end
+			elseif profileName then
+				error("Build must use an unprivileged profile", 0)
+			end
+			local plan = if profileName == "source-ci" and event == "workflow_dispatch" then "push" else event
+			if stageReport then
+				Stages.Report(plan)
+			else
+				Stages.Run(stage :: string, plan)
+			end
+			return true
 		end
 		-- A manual run through the trusted source workflow has the same publication intent as a source push.
 		local planEvent = if profileName == "source-ci" and event == "workflow_dispatch" then "push" else event

@@ -28,7 +28,7 @@ local function credentialBindings(name: string, bindings: { [string]: string }):
 	return environment
 end
 
-local function componentEnvironment(configuration: Configuration.Configuration, profile: Configuration.Profile, task: Contract.Task): string
+function Workflow.ComponentEnvironment(configuration: Configuration.Configuration, profile: Configuration.Profile, task: Contract.Task): string
 	local match: string? = nil
 	for name, bindings in configuration.environments do
 		if name == profile.bootstrapEnvironment or name == profile.reportingEnvironment then
@@ -123,7 +123,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			runEnvironment.GH_TOKEN = "${{ github.token }}"
 		end
 		if #task.credentials > 0 and hostedPush and profile.credentialProvider == "environment" then
-			environmentName = componentEnvironment(configuration, profile, task)
+			environmentName = Workflow.ComponentEnvironment(configuration, profile, task)
 			for key, value in credentialBindings(environmentName, configuration.environments[environmentName]) do
 				runEnvironment[key] = value
 			end

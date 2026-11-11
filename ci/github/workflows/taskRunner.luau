@@ -94,6 +94,17 @@ local function bundle(task: Contract.Task, outcome: string?): ()
 	validateArchive(archive, task)
 end
 
+function TaskRunner.Verify(task: Contract.Task): string
+	local directory = `{ARTIFACT_ROOT}/{Contract.Key(task.identity)}`
+	local archive = `{directory}/outputs.tar`
+	if not Fs.exists(archive) or Fs.type(archive) ~= "file" then
+		error(`{task.identity}: missing output archive`, 0)
+	end
+	validateArchive(archive, task)
+	command({ "--extract", "--file", archive, "--no-same-owner", "--no-same-permissions" })
+	return Artifacts.Verify(`{directory}/manifest.json`, task)
+end
+
 function TaskRunner.Run(
 	tasks: { Contract.Task },
 	event: string,
@@ -124,9 +135,7 @@ function TaskRunner.Run(
 		if not Fs.exists(archive) or Fs.type(archive) ~= "file" then
 			error(`{identity}: missing dependency artifact {dependency}`, 0)
 		end
-		validateArchive(archive, provider)
-		command({ "--extract", "--file", archive, "--no-same-owner", "--no-same-permissions" })
-		if Artifacts.Verify(`{directory}/manifest.json`, provider) ~= "passed" then error(`{identity}: prerequisite {dependency} was skipped`, 0) end
+		if TaskRunner.Verify(provider) ~= "passed" then error(`{identity}: prerequisite {dependency} was skipped`, 0) end
 	end
 
 	local executor = Executor.new(credentials)
