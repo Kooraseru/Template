@@ -8,7 +8,7 @@ local Fs = require("@std/fs")
 local DOCKER_OPTIONS: Process.ProcessRunOptions = { stdio = "inherit" }
 const IMAGE = "template-windows-arm64"
 const COMPILER = "aarch64-w64-mingw32-clang"
-const OUTPUT = "build/run/ci-execution/artifacts/application/windows-arm64.exe"
+const OUTPUT = "build/artifacts/application/windows-arm64.exe"
 
 local function runDocker(arguments: { string }): Process.ProcessResult
 	local result = Process.run({ "docker", table.unpack(arguments) }, DOCKER_OPTIONS)
@@ -21,7 +21,7 @@ end
 local Host = {}
 
 function Host.Build(): ()
-	Fs.createDirectory("build/run/ci-execution/artifacts/application", { makeParents = true })
+	Fs.createDirectory("build/artifacts/application", { makeParents = true })
 	runDocker({
 		"build",
 		"--file",

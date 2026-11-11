@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["github.projects.synced"]
 requires = ["github.projects.planned"]
 inputs = [".github/config/projects/**", ".github/config/targets.toml", ".github/config/credentials.json", ".github/config/reports/**", "build/github/project-plans/**", "ci/components/work/projects/sync/query.graphql"]

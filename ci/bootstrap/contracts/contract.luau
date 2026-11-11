@@ -18,6 +18,7 @@ type ContractFields = {
 	outputs: { string },
 	events: { string },
 	boundary: string,
+	phase: string,
 	credentials: { string },
 	enabled: boolean,
 }
@@ -26,6 +27,7 @@ export type Contract = setmetatable<ContractFields, typeof(Contract)>
 
 export type Task = {
 	boundary: string,
+	phase: string,
 	credentials: { string },
 	identity: string,
 	invoker: string,
@@ -211,7 +213,15 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 		outputPatterns = {}
 	end
 
+	local phase = raw.phase
+	if phase ~= "build" and phase ~= "publish" then
+		return invalid(contractFile, "phase must be build or publish")
+	end
+	if phase == "build" and boundaryValue ~= "read" then
+		return invalid(contractFile, "Build cannot have a privileged boundary")
+	end
 	local fields: ContractFields = {
+		phase = phase,
 		identity = identity,
 		entry = entry,
 		contractFile = contractFile,
@@ -230,7 +240,7 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 	-- Reject unknown fields so a misspelled policy cannot silently take effect as a default.
 	for field in raw do
 		if field ~= "provides" and field ~= "requires" and field ~= "inputs" and field ~= "outputs"
-			and field ~= "events" and field ~= "boundary" and field ~= "credentials" then
+			and field ~= "phase" and field ~= "events" and field ~= "boundary" and field ~= "credentials" then
 			invalid(contractFile, `unknown or reserved contract field: {field}`)
 		end
 	end
@@ -252,6 +262,7 @@ Method tables and other local state never cross the artifact boundary.
 function Contract.ToTask(self: Contract, needs: { string }): Task
 	return {
 		boundary = self.boundary,
+		phase = self.phase,
 		credentials = self.credentials,
 		identity = self.identity,
 		invoker = TASK_INVOKER,

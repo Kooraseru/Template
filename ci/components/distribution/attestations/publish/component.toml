@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["attestations.prepared"]
 requires = ["releases.generated"]
 inputs = [".github/config/publishing/attestations.toml", ".github/config/reports/**", "build/github/releases/**"]

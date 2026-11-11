@@ -1,2 +1,2 @@
-artifacts = ["build/run/ci-execution/artifacts/application/windows-arm64.exe"]
-run = "build/run/ci-execution/artifacts/application/windows-arm64.exe"
+artifacts = ["build/artifacts/application/windows-arm64.exe"]
+run = "build/artifacts/application/windows-arm64.exe"

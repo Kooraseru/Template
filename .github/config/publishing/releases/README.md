@@ -59,7 +59,7 @@ Declare deliverable globs in the release configuration:
 ```json
 {
   "release": {
-    "assets": ["build/run/ci-execution/artifacts/application/*.exe"]
+    "assets": ["build/artifacts/application/*.exe"]
   }
 }
 ```

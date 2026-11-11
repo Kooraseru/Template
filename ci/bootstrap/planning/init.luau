@@ -22,6 +22,9 @@ local RESERVED_OUTPUTS: { string } = {
 	"ci/bootstrap/**",
 	".github/workflows/**",
 	".git/**",
+	".workspace/**",
+	"dependencies/managed/**",
+	"build/run/**",
 }
 
 local function fail(message: string): never
@@ -164,6 +167,9 @@ function Planner.Resolve(self: Planner, components: { Contract.Contract }, event
 			local provider = providers[capability]
 			if not provider then
 				fail(`{identity}: missing required capability {capability}`)
+			end
+			if active[identity].phase == "build" and active[provider].phase == "publish" then
+				fail(`{identity}: Build cannot depend on Publish component {provider}`)
 			end
 			dependenciesForComponent[provider] = true
 		end

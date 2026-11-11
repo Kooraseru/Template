@@ -57,8 +57,8 @@ function HostBuilder.Run(_self: HostBuilder): ()
 		end
 		local declaredOutputs: { [string]: boolean } = {}
 		for _, output in outputs do
-			if type(output) ~= "string" or not output:match("^build/run/ci%-execution/artifacts/[^/].*") then
-				error(`{contractPath}: every artifact must be a path under build/run/ci-execution/artifacts`, 0)
+			if type(output) ~= "string" or not output:match("^build/artifacts/[^/].*") then
+				error(`{contractPath}: every artifact must be a path under build/artifacts`, 0)
 			end
 			for segment in output:gmatch("[^/]+") do
 				if segment == "." or segment == ".." then

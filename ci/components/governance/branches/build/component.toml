@@ -1,3 +1,4 @@
+phase = "build"
 provides = ["branches.generated"]
 requires = []
 inputs = [".github/config/branches/**", "source/**", ".github/docs/templates/**", ".github/docs/i18n/**"]

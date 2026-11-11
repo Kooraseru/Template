@@ -1,3 +1,4 @@
+phase = "build"
 provides = ["packages.generated"]
 requires = ["build.completed"]
 inputs = [".github/config/publishing/packages/settings.toml", ".github/config/publishing/packages/*/package.toml", ".github/config/publishing/packages/*/description.md"]

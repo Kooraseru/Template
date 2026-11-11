@@ -1,3 +1,4 @@
+phase = "build"
 provides = ["pages.generated"]
 requires = []
 inputs = [".github/docs/templates/**", ".github/docs/i18n/**"]

@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["github.milestones.synced"]
 requires = ["github.milestones.planned"]
 inputs = [".github/config/issues/milestones/records/**", ".github/config/targets.toml", "build/github/milestones/**"]

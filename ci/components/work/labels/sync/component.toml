@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["github.labels.synced"]
 requires = []
 inputs = [".github/config/issues/labels.toml", ".github/ISSUE_TEMPLATE/*.yml"]

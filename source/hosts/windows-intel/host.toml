@@ -1,2 +1,2 @@
-artifacts = ["build/run/ci-execution/artifacts/application/windows-intel.exe"]
-run = "build/run/ci-execution/artifacts/application/windows-intel.exe"
+artifacts = ["build/artifacts/application/windows-intel.exe"]
+run = "build/artifacts/application/windows-intel.exe"

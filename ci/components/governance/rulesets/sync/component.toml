@@ -1,3 +1,4 @@
+phase = "publish"
 provides = ["github.rulesets.synced"]
 requires = ["github.rulesets.planned"]
 inputs = [".github/config/rulesets/**", ".github/config/targets.toml", ".github/config/credentials.json", "build/github/ruleset-plans/**"]
