@@ -18,9 +18,9 @@ local GitFailure = require("@ci/github/publication/gitFailure")
 
 local Artifacts = require("@ci/github/workflows/artifacts")
 local BranchRun = {}
-const PR_EXECUTION_TIMEOUT_SECONDS = 3600
-const PR_EXECUTION_START_TIMEOUT_SECONDS = 120
-const PR_EXECUTION_POLL_SECONDS = 8
+const PIPELINE_TIMEOUT_SECONDS = 3600
+const PIPELINE_START_TIMEOUT_SECONDS = 120
+const PIPELINE_POLL_SECONDS = 8
 
 local function git(arguments: { string }, cwd: string?, token: string?): string
 	local command = table.clone(arguments)
@@ -130,10 +130,11 @@ local function launch(
 	return revision
 end
 
-local function waitForPullRequestExecution(repository: string, branch: string, revision: string): ()
+-- Confirm that GitHub scheduled the generated Pipeline. PR gates additionally require its final result.
+local function waitForPipeline(repository: string, branch: string, revision: string, requireCompletion: boolean): ()
 	local token = Process.env.GH_TOKEN
 	if not token or token == "" then
-		error("PR gate needs the read-only GITHUB_TOKEN to observe native execution", 0)
+		error("Bootstrap needs the read-only GITHUB_TOKEN to observe Pipeline scheduling", 0)
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
 	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
@@ -141,8 +142,8 @@ local function waitForPullRequestExecution(repository: string, branch: string, r
 	end)
 	local started = os.time()
 	local observedId: number? = nil
-	-- The required gate check must reflect the generated run, not merely its dispatch.
-	while os.time() - started < PR_EXECUTION_TIMEOUT_SECONDS do
+	-- A PR gate must reflect completed execution, not merely successful scheduling.
+	while os.time() - started < PIPELINE_TIMEOUT_SECONDS do
 		local response = Net.request(if observedId
 				then `{api}/repos/{repository}/actions/runs/{observedId}`
 				else `{api}/repos/{repository}/actions/runs?branch={encoded}&event=push&per_page=30`, {
@@ -153,14 +154,14 @@ local function waitForPullRequestExecution(repository: string, branch: string, r
 			},
 		})
 		if not response.ok then
-			error(`Cannot inspect native PR execution (HTTP {response.status}); gate needs Actions: read`, 0)
+			error(`Cannot inspect Pipeline execution (HTTP {response.status}); Bootstrap needs Actions: read`, 0)
 		end
 		local decoded: unknown = Json.decode(response.body)
 		local runs: { unknown }
 
 		if observedId then
 			if type(decoded) ~= "table" or type(decoded.id) ~= "number" or decoded.id ~= observedId then
-				error("GitHub returned an invalid native PR execution run", 0)
+				error("GitHub returned an invalid Pipeline run", 0)
 			end
 			runs = { decoded }
 		else
@@ -177,7 +178,7 @@ local function waitForPullRequestExecution(repository: string, branch: string, r
 
 			if not observedId then
 				local path = item.path
-				if type(path) ~= "string" or (path ~= ".github/workflows/execution.yml" and path ~= `.github/workflows/execution.yml@refs/heads/{branch}`) then
+				if type(path) ~= "string" or (path ~= ".github/workflows/pipeline.yml" and path ~= `.github/workflows/pipeline.yml@refs/heads/{branch}`) then
 					continue
 				end
 				if type(item.head_branch) ~= "string" or item.head_branch ~= branch then
@@ -187,33 +188,35 @@ local function waitForPullRequestExecution(repository: string, branch: string, r
 					continue
 				end
 				observedId = item.id
-				print(`::notice::PR gate is waiting for native execution run {tostring(item.id)}`)
+				print(`::notice::GitHub scheduled Pipeline run {tostring(item.id)}`)
 			end
 
-			if item.head_sha ~= revision or type(item.path) ~= "string" or (item.path ~= ".github/workflows/execution.yml" and item.path ~= `.github/workflows/execution.yml@refs/heads/{branch}`) then
-				error("Observed execution does not match the generated workflow revision", 0)
+			if item.head_sha ~= revision or type(item.path) ~= "string" or (item.path ~= ".github/workflows/pipeline.yml" and item.path ~= `.github/workflows/pipeline.yml@refs/heads/{branch}`) then
+				error("Observed Pipeline does not match the generated workflow revision", 0)
+			end
+			if not requireCompletion then
+				return
 			end
 			if item.status == "completed" then
 				if item.conclusion == "success" then
-					print(`::notice::Native PR execution passed: {tostring(item.html_url)}`)
+					print(`::notice::PR Pipeline passed: {tostring(item.html_url)}`)
 					return
 				end
-				error(`Native PR execution concluded {tostring(item.conclusion)}: {tostring(item.html_url)}`, 0)
+				error(`PR Pipeline concluded {tostring(item.conclusion)}: {tostring(item.html_url)}`, 0)
 			end
 			break
 		end
 
-		if not observedId and os.time() - started >= PR_EXECUTION_START_TIMEOUT_SECONDS then
-			error("GitHub did not schedule execution for the generated PR branch within two minutes", 0)
+		if not observedId and os.time() - started >= PIPELINE_START_TIMEOUT_SECONDS then
+			error("GitHub did not schedule Pipeline for the generated branch within two minutes", 0)
 		end
-		Task.wait(PR_EXECUTION_POLL_SECONDS)
+		Task.wait(PIPELINE_POLL_SECONDS)
 	end
 
-	-- Distinguish a run that never started from one that outlasted the gate.
 	error(
 		if observedId
-			then "Native PR execution did not finish within the gate timeout"
-			else "GitHub did not schedule execution for the generated PR branch",
+			then "PR Pipeline did not finish within the gate timeout"
+			else "GitHub did not schedule Pipeline for the generated branch",
 		0
 	)
 end
@@ -245,7 +248,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 			selected_count = tostring(#tasks),
 			source_sha = head,
 		})
-		print(`::notice::Generated local execution workflow at {directory}/execution.yml`)
+		print(`::notice::Generated local pipeline workflow at {directory}/pipeline.yml`)
 		return true
 	end
 
@@ -319,7 +322,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		error(`Native execution could not be started: {failure}`, 0)
 	end
 
-	waitForPullRequestExecution(repository, branch, revision)
+	waitForPipeline(repository, branch, revision, event == "pull_request")
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local query = branch:gsub("([^%w_.~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
@@ -330,7 +333,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		color = "success",
 		result = if event == "pull_request"
 			then "PR gate passed after native execution completed."
-			else "Bootstrap completed. execution was started.",
+			else "Bootstrap completed. Pipeline was started.",
 		selected_count = tostring(#tasks),
 		execution_url = url,
 		source_sha = sha,

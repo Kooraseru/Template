@@ -10,7 +10,6 @@ local Contract = require("@self/contracts/contract")
 local BranchRun = require("@ci/github/resources/branches/branchRun")
 local Credentials = require("@ci/github/authentication/credentials")
 local TaskRunner = require("@ci/github/workflows/taskRunner")
-local Responses = require("@ci/github/reporting/responses")
 local Publication = require("@ci/github/publication")
 
 local Configuration = require("@ci/github/configuration")
@@ -84,14 +83,11 @@ function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?
 	end
 	if restriction ~= "validate" and (not self.profile or self.profile.delegate) then
 		if restriction == "source-ci" and not (Process.env.ACT == "true") then
-			local ok, launched = pcall(BranchRun.TryLaunch, tasks, self.event, self.credentials)
-			if ok and launched then
-				Publication.Output("delegated", "true")
-				return
+			if not BranchRun.TryLaunch(tasks, self.event, self.credentials) then
+				error("Source CI delegation is unavailable; privileged components cannot execute in Bootstrap", 0)
 			end
-			local reason = if ok then "delegation unavailable; see credential and repository notices" else tostring(launched)
-			print(`::warning::Source CI delegation failed: {reason}`)
-			Responses.Record("execution/delegation", "### Source CI delegation failed\n\n" .. reason, "failure")
+			Publication.Output("delegated", "true")
+			return
 		elseif BranchRun.TryLaunch(tasks, self.event, self.credentials) then
 			Publication.Output("delegated", "true")
 			return
