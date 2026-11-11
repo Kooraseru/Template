@@ -713,7 +713,7 @@ end
 
 function Responses.Write(root: string, values: { [string]: string }, outcomes: { [string]: string }?): ()
 	local markdown = Responses.Render(root, values, outcomes)
-	local directory = if root == "start" then `{Artifacts.Stage("start")}/responses` else RECORDS
+	local directory = `{Artifacts.Stage()}/responses`
 	Fs.createDirectory(directory, { makeParents = true })
 	Fs.writeStringToFile(`{directory}/{root}.md`, markdown)
 	local path = Process.env.GITHUB_STEP_SUMMARY

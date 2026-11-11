@@ -212,18 +212,23 @@ jobs:
       - name: Validation
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash ci/github/workflows/run-logged.sh start validation
+        run: |-
+          stage=validation
+          if [ "$ACT" = true ]; then stage=start; fi
+          bash ci/github/workflows/run-logged.sh "$stage" validation
       - name: Collect Start output
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
           name: start
-          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/${{ env.ACT &&
+            'start' || 'validation' }}/
           if-no-files-found: error
       - name: Collect Start output locally
         if: ${{ always() && env.ACT }}
         uses: actions/upload-artifact@v4
         with:
           name: start
-          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/${{ env.ACT &&
+            'start' || 'validation' }}/
           if-no-files-found: error
