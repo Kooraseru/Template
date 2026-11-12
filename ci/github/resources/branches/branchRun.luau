@@ -322,13 +322,27 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		error(`Native execution could not be started: {failure}`, 0)
 	end
 
-	waitForPipeline(repository, branch, revision, true)
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local query = branch:gsub("([^%w_.~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local url = `{server}/{repository}/actions?query=branch%3A{query}`
-	print(`::notice::Started CI execution on {branch}: {url}`)
+	local recordPath = `{Artifacts.Stage("start")}/responses/launch.json`
+	Fs.createDirectory(`{Artifacts.Stage("start")}/responses`, { makeParents = true })
+	local function record(state: string, reason: string?): ()
+		Fs.writeStringToFile(recordPath, Json.encode({
+			state = state, branch = branch, revision = revision, source = sha, url = url,
+			reason = reason,
+		}))
+	end
+	record("dispatched")
+	local completed, problem = pcall(waitForPipeline, repository, branch, revision, true)
+	if not completed then
+		record("failed", tostring(problem))
+		error(`Generated CI did not complete successfully: {problem}`, 0)
+	end
+	record("passed")
+	print(`::notice::Verified CI execution on {branch}: {url}`)
 	Responses.Write("start", {
 		color = "success",
 		result = "Generated execution completed successfully and was verified.",
@@ -336,11 +350,6 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		execution_url = url,
 		source_sha = sha,
 	})
-	Fs.createDirectory(`{Artifacts.Stage("start")}/responses`, { makeParents = true })
-	Fs.writeStringToFile(
-		`{Artifacts.Stage("start")}/responses/launch.json`,
-		Json.encode({ branch = branch, source = sha, url = url })
-	)
 	return true
 end
 
