@@ -16,7 +16,7 @@ function object(value, label) {
 	return value;
 }
 
-function readConfig(filename = CONFIG) {
+function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 	const config = object(JSON.parse(fs.readFileSync(filename, "utf8")), "CI operations");
 	if (config.version !== 1) throw new Error("Unsupported CI operations format");
 	const checks = object(config.checks, "checks");
@@ -26,23 +26,25 @@ function readConfig(filename = CONFIG) {
 	if (!NAME.test(bootstrap.environment) || Object.keys(bootstrap).some(key => key !== "environment")) {
 		throw new Error("Invalid bootstrap environment");
 	}
-	const catalog = require(path.join(ROOT, "ci/github/authentication/catalog.cjs"))
-		.load(path.join(ROOT, ".github/config/credentials.json"));
-	const sourceProfile = catalog.profiles["source-ci"];
-	const binding = catalog.environments[bootstrap.environment];
-	if (sourceProfile.bootstrapEnvironment !== bootstrap.environment || !binding) {
-		throw new Error("CI bootstrap environment must match the credential catalog's source-ci profile");
-	}
-	function alias(role, namespace) {
-		const value = binding[role], prefix = namespace + ".";
-		if (typeof value !== "string" || !value.startsWith(prefix) || !ALIAS.test(value.slice(prefix.length))) {
-			throw new Error("Invalid bootstrap credential alias for " + role);
+	if (requireCredentials) {
+		const catalog = require(path.join(ROOT, "ci/github/authentication/catalog.cjs"))
+			.load(path.join(ROOT, ".github/config/credentials.json"));
+		const sourceProfile = catalog.profiles["source-ci"];
+		const binding = catalog.environments[bootstrap.environment];
+		if (sourceProfile.bootstrapEnvironment !== bootstrap.environment || !binding) {
+			throw new Error("CI bootstrap environment must match the credential catalog's source-ci profile");
 		}
-		return value.slice(prefix.length);
+		function alias(role, namespace) {
+			const value = binding[role], prefix = namespace + ".";
+			if (typeof value !== "string" || !value.startsWith(prefix) || !ALIAS.test(value.slice(prefix.length))) {
+				throw new Error("Invalid bootstrap credential alias for " + role);
+			}
+			return value.slice(prefix.length);
+		}
+		bootstrap.appIdVariable = alias("app_id", "vars");
+		bootstrap.appPrivateKeySecret = alias("app_private_key", "secrets");
+		bootstrap.bootstrapTokenSecret = alias("bootstrap_token", "secrets");
 	}
-	bootstrap.appIdVariable = alias("app_id", "vars");
-	bootstrap.appPrivateKeySecret = alias("app_private_key", "secrets");
-	bootstrap.bootstrapTokenSecret = alias("bootstrap_token", "secrets");
 	for (const [name, item] of Object.entries(checks)) {
 		if (!NAME.test(name)) throw new Error("Invalid check identity: " + name);
 		object(item, "check " + name);
@@ -142,7 +144,8 @@ function runReadonly(config, route, workspace = ROOT, env = process.env) {
 function main(args = process.argv.slice(2), env = process.env) {
 	const action = args[0] || "resolve";
 	if (!["resolve", "run", "verify"].includes(action)) throw new Error("Unknown CI router command");
-	const config = readConfig();
+	// The read-only runner must reach its configured dependency setup without importing managed packages.
+	const config = readConfig(CONFIG, { requireCredentials: action !== "run" });
 	if (action === "verify") return;
 	const route = resolve(config, env);
 	if (action === "resolve") {
