@@ -245,7 +245,7 @@ function Configuration.new(): Configuration
 	if type(enabled) ~= "boolean" then
 		return invalid("github.bootstrap.enabled must be boolean")
 	end
-	local branchPrefix = text(bootstrap.branch_prefix, "github.bootstrap.branch_prefix")
+	local branchPrefix = text(Process.env.CI_EXECUTION_PREFIX or bootstrap.branch_prefix, "github.bootstrap.branch_prefix")
 	if not branchPrefix:match("^[%w][%w_/-]*$") or branchPrefix:find("//", 1, true) then
 		return invalid("github.bootstrap.branch_prefix must be a safe Git branch prefix")
 	end

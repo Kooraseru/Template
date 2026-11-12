@@ -199,7 +199,7 @@ local function waitForPipeline(repository: string, branch: string, revision: str
 			end
 			if item.status == "completed" then
 				if item.conclusion == "success" then
-					print(`::notice::PR Pipeline passed: {tostring(item.html_url)}`)
+					print(`::notice::Generated Pipeline passed: {tostring(item.html_url)}`)
 					return
 				end
 				error(`PR Pipeline concluded {tostring(item.conclusion)}: {tostring(item.html_url)}`, 0)
@@ -215,7 +215,7 @@ local function waitForPipeline(repository: string, branch: string, revision: str
 
 	error(
 		if observedId
-			then "PR Pipeline did not finish within the gate timeout"
+			then "Generated Pipeline did not finish within the gate timeout"
 			else "GitHub did not schedule Pipeline for the generated branch",
 		0
 	)
@@ -322,7 +322,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 		error(`Native execution could not be started: {failure}`, 0)
 	end
 
-	waitForPipeline(repository, branch, revision, event == "pull_request")
+	waitForPipeline(repository, branch, revision, true)
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
 	local query = branch:gsub("([^%w_.~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
@@ -331,9 +331,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	print(`::notice::Started CI execution on {branch}: {url}`)
 	Responses.Write("start", {
 		color = "success",
-		result = if event == "pull_request"
-			then "PR gate passed after native execution completed."
-			else "Bootstrap completed. Pipeline was started.",
+		result = "Generated execution completed successfully and was verified.",
 		selected_count = tostring(#tasks),
 		execution_url = url,
 		source_sha = sha,

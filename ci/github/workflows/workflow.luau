@@ -163,7 +163,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 
 		local job: { [string]: unknown } = {
 			name = task.identity,
-			env = { CI_COMPONENT = task.identity, CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
+			env = { CI_COMPONENT = task.identity, CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_EXECUTION_PREFIX = configuration.branchPrefix, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
 			["runs-on"] = "ubuntu-latest",
 			steps = steps,
 			outputs = {
@@ -242,7 +242,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 		environment = if reportEnvironment then { name = reportEnvironment, deployment = false } else nil,
 		name = `{stage} result`,
 		permissions = { contents = "read", actions = "read" },
-		env = { CI_COMPONENT = "response", CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
+		env = { CI_COMPONENT = "response", CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_EXECUTION_PREFIX = configuration.branchPrefix, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
 		["runs-on"] = "ubuntu-latest",
 		needs = if #jobIds > 0 then jobIds else nil,
 		["if"] = "${{ always() }}",
@@ -305,7 +305,8 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } },
 	}
 	local needs = { stage }
-	if operation == "build" and event == "push" and Process.env.ACT ~= "true" then
+	if operation == "build" and event == "push" and Process.env.ACT ~= "true"
+		and Process.env.CI_PUBLICATION_ENABLED ~= "false" then
 		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
 		jobs.publish = { name = "Publish", needs = { stage }, uses = "./.github/workflows/publish.yml",
 			permissions = { contents = "write", actions = "read", ["id-token"] = "write" },
@@ -314,7 +315,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 	end
 	jobs.cleanup = { name = "Finish", needs = needs, ["if"] = "${{ always() }}", ["runs-on"] = "ubuntu-latest",
 		permissions = { contents = "write" },
-		env = { CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_OPERATION = operation },
+		env = { CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_EXECUTION_PREFIX = Configuration.new().branchPrefix, CI_OPERATION = operation },
 		steps = {
 			{ uses = "actions/checkout@v7", with = { ref = if Process.env.ACT == "true" then nil else sourceSha, ["persist-credentials"] = false } },
 			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
