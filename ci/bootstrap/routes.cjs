@@ -79,7 +79,7 @@ function resolve(config, env = process.env) {
 	if (!operation.events.includes(event)) throw new Error("Operation " + requested + " is unavailable for " + event);
 	if (operation.mode === "generated") {
 		if (event === "pull_request") throw new Error("Untrusted pull requests cannot launch a generated privileged workflow");
-		if (env.GITHUB_REF !== "refs/heads/source") throw new Error("Generated CI requires the trusted source ref");
+		if (env.ACT !== "true" && env.GITHUB_REF !== "refs/heads/source") throw new Error("Generated CI requires the trusted source ref");
 		if (event === "workflow_dispatch" && operation.publication && env.CI_REQUESTED_PUBLISH !== "true") {
 			throw new Error("Manual publication requires explicit publish=true");
 		}
