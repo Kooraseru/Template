@@ -118,7 +118,9 @@ function Publication.Upload(repository: string, releaseId: number, name: string,
 	if not token or token == "" then
 		error("Missing run-provided publication token", 0)
 	end
-	local result = Net.request(`https://uploads.github.com/repos/{repository}/releases/{releaseId}/assets?name={Publication.Encode(name)}`, {
+	local uploadOrigin = if Process.env.TEMPLATE_PUBLICATION_REHEARSAL == "1"
+		then "http://127.0.0.1:47831" else "https://uploads.github.com"
+	local result = Net.request(`{uploadOrigin}/repos/{repository}/releases/{releaseId}/assets?name={Publication.Encode(name)}`, {
 		method = "POST",
 		headers = {
 			Authorization = `Bearer {token}`,
@@ -162,10 +164,18 @@ function Publication.Begin(setting: string): string?
 	Publication.RequireSuccess(status, "Read publication repository", details)
 	local defaultBranch = Publication.Text(details.default_branch)
 	local graphRun = Process.env.CI_GRAPH_RUN == "true"
-	if not graphRun and Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}` then
+	local fixedStage = Process.env.CI_STAGE_MODE == "fixed"
+	if fixedStage then
+		if not graphRun or Process.env.CI_PHASE ~= "publish"
+			or Process.env.GITHUB_REF ~= "refs/heads/source"
+			or defaultBranch ~= "source"
+			or (Process.env.GITHUB_EVENT_NAME ~= "push" and Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch") then
+			error("Fixed publication requires a trusted source-branch Publish stage", 0)
+		end
+	elseif not graphRun and Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}` then
 		error("Publication requires a push to the default branch", 0)
 	end
-	if graphRun then
+	if graphRun and not fixedStage then
 		local runBranch = Process.env.CI_RUN_BRANCH
 		local suffix = if runBranch then runBranch:sub(#configuration.branchPrefix + 1) else ""
 		if

@@ -56,3 +56,30 @@ test("legacy generated Build refuses to schedule Publish on manual dispatch", t 
 	assert.equal(result.files["publish.yml"], undefined);
 	assert.equal(JSON.parse(result.files["pipeline.yml"]).jobs.publish, undefined);
 });
+
+
+test("fixed Publish jobs are separately gated and grant label/milestone access", () => {
+	const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
+	assert.equal((workflow.match(/CI_STAGE_MODE: fixed/g) || []).length, 4);
+	assert.match(workflow, /  publish-general:[\s\S]*?    permissions:\n      contents: write\n      issues: write/);
+	assert.match(workflow, /  publish-projects:[\s\S]*?CI_CREDENTIAL_PROJECTS_TOKEN:/);
+	assert.match(workflow, /  publish-rulesets:[\s\S]*?CI_CREDENTIAL_APP_PRIVATE_KEY:/);
+	for (const name of ["publish-general", "publish-projects", "publish-rulesets"]) {
+		assert.match(workflow, new RegExp("  " + name + ":[\\s\\S]*?    needs: validate"));
+	}
+});
+
+test("example release and package policies never replace existing assets by default", () => {
+	const release = JSON.parse(fs.readFileSync(path.join(root, ".github/config/publishing/releases/settings.json"), "utf8"));
+	const packages = fs.readFileSync(path.join(root, ".github/config/publishing/packages/settings.toml"), "utf8");
+	assert.equal(release.release.on_existing, "skip");
+	assert.match(packages, /^on_existing = "skip"$/m);
+});
+
+test("fixed publication preserves legacy generated-branch protections and rehearses upload URLs", () => {
+	const publication = fs.readFileSync(path.join(root, "ci/github/publication/init.luau"), "utf8");
+	assert.match(publication, /local fixedStage = Process\.env\.CI_STAGE_MODE == "fixed"/);
+	assert.match(publication, /if graphRun and not fixedStage then/);
+	assert.match(publication, /or defaultBranch ~= "source"/);
+	assert.match(publication, /local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
+});

@@ -94,6 +94,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+      issues: write
       actions: read
       id-token: write
     env:
@@ -101,6 +102,7 @@ jobs:
       CI_OPERATION: build
       CI_GRAPH_RUN: "true"
       CI_PHASE: publish
+      CI_STAGE_MODE: fixed
       CI_PROFILE: source-ci
       CI_PUBLISH_GROUP: general
       CI_SOURCE_SHA: ${{ github.sha }}
@@ -148,6 +150,7 @@ jobs:
       CI_OPERATION: build
       CI_GRAPH_RUN: "true"
       CI_PHASE: publish
+      CI_STAGE_MODE: fixed
       CI_PROFILE: source-ci
       CI_PUBLISH_GROUP: ci-projects
       CI_SOURCE_SHA: ${{ github.sha }}
@@ -197,6 +200,7 @@ jobs:
       CI_OPERATION: build
       CI_GRAPH_RUN: "true"
       CI_PHASE: publish
+      CI_STAGE_MODE: fixed
       CI_PROFILE: source-ci
       CI_PUBLISH_GROUP: ci-rulesets
       CI_SOURCE_SHA: ${{ github.sha }}
@@ -248,6 +252,7 @@ jobs:
       CI_OPERATION: build
       CI_GRAPH_RUN: "true"
       CI_PHASE: publish
+      CI_STAGE_MODE: fixed
       CI_PROFILE: source-ci
       CI_SOURCE_SHA: ${{ github.sha }}
       CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
