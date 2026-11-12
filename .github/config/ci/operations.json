@@ -6,10 +6,7 @@
     "workflow_dispatch": "validation"
   },
   "bootstrap": {
-    "environment": "ci-bootstrap",
-    "appIdVariable": "CI_APP_ID",
-    "appPrivateKeySecret": "CI_APP_PRIVATE_KEY",
-    "bootstrapTokenSecret": "CI_TOKEN"
+    "environment": "ci-bootstrap"
   },
   "checks": {
     "workflows": {

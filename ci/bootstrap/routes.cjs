@@ -23,12 +23,26 @@ function readConfig(filename = CONFIG) {
 	const operations = object(config.operations, "operations");
 	const triggers = object(config.triggers, "triggers");
 	const bootstrap = object(config.bootstrap, "bootstrap");
-	for (const key of ["environment", "appIdVariable", "appPrivateKeySecret", "bootstrapTokenSecret"]) {
-		const value = bootstrap[key];
-		if (typeof value !== "string" || !(key === "environment" ? NAME : ALIAS).test(value)) {
-			throw new Error("Invalid bootstrap binding: " + key);
-		}
+	if (!NAME.test(bootstrap.environment) || Object.keys(bootstrap).some(key => key !== "environment")) {
+		throw new Error("Invalid bootstrap environment");
 	}
+	const catalog = require(path.join(ROOT, "ci/github/authentication/catalog.cjs"))
+		.load(path.join(ROOT, ".github/config/credentials.json"));
+	const sourceProfile = catalog.profiles["source-ci"];
+	const binding = catalog.environments[bootstrap.environment];
+	if (sourceProfile.bootstrapEnvironment !== bootstrap.environment || !binding) {
+		throw new Error("CI bootstrap environment must match the credential catalog's source-ci profile");
+	}
+	function alias(role, namespace) {
+		const value = binding[role], prefix = namespace + ".";
+		if (typeof value !== "string" || !value.startsWith(prefix) || !ALIAS.test(value.slice(prefix.length))) {
+			throw new Error("Invalid bootstrap credential alias for " + role);
+		}
+		return value.slice(prefix.length);
+	}
+	bootstrap.appIdVariable = alias("app_id", "vars");
+	bootstrap.appPrivateKeySecret = alias("app_private_key", "secrets");
+	bootstrap.bootstrapTokenSecret = alias("bootstrap_token", "secrets");
 	for (const [name, item] of Object.entries(checks)) {
 		if (!NAME.test(name)) throw new Error("Invalid check identity: " + name);
 		object(item, "check " + name);

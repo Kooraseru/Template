@@ -84,15 +84,13 @@ function load(file = ".github/config/credentials.json") {
 		if (transport?.provider === "environment") {
 			const bootstrap = catalog.environments[profile.bootstrapEnvironment];
 			const reporting = catalog.environments[profile.reportingEnvironment];
-			// CI Build is checked in, so these aliases must match its literal bindings.
-			if (profile.bootstrapEnvironment !== "ci-bootstrap"
-				|| Object.keys(bootstrap ?? {}).length !== 3
-				|| bootstrap.app_id !== "vars.CI_APP_ID"
-				|| bootstrap.app_private_key !== "secrets.CI_APP_PRIVATE_KEY"
-				|| bootstrap.bootstrap_token !== "secrets.CI_TOKEN"
-				|| profile.bootstrap.length !== 3
-				|| !profile.bootstrap.every(role => Object.hasOwn(bootstrap, role))) {
-				throw new Error("Bootstrap environment must match the fixed CI Build bindings");
+			// The bootstrap identity must be complete but its GitHub names are data, not workflow source.
+			const bindings = { app_id: /^vars\.[A-Z][A-Z0-9_]*$/, app_private_key: /^secrets\.[A-Z][A-Z0-9_]*$/,
+				bootstrap_token: /^secrets\.[A-Z][A-Z0-9_]*$/ };
+			if (!bootstrap || Object.keys(bootstrap).length !== Object.keys(bindings).length ||
+				!Object.entries(bindings).every(([role, pattern]) => pattern.test(bootstrap[role])) ||
+				profile.bootstrap.length !== 3 || !profile.bootstrap.every(role => Object.hasOwn(bootstrap, role))) {
+				throw new Error("Bootstrap environment must declare all three scoped credential roles");
 			}
 			if (!reporting?.app_id || !reporting?.app_private_key || Object.keys(reporting).length !== 2
 				|| profile.reportingEnvironment === profile.bootstrapEnvironment) {

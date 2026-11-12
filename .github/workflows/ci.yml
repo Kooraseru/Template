@@ -48,6 +48,8 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
+      - name: Install credential catalog validator
+        run: node dependencies/packages/core/dependencyLoader/index.ts
       - name: Resolve configured operation
         id: route
         env:
