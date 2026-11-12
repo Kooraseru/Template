@@ -14,7 +14,7 @@ test("generated hosted stages enforce Build before Publish and read-only Validat
 	const source = 'local B = require("@ci/bootstrap")\nlocal W = require("@ci/github/workflows/workflow")\nlocal J = require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(), string.rep("a",40), "ci-run-1-1", "push")))';
 	const files = execute(t, source, { ACT: "", CI_OPERATION: "build" }); const controller = JSON.parse(files["pipeline.yml"]);
 	assert.equal(controller.name, "Pipeline");
-	assert.deepEqual(controller.jobs.publish.needs, ["build"]); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
+	assert.deepEqual(controller.jobs.publish.needs, ["build", "tests"]); assert.deepEqual(controller.jobs.tests.needs, ["build"]); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
 	for (const file of Object.values(files)) assert.ok(!file.includes('"inherit"'));
 	const build = JSON.parse(files["build.yml"].slice(files["build.yml"].indexOf("{"))); assert.ok(build.on.workflow_call);
 	for (const job of Object.values(build.jobs)) assert.equal(job.environment, undefined);
