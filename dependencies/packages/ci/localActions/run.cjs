@@ -33,6 +33,27 @@ function options(args) {
 	if (event === "pull_request" && operation !== "validation") throw new Error("Pull requests permit Validation only");
 	return { informational, operation, event: event || "workflow_dispatch", args: event ? args : ["workflow_dispatch", ...args] };
 }
+// Adapt the isolated checkout for act without changing GitHub's workflow.
+function prepareStagedWorkflow(file, runId) {
+	const source = fs.readFileSync(file, "utf8");
+	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) return false;
+	const compatible = source
+		.replace(/^    environment:\r?\n      name: (ci-(?:projects|rulesets|reporting))\r?\n      deployment: false$/gm,
+			"    environment: $1")
+		.replaceAll("actions/upload-artifact@v7", "actions/upload-artifact@v4")
+		.replaceAll("actions/download-artifact@v8", "actions/download-artifact@v4")
+		.replaceAll("build/run/" + "$" + "{{ env.CI_RUN_ID }}/", "build/run/" + runId + "/");
+	if (/^      deployment: false$/m.test(compatible)) throw new Error("Unsupported local environment declaration");
+	fs.writeFileSync(file, compatible);
+	return true;
+}
+
+function stagedEventArguments(args, selected) {
+	const explicit = args.some(arg => arg === "push" || arg === "pull_request" || arg === "workflow_dispatch");
+	const next = [...selected.args];
+	if (!explicit && selected.operation === "validation") next[0] = "pull_request";
+	return next;
+}
 function main(args = process.argv.slice(2)) {
 	const selected = options(args);
 	const check = spawnSync("act", ["--version"], { cwd: root, encoding: "utf8", windowsHide: true });
@@ -70,6 +91,28 @@ function main(args = process.argv.slice(2)) {
 		for (const [name, bytes] of snapshot) { const file = artifacts.target(worktree, name); if (bytes === null) fs.rmSync(file, { force: true }); else { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes); } }
 		fs.copyFileSync(path.join(worktree, ".vscode/config/act/actrc"), path.join(worktree, ".actrc"));
 		execFileSync("git", ["add", "-A"], { cwd: worktree, windowsHide: true, stdio: "pipe" });
+		const staged = prepareStagedWorkflow(path.join(worktree, ".github/workflows/ci.yml"), runId);
+		if (staged) {
+			failureStage = "validation";
+			record.stages.start = "not required";
+			record.stages[selected.operation] = "running";
+			publish();
+			const stagedArgs = stagedEventArguments(args, selected);
+			const inputFiles = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
+			for (let i = 0; i < stagedArgs.length; i++) {
+				if (inputFiles.has(stagedArgs[i])) {
+					if (stagedArgs[i + 1]) stagedArgs[i + 1] = path.resolve(root, stagedArgs[i + 1]);
+					i++;
+				}
+			}
+			execute([...stagedArgs, ...runtimeArgs], worktree, "execution.log");
+			record.stages[selected.operation] = "passed";
+			record.state = "passed";
+			record.exitCode = 0;
+			record.reports = record.runDirectory + "/execution.log";
+			console.log("Completed " + selected.operation + ": " + record.reports);
+			return 0;
+		}
 		const startArgs = [...selected.args];
 		const files = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
 		for (let i = 0; i < startArgs.length; i++) if (files.has(startArgs[i])) { if (startArgs[i + 1]) startArgs[i + 1] = path.resolve(root, startArgs[i + 1]); i++; }
@@ -112,5 +155,5 @@ function main(args = process.argv.slice(2)) {
 	}
 	return record.exitCode;
 }
-module.exports = { options, main };
+module.exports = { options, main, prepareStagedWorkflow, stagedEventArguments };
 if (require.main === module) { try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 1; } }

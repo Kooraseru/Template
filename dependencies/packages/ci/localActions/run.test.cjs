@@ -40,3 +40,25 @@ test("dotenv input files and event payload operation are respected", t => {
 	const input = path.join(temporary, "inputs"), event = path.join(temporary, "event.json"); fs.writeFileSync(input, "# inputs\noperation='build'\n"); fs.writeFileSync(event, JSON.stringify({ inputs: { operation: "readiness" } }));
 	assert.equal(options(["--input-file", input]).operation, "build"); assert.equal(options(["--eventpath", event]).operation, "readiness"); assert.equal(options(["--input-file", input, "--input", "operation=validation"]).operation, "validation");
 });
+
+
+test("staged CI executes directly and adapts only the local workflow copy", t => {
+	const { prepareStagedWorkflow, stagedEventArguments, options } = require("./run.cjs");
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
+	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+	const source = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+	const file = path.join(directory, "ci.yml"); fs.writeFileSync(file, source);
+	assert.equal(prepareStagedWorkflow(file, "local-fixture"), true);
+	const actual = fs.readFileSync(file, "utf8");
+	assert.match(actual, /environment: ci-projects/);
+	assert.match(actual, /environment: ci-rulesets/);
+	assert.match(actual, /environment: ci-reporting/);
+	assert.doesNotMatch(actual, /deployment: false/);
+	assert.match(actual, /actions\/upload-artifact@v4/);
+	assert.match(actual, /actions\/download-artifact@v4/);
+	assert.match(actual, /build\/run\/local-fixture\/transport\/bundles/);
+	assert.match(source, /deployment: false/);
+	const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
+	assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
+	assert.equal(stagedEventArguments(["push"], options(["push"]))[0], "push");
+});

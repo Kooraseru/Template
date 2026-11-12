@@ -35,7 +35,7 @@ The launcher uses the existing dependency installer, runs all eligible read-only
 
 `.github/workflows/ci.yml` now owns Build, Test, the required `validate` check, and Publish stages. Publication is available only on trusted `source` pushes or an explicitly publishing manual dispatch. Components are executed by Luau within each stage; they are not rendered as temporary branch workflows. Verified component archives and manifests are transferred between jobs. GitHub-specific credential environments remain isolated in separate publication jobs.
 
-The previous generated Pipeline implementation remains temporarily in the repository for compatibility and regression tests, but is not used by the authored GitHub workflow. Do not assume that legacy `act` paths reproduce the staged workflow. The old source/delegation documentation below refers to the retained legacy entry point.
+The previous generated Pipeline implementation remains temporarily in the repository for compatibility and regression tests, but is not used by the authored GitHub workflow. GitHub Local Actions runs fixed CI directly through `act`; its isolated checkout adapts unsupported environment and artifact-action syntax without changing the hosted workflow. Do not assume that legacy `act` paths reproduce the staged workflow. The old source/delegation documentation below refers to the retained legacy entry point.
 
 ## Dependencies and local checks
 
