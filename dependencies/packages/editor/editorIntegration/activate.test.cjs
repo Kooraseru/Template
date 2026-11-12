@@ -117,7 +117,8 @@ test("rejected controller callbacks are reported to the output channel", async (
 });
 
 test("setup invalidates in-flight check generations and findings in dirty documents", () => {
-	const root = "C:/repo";
+	// Use a native absolute path: path.isAbsolute("C:/repo") is false on Linux.
+	const root = path.resolve("C:/repo");
 	const dirtyUri = { fsPath: path.join(root, "source/dirty.luau"), toString() { return `file://${this.fsPath.replaceAll("\\", "/")}`; } };
 	const state = fixture(root, [{ uri: dirtyUri, isDirty: true }]);
 	state.api.beginSetup(3);

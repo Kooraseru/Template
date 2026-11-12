@@ -6,7 +6,7 @@ const path = require("node:path");
 function activate({ vscode, workspaceFolder }) {
 	const root = fs.realpathSync(workspaceFolder.uri.fsPath);
 	function uriFor(file) {
-		if (typeof file !== "string" || !file || file.includes(":") || path.isAbsolute(file)) throw new Error("INVALID_FILE: provide a workspace-relative file");
+		if (typeof file !== "string" || !file || file.includes(":") || path.isAbsolute(file) || path.win32.isAbsolute(file)) throw new Error("INVALID_FILE: provide a workspace-relative file");
 		const relative = file.replaceAll("\\", "/");
 		if (relative.split("/").some(part => part === ".." || part === ".git" || part === ".workspace") || relative.startsWith("dependencies/managed/")) throw new Error("INVALID_FILE: private state and managed dependencies are excluded");
 		const absolute = fs.realpathSync(path.resolve(root, relative));

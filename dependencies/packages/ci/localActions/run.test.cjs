@@ -40,3 +40,85 @@ test("dotenv input files and event payload operation are respected", t => {
 	const input = path.join(temporary, "inputs"), event = path.join(temporary, "event.json"); fs.writeFileSync(input, "# inputs\noperation='build'\n"); fs.writeFileSync(event, JSON.stringify({ inputs: { operation: "readiness" } }));
 	assert.equal(options(["--input-file", input]).operation, "build"); assert.equal(options(["--eventpath", event]).operation, "readiness"); assert.equal(options(["--input-file", input, "--input", "operation=validation"]).operation, "validation");
 });
+
+
+test("staged CI executes directly and adapts only the local workflow copy", t => {
+	const { prepareStagedWorkflow, stagedEventArguments, options } = require("./run.cjs");
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
+	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+	const source = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+	const file = path.join(directory, "ci.yml");
+	// Act transforms a disposable checkout before invoking this suite. Restore the
+	// hosted syntax in the fixture so both hosted and local runs test the adapter.
+	const fixture = source
+		.replace(/^    environment: (ci-(?:projects|rulesets|reporting))\r?$/gm,
+			"    environment:\n      name: $1\n      deployment: false")
+		.replaceAll("actions/upload-artifact@v4", "actions/upload-artifact@v7")
+		.replaceAll("actions/download-artifact@v4", "actions/download-artifact@v8")
+		.replace(/build\/run\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\//gi,
+			"build/run/" + "$" + "{{ env.CI_RUN_ID }}/");
+	fs.writeFileSync(file, fixture);
+	assert.equal(prepareStagedWorkflow(file, "local-fixture"), true);
+	const actual = fs.readFileSync(file, "utf8");
+	assert.match(actual, /environment: ci-projects/);
+	assert.match(actual, /environment: ci-rulesets/);
+	assert.match(actual, /environment: ci-reporting/);
+	assert.doesNotMatch(actual, /deployment: false/);
+	assert.match(actual, /actions\/upload-artifact@v4/);
+	assert.match(actual, /gh run download "\$GITHUB_RUN_ID" --name ci-build-bundles/);
+	assert.doesNotMatch(actual, /actions\/download-artifact@/);
+	assert.match(actual, /build\/run\/local-fixture\/transport\/bundles/);
+	assert.match(fixture, /deployment: false/);
+	assert.equal(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"), source);
+	const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
+	assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
+	assert.equal(stagedEventArguments(["push"], options(["push"]))[0], "push");
+});
+
+
+test("local act wrapper streams output and bounds worktree teardown", () => {
+	const source = fs.readFileSync(path.join(__dirname, "run.cjs"), "utf8");
+	assert.match(source, /async function main/);
+	assert.match(source, /child\.stdout, process\.stdout/);
+	assert.match(source, /child\.stderr, process\.stderr/);
+	assert.match(source, /timeout: 30_000/);
+});
+
+
+test("file arguments work in both direct and staged local workflows", () => {
+	const { resolveFileArguments } = require("./run.cjs");
+	const directory = path.join(os.tmpdir(), "local-act-paths");
+	assert.deepEqual(resolveFileArguments(["--input-file", "inputs.env", "--eventpath=event.json", "--secret-file=secrets.env", "-e", "payload.json", "--var-file", ""], directory), [
+		"--input-file", path.resolve(directory, "inputs.env"), "--eventpath=" + path.resolve(directory, "event.json"),
+		"--secret-file=" + path.resolve(directory, "secrets.env"), "-e", path.resolve(directory, "payload.json"), "--var-file", "",
+	]);
+});
+
+test("local stages have a configurable bounded timeout", () => {
+	const { timeoutMilliseconds } = require("./run.cjs");
+	assert.equal(timeoutMilliseconds({}), 30 * 60_000);
+	assert.equal(timeoutMilliseconds({ CI_LOCAL_TIMEOUT_MINUTES: "45" }), 45 * 60_000);
+	for (const value of ["0", "-1", "abc", "241", "1.5"]) assert.throws(() => timeoutMilliseconds({ CI_LOCAL_TIMEOUT_MINUTES: value }), /1 to 240/);
+});
+
+test("local artifact server configuration is isolated per run", () => {
+	const configuration = fs.readFileSync(path.join(root, ".vscode/config/act/actrc"), "utf8");
+	assert.doesNotMatch(configuration, /--artifact-server-(?:path|port)/);
+	const launcher = fs.readFileSync(path.join(__dirname, "run.cjs"), "utf8");
+	assert.match(launcher, /"--artifact-server-path", transport/);
+});
+
+test("failed commands propagate exit codes and retain the stage log", { skip: process.platform === "win32" }, t => {
+	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "ci-failing-command-"));
+	const runId = "forced-failure-" + process.pid + "-" + Date.now();
+	const runDirectory = path.join(root, "build/run", runId);
+	t.after(() => { fs.rmSync(temporary, { recursive: true, force: true }); fs.rmSync(runDirectory, { recursive: true, force: true }); });
+	fs.writeFileSync(path.join(temporary, "node"), "#!/bin/sh\nprintf 'intentional failure\\n'\nexit 42\n", { mode: 0o755 });
+	const result = spawnSync("bash", ["ci/github/workflows/run-logged.sh", "build", "forced-failure"], {
+		cwd: root, encoding: "utf8", timeout: 20_000, windowsHide: true,
+		env: { ...process.env, PATH: temporary + path.delimiter + (process.env.PATH || ""), CI_RUN_ID: runId, CI_LOCAL_RUN_ID: runId },
+	});
+	assert.ifError(result.error);
+	assert.equal(result.status, 42, result.stdout + result.stderr);
+	assert.match(fs.readFileSync(path.join(runDirectory, "build/logs/forced-failure.log"), "utf8"), /intentional failure/);
+});

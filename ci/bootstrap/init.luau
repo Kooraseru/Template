@@ -43,9 +43,9 @@ function Bootstrap.new(event: string, profile: Configuration.Profile?): Bootstra
 	return setmetatable(fields, Bootstrap)
 end
 
-function Bootstrap.BuildPlan(self: Bootstrap): { Contract.Task }
-	local components = self.discovery:Discover()
-	local tasks = self.planner:Resolve(components, self.event)
+function Bootstrap.Plan(event: string): { Contract.Task }
+	local components = Discovery.new():Discover()
+	local tasks = Planner.new():Resolve(components, event)
 	local roles = Configuration.new().roles
 	for _, task in tasks do
 		for _, role in task.credentials do
@@ -55,6 +55,10 @@ function Bootstrap.BuildPlan(self: Bootstrap): { Contract.Task }
 		end
 	end
 	return tasks
+end
+
+function Bootstrap.BuildPlan(self: Bootstrap): { Contract.Task }
+	return Bootstrap.Plan(self.event)
 end
 
 function Bootstrap.Run(self: Bootstrap, component: string?, reportOnly: boolean?, profileName: string?): ()

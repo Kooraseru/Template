@@ -28,7 +28,7 @@ local function credentialBindings(name: string, bindings: { [string]: string }):
 	return environment
 end
 
-local function componentEnvironment(configuration: Configuration.Configuration, profile: Configuration.Profile, task: Contract.Task): string
+function Workflow.ComponentEnvironment(configuration: Configuration.Configuration, profile: Configuration.Profile, task: Contract.Task): string
 	local match: string? = nil
 	for name, bindings in configuration.environments do
 		if name == profile.bootstrapEnvironment or name == profile.reportingEnvironment then
@@ -54,6 +54,9 @@ local function componentEnvironment(configuration: Configuration.Configuration, 
 	end
 	return match or error(`{task.identity}: no credential environment for {table.concat(task.credentials, ", ")}`, 0)
 end
+
+-- Source publication stages use the same environment resolution as generated workflows.
+-- The exported ComponentEnvironment function above is shared with the staged runner.
 
 function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string, phase: string?): string
 	local selectedPhase = phase or "build"
@@ -123,7 +126,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			runEnvironment.GH_TOKEN = "${{ github.token }}"
 		end
 		if #task.credentials > 0 and hostedPush and profile.credentialProvider == "environment" then
-			environmentName = componentEnvironment(configuration, profile, task)
+			environmentName = Workflow.ComponentEnvironment(configuration, profile, task)
 			for key, value in credentialBindings(environmentName, configuration.environments[environmentName]) do
 				runEnvironment[key] = value
 			end
@@ -302,7 +305,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } },
 	}
 	local needs = { stage }
-	if operation == "build" and Process.env.ACT ~= "true" then
+	if operation == "build" and event == "push" and Process.env.ACT ~= "true" then
 		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
 		jobs.publish = { name = "Publish", needs = { stage }, uses = "./.github/workflows/publish.yml",
 			permissions = { contents = "write", actions = "read", ["id-token"] = "write" },

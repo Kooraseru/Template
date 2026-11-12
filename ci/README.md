@@ -1,6 +1,6 @@
 # CI implementation
 
-`.github/workflows/ci.yml` is the only authored workflow. Resolve selects the operation and credential provider; Bootstrap plans and launches source Build/Publish on a temporary branch. Pull requests run the required `validate` job directly, while manual runs select `validation` (default), `build`, or `readiness`. Disposable branches contain the generated Pipeline controller and only its required reusable stage workflows.
+`.github/workflows/ci.yml` runs Build, Tests, the required `validate` check, and isolated publication jobs on trusted source events. `.github/workflows/code-review.yml` independently runs read-only, headless source review on pull requests and manual dispatches. Legacy generated workflow execution remains available in the underlying Luau modules only.
 
 Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
 
@@ -22,6 +22,20 @@ Command sources and verifiers receive JSON on stdin and return JSON on stdout. A
 ## VS Code setup
 
 Install the recommended [Workbench Bridge](https://marketplace.visualstudio.com/items?itemName=Kooraseru.workbench-bridge) extension when working in VS Code. The trusted workspace command starts `dependencies/packages/editor/editorIntegration/client.cjs`, which runs dependency setup and native preflight checks through the bridge. Setup progress, failures, checker findings, and reruns appear in the workspace status bar, output channel, and Problems panel. The same loader and checker remain available directly from the command line.
+
+## Local CI and GitHub stages
+
+Run the complete contributor validation path with one command from the repository root:
+
+```sh
+bash ci/run.sh
+```
+
+The launcher uses the existing dependency installer, runs all eligible read-only Build components through the Luau planner, then runs the repository's Node test suites. It does not require GitHub credentials or run publication components. GitHub runs the same Luau Build entry and the same `ci/test.sh` test entry as separate jobs.
+
+`.github/workflows/ci.yml` now owns Build, Test, the required `validate` check, and Publish stages. Publication is available only on trusted `source` pushes or an explicitly publishing manual dispatch. Components are executed by Luau within each stage; they are not rendered as temporary branch workflows. Verified component archives and manifests are transferred between jobs. GitHub-specific credential environments remain isolated in separate publication jobs.
+
+The previous generated Pipeline implementation remains temporarily in the repository for compatibility and regression tests, but is not used by the authored GitHub workflow. GitHub Local Actions runs fixed CI directly through `act`; its isolated checkout adapts unsupported environment and artifact-action syntax without changing the hosted workflow. Do not assume that legacy `act` paths reproduce the staged workflow. The old source/delegation documentation below refers to the retained legacy entry point.
 
 ## Dependencies and local checks
 
@@ -112,8 +126,22 @@ node dependencies/packages/ci/localActions/run.cjs --input operation=build
 node dependencies/packages/ci/localActions/run.cjs --input operation=readiness
 ```
 
+Local `act` stages default to a 30-minute timeout, adjustable with `CI_LOCAL_TIMEOUT_MINUTES` (1–240). The launcher allocates a run-specific artifact server path and port, so do not pin either in `.actrc`. Failed runs preserve their stage logs under `build/run/<id>/` and invocation records in `.workspace/ci/runs/`.
+
+On hosted GitHub Actions, manual dispatch defaults to `publish=false`: Build, Tests, and Validation run without external publication. Publication can be explicitly requested on a trusted source dispatch; source pushes retain the existing publication policy after a successful `validate` gate. Pull requests cannot publish. Fixed-stage publication requires `CI_STAGE_MODE=fixed` and validates the exact source ref and event; legacy generated-branch execution retains its existing checks.
+
+The sample release and package conflict policies default to `skip`, not `replace`. To replace a tag, release, or package version, opt in explicitly after reviewing the generated outputs. Publication rehearsals route both GitHub API requests and release-asset uploads to the local test server. Pages and attestation components currently prepare inputs only; the fixed hosted CI workflow does not yet deploy Pages or sign attestations. Their sample settings are therefore disabled and treated as expected skips until native deployment/signing jobs are implemented and verified.
+
 The default is `workflow_dispatch` with `operation=validation`. Explicit events, `--input operation=...`, dotenv input files, and event payloads are honored. Local Build automatically runs the generated controller and reusable Build workflow in an isolated checkout, then exports verified ordinary files. Publish is omitted locally. The launcher suppresses ambient GitHub-token discovery and default secret-file loading for local execution. Readiness needs explicit read authorization; no publication is performed as verification.
 
 Current compiled outputs live under `build/artifacts/`; generated products stay under `build/github/`. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.
 
 Current-output ownership and v2 pipeline records live under ignored `.workspace/ci/`. Old v1 invocation records remain readable. Do not delete `.workspace/` as build cleanup. Archives are transport state; consumers inspect or launch the exported files directly.
+
+## Headless code review
+
+Pull requests into `source` run `.github/workflows/code-review.yml` without opening an editor or exposing repository secrets. The workflow installs the project's managed checker dependencies and runs both Preflight (`--ci`) and repository Rules (`--rules`) through their existing CLIs. TypeScript, Lute, Bootstrap plan, and configured rule findings appear in GitHub job annotations and a summary. This does not include VS Code-only or extension-provided diagnostics unless a separate headless analyzer is configured.
+
+The workflow uploads every diagnostic as `code-review-findings/diagnostics.json` plus `summary.md`. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures fail Code Review; existing errors in unrelated files are reported without blocking an unrelated pull request. Expected invalid rule fixtures are omitted from the counted diagnostics, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
+
+To run the same checks without GitHub or an editor, run `node dependencies/packages/core/dependencyLoader/index.ts` followed by `node ci/code-review.cjs`. The full report is written to `build/code-review/`.

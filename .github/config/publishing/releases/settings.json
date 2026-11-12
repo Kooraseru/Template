@@ -1,6 +1,6 @@
 {
   "release": {
-    "on_existing": "replace",
+    "on_existing": "skip",
     "source": "HEAD",
     "assets": [
       "build/artifacts/application/*.exe"

@@ -52,7 +52,7 @@ test("rejects stale, unauthorized, overlapping and out-of-bounds edits without m
 
 test("document operations reject Windows escapes and private workspace state", async t => {
 	const { api } = fixture(t);
-	for (const file of ["../escape", "..\\escape", "C:\\secret", "\\\\server\\share", ".workspace/session.json", "dependencies/managed/bin/tool", ".git/config"]) {
+	for (const file of ["../escape", "..\\escape", "C:\\secret", "\\\\server\\share", "\\rooted", ".workspace/session.json", "dependencies/managed/bin/tool", ".git/config"]) {
 		await assert.rejects(api.getDocument({ file }), /INVALID_FILE/);
 	}
 });

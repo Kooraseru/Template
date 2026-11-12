@@ -2,7 +2,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { spawnSync, execFileSync } = require("node:child_process");
+const { spawn, spawnSync, execFileSync } = require("node:child_process");
 const artifacts = require("./artifacts.cjs");
 const root = path.resolve(__dirname, "../../../..");
 
@@ -33,11 +33,57 @@ function options(args) {
 	if (event === "pull_request" && operation !== "validation") throw new Error("Pull requests permit Validation only");
 	return { informational, operation, event: event || "workflow_dispatch", args: event ? args : ["workflow_dispatch", ...args] };
 }
-function main(args = process.argv.slice(2)) {
+// Translate external file arguments before running act in the isolated checkout.
+const FILE_ARGUMENTS = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
+function resolveFileArguments(args, directory = root) {
+	const output = [...args];
+	for (let index = 0; index < output.length; index++) {
+		const argument = output[index], separator = argument.indexOf("=");
+		const flag = separator < 0 ? argument : argument.slice(0, separator);
+		if (!FILE_ARGUMENTS.has(flag)) continue;
+		if (separator >= 0) {
+			const value = argument.slice(separator + 1);
+			if (value) output[index] = flag + "=" + path.resolve(directory, value);
+		} else {
+			if (output[index + 1]) output[index + 1] = path.resolve(directory, output[index + 1]);
+			index++;
+		}
+	}
+	return output;
+}
+function timeoutMilliseconds(environment = process.env) {
+	const minutes = environment.CI_LOCAL_TIMEOUT_MINUTES ?? "30";
+	if (!/^[1-9][0-9]*$/.test(minutes) || Number(minutes) > 240) throw new Error("CI_LOCAL_TIMEOUT_MINUTES must be an integer from 1 to 240");
+	return Number(minutes) * 60_000;
+}
+
+// Adapt the isolated checkout for act without changing GitHub's workflow.
+function prepareStagedWorkflow(file, runId) {
+	const source = fs.readFileSync(file, "utf8");
+	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) return false;
+	const compatible = source
+		.replace(/^    environment:\r?\n      name: (ci-(?:projects|rulesets|reporting))\r?\n      deployment: false$/gm,
+			"    environment: $1")
+		.replaceAll("actions/upload-artifact@v7", "actions/upload-artifact@v4")
+		.replaceAll("actions/download-artifact@v8", "actions/download-artifact@v4")
+		.replaceAll("build/run/" + "$" + "{{ env.CI_RUN_ID }}/", "build/run/" + runId + "/");
+	if (/^      deployment: false$/m.test(compatible)) throw new Error("Unsupported local environment declaration");
+	fs.writeFileSync(file, compatible);
+	return true;
+}
+
+function stagedEventArguments(args, selected) {
+	const explicit = args.some(arg => arg === "push" || arg === "pull_request" || arg === "workflow_dispatch");
+	const next = [...selected.args];
+	if (!explicit && selected.operation === "validation") next[0] = "pull_request";
+	return next;
+}
+async function main(args = process.argv.slice(2)) {
 	const selected = options(args);
 	const check = spawnSync("act", ["--version"], { cwd: root, encoding: "utf8", windowsHide: true });
 	if (check.error) throw new Error("act is unavailable on PATH. Install act and restart the terminal/editor environment.");
 	if (selected.informational) return spawnSync("act", selected.args, { cwd: root, stdio: "inherit", windowsHide: true }).status ?? 1;
+	const stageTimeout = timeoutMilliseconds();
 	if (!fs.existsSync(path.join(root, ".actrc"))) throw new Error("Run workspace dependency setup to generate .actrc");
 	const runId = crypto.randomUUID(), runRoot = artifacts.target(root, "build/run/" + runId);
 	const source = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true }).trim();
@@ -47,10 +93,28 @@ function main(args = process.argv.slice(2)) {
 	const record = { version: 2, id: runId, runner: "act", scope: "pipeline", operation: selected.operation, source, workspaceDigest, state: "running", pid: process.pid, startedAt: new Date().toISOString(), stages: { start: "running", [selected.operation]: "pending", publish: "disabled" }, runDirectory: path.relative(root, runRoot).replaceAll("\\", "/") };
 	function publish() { fs.writeFileSync(file + ".tmp", JSON.stringify(record)); fs.renameSync(file + ".tmp", file); }
 	function execute(argv, cwd, log) {
-		const descriptor = fs.openSync(path.join(runRoot, log), "w");
-		const result = spawnSync("act", argv, { cwd, windowsHide: true, stdio: ["ignore", descriptor, descriptor], env: { ...process.env, CI_LOCAL_RUN_ID: runId } });
-		fs.closeSync(descriptor);
-		if (result.error || result.status !== 0) throw new Error(result.error?.message || `act exited with status ${result.status}; see ${record.runDirectory}/${log}`);
+		return new Promise((resolve, reject) => {
+			const descriptor = fs.openSync(path.join(runRoot, log), "w");
+			const child = spawn("act", argv, {
+				cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
+				env: { ...process.env, CI_LOCAL_RUN_ID: runId },
+				timeout: stageTimeout,
+			});
+			let failure;
+			for (const [stream, output] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
+				stream.on("data", chunk => {
+					fs.writeSync(descriptor, chunk);
+					output.write(chunk);
+				});
+			}
+			child.once("error", error => { failure = error; });
+			child.once("close", (code, signal) => {
+				fs.closeSync(descriptor);
+				if (failure || code !== 0) {
+					reject(new Error(failure?.message || `act exited with status ${code}${signal ? ` (signal ${signal})` : ""}; see ${record.runDirectory}/${log}`));
+				} else resolve();
+			});
+		});
 	}
 	const transport = path.join(runRoot, "transport");
 	const port = execFileSync(process.execPath, ["-e", "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"], { encoding: "utf8", windowsHide: true }).trim();
@@ -70,10 +134,23 @@ function main(args = process.argv.slice(2)) {
 		for (const [name, bytes] of snapshot) { const file = artifacts.target(worktree, name); if (bytes === null) fs.rmSync(file, { force: true }); else { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes); } }
 		fs.copyFileSync(path.join(worktree, ".vscode/config/act/actrc"), path.join(worktree, ".actrc"));
 		execFileSync("git", ["add", "-A"], { cwd: worktree, windowsHide: true, stdio: "pipe" });
-		const startArgs = [...selected.args];
-		const files = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
-		for (let i = 0; i < startArgs.length; i++) if (files.has(startArgs[i])) { if (startArgs[i + 1]) startArgs[i + 1] = path.resolve(root, startArgs[i + 1]); i++; }
-		execute([...startArgs, ...runtimeArgs], worktree, "start.log");
+		const staged = prepareStagedWorkflow(path.join(worktree, ".github/workflows/ci.yml"), runId);
+		if (staged) {
+			failureStage = "validation";
+			record.stages.start = "not required";
+			record.stages[selected.operation] = "running";
+			publish();
+			const stagedArgs = resolveFileArguments(stagedEventArguments(args, selected));
+			await execute([...stagedArgs, ...runtimeArgs], worktree, "execution.log");
+			record.stages[selected.operation] = "passed";
+			record.state = "passed";
+			record.exitCode = 0;
+			record.reports = record.runDirectory + "/execution.log";
+			console.log("Completed " + selected.operation + ": " + record.reports);
+			return 0;
+		}
+		const startArgs = resolveFileArguments(selected.args);
+		await execute([...startArgs, ...runtimeArgs], worktree, "start.log");
 		record.stages.start = "passed";
 		if (selected.operation !== "readiness") {
 			const generated = artifacts.receiveStart(runRoot);
@@ -84,8 +161,8 @@ function main(args = process.argv.slice(2)) {
 			// Preserve the caller's platform/offline/container flags. Event, input and workflow selection belong to Start.
 			const executionArgs = [];
 			const excluded = new Set(["-W", "--workflows", "--input", "--input-file", "-e", "--eventpath", "-j", "--job", "--artifact-server-path", "--artifact-server-port"]);
-			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
-			execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
+			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input(?:-file)?|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
+			await execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			artifacts.receiveDiagnostics(runRoot);
 			record.reports = record.runDirectory + "/" + selected.operation;
@@ -104,13 +181,27 @@ function main(args = process.argv.slice(2)) {
 		record.state = "failed"; record.exitCode = 1; record.failureStage = failureStage; record.stages[failureStage] = "failed"; record.failure = error.message.slice(0, 1000); console.error(record.failure);
 	} finally {
 		if (worktree) {
-			const checked = artifacts.target(root, record.runDirectory + "/worktree");
-			if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
-			else fs.rmSync(checked, { recursive: true, force: true });
+			try {
+				const checked = artifacts.target(root, record.runDirectory + "/worktree");
+				if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
+				else {
+				// A failed run must not block the VS Code task on a large Windows worktree teardown.
+				const removal = spawnSync(process.execPath, [
+					"-e", "require('node:fs').rmSync(process.argv[1],{recursive:true,force:true,maxRetries:2,retryDelay:100})", checked,
+				], { windowsHide: true, timeout: 30_000, encoding: "utf8" });
+				if (removal.error || removal.status !== 0) {
+					record.cleanup = "Worktree retained after bounded cleanup: " + checked;
+					console.error(record.cleanup);
+				}
+				}
+			} catch (error) {
+				record.cleanup = "Isolated checkout cleanup failed: " + error.message.slice(0, 300);
+				console.error(record.cleanup);
+			}
 		}
 		record.finishedAt = new Date().toISOString(); publish();
 	}
 	return record.exitCode;
 }
-module.exports = { options, main };
-if (require.main === module) { try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 1; } }
+module.exports = { options, main, prepareStagedWorkflow, stagedEventArguments, resolveFileArguments, timeoutMilliseconds };
+if (require.main === module) main().then(code => { process.exitCode = code; }).catch(error => { console.error(error.message); process.exitCode = 1; });
