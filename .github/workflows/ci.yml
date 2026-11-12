@@ -2,15 +2,18 @@ name: CI
 
 on:
   push:
-    branches:
-      - source
+    branches: [source]
   pull_request:
-    branches:
-      - source
+    branches: [source]
   workflow_dispatch:
     inputs:
+      operation:
+        description: Configured operation name from .github/config/ci/operations.json
+        type: string
+        required: true
+        default: validation
       publish:
-        description: Publish after successful validation
+        description: Explicitly authorize manual publication
         type: boolean
         required: true
         default: false
@@ -22,273 +25,168 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build Project Components
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-    env:
-      CI_EVENT: ${{ github.event_name == 'workflow_dispatch' && 'push' || github.event_name }}
-      CI_OPERATION: ${{ github.event_name == 'pull_request' && 'validation' || 'build' }}
-      CI_GRAPH_RUN: "true"
-      CI_PHASE: build
-      CI_SOURCE_SHA: ${{ github.sha }}
-      CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Execute Build Components
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --stage build
-      - name: Export Verified Build Artifacts
-        if: success()
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-build-bundles
-          path: build/run/${{ env.CI_RUN_ID }}/transport/bundles/
-          if-no-files-found: error
-          retention-days: 3
-
-  tests:
-    name: Execute Test Suites
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Execute Repository Tests
-        run: bash ci/test.sh
-
-  validate:
-    name: validate
-    if: always()
-    needs: [build, tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - name: Require Successful Build and Tests
-        env:
-          BUILD_RESULT: ${{ needs.build.result }}
-          TEST_RESULT: ${{ needs.tests.result }}
-        run: |
-          test "$BUILD_RESULT" = success
-          test "$TEST_RESULT" = success
-
-  publish-general:
-    name: Publish Project Artifacts
-    if: ${{ github.ref == 'refs/heads/source' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) }}
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
-      issues: write
-      actions: read
-      id-token: write
-    env:
-      CI_EVENT: push
-      CI_OPERATION: build
-      CI_GRAPH_RUN: "true"
-      CI_PHASE: publish
-      CI_STAGE_MODE: fixed
-      CI_PROFILE: source-ci
-      CI_PUBLISH_GROUP: general
-      CI_SOURCE_SHA: ${{ github.sha }}
-      CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Receive Verified Build Artifacts
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download "$GITHUB_RUN_ID" --name ci-build-bundles --dir "build/run/$CI_RUN_ID/transport/bundles/"
-      - name: Execute Publication Components
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --stage publish
-      - name: Export Publication Results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-publish-general
-          path: build/run/${{ env.CI_RUN_ID }}/publish/general/
-          if-no-files-found: ignore
-          retention-days: 3
-
-  publish-projects:
-    name: Publish Project Configuration
-    if: ${{ github.ref == 'refs/heads/source' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) }}
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      actions: read
-      id-token: write
-    environment:
-      name: ci-projects
-      deployment: false
-    env:
-      CI_EVENT: push
-      CI_OPERATION: build
-      CI_GRAPH_RUN: "true"
-      CI_PHASE: publish
-      CI_STAGE_MODE: fixed
-      CI_PROFILE: source-ci
-      CI_PUBLISH_GROUP: ci-projects
-      CI_SOURCE_SHA: ${{ github.sha }}
-      CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Receive Verified Build Artifacts
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download "$GITHUB_RUN_ID" --name ci-build-bundles --dir "build/run/$CI_RUN_ID/transport/bundles/"
-      - name: Execute Project Components
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_CREDENTIAL_ENVIRONMENT: ci-projects
-          CI_CREDENTIAL_PROJECTS_TOKEN: ${{ secrets.CI_TOKEN }}
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --stage publish
-      - name: Export Publication Results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-publish-projects
-          path: build/run/${{ env.CI_RUN_ID }}/publish/ci-projects/
-          if-no-files-found: ignore
-          retention-days: 3
-
-  publish-rulesets:
-    name: Publish Repository Rulesets
-    if: ${{ github.ref == 'refs/heads/source' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) }}
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      actions: read
-      id-token: write
-    environment:
-      name: ci-rulesets
-      deployment: false
-    env:
-      CI_EVENT: push
-      CI_OPERATION: build
-      CI_GRAPH_RUN: "true"
-      CI_PHASE: publish
-      CI_STAGE_MODE: fixed
-      CI_PROFILE: source-ci
-      CI_PUBLISH_GROUP: ci-rulesets
-      CI_SOURCE_SHA: ${{ github.sha }}
-      CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Receive Verified Build Artifacts
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download "$GITHUB_RUN_ID" --name ci-build-bundles --dir "build/run/$CI_RUN_ID/transport/bundles/"
-      - name: Execute Ruleset Components
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_CREDENTIAL_ENVIRONMENT: ci-rulesets
-          CI_CREDENTIAL_APP_ID: ${{ vars.CI_APP_ID }}
-          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --stage publish
-      - name: Export Publication Results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-publish-rulesets
-          path: build/run/${{ env.CI_RUN_ID }}/publish/ci-rulesets/
-          if-no-files-found: ignore
-          retention-days: 3
-
-  publication-result:
-    name: Verify Publication Results
-    if: ${{ always() && github.ref == 'refs/heads/source' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) }}
-    needs: [validate, publish-general, publish-projects, publish-rulesets]
+  resolve:
+    name: Resolve CI Operation
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      checks: write
-      actions: read
-      id-token: write
-    environment:
-      name: ci-reporting
-      deployment: false
-    env:
-      CI_EVENT: push
-      CI_OPERATION: build
-      CI_GRAPH_RUN: "true"
-      CI_PHASE: publish
-      CI_STAGE_MODE: fixed
-      CI_PROFILE: source-ci
-      CI_SOURCE_SHA: ${{ github.sha }}
-      CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+    outputs:
+      operation: ${{ steps.route.outputs.operation }}
+      mode: ${{ steps.route.outputs.mode }}
+      environment: ${{ steps.route.outputs.environment }}
+      app_id_name: ${{ steps.route.outputs.app_id_name }}
+      app_private_key_name: ${{ steps.route.outputs.app_private_key_name }}
+      bootstrap_token_name: ${{ steps.route.outputs.bootstrap_token_name }}
+      plan: ${{ steps.route.outputs.plan }}
+      publication: ${{ steps.route.outputs.publication }}
+      branch_prefix: ${{ steps.route.outputs.branch_prefix }}
+      review_checks: ${{ steps.route.outputs.review_checks }}
+      audit_checks: ${{ steps.route.outputs.audit_checks }}
     steps:
-      - name: Require Successful Execution
-        env:
-          VALIDATION: ${{ needs.validate.result }}
-          GENERAL: ${{ needs.publish-general.result }}
-          PROJECTS: ${{ needs.publish-projects.result }}
-          RULESETS: ${{ needs.publish-rulesets.result }}
-        run: |
-          test "$VALIDATION" = success
-          test "$GENERAL" = success
-          test "$PROJECTS" = success
-          test "$RULESETS" = success
       - uses: actions/checkout@v7
-        if: success()
         with:
           persist-credentials: false
       - uses: actions/setup-node@v7.1.0
-        if: success()
         with:
           node-version: 24
-      - name: Receive Publication Records
-        if: success()
+      - name: Install credential catalog validator
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Resolve configured operation
+        id: route
         env:
+          CI_REQUESTED_OPERATION: ${{ inputs.operation }}
+          CI_REQUESTED_PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
+        run: node ci/bootstrap/routes.cjs resolve
+
+  review:
+    name: Code Review
+    needs: resolve
+    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.review_checks == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Execute configured read-only checks
+        env:
+          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
+          CI_CHECK_GROUP: review
+        run: node ci/bootstrap/routes.cjs run
+      - name: Preserve full diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: code-review-findings
+          path: build/code-review/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  audit:
+    name: Rules Audit
+    needs: resolve
+    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.audit_checks == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install rule audit dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Execute configured Rules audit
+        env:
+          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
+          CI_CHECK_GROUP: audit
+        run: node ci/bootstrap/routes.cjs run
+      - name: Preserve Rules audit findings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rules-audit-findings
+          path: build/rules-audit/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  bootstrap:
+    name: Start Generated CI
+    needs: resolve
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.resolve.outputs.mode == 'generated' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Compile, launch, and verify generated execution
+        env:
+          CI_EVENT: push
+          CI_PROFILE: source-ci
+          CI_OPERATION: ${{ needs.resolve.outputs.plan }}
+          CI_PUBLICATION_ENABLED: ${{ needs.resolve.outputs.publication }}
+          CI_EXECUTION_PREFIX: ${{ needs.resolve.outputs.branch_prefix }}
+          CI_CREDENTIAL_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+          CI_CREDENTIAL_APP_ID: ${{ vars[needs.resolve.outputs.app_id_name] }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.resolve.outputs.app_private_key_name] }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.resolve.outputs.bootstrap_token_name] }}
           GH_TOKEN: ${{ github.token }}
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau
+      - name: Preserve bootstrap output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  validate:
+    name: validate
+    if: always()
+    needs: [resolve, review, audit, bootstrap]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require completed selected route
+        env:
+          RESOLVE: ${{ needs.resolve.result }}
+          MODE: ${{ needs.resolve.outputs.mode }}
+          REVIEW: ${{ needs.review.result }}
+          AUDIT: ${{ needs.audit.result }}
+          REVIEW_REQUIRED: ${{ needs.resolve.outputs.review_checks }}
+          AUDIT_REQUIRED: ${{ needs.resolve.outputs.audit_checks }}
+          BOOTSTRAP: ${{ needs.bootstrap.result }}
         run: |
-          for group in general projects rulesets; do
-            gh run download "$GITHUB_RUN_ID" --name "ci-publish-$group" --dir "build/run/$CI_RUN_ID/transport/bundles/"
-          done
-      - name: Verify Publication Components
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_CREDENTIAL_ENVIRONMENT: ci-reporting
-          CI_CREDENTIAL_APP_ID: ${{ vars.CI_APP_ID }}
-          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --stage-report
+          test "$RESOLVE" = success
+          case "$MODE" in
+            readonly)
+              if [ "$REVIEW_REQUIRED" = true ]; then test "$REVIEW" = success; else test "$REVIEW" = skipped; fi
+              if [ "$AUDIT_REQUIRED" = true ]; then test "$AUDIT" = success; else test "$AUDIT" = skipped; fi
+              ;;
+            generated) test "$BOOTSTRAP" = success ;;
+            *) echo "No valid execution route completed" >&2; exit 1 ;;
+          esac

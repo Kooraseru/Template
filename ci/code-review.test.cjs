@@ -24,7 +24,7 @@ test("rule findings preserve severity and exclude expected fixture diagnostics",
 	const result = review(found, new Set(["ci/entry.luau"]));
 	assert.equal(result.annotations.length, 2);
 	assert.equal(result.blocking.length, 1);
-	assert.match(summary(found, result, "source"), /Expected rule-fixture findings are excluded/);
+	assert.match(summary(found, result, "source"), /Repository Rules have a separate audit/);
 });
 
 test("pre-existing errors are in the full report but do not block unrelated PRs", () => {
