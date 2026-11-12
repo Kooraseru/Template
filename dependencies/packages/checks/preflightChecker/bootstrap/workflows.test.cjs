@@ -23,18 +23,22 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("hybrid CI keeps a required validation gate and separates publication credentials", () => {
-	const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
-	assert.match(workflow, /^  build:\n    name: Build Project Components$/m);
-	assert.match(workflow, /^  tests:\n    name: Execute Test Suites$/m);
-	assert.match(workflow, /^  validate:\n    name: validate$/m);
-	assert.match(workflow, /test "\$BUILD_RESULT" = success/);
-	assert.match(workflow, /test "\$TEST_RESULT" = success/);
-	assert.match(workflow, /^  publish-general:/m);
-	assert.match(workflow, /^  publish-projects:/m);
-	assert.match(workflow, /^  publish-rulesets:/m);
-	assert.doesNotMatch(workflow, /^  bootstrap-environment:/m);
-	assert.doesNotMatch(workflow, /^  bootstrap-oidc:/m);
+test("only one permanent workflow delegates operations to JSON", () => {
+	const directory = path.join(root, ".github/workflows");
+	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
+	assert.deepEqual(authored, ["ci.yml"]);
+	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
+	assert.match(workflow, /^  resolve:$/m);
+	assert.match(workflow, /^  review:$/m);
+	assert.match(workflow, /^  bootstrap:$/m);
+	assert.match(workflow, /^  validate:$/m);
+	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
+	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs run/);
+	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
+	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
+	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
+	assert.equal(config.triggers.pull_request, "review");
+	assert.equal(config.triggers.push, "publish");
 });
 test("optional administration components use their current skip policies", t => {
 	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),default=S.Conclusion("source/build")}))';
@@ -58,17 +62,20 @@ test("legacy generated Build refuses to schedule Publish on manual dispatch", t 
 });
 
 
-test("fixed Publish jobs are separately gated and grant label/milestone access", () => {
-	const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
-	assert.equal((workflow.match(/CI_STAGE_MODE: fixed/g) || []).length, 4);
-	assert.match(workflow, /  publish-general:[\s\S]*?    permissions:\n      contents: write\n      issues: write/);
-	assert.match(workflow, /  publish-projects:[\s\S]*?CI_CREDENTIAL_PROJECTS_TOKEN:/);
-	assert.match(workflow, /  publish-rulesets:[\s\S]*?CI_CREDENTIAL_APP_PRIVATE_KEY:/);
-	for (const name of ["publish-general", "publish-projects", "publish-rulesets"]) {
-		assert.match(workflow, new RegExp("  " + name + ":[\\s\\S]*?    needs: validate"));
-	}
+test("generated graph binds credential environments and isolates publication", t => {
+	const code = 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"run/publish-1-1","push")))';
+	const enabled = execute(t, code, { ACT: "", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "true", CI_EXECUTION_PREFIX: "run/publish-" });
+	assert.ok(enabled["publish.yml"]);
+	const compiled = JSON.parse(enabled["publish.yml"].slice(enabled["publish.yml"].indexOf("{")));
+	assert.ok(compiled.on.workflow_call);
+	const jobs = Object.values(compiled.jobs);
+	assert.ok(jobs.some(job => job.environment?.name === "ci-projects"));
+	assert.ok(jobs.some(job => job.environment?.name === "ci-rulesets"));
+	assert.ok(jobs.some(job => job.permissions?.actions === "read"));
+	assert.ok(!enabled["publish.yml"].includes("actions/download-artifact@v8"));
+	const disabled = execute(t, code, { ACT: "", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "false", CI_EXECUTION_PREFIX: "run/build-" });
+	assert.equal(disabled["publish.yml"], undefined);
 });
-
 test("example release and package policies never replace existing assets by default", () => {
 	const release = JSON.parse(fs.readFileSync(path.join(root, ".github/config/publishing/releases/settings.json"), "utf8"));
 	const packages = fs.readFileSync(path.join(root, ".github/config/publishing/packages/settings.toml"), "utf8");
@@ -76,15 +83,15 @@ test("example release and package policies never replace existing assets by defa
 	assert.match(packages, /^on_existing = "skip"$/m);
 });
 
-test("fixed publication preserves legacy generated-branch protections and rehearses upload URLs", () => {
+test("generated publication retains branch checks and rehearses release uploads", () => {
 	const publication = fs.readFileSync(path.join(root, "ci/github/publication/init.luau"), "utf8");
-	assert.match(publication, /local fixedStage = Process\.env\.CI_STAGE_MODE == "fixed"/);
 	assert.match(publication, /if graphRun and not fixedStage then/);
-	assert.match(publication, /or defaultBranch ~= "source"/);
+	assert.match(publication, /configuration\.branchPrefix/);
 	assert.match(publication, /local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
+	const runtime = fs.readFileSync(path.join(root, "ci/github/resources/branches/branchRun.luau"), "utf8");
+	assert.match(runtime, /waitForPipeline\(repository, branch, revision, true\)/);
+	assert.match(runtime, /Temporary CI branch moved after this run started/);
 });
-
-
 test("unimplemented native Pages and attestation integrations are disabled by default", () => {
 	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
 	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
