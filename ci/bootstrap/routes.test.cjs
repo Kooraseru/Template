@@ -32,7 +32,7 @@ test("bootstrap outputs use aliases rather than credential values", () => {
 		appendOutputs(resolve(config, trusted), file);
 		const output = fs.readFileSync(file, "utf8");
 		assert.match(output, /^app_private_key_name=CI_APP_PRIVATE_KEY$/m);
-		assert.match(output, /^branch_prefix=run\/publish-$/m);
+		assert.match(output, /^branch_prefix=ci\/run-$/m);
 		assert.doesNotMatch(output, /ghp_|github_pat_/);
 	} finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });

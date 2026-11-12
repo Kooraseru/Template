@@ -84,7 +84,7 @@
       ],
       "plan": "build",
       "publication": true,
-      "branchPrefix": "run/publish-"
+      "branchPrefix": "ci/run-"
     }
   }
 }
