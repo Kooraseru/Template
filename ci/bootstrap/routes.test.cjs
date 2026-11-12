@@ -44,6 +44,13 @@ test("new operations do not require a change to authored YAML", () => {
 	const workflow = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
 	assert.doesNotMatch(workflow, /publish-(general|projects|rulesets):/);
 });
+test("read-only route parsing does not require managed credential packages", () => {
+	const readonly = readConfig(undefined, { requireCredentials: false });
+	assert.equal(resolve(readonly, { GITHUB_EVENT_NAME: "pull_request" }).name, "review");
+	assert.equal(readonly.bootstrap.environment, "ci-bootstrap");
+	assert.equal(readonly.bootstrap.appIdVariable, undefined);
+});
+
 test("read-only executor will not run a generated operation", () => {
 	assert.throws(() => runReadonly(config, resolve(config, trusted)), /Only unprivileged/);
 });
