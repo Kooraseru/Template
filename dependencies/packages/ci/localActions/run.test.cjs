@@ -115,7 +115,7 @@ test("failed commands propagate exit codes and retain the stage log", { skip: pr
 	fs.writeFileSync(path.join(temporary, "node"), "#!/bin/sh\nprintf 'intentional failure\\n'\nexit 42\n", { mode: 0o755 });
 	const result = spawnSync("bash", ["ci/github/workflows/run-logged.sh", "build", "forced-failure"], {
 		cwd: root, encoding: "utf8", timeout: 20_000, windowsHide: true,
-		env: { ...process.env, PATH: temporary + path.delimiter + (process.env.PATH || ""), CI_RUN_ID: runId },
+		env: { ...process.env, PATH: temporary + path.delimiter + (process.env.PATH || ""), CI_RUN_ID: runId, CI_LOCAL_RUN_ID: runId },
 	});
 	assert.ifError(result.error);
 	assert.equal(result.status, 42, result.stdout + result.stderr);

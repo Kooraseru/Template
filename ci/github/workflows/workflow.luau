@@ -56,7 +56,7 @@ function Workflow.ComponentEnvironment(configuration: Configuration.Configuratio
 end
 
 -- Source publication stages use the same environment resolution as generated workflows.
-Workflow.ComponentEnvironment = componentEnvironment
+-- The exported ComponentEnvironment function above is shared with the staged runner.
 
 function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string, phase: string?): string
 	local selectedPhase = phase or "build"
