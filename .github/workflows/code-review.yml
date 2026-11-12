@@ -1,0 +1,36 @@
+name: Code Review
+
+on:
+  pull_request:
+    branches:
+      - source
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install checker dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Review source and repository rules
+        run: node ci/code-review.cjs
+      - name: Preserve full diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: code-review-findings
+          path: build/code-review/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,6 +1,6 @@
 # CI implementation
 
-`.github/workflows/ci.yml` is the only authored workflow. It runs Build, Tests, the required `validate` check, and isolated publication jobs on trusted source events. Legacy generated workflow execution remains available in the underlying Luau modules only, not in the authored workflow.
+`.github/workflows/ci.yml` runs Build, Tests, the required `validate` check, and isolated publication jobs on trusted source events. `.github/workflows/code-review.yml` independently runs read-only, headless source review on pull requests and manual dispatches. Legacy generated workflow execution remains available in the underlying Luau modules only.
 
 Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
 
@@ -135,3 +135,11 @@ The default is `workflow_dispatch` with `operation=validation`. Explicit events,
 Current compiled outputs live under `build/artifacts/`; generated products stay under `build/github/`. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.
 
 Current-output ownership and v2 pipeline records live under ignored `.workspace/ci/`. Old v1 invocation records remain readable. Do not delete `.workspace/` as build cleanup. Archives are transport state; consumers inspect or launch the exported files directly.
+
+## Headless code review
+
+Pull requests into `source` run `.github/workflows/code-review.yml` without opening an editor or exposing repository secrets. The workflow installs the project's managed checker dependencies and runs both Preflight (`--ci`) and repository Rules (`--rules`) through their existing CLIs. TypeScript, Lute, Bootstrap plan, and configured rule findings appear in GitHub job annotations and a summary. This does not include VS Code-only or extension-provided diagnostics unless a separate headless analyzer is configured.
+
+The workflow uploads every diagnostic as `code-review-findings/diagnostics.json` plus `summary.md`. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures fail Code Review; existing errors in unrelated files are reported without blocking an unrelated pull request. Expected invalid rule fixtures are omitted from the counted diagnostics, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
+
+To run the same checks without GitHub or an editor, run `node dependencies/packages/core/dependencyLoader/index.ts` followed by `node ci/code-review.cjs`. The full report is written to `build/code-review/`.
