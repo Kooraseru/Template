@@ -55,6 +55,9 @@ function Workflow.ComponentEnvironment(configuration: Configuration.Configuratio
 	return match or error(`{task.identity}: no credential environment for {table.concat(task.credentials, ", ")}`, 0)
 end
 
+-- Source publication stages use the same environment resolution as generated workflows.
+Workflow.ComponentEnvironment = componentEnvironment
+
 function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: string, event: string, phase: string?): string
 	local selectedPhase = phase or "build"
 	local stage = if selectedPhase == "publish" then "publish" elseif Process.env.CI_OPERATION == "build" then "build" else "validation"
@@ -302,7 +305,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } },
 	}
 	local needs = { stage }
-	if operation == "build" and Process.env.ACT ~= "true" then
+	if operation == "build" and event == "push" and Process.env.ACT ~= "true" then
 		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
 		jobs.publish = { name = "Publish", needs = { stage }, uses = "./.github/workflows/publish.yml",
 			permissions = { contents = "write", actions = "read", ["id-token"] = "write" },

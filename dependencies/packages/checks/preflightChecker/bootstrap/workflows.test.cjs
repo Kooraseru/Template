@@ -48,3 +48,11 @@ test("component contract rejects missing phases and privileged Build", t => {
 test("Build dependencies on Publish are rejected before rendering", t => {
 	const result = execute(t, 'local C=require("@ci/bootstrap/contracts/contract")\nlocal P=require("@ci/bootstrap/planning")\nlocal J=require("@formats/json")\nlocal a=C.new("prepare","x","fixture",{phase="build",provides={"prepared"},requires={"published"},events={"push"}})\nlocal b=C.new("send","x","fixture",{phase="publish",boundary="privileged",provides={"published"},events={"push"}})\nlocal ok=pcall(function() P.new():Resolve({a,b},"push") end)\nprint(J.encode({ok=ok}))'); assert.equal(result.ok, false);
 });
+
+
+test("legacy generated Build refuses to schedule Publish on manual dispatch", t => {
+	const result = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode({files=W.Bundle(B.new("workflow_dispatch"):BuildPlan(),string.rep("a",40),"ci-run-1-1","workflow_dispatch"),group=type(W.ComponentEnvironment)}))', { ACT: "", CI_OPERATION: "build" });
+	assert.equal(result.group, "function");
+	assert.equal(result.files["publish.yml"], undefined);
+	assert.equal(JSON.parse(result.files["pipeline.yml"]).jobs.publish, undefined);
+});

@@ -33,6 +33,30 @@ function options(args) {
 	if (event === "pull_request" && operation !== "validation") throw new Error("Pull requests permit Validation only");
 	return { informational, operation, event: event || "workflow_dispatch", args: event ? args : ["workflow_dispatch", ...args] };
 }
+// Translate external file arguments before running act in the isolated checkout.
+const FILE_ARGUMENTS = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
+function resolveFileArguments(args, directory = root) {
+	const output = [...args];
+	for (let index = 0; index < output.length; index++) {
+		const argument = output[index], separator = argument.indexOf("=");
+		const flag = separator < 0 ? argument : argument.slice(0, separator);
+		if (!FILE_ARGUMENTS.has(flag)) continue;
+		if (separator >= 0) {
+			const value = argument.slice(separator + 1);
+			if (value) output[index] = flag + "=" + path.resolve(directory, value);
+		} else {
+			if (output[index + 1]) output[index + 1] = path.resolve(directory, output[index + 1]);
+			index++;
+		}
+	}
+	return output;
+}
+function timeoutMilliseconds(environment = process.env) {
+	const minutes = environment.CI_LOCAL_TIMEOUT_MINUTES ?? "30";
+	if (!/^[1-9][0-9]*$/.test(minutes) || Number(minutes) > 240) throw new Error("CI_LOCAL_TIMEOUT_MINUTES must be an integer from 1 to 240");
+	return Number(minutes) * 60_000;
+}
+
 // Adapt the isolated checkout for act without changing GitHub's workflow.
 function prepareStagedWorkflow(file, runId) {
 	const source = fs.readFileSync(file, "utf8");
@@ -59,6 +83,7 @@ async function main(args = process.argv.slice(2)) {
 	const check = spawnSync("act", ["--version"], { cwd: root, encoding: "utf8", windowsHide: true });
 	if (check.error) throw new Error("act is unavailable on PATH. Install act and restart the terminal/editor environment.");
 	if (selected.informational) return spawnSync("act", selected.args, { cwd: root, stdio: "inherit", windowsHide: true }).status ?? 1;
+	const stageTimeout = timeoutMilliseconds();
 	if (!fs.existsSync(path.join(root, ".actrc"))) throw new Error("Run workspace dependency setup to generate .actrc");
 	const runId = crypto.randomUUID(), runRoot = artifacts.target(root, "build/run/" + runId);
 	const source = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true }).trim();
@@ -73,7 +98,7 @@ async function main(args = process.argv.slice(2)) {
 			const child = spawn("act", argv, {
 				cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
 				env: { ...process.env, CI_LOCAL_RUN_ID: runId },
-				timeout: 15 * 60 * 1000,
+				timeout: stageTimeout,
 			});
 			let failure;
 			for (const [stream, output] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
@@ -115,14 +140,7 @@ async function main(args = process.argv.slice(2)) {
 			record.stages.start = "not required";
 			record.stages[selected.operation] = "running";
 			publish();
-			const stagedArgs = stagedEventArguments(args, selected);
-			const inputFiles = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
-			for (let i = 0; i < stagedArgs.length; i++) {
-				if (inputFiles.has(stagedArgs[i])) {
-					if (stagedArgs[i + 1]) stagedArgs[i + 1] = path.resolve(root, stagedArgs[i + 1]);
-					i++;
-				}
-			}
+			const stagedArgs = resolveFileArguments(stagedEventArguments(args, selected));
 			await execute([...stagedArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			record.state = "passed";
@@ -131,9 +149,7 @@ async function main(args = process.argv.slice(2)) {
 			console.log("Completed " + selected.operation + ": " + record.reports);
 			return 0;
 		}
-		const startArgs = [...selected.args];
-		const files = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
-		for (let i = 0; i < startArgs.length; i++) if (files.has(startArgs[i])) { if (startArgs[i + 1]) startArgs[i + 1] = path.resolve(root, startArgs[i + 1]); i++; }
+		const startArgs = resolveFileArguments(selected.args);
 		await execute([...startArgs, ...runtimeArgs], worktree, "start.log");
 		record.stages.start = "passed";
 		if (selected.operation !== "readiness") {
@@ -145,7 +161,7 @@ async function main(args = process.argv.slice(2)) {
 			// Preserve the caller's platform/offline/container flags. Event, input and workflow selection belong to Start.
 			const executionArgs = [];
 			const excluded = new Set(["-W", "--workflows", "--input", "--input-file", "-e", "--eventpath", "-j", "--job", "--artifact-server-path", "--artifact-server-port"]);
-			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
+			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input(?:-file)?|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
 			await execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			artifacts.receiveDiagnostics(runRoot);
@@ -182,5 +198,5 @@ async function main(args = process.argv.slice(2)) {
 	}
 	return record.exitCode;
 }
-module.exports = { options, main, prepareStagedWorkflow, stagedEventArguments };
+module.exports = { options, main, prepareStagedWorkflow, stagedEventArguments, resolveFileArguments, timeoutMilliseconds };
 if (require.main === module) main().then(code => { process.exitCode = code; }).catch(error => { console.error(error.message); process.exitCode = 1; });
