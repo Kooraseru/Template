@@ -244,7 +244,8 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	jobs.report = {
 		environment = if reportEnvironment then { name = reportEnvironment } else nil,
 		name = `{stage} result`,
-		permissions = { contents = "read", actions = "read", checks = "write" },
+		permissions = if hostedPush then { contents = "read", actions = "read", checks = "write" }
+			else { contents = "read", actions = "read" },
 		env = { CI_COMPONENT = "response", CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_EXECUTION_PREFIX = configuration.branchPrefix, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
 		["runs-on"] = "ubuntu-latest",
 		needs = if #jobIds > 0 then jobIds else nil,
