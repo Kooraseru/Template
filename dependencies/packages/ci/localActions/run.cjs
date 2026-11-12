@@ -29,7 +29,7 @@ function options(args) {
 		if (values.has(arg)) index++;
 	}
 	operation ??= fileOperation ?? payloadOperation ?? (event === "push" ? "build" : "validation");
-	if (!["validation", "build", "readiness"].includes(operation)) throw new Error("Unknown CI operation: " + operation);
+	if (!Object.hasOwn(require(path.join(root, "ci/bootstrap/routes.cjs")).readConfig().operations, operation)) throw new Error("Unknown CI operation: " + operation);
 	if (event === "pull_request" && operation !== "validation") throw new Error("Pull requests permit Validation only");
 	return { informational, operation, event: event || "workflow_dispatch", args: event ? args : ["workflow_dispatch", ...args] };
 }
@@ -60,7 +60,11 @@ function timeoutMilliseconds(environment = process.env) {
 // Adapt the isolated checkout for act without changing GitHub's workflow.
 function prepareStagedWorkflow(file, runId) {
 	const source = fs.readFileSync(file, "utf8");
-	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) return false;
+	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) {
+		if (!/^  resolve:\r?\n    name: Resolve CI Operation$/m.test(source)) return false;
+		fs.writeFileSync(file, source.replaceAll("actions/upload-artifact@v7", "actions/upload-artifact@v4"));
+		return false;
+	}
 	const compatible = source
 		.replace(/^    environment:\r?\n      name: (ci-(?:projects|rulesets|reporting))\r?\n      deployment: false$/gm,
 			"    environment: $1")
@@ -135,7 +139,12 @@ async function main(args = process.argv.slice(2)) {
 		fs.copyFileSync(path.join(worktree, ".vscode/config/act/actrc"), path.join(worktree, ".actrc"));
 		execFileSync("git", ["add", "-A"], { cwd: worktree, windowsHide: true, stdio: "pipe" });
 		const staged = prepareStagedWorkflow(path.join(worktree, ".github/workflows/ci.yml"), runId);
-		if (staged) {
+		const { readConfig, resolve } = require(path.join(root, "ci/bootstrap/routes.cjs"));
+		const route = resolve(readConfig(), {
+			GITHUB_EVENT_NAME: selected.event, GITHUB_REF: "refs/heads/source", ACT: "true",
+			CI_REQUESTED_OPERATION: selected.operation, CI_REQUESTED_PUBLISH: "true",
+		});
+		if (staged || route.mode === "readonly") {
 			failureStage = "validation";
 			record.stages.start = "not required";
 			record.stages[selected.operation] = "running";
