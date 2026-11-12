@@ -112,6 +112,10 @@ node dependencies/packages/ci/localActions/run.cjs --input operation=build
 node dependencies/packages/ci/localActions/run.cjs --input operation=readiness
 ```
 
+Each local `act` stage has a 30-minute timeout to prevent indefinite hangs. Set `CI_LOCAL_TIMEOUT_MINUTES=60` (1–240) before invoking the launcher if your initial dependency/image setup needs longer. The launcher allocates the artifact server path and port separately for each run; do not pin them in `.actrc`. Timed-out and failed stages preserve their logs and failure status under `build/run/<run-id>/` and `.workspace/ci/runs/`.
+
+Manual hosted Build executes build tasks only. Publish is generated only for eligible hosted pushes to the source branch; local runs never publish. The required PR `validate` job remains read-only. Test publication against a disposable repository with deliberately scoped credentials before using a production target.
+
 The default is `workflow_dispatch` with `operation=validation`. Explicit events, `--input operation=...`, dotenv input files, and event payloads are honored. Local Build automatically runs the generated controller and reusable Build workflow in an isolated checkout, then exports verified ordinary files. Publish is omitted locally. The launcher suppresses ambient GitHub-token discovery and default secret-file loading for local execution. Readiness needs explicit read authorization; no publication is performed as verification.
 
 Current compiled outputs live under `build/artifacts/`; generated products stay under `build/github/`. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.

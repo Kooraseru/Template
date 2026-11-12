@@ -33,11 +33,35 @@ function options(args) {
 	if (event === "pull_request" && operation !== "validation") throw new Error("Pull requests permit Validation only");
 	return { informational, operation, event: event || "workflow_dispatch", args: event ? args : ["workflow_dispatch", ...args] };
 }
+// File arguments must remain accessible when act runs from the isolated checkout.
+const FILE_ARGUMENTS = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
+function resolveFileArguments(args, directory = root) {
+	const result = [...args];
+	for (let index = 0; index < result.length; index++) {
+		const argument = result[index], separator = argument.indexOf("=");
+		const flag = separator === -1 ? argument : argument.slice(0, separator);
+		if (!FILE_ARGUMENTS.has(flag)) continue;
+		if (separator !== -1) {
+			const value = argument.slice(separator + 1);
+			if (value) result[index] = flag + "=" + path.resolve(directory, value);
+		} else {
+			if (result[index + 1]) result[index + 1] = path.resolve(directory, result[index + 1]);
+			index++;
+		}
+	}
+	return result;
+}
+function timeoutMilliseconds(environment = process.env) {
+	const minutes = environment.CI_LOCAL_TIMEOUT_MINUTES ?? "30";
+	if (!/^[1-9][0-9]*$/.test(minutes) || Number(minutes) > 240) throw new Error("CI_LOCAL_TIMEOUT_MINUTES must be an integer from 1 to 240");
+	return Number(minutes) * 60_000;
+}
 function main(args = process.argv.slice(2)) {
 	const selected = options(args);
 	const check = spawnSync("act", ["--version"], { cwd: root, encoding: "utf8", windowsHide: true });
 	if (check.error) throw new Error("act is unavailable on PATH. Install act and restart the terminal/editor environment.");
 	if (selected.informational) return spawnSync("act", selected.args, { cwd: root, stdio: "inherit", windowsHide: true }).status ?? 1;
+	const actTimeout = timeoutMilliseconds();
 	if (!fs.existsSync(path.join(root, ".actrc"))) throw new Error("Run workspace dependency setup to generate .actrc");
 	const runId = crypto.randomUUID(), runRoot = artifacts.target(root, "build/run/" + runId);
 	const source = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true }).trim();
@@ -48,9 +72,12 @@ function main(args = process.argv.slice(2)) {
 	function publish() { fs.writeFileSync(file + ".tmp", JSON.stringify(record)); fs.renameSync(file + ".tmp", file); }
 	function execute(argv, cwd, log) {
 		const descriptor = fs.openSync(path.join(runRoot, log), "w");
-		const result = spawnSync("act", argv, { cwd, windowsHide: true, stdio: ["ignore", descriptor, descriptor], env: { ...process.env, CI_LOCAL_RUN_ID: runId } });
-		fs.closeSync(descriptor);
-		if (result.error || result.status !== 0) throw new Error(result.error?.message || `act exited with status ${result.status}; see ${record.runDirectory}/${log}`);
+		let result;
+		try {
+			result = spawnSync("act", argv, { cwd, windowsHide: true, stdio: ["ignore", descriptor, descriptor], timeout: actTimeout, env: { ...process.env, CI_LOCAL_RUN_ID: runId } });
+		} finally { fs.closeSync(descriptor); }
+		if (result.error?.code === "ETIMEDOUT") throw new Error(`act exceeded the ${actTimeout / 60_000}-minute limit; see ${record.runDirectory}/${log}`);
+		if (result.error || result.status !== 0) throw new Error(result.error?.message || `act exited with status ${result.status}${result.signal ? " (signal " + result.signal + ")" : ""}; see ${record.runDirectory}/${log}`);
 	}
 	const transport = path.join(runRoot, "transport");
 	const port = execFileSync(process.execPath, ["-e", "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"], { encoding: "utf8", windowsHide: true }).trim();
@@ -70,9 +97,7 @@ function main(args = process.argv.slice(2)) {
 		for (const [name, bytes] of snapshot) { const file = artifacts.target(worktree, name); if (bytes === null) fs.rmSync(file, { force: true }); else { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes); } }
 		fs.copyFileSync(path.join(worktree, ".vscode/config/act/actrc"), path.join(worktree, ".actrc"));
 		execFileSync("git", ["add", "-A"], { cwd: worktree, windowsHide: true, stdio: "pipe" });
-		const startArgs = [...selected.args];
-		const files = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
-		for (let i = 0; i < startArgs.length; i++) if (files.has(startArgs[i])) { if (startArgs[i + 1]) startArgs[i + 1] = path.resolve(root, startArgs[i + 1]); i++; }
+		const startArgs = resolveFileArguments(selected.args);
 		execute([...startArgs, ...runtimeArgs], worktree, "start.log");
 		record.stages.start = "passed";
 		if (selected.operation !== "readiness") {
@@ -84,7 +109,7 @@ function main(args = process.argv.slice(2)) {
 			// Preserve the caller's platform/offline/container flags. Event, input and workflow selection belong to Start.
 			const executionArgs = [];
 			const excluded = new Set(["-W", "--workflows", "--input", "--input-file", "-e", "--eventpath", "-j", "--job", "--artifact-server-path", "--artifact-server-port"]);
-			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
+			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input(?:-file)?|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
 			execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			artifacts.receiveDiagnostics(runRoot);
@@ -105,12 +130,14 @@ function main(args = process.argv.slice(2)) {
 	} finally {
 		if (worktree) {
 			const checked = artifacts.target(root, record.runDirectory + "/worktree");
-			if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
-			else fs.rmSync(checked, { recursive: true, force: true });
+			try {
+				if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
+				else fs.rmSync(checked, { recursive: true, force: true });
+			} catch (error) { record.cleanup = "Isolated checkout could not be removed: " + error.message.slice(0, 300); }
 		}
 		record.finishedAt = new Date().toISOString(); publish();
 	}
 	return record.exitCode;
 }
-module.exports = { options, main };
+module.exports = { options, resolveFileArguments, timeoutMilliseconds, main };
 if (require.main === module) { try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 1; } }

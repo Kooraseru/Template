@@ -40,3 +40,42 @@ test("dotenv input files and event payload operation are respected", t => {
 	const input = path.join(temporary, "inputs"), event = path.join(temporary, "event.json"); fs.writeFileSync(input, "# inputs\noperation='build'\n"); fs.writeFileSync(event, JSON.stringify({ inputs: { operation: "readiness" } }));
 	assert.equal(options(["--input-file", input]).operation, "build"); assert.equal(options(["--eventpath", event]).operation, "readiness"); assert.equal(options(["--input-file", input, "--input", "operation=validation"]).operation, "validation");
 });
+
+
+test("local file arguments resolve against the repository before entering the isolated checkout", () => {
+	const { resolveFileArguments } = require("./run.cjs");
+	const directory = path.join(os.tmpdir(), "local-actions-options");
+	assert.deepEqual(resolveFileArguments(["--input-file", "inputs.env", "--eventpath=event.json", "--secret-file=secrets.env", "-e", "payload.json", "--var-file", "", "push"], directory), [
+		"--input-file", path.resolve(directory, "inputs.env"), "--eventpath=" + path.resolve(directory, "event.json"),
+		"--secret-file=" + path.resolve(directory, "secrets.env"), "-e", path.resolve(directory, "payload.json"), "--var-file", "", "push",
+	]);
+});
+
+test("local act stages have a finite configurable timeout", () => {
+	const { timeoutMilliseconds } = require("./run.cjs");
+	assert.equal(timeoutMilliseconds({}), 30 * 60_000);
+	assert.equal(timeoutMilliseconds({ CI_LOCAL_TIMEOUT_MINUTES: "45" }), 45 * 60_000);
+	for (const value of ["0", "-1", "abc", "241", "1.5"]) assert.throws(() => timeoutMilliseconds({ CI_LOCAL_TIMEOUT_MINUTES: value }), /1 to 240/);
+});
+
+test("actrc does not pin a stale artifact server shared across runs", () => {
+	const configuration = fs.readFileSync(path.join(root, ".vscode/config/act/actrc"), "utf8");
+	assert.doesNotMatch(configuration, /--artifact-server-(?:path|port)/);
+	const launcher = fs.readFileSync(path.join(root, "dependencies/packages/ci/localActions/run.cjs"), "utf8");
+	assert.match(launcher, /"--artifact-server-path", transport/);
+});
+
+test("a failing component command propagates its exit code and retains the stage log", { skip: process.platform === "win32" }, t => {
+	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "ci-failing-command-"));
+	const runId = "forced-failure-" + process.pid + "-" + Date.now();
+	const runDirectory = path.join(root, "build/run", runId);
+	t.after(() => { fs.rmSync(temporary, { recursive: true, force: true }); fs.rmSync(runDirectory, { recursive: true, force: true }); });
+	fs.writeFileSync(path.join(temporary, "node"), "#!/bin/sh\nprintf 'intentional failure\\n'\nexit 42\n", { mode: 0o755 });
+	const result = spawnSync("bash", ["ci/github/workflows/run-logged.sh", "build", "forced-failure"], {
+		cwd: root, encoding: "utf8", timeout: 20_000, windowsHide: true,
+		env: { ...process.env, PATH: temporary + path.delimiter + (process.env.PATH || ""), CI_RUN_ID: runId },
+	});
+	assert.ifError(result.error);
+	assert.equal(result.status, 42, result.stdout + result.stderr);
+	assert.match(fs.readFileSync(path.join(runDirectory, "build/logs/forced-failure.log"), "utf8"), /intentional failure/);
+});
