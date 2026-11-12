@@ -181,9 +181,10 @@ async function main(args = process.argv.slice(2)) {
 		record.state = "failed"; record.exitCode = 1; record.failureStage = failureStage; record.stages[failureStage] = "failed"; record.failure = error.message.slice(0, 1000); console.error(record.failure);
 	} finally {
 		if (worktree) {
-			const checked = artifacts.target(root, record.runDirectory + "/worktree");
-			if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
-			else {
+			try {
+				const checked = artifacts.target(root, record.runDirectory + "/worktree");
+				if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
+				else {
 				// A failed run must not block the VS Code task on a large Windows worktree teardown.
 				const removal = spawnSync(process.execPath, [
 					"-e", "require('node:fs').rmSync(process.argv[1],{recursive:true,force:true,maxRetries:2,retryDelay:100})", checked,
@@ -192,6 +193,10 @@ async function main(args = process.argv.slice(2)) {
 					record.cleanup = "Worktree retained after bounded cleanup: " + checked;
 					console.error(record.cleanup);
 				}
+				}
+			} catch (error) {
+				record.cleanup = "Isolated checkout cleanup failed: " + error.message.slice(0, 300);
+				console.error(record.cleanup);
 			}
 		}
 		record.finishedAt = new Date().toISOString(); publish();
