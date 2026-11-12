@@ -261,7 +261,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 			} else {
 				name = "Receive component response fragments", id = "responses",
 				env = { GH_TOKEN = "${{ github.token }}" },
-				run = `mkdir -p "{stageRoot}/responses"; gh run download "$GITHUB_RUN_ID" --pattern "response-{stage}-*" --dir "{stageRoot}/responses"`,
+				run = `set -euo pipefail\nmkdir -p "{stageRoot}/responses"\ngh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" --jq \'.artifacts[] | select(.name | startswith("response-{stage}-")) | .name\' | while IFS= read -r name; do\n  temporary="$(mktemp -d)"\n  gh run download "$GITHUB_RUN_ID" --name "$name" --dir "$temporary"\n  cp -a "$temporary"/. "{stageRoot}/responses/"\n  rm -rf "$temporary"\ndone`,
 			},
 			{
 				name = "Report component results",
