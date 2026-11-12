@@ -48,6 +48,7 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 	for (const [name, item] of Object.entries(checks)) {
 		if (!NAME.test(name)) throw new Error("Invalid check identity: " + name);
 		object(item, "check " + name);
+		if (item.group !== undefined && !["review", "audit"].includes(item.group)) throw new Error("Invalid check group: " + name);
 		if (!Array.isArray(item.command) || !item.command.length ||
 			item.command.some(arg => typeof arg !== "string" || !arg || /[\r\n\0]/.test(arg))) {
 			throw new Error("Invalid check command: " + name);
@@ -100,7 +101,9 @@ function resolve(config, env = process.env) {
 			throw new Error("Manual publication requires explicit publish=true");
 		}
 	}
-	return { event, name: requested, ...operation, bootstrap: config.bootstrap };
+	const groups = operation.mode === "readonly" ? operation.checks.map(name => config.checks[name].group || "review") : [];
+	return { event, name: requested, ...operation, bootstrap: config.bootstrap,
+		reviewChecks: groups.includes("review"), auditChecks: groups.includes("audit") };
 }
 
 function appendOutputs(route, file) {
@@ -115,6 +118,8 @@ function appendOutputs(route, file) {
 		plan: route.plan || "validation",
 		publication: route.publication ? "true" : "false",
 		branch_prefix: route.branchPrefix || "",
+		review_checks: route.reviewChecks ? "true" : "false",
+		audit_checks: route.auditChecks ? "true" : "false",
 	};
 	for (const [name, value] of Object.entries(output)) {
 		if (String(value).includes("\n") || String(value).includes("\r")) throw new Error("Unsafe CI output");
@@ -124,12 +129,16 @@ function appendOutputs(route, file) {
 
 function runReadonly(config, route, workspace = ROOT, env = process.env) {
 	if (route.mode !== "readonly") throw new Error("Only unprivileged operations may run inside the launcher");
+	const group = env.CI_CHECK_GROUP || "review";
+	if (!["review", "audit"].includes(group)) throw new Error("Invalid read-only check group");
+	const selected = route.checks.filter(name => (config.checks[name].group || "review") === group);
+	if (!selected.length) throw new Error("No checks configured for group " + group);
 	const childEnv = { ...env, CI_EVENT: "pull_request", CI_OPERATION: "validation" };
 	for (const key of Object.keys(childEnv)) {
 		if (key === "GH_TOKEN" || key === "GITHUB_TOKEN" || key.startsWith("CI_CREDENTIAL_") ||
 			key.startsWith("ACTIONS_ID_TOKEN_REQUEST_") || key === "CI_SECRETS") delete childEnv[key];
 	}
-	for (const name of route.checks) {
+	for (const name of selected) {
 		const check = config.checks[name];
 		console.log("::group::CI check: " + name);
 		const result = spawnSync(check.command[0], check.command.slice(1), {

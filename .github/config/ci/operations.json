@@ -36,6 +36,14 @@
         "dependencies/packages/core/dependencyLoader/index.ts"
       ],
       "timeoutSeconds": 300
+    },
+    "rules-audit": {
+      "group": "audit",
+      "command": [
+        "node",
+        "ci/rules-audit.cjs"
+      ],
+      "timeoutSeconds": 750
     }
   },
   "operations": {
@@ -48,6 +56,7 @@
         "setup",
         "workflows",
         "code-review",
+        "rules-audit",
         "build-tests"
       ]
     },
@@ -60,6 +69,7 @@
         "setup",
         "workflows",
         "code-review",
+        "rules-audit",
         "build-tests"
       ]
     },
@@ -71,7 +81,8 @@
       "checks": [
         "setup",
         "workflows",
-        "code-review"
+        "code-review",
+        "rules-audit"
       ]
     },
     "build": {
@@ -92,6 +103,15 @@
       "plan": "build",
       "publication": true,
       "branchPrefix": "ci/run-"
+    },
+    "rules-audit": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "checks": [
+        "rules-audit"
+      ]
     }
   }
 }

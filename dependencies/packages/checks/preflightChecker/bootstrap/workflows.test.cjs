@@ -30,6 +30,7 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
 	assert.match(workflow, /^  resolve:$/m);
 	assert.match(workflow, /^  review:$/m);
+	assert.match(workflow, /^  audit:$/m);
 	assert.match(workflow, /^  bootstrap:$/m);
 	assert.match(workflow, /^  validate:$/m);
 	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
@@ -38,6 +39,8 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
 	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
 	assert.equal(config.triggers.pull_request, "review");
+	assert.equal(config.checks["rules-audit"].group, "audit");
+	assert.ok(config.operations.review.checks.includes("rules-audit"));
 	assert.equal(config.triggers.push, "publish");
 });
 test("optional administration components use their current skip policies", t => {

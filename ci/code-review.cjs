@@ -81,8 +81,8 @@ function annotation(item) {
 		"::" + escapeCommand(item.message) + "\n");
 }
 
-function execute(name, args, workspace = root) {
-	process.stdout.write("Code review: running " + name + "\n");
+function execute(name, args, workspace = root, label = "Code review") {
+	process.stdout.write(label + ": running " + name + "\n");
 	const result = spawnSync(process.execPath, args, { cwd: workspace, encoding: "utf8", timeout: 150000, maxBuffer: 32 * 1024 * 1024 });
 	const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
 	const findings = diagnosticOutput(output, workspace);
@@ -109,13 +109,13 @@ function summary(findings, checked, base) {
 		"| " + source.replaceAll("|", "\\|") + " | " + counts.error + " | " + counts.warning + " | " + counts.information + " |");
 	return [
 		"## Code review", "",
-		"Checked TypeScript, Luau, CI plans, and repository rules without VS Code.",
+		"Checked TypeScript, Luau, and CI plans without VS Code. Repository Rules have a separate audit.",
 		"Scope for blocking findings: " + (base ? "changed files in this PR" : "whole repository"),
 		"Full repository: " + count("error") + " errors, " + count("warning") + " warnings, " + count("information") + " informational.",
 		"Blocking errors: " + checked.blocking.length + ". Inline annotations: " + checked.annotations.length +
 			" (" + checked.omitted + " further scoped findings omitted from annotations).",
 		"", "| Checker | Errors | Warnings | Information |", "|---|---:|---:|---:|", ...rows, "",
-		"Download the code-review-findings artifact for every diagnostic. Expected rule-fixture findings are excluded.", "",
+		"Download the code-review-findings artifact for every diagnostic. Repository Rules findings are reported by Rules Audit.", "",
 	].join("\n");
 }
 
@@ -125,10 +125,7 @@ function main() {
 	let changed = null, baseFailure = null;
 	try { changed = changedFiles(process.env.GITHUB_BASE_REF); }
 	catch (error) { baseFailure = String(error.message || error); }
-	const findings = [
-		...execute("Preflight", ["dependencies/packages/checks/preflightChecker/index.ts", "--ci"]),
-		...execute("Rules", ["dependencies/packages/checks/preflightChecker/index.ts", "--rules"]),
-	];
+	const findings = execute("Preflight", ["dependencies/packages/checks/preflightChecker/index.ts", "--ci"]);
 	if (baseFailure) findings.push({ file: "ci/code-review.cjs", line: 1, column: 1, severity: "error",
 		source: "Code review", message: baseFailure, infrastructure: true });
 	const result = review(findings, changed);
@@ -144,5 +141,5 @@ function main() {
 	process.exitCode = result.blocking.length ? 1 : 0;
 }
 
-module.exports = { workspacePath, diagnosticOutput, changedFiles, review, escapeCommand, summary, main };
+module.exports = { workspacePath, diagnosticOutput, changedFiles, review, escapeCommand, summary, execute, annotation, main };
 if (require.main === module) main();

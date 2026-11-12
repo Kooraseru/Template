@@ -51,6 +51,17 @@ test("read-only route parsing does not require managed credential packages", () 
 	assert.equal(readonly.bootstrap.appIdVariable, undefined);
 });
 
+test("Rules audit is routed separately without privileged access", () => {
+	const route = resolve(config, { GITHUB_EVENT_NAME: "pull_request" });
+	assert.equal(route.auditChecks, true);
+	assert.equal(route.reviewChecks, true);
+	assert.equal(config.checks["rules-audit"].group, "audit");
+	assert.ok(route.checks.includes("rules-audit"));
+	const isolated = resolve(config, { GITHUB_EVENT_NAME: "workflow_dispatch", CI_REQUESTED_OPERATION: "rules-audit" });
+	assert.equal(isolated.auditChecks, true);
+	assert.equal(isolated.reviewChecks, false);
+	assert.throws(() => runReadonly(config, route, undefined, { CI_CHECK_GROUP: "unknown" }), /Invalid read-only check group/);
+});
 test("read-only executor will not run a generated operation", () => {
 	assert.throws(() => runReadonly(config, resolve(config, trusted)), /Only unprivileged/);
 });
