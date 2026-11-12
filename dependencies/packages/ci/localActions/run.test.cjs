@@ -65,7 +65,8 @@ test("staged CI executes directly and adapts only the local workflow copy", t =>
 	assert.match(actual, /environment: ci-reporting/);
 	assert.doesNotMatch(actual, /deployment: false/);
 	assert.match(actual, /actions\/upload-artifact@v4/);
-	assert.match(actual, /actions\/download-artifact@v4/);
+	assert.match(actual, /gh run download "\$GITHUB_RUN_ID" --name ci-build-bundles/);
+	assert.doesNotMatch(actual, /actions\/download-artifact@/);
 	assert.match(actual, /build\/run\/local-fixture\/transport\/bundles/);
 	assert.match(fixture, /deployment: false/);
 	assert.equal(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"), source);
