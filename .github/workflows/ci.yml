@@ -86,3 +86,49 @@ jobs:
           test "$BUILD_RESULT" = success
           test "$TEST_RESULT" = success
 
+  publish-general:
+    name: Publish Project Artifacts
+    if: ${{ github.ref == 'refs/heads/source' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) }}
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: write
+      actions: read
+      id-token: write
+    env:
+      CI_EVENT: push
+      CI_OPERATION: build
+      CI_GRAPH_RUN: "true"
+      CI_PHASE: publish
+      CI_STAGE_MODE: fixed
+      CI_PROFILE: source-ci
+      CI_PUBLISH_GROUP: general
+      CI_SOURCE_SHA: ${{ github.sha }}
+      CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Receive Verified Build Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: ci-build-bundles
+          path: build/run/${{ env.CI_RUN_ID }}/transport/bundles/
+      - name: Execute Publication Components
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --stage publish
+      - name: Export Publication Results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-publish-general
+          path: build/run/${{ env.CI_RUN_ID }}/publish/general/
+          if-no-files-found: ignore
+          retention-days: 3
+
