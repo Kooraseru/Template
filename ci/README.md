@@ -1,23 +1,20 @@
 # CI implementation
 
-`.github/workflows/ci.yml` runs Build, Tests, the required `validate` check, and isolated publication jobs on trusted source events. `.github/workflows/code-review.yml` independently runs read-only, headless source review on pull requests and manual dispatches. Legacy generated workflow execution remains available in the underlying Luau modules only.
+One permanently authored workflow, `.github/workflows/ci.yml`, acts solely as the bootstrap and required status gate. It does not enumerate component publication jobs or embed fixed credential names.
 
-Edit CI behavior and component implementations under `ci/`. Edit publication switches in `.github/config/targets.toml`. Scheduler policy, reports, and the credential catalog live under `.github/config/`. GitHub API integrations are grouped under `ci/github/`. Native GitHub job adapters are keyed by component identity under `.github/config/jobs/`. Draft adapters are kept under `jobs/drafts/`.
+`.github/config/ci/operations.json` selects an operation for each event and declares read-only checks, generated execution policies and operation-specific branch prefixes. `.github/config/credentials.json` owns capability roles, protected-environment bindings, and secret or variable aliases. Adding an operation or component should not require modifying `ci.yml`.
 
-Validation uses the `validate` profile. Source Build prepares products; Publish owns every external mutation under existing credential/environment gates. Readiness uses the read-only `remote-read` profile on source. Preflight resolves the same discovered graph without hosted credentials. Fork/PR Validation remains an inline read-only graph, since creating an execution branch would require publication authority. Hosted Bootstrap stops after successful dispatch; Pipeline owns the eventual execution result. Failed delegation never falls back to privileged inline execution.
+Pull requests run the configured `review` checks in an unprivileged CI job: actionlint, Code Review, and the full Build/test suite. Forked or untrusted PR code cannot request the privileged bootstrap. Trusted `source` pushes run a guarded bootstrap that generates `pipeline.yml` and its component jobs on a temporary branch. It uses an installation App or explicitly configured bootstrap token, scopes job permissions to each task, then waits until the exact generated run completes before the permanent `validate` check can pass.
 
-The commented `credentials.json` catalog defines runtime sources, verifiers, roles, and profiles. GitHub Actions discovers GitHub PATs by token format without a naming convention. Classic scopes are inspected once per job. A read-only repository probe can establish visibility. GitHub still decides whether the actual write is allowed. Existing named bindings remain available for explicitly configured credentials and migration fallbacks.
+The authored workflow is the only YAML stored permanently under `.github/workflows/`. Generated YAML is temporary execution output. Generated publication branch prefixes must be permitted by the protected GitHub environments; publication currently defaults to the existing `ci/run-` prefix, while other operations may choose their own. Environment protections are not bypassed. All bootstrap credential values stay in GitHub, not JSON or generated Git.
 
-The source ruleset requires the `validate` job from **CI**.
+On GitHub, `workflow_dispatch` accepts an operation name from the JSON catalog and a separate explicit `publish=true` approval for manual publication. The default is read-only `validation`. The `validate` job remains the required status check regardless of operation. Local `act` runs use the same routing and create generated workflows only in a disposable checkout – never by pushing a remote branch.
 
-### Credential providers
+The underlying component planner, archived native adapters and Luau execution engine remain under `ci/`. `ci/bootstrap/routes.cjs` owns safe routing, and `ci/github/resources/branches/branchRun.luau` owns generated ref lifecycle, observation and cleanup. The previous hard-coded staged Publish jobs and standalone Code Review workflow have been removed.
 
-Set `profiles.source-ci.sources` to the ordered source IDs to use. Select at most one hosted transport. The default GitHub-context source passes the context only to the source gate and credential-selection steps that need it. The selector forwards only the selected values to component processes. A project can opt into listed discovery with `discovery: "listed"` and a `secrets` array of GitHub key names.
+**Credentials:** Job permissions and environment admission are determined by GitHub before code runs. Only the stable bootstrap transport has fixed fields; the alias names come from the JSON catalog. Component-specific bindings and roles are compiled dynamically for trusted generated jobs. A new role cannot elevate the bootstrap itself, and read-only PR checks do not receive any publication credentials.
 
-To use a broker, configure an `oidc` source with its HTTPS `endpoint` and `audience`, then reference it from the profile. The broker receives a GitHub identity token in the Authorization header and a JSON body with `profile`, `roles`, and `requests`. Each request carries the role, service, operation, target, target list, and requirements. Return named credentials as strings in `credentials`. For capability credentials, return `{ "value": "...", "grants": { "operation": "...", "targets": ["..."], "repository": {}, "organization": {}, "classic": [] } }` keyed by role. A legacy string response can still qualify through the verifier. Configure broker policy to validate signed GitHub claims and authorize each requested operation and target independently. Bootstrap runs on protected source and generated jobs run on temporary CI branches.
-
-Command sources and verifiers receive JSON on stdin and return JSON on stdout. A source receives `{profile, requests}` and returns an array of candidates with `value`, optional `role`, and optional provider metadata. A verifier receives `{request, candidate}` and returns `{state, missing?, extraPermissions?, kind?, targetAccess?}`. Custom verifier roles declare `candidateSources` to opt into specific sources. Adapters run without the ambient workflow credential context. Keep all values and provider responses out of logs.
-
+The source ruleset should require the `validate` check from **CI**. If a legacy rule requires the standalone Code Review workflow, update that rule after merging; the Code Review job now belongs to CI.
 
 ## VS Code setup
 
@@ -31,11 +28,11 @@ Run the complete contributor validation path with one command from the repositor
 bash ci/run.sh
 ```
 
-The launcher uses the existing dependency installer, runs all eligible read-only Build components through the Luau planner, then runs the repository's Node test suites. It does not require GitHub credentials or run publication components. GitHub runs the same Luau Build entry and the same `ci/test.sh` test entry as separate jobs.
+Run the normal unprivileged contributor path with `bash ci/run.sh`. It installs dependencies, executes the read-only Build component graph, then runs the repository test suites. Hosted review invokes these same checks and headless Preflight/Rules through the declared read-only route.
 
-`.github/workflows/ci.yml` now owns Build, Test, the required `validate` check, and Publish stages. Publication is available only on trusted `source` pushes or an explicitly publishing manual dispatch. Components are executed by Luau within each stage; they are not rendered as temporary branch workflows. Verified component archives and manifests are transferred between jobs. GitHub-specific credential environments remain isolated in separate publication jobs.
+On a trusted source push, the launcher compiles the generated job graph instead of performing publication inline. Component output archives remain integrity-checked, credential environments stay isolated by job, and the required CI status reflects the *completed* generated run. Local GitHub Actions uses an isolated checkout and adapts artifact actions to v4 within that checkout only.
 
-The previous generated Pipeline implementation remains temporarily in the repository for compatibility and regression tests, but is not used by the authored GitHub workflow. GitHub Local Actions runs fixed CI directly through `act`; its isolated checkout adapts unsupported environment and artifact-action syntax without changing the hosted workflow. Do not assume that legacy `act` paths reproduce the staged workflow. The old source/delegation documentation below refers to the retained legacy entry point.
+Local `act` read-only routes execute directly and do not require remote delegation; generated routes render an ephemeral Pipeline and execute it through the local artifact transport. Neither path changes the authored workflow file.
 
 ## Dependencies and local checks
 
@@ -128,7 +125,7 @@ node dependencies/packages/ci/localActions/run.cjs --input operation=readiness
 
 Local `act` stages default to a 30-minute timeout, adjustable with `CI_LOCAL_TIMEOUT_MINUTES` (1–240). The launcher allocates a run-specific artifact server path and port, so do not pin either in `.actrc`. Failed runs preserve their stage logs under `build/run/<id>/` and invocation records in `.workspace/ci/runs/`.
 
-On hosted GitHub Actions, manual dispatch defaults to `publish=false`: Build, Tests, and Validation run without external publication. Publication can be explicitly requested on a trusted source dispatch; source pushes retain the existing publication policy after a successful `validate` gate. Pull requests cannot publish. Fixed-stage publication requires `CI_STAGE_MODE=fixed` and validates the exact source ref and event; legacy generated-branch execution retains its existing checks.
+Manual dispatch defaults to read-only `validation`. Select the `publish` operation and approve `publish=true` to request source publication. Source pushes follow the configured `publish` route and use the generated branch, never the fixed-stage credential groups. The sample release and package conflict policies default to `skip`. Pages and attestation native integrations remain disabled until they are implemented.
 
 The sample release and package conflict policies default to `skip`, not `replace`. To replace a tag, release, or package version, opt in explicitly after reviewing the generated outputs. Publication rehearsals route both GitHub API requests and release-asset uploads to the local test server. Pages and attestation components currently prepare inputs only; the fixed hosted CI workflow does not yet deploy Pages or sign attestations. Their sample settings are therefore disabled and treated as expected skips until native deployment/signing jobs are implemented and verified.
 
