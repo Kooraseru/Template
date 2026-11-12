@@ -1,0 +1,6 @@
+steps = []
+
+[permissions]
+contents = "read"
+actions = "read"
+issues = "write"

@@ -244,7 +244,7 @@ function Workflow.Render(tasks: { Contract.Task }, sourceSha: string, branch: st
 	jobs.report = {
 		environment = if reportEnvironment then { name = reportEnvironment } else nil,
 		name = `{stage} result`,
-		permissions = { contents = "read", actions = "read" },
+		permissions = { contents = "read", actions = "read", checks = "write" },
 		env = { CI_COMPONENT = "response", CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_EXECUTION_PREFIX = configuration.branchPrefix, CI_RUN_ID = "${{ inputs.run-id }}", CI_OPERATION = Process.env.CI_OPERATION or "validation", CI_PHASE = stage },
 		["runs-on"] = "ubuntu-latest",
 		needs = if #jobIds > 0 then jobIds else nil,
@@ -319,7 +319,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 		and Process.env.CI_PUBLICATION_ENABLED ~= "false" then
 		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
 		jobs.publish = { name = "Publish", needs = { stage, "tests" }, uses = "./.github/workflows/publish.yml",
-			permissions = { contents = "write", actions = "read", ["id-token"] = "write" },
+			permissions = { contents = "write", issues = "write", checks = "write", actions = "read", ["id-token"] = "write" },
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } }
 		table.insert(needs, "publish")
 	end
