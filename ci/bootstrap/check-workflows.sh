@@ -10,3 +10,5 @@ echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive
 mkdir -p "$directory"
 tar -xzf "$archive" -C "$directory" actionlint
 "$directory/actionlint" -shellcheck= .github/workflows/*.yml
+node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/bootstrap/emitWorkflows.luau "$directory/generated"
+"$directory/actionlint" -shellcheck= "$directory"/generated/*.yml
