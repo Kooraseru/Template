@@ -16,16 +16,33 @@ Do not merge a documentation-only PR as though this implementation is complete.
 
 ```mermaid
 flowchart LR
-    R["Resolve Operation"] --> P["Check Permissions"] --> G["Generate Pipeline"] --> X["Run Pipeline"] --> C["Collect Results"] --> F["Cleanup"] --> V["Validate"]
+    S["Setup Dependencies"] --> R["Resolve Operation"] --> P["Check Permissions"] --> G["Generate Pipeline"] --> X["Run Pipeline"] --> C["Collect Results"] --> F["Cleanup"] --> V["Validate"]
 ```
 
 This is the only static job chain. Each box below is one full GitHub Actions job and owns its listed steps. *Run Pipeline is not Generate Pipeline.* Code Review, Rules Audit, Build, Tests and Publish are dynamic pipeline components, not permanent YAML jobs.
 
-### 1. Resolve Operation
+### 1. Setup Dependencies
+
+1. Checkout the triggering repository revision without persisted credentials.
+2. Initialize Node.js using the minimal bootstrap runtime available on the runner.
+3. Read and validate the common CI dependency manifests and lockfiles.
+4. Determine operating system and architecture; derive a reproducible dependency identity.
+5. Look for a trust-scoped cached toolchain matching the dependency identity.
+6. Download any missing dependencies using the existing managed dependency loader.
+7. Install and prepare the common CI toolchain and supporting CLIs.
+8. Verify integrity, expected versions and any mandatory bootstrap executables.
+9. Assemble an immutable dependency bundle for the current run; record its lockfile/toolchain digest.
+10. Publish the dependency bundle and the non-secret identifier consumed by later jobs.
+
+The first job prepares the **shared controller toolchain**, not every component's operation-specific dependencies: those can only be known after operation resolution and are prepared within the generated Pipeline. Each following job still checks out or retrieves its own workspace and must restore the verified bundle to its runner; sharing a GitHub Actions `needs` edge does not share installed files.
+
+The dependency artifact must not become a route for executing untrusted PR-controlled packages in an elevated environment. Separate trusted controller dependencies from untrusted PR execution dependencies, enforce provenance/digest checks, and deny cross-trust cache or artifact promotion.
+
+### 2. Resolve Operation
 
 1. Checkout the triggering repository revision (without persisted checkout credentials).
 2. Initialize Node.js/runtime toolchain.
-3. Download/install managed dependencies needed for operation resolution.
+3. Restore the verified, trust-scoped common dependency bundle produced by Setup Dependencies.
 4. Read and validate `.github/config/ci/operations.json`.
 5. Read the GitHub event and manually supplied operation inputs.
 6. Determine source ref, target ref, event identity and trust classification.
@@ -35,10 +52,10 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 10. Validate operation configuration and produce a non-secret, typed operation manifest.
 11. Upload/export that manifest and its digest for subsequent jobs.
 
-### 2. Check Permissions
+### 3. Check Permissions
 
 1. Checkout the trusted controller revision and load the operation manifest.
-2. Initialize Node.js and install the managed authorization/validation dependencies.
+2. Initialize Node.js and restore the verified, trust-scoped common authorization/validation toolchain.
 3. Load `.github/config/credentials.json` and its schema.
 4. Identify declared capabilities required by selected components and report writers.
 5. Identify eligible GitHub environments and permission boundaries for each capability.
@@ -51,10 +68,10 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 
 *Important:* actual GitHub secrets are exposed only inside the relevant job's declared environment. A broker can exchange an OIDC token, but OIDC itself is identity, not a GitHub API credential. GitHub Actions cannot dynamically enumerate all secret values; source discovery is bounded by declared bindings or a broker/provider contract.
 
-### 3. Generate Pipeline
+### 4. Generate Pipeline
 
 1. Checkout the relevant, policy-approved source revision.
-2. Initialize Node.js and download/install generator and validation dependencies.
+2. Initialize Node.js and restore the verified shared generator/validation toolchain.
 3. Retrieve the operation and authorization manifests; check integrity/digests.
 4. Discover enabled components from component contracts and `.github/config/ci/components.toml`.
 5. Include Code Review, Rules Audit, Build, Tests, Publish and any future operation-specific components using the *same* component contract and discovery mechanism.
@@ -68,10 +85,10 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 13. Export the immutable generated plan, workflow bundle, provenance and digest.
 14. Upload the bundle as an artifact; **do not launch it here**.
 
-### 4. Run Pipeline
+### 5. Run Pipeline
 
 1. Checkout the trusted controller and initialize Node.js.
-2. Install managed launcher/monitoring dependencies.
+2. Restore the verified managed launcher/monitoring toolchain.
 3. Download generated pipeline artifact and verify its digest/source identity.
 4. Load authorization plan and choose execution transport based on trust.
 5. For untrusted PRs, run a segregated, credential-free pipeline executor and report its full conclusion; do not push PR-authored generated workflow code via privileged credentials.
@@ -83,10 +100,10 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 11. Export run identifiers, conclusion, job status and execution artifact references; keep temporary resources available until cleanup.
 12. Never serialize credentials into generated branches, logs, job outputs or artifacts.
 
-### 5. Collect Results
+### 6. Collect Results
 
 1. Checkout the controller revision and initialize the reporting runtime.
-2. Install managed artifact/reporting dependencies.
+2. Restore the verified artifact/reporting toolchain.
 3. Read run identifiers and final execution status from Run Pipeline.
 4. Retrieve component diagnostics, logs, build outputs and response fragments.
 5. Verify artifact identities and handle missing, partial or timed-out results.
@@ -97,9 +114,9 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 10. Treat reporting unavailability as a *reporting* outcome, distinct from original execution status; apply the declared policy.
 11. Upload final response and related artifacts even when the execution failed.
 
-### 6. Cleanup
+### 7. Cleanup
 
-1. Checkout controller code and initialize cleanup dependencies.
+1. Checkout controller code, initialize Node.js and restore the verified cleanup toolchain.
 2. Read owned temporary resource manifest/run identity, even when prior jobs failed.
 3. Check resource ownership, ref, expected SHA and operation namespace before deletion.
 4. Remove owned generated execution branches where safe.
@@ -108,10 +125,10 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 7. Preserve failure evidence and logs when cleanup encounters an error.
 8. Export cleanup result without overwriting the prior pipeline result.
 
-### 7. Validate
+### 8. Validate
 
-1. Read the upstream job results via `needs`, plus operation/authorization/generation/launch/collection/cleanup outcome manifests.
-2. Verify operation resolution succeeded and the event was authorized.
+1. Read the upstream job results via `needs`, plus setup/operation/authorization/generation/launch/collection/cleanup outcome manifests.
+2. Verify dependency setup completed with a valid, trust-appropriate toolchain; verify operation resolution succeeded and the event was authorized.
 3. Verify permission planning and any required approvals completed.
 4. Verify pipeline generation was valid and the launched artifact matched the generated digest.
 5. Require completed pipeline execution or a strictly documented skip/deny outcome; dispatch is not success.
@@ -123,7 +140,7 @@ This is the only static job chain. Each box below is one full GitHub Actions job
 
 ## Strict chain and failure semantics
 
-GitHub jobs are separate runners; managed dependencies need reinstalling, verified cache restoration or explicit artifact transport in each job that uses them. The straight-line graph does **not** mean failing upstream jobs may silently skip the final stages. Collect Results, Cleanup and Validate require failure-aware conditional execution (for example `always()` with guarded inputs). Generate and Run must not execute an invalid plan.
+GitHub jobs are separate runners. Setup Dependencies prepares a common toolchain artifact, but each later job must explicitly restore and verify it; the initial installation is not implicitly shared. Operation-specific dependencies remain isolated to the generated Pipeline. The straight-line graph does **not** mean failing upstream jobs may silently skip the final stages. Collect Results, Cleanup and Validate require failure-aware conditional execution (for example `always()` with guarded inputs). Generate and Run must not execute an invalid plan.
 
 Any conditional route remains inside the job's generic executable. The workflow YAML must not grow separate `review`, `rules-audit`, `build`, `test`, or `publish` jobs.
 
@@ -147,20 +164,21 @@ Security invariant: untrusted PR-controlled code may never run in an environment
 
 ## Proposed migration sequence
 
-1. Add typed manifests and contract tests for the seven permanent job interfaces.
+1. Add typed dependency, operation, authorization, generation, run and outcome manifests and contract tests for the eight permanent job interfaces.
 2. Implement generic operation resolution, replacing the fixed review/audit check-group split.
 3. Create permission-planning and credential-source discovery with environment and OIDC integration; add missing-key and secret-forwarding regression tests.
 4. Migrate Code Review and Rules Audit into discoverable pipeline components.
 5. Split generated workflow compilation from remote/local pipeline execution.
 6. Normalize component report collection, check reporting and failure/skip propagation.
 7. Implement owned resource cleanup and a final aggregate `validate` gate.
-8. Replace the permanent `ci.yml` *once* with the minimal seven-job chain.
+8. Replace the permanent `ci.yml` *once* with the minimal eight-job chain, including explicit dependency bundle handoff.
 9. Verify untrusted PR isolation, local `act`, hosted PR checks, full graph execution, missing credentials, denied permissions, cancellations, partial failures and resource cleanup.
 10. Exercise privileged publication only in an explicitly safe trusted test before marking the PR ready.
 
 ## Acceptance criteria
 
-- [ ] Exactly one permanent authored workflow `.github/workflows/ci.yml`, with seven jobs in a static straight line.
+- [ ] Exactly one permanent authored workflow `.github/workflows/ci.yml`, with eight jobs in a static straight line.
+- [ ] Setup Dependencies builds and distributes a verified, trust-scoped common controller toolchain; downstream jobs restore it explicitly.
 - [ ] Adding an operation or component requires **zero** changes to the permanent YAML.
 - [ ] Independent Code Review and Rules Audit inside dynamically chosen pipeline graph.
 - [ ] Credential role/environment resolution without hardcoding token names into operations.
