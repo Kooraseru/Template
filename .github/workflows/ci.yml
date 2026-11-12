@@ -87,7 +87,7 @@ jobs:
   bootstrap:
     name: Start Generated CI
     needs: resolve
-    if: ${{ needs.resolve.outputs.mode == 'generated' }}
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.resolve.outputs.mode == 'generated' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
