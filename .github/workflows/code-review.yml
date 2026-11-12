@@ -33,6 +33,8 @@ jobs:
         run: node dependencies/packages/core/dependencyLoader/index.ts
       - name: Review source and repository rules
         run: node ci/code-review.cjs
+      - name: Verify read-only Build and repository test suites
+        run: bash ci/run.sh
       - name: Preserve full diagnostics
         if: always()
         uses: actions/upload-artifact@v7
