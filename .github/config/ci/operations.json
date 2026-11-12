@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "triggers": {
+    "push": "publish",
+    "pull_request": "review",
+    "workflow_dispatch": "validation"
+  },
+  "bootstrap": {
+    "environment": "ci-bootstrap",
+    "appIdVariable": "CI_APP_ID",
+    "appPrivateKeySecret": "CI_APP_PRIVATE_KEY",
+    "bootstrapTokenSecret": "CI_TOKEN"
+  },
+  "checks": {
+    "workflows": {
+      "command": [
+        "bash",
+        "ci/bootstrap/check-workflows.sh"
+      ],
+      "timeoutSeconds": 90
+    },
+    "code-review": {
+      "command": [
+        "node",
+        "ci/code-review.cjs"
+      ],
+      "timeoutSeconds": 240
+    },
+    "build-tests": {
+      "command": [
+        "bash",
+        "ci/run.sh"
+      ],
+      "timeoutSeconds": 1200
+    }
+  },
+  "operations": {
+    "review": {
+      "mode": "readonly",
+      "events": [
+        "pull_request"
+      ],
+      "checks": [
+        "workflows",
+        "code-review",
+        "build-tests"
+      ]
+    },
+    "validation": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "checks": [
+        "workflows",
+        "code-review",
+        "build-tests"
+      ]
+    },
+    "readiness": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "checks": [
+        "workflows",
+        "code-review"
+      ]
+    },
+    "build": {
+      "mode": "generated",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "plan": "build",
+      "publication": false,
+      "branchPrefix": "run/build-"
+    },
+    "publish": {
+      "mode": "generated",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "plan": "build",
+      "publication": true,
+      "branchPrefix": "run/publish-"
+    }
+  }
+}
