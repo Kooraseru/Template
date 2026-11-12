@@ -89,7 +89,8 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(publication, /configuration\.branchPrefix/);
 	assert.match(publication, /local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
 	const runtime = fs.readFileSync(path.join(root, "ci/github/resources/branches/branchRun.luau"), "utf8");
-	assert.match(runtime, /waitForPipeline\(repository, branch, revision, true\)/);
+	assert.match(runtime, /pcall\(waitForPipeline, repository, branch, revision, true\)/);
+	assert.match(runtime, /record\("failed", tostring\(problem\)\)/);
 	assert.match(runtime, /Temporary CI branch moved after this run started/);
 });
 test("unimplemented native Pages and attestation integrations are disabled by default", () => {
