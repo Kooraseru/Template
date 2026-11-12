@@ -83,3 +83,14 @@ test("fixed publication preserves legacy generated-branch protections and rehear
 	assert.match(publication, /or defaultBranch ~= "source"/);
 	assert.match(publication, /local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
 });
+
+
+test("unimplemented native Pages and attestation integrations are disabled by default", () => {
+	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
+	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
+	const execution = fs.readFileSync(path.join(root, ".github/config/ci/execution.toml"), "utf8");
+	assert.match(targets, /^pages = false\b/m);
+	assert.match(attestations, /^mode = "disabled"/m);
+	assert.match(execution, /^"documentation\/pages\/publish" = "success"$/m);
+	assert.match(execution, /^"distribution\/attestations\/publish" = "success"$/m);
+});
