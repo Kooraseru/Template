@@ -24,7 +24,7 @@ test("local Build omits Publish and every discovered Build component is rendered
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
 test("hybrid CI keeps a required validation gate and separates publication credentials", () => {
-	const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+	const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
 	assert.match(workflow, /^  build:\n    name: Build Project Components$/m);
 	assert.match(workflow, /^  tests:\n    name: Execute Test Suites$/m);
 	assert.match(workflow, /^  validate:\n    name: validate$/m);

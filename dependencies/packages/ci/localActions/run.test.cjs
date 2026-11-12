@@ -47,7 +47,10 @@ test("staged CI executes directly and adapts only the local workflow copy", t =>
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
 	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
 	const source = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
-	const file = path.join(directory, "ci.yml"); fs.writeFileSync(file, source);
+	const file = path.join(directory, "ci.yml");
+	const fixture = source.replace(/build\/run\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\//gi,
+		"build/run/" + "$" + "{{ env.CI_RUN_ID }}/");
+	fs.writeFileSync(file, fixture);
 	assert.equal(prepareStagedWorkflow(file, "local-fixture"), true);
 	const actual = fs.readFileSync(file, "utf8");
 	assert.match(actual, /environment: ci-projects/);
@@ -61,4 +64,13 @@ test("staged CI executes directly and adapts only the local workflow copy", t =>
 	const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
 	assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
 	assert.equal(stagedEventArguments(["push"], options(["push"]))[0], "push");
+});
+
+
+test("local act wrapper streams output and bounds worktree teardown", () => {
+	const source = fs.readFileSync(path.join(__dirname, "run.cjs"), "utf8");
+	assert.match(source, /async function main/);
+	assert.match(source, /child\.stdout, process\.stdout/);
+	assert.match(source, /child\.stderr, process\.stderr/);
+	assert.match(source, /timeout: 30_000/);
 });

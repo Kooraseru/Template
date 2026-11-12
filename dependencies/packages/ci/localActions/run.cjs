@@ -2,7 +2,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { spawnSync, execFileSync } = require("node:child_process");
+const { spawn, spawnSync, execFileSync } = require("node:child_process");
 const artifacts = require("./artifacts.cjs");
 const root = path.resolve(__dirname, "../../../..");
 
@@ -54,7 +54,7 @@ function stagedEventArguments(args, selected) {
 	if (!explicit && selected.operation === "validation") next[0] = "pull_request";
 	return next;
 }
-function main(args = process.argv.slice(2)) {
+async function main(args = process.argv.slice(2)) {
 	const selected = options(args);
 	const check = spawnSync("act", ["--version"], { cwd: root, encoding: "utf8", windowsHide: true });
 	if (check.error) throw new Error("act is unavailable on PATH. Install act and restart the terminal/editor environment.");
@@ -68,10 +68,28 @@ function main(args = process.argv.slice(2)) {
 	const record = { version: 2, id: runId, runner: "act", scope: "pipeline", operation: selected.operation, source, workspaceDigest, state: "running", pid: process.pid, startedAt: new Date().toISOString(), stages: { start: "running", [selected.operation]: "pending", publish: "disabled" }, runDirectory: path.relative(root, runRoot).replaceAll("\\", "/") };
 	function publish() { fs.writeFileSync(file + ".tmp", JSON.stringify(record)); fs.renameSync(file + ".tmp", file); }
 	function execute(argv, cwd, log) {
-		const descriptor = fs.openSync(path.join(runRoot, log), "w");
-		const result = spawnSync("act", argv, { cwd, windowsHide: true, stdio: ["ignore", descriptor, descriptor], env: { ...process.env, CI_LOCAL_RUN_ID: runId } });
-		fs.closeSync(descriptor);
-		if (result.error || result.status !== 0) throw new Error(result.error?.message || `act exited with status ${result.status}; see ${record.runDirectory}/${log}`);
+		return new Promise((resolve, reject) => {
+			const descriptor = fs.openSync(path.join(runRoot, log), "w");
+			const child = spawn("act", argv, {
+				cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
+				env: { ...process.env, CI_LOCAL_RUN_ID: runId },
+				timeout: 15 * 60 * 1000,
+			});
+			let failure;
+			for (const [stream, output] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
+				stream.on("data", chunk => {
+					fs.writeSync(descriptor, chunk);
+					output.write(chunk);
+				});
+			}
+			child.once("error", error => { failure = error; });
+			child.once("close", (code, signal) => {
+				fs.closeSync(descriptor);
+				if (failure || code !== 0) {
+					reject(new Error(failure?.message || `act exited with status ${code}${signal ? ` (signal ${signal})` : ""}; see ${record.runDirectory}/${log}`));
+				} else resolve();
+			});
+		});
 	}
 	const transport = path.join(runRoot, "transport");
 	const port = execFileSync(process.execPath, ["-e", "const s=require('net').createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})"], { encoding: "utf8", windowsHide: true }).trim();
@@ -105,7 +123,7 @@ function main(args = process.argv.slice(2)) {
 					i++;
 				}
 			}
-			execute([...stagedArgs, ...runtimeArgs], worktree, "execution.log");
+			await execute([...stagedArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			record.state = "passed";
 			record.exitCode = 0;
@@ -116,7 +134,7 @@ function main(args = process.argv.slice(2)) {
 		const startArgs = [...selected.args];
 		const files = new Set(["--input-file", "--secret-file", "--var-file", "--env-file", "--eventpath", "-e"]);
 		for (let i = 0; i < startArgs.length; i++) if (files.has(startArgs[i])) { if (startArgs[i + 1]) startArgs[i + 1] = path.resolve(root, startArgs[i + 1]); i++; }
-		execute([...startArgs, ...runtimeArgs], worktree, "start.log");
+		await execute([...startArgs, ...runtimeArgs], worktree, "start.log");
 		record.stages.start = "passed";
 		if (selected.operation !== "readiness") {
 			const generated = artifacts.receiveStart(runRoot);
@@ -128,7 +146,7 @@ function main(args = process.argv.slice(2)) {
 			const executionArgs = [];
 			const excluded = new Set(["-W", "--workflows", "--input", "--input-file", "-e", "--eventpath", "-j", "--job", "--artifact-server-path", "--artifact-server-port"]);
 			for (let i = 0; i < args.length; i++) { if (excluded.has(args[i])) { i++; continue; } if (/^(push|pull_request|workflow_dispatch)$/.test(args[i]) || /^--(input|workflows|eventpath|artifact-server-path|artifact-server-port)=/.test(args[i])) continue; executionArgs.push(args[i]); }
-			execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
+			await execute(["push", "--workflows", ".github/workflows/pipeline.yml", ...executionArgs, ...runtimeArgs], worktree, "execution.log");
 			record.stages[selected.operation] = "passed";
 			artifacts.receiveDiagnostics(runRoot);
 			record.reports = record.runDirectory + "/" + selected.operation;
@@ -149,11 +167,20 @@ function main(args = process.argv.slice(2)) {
 		if (worktree) {
 			const checked = artifacts.target(root, record.runDirectory + "/worktree");
 			if (checked !== path.resolve(worktree) || fs.lstatSync(checked, { throwIfNoEntry: false })?.isSymbolicLink()) record.cleanup = "Isolated checkout retained for inspection";
-			else fs.rmSync(checked, { recursive: true, force: true });
+			else {
+				// A failed run must not block the VS Code task on a large Windows worktree teardown.
+				const removal = spawnSync(process.execPath, [
+					"-e", "require('node:fs').rmSync(process.argv[1],{recursive:true,force:true,maxRetries:2,retryDelay:100})", checked,
+				], { windowsHide: true, timeout: 30_000, encoding: "utf8" });
+				if (removal.error || removal.status !== 0) {
+					record.cleanup = "Worktree retained after bounded cleanup: " + checked;
+					console.error(record.cleanup);
+				}
+			}
 		}
 		record.finishedAt = new Date().toISOString(); publish();
 	}
 	return record.exitCode;
 }
 module.exports = { options, main, prepareStagedWorkflow, stagedEventArguments };
-if (require.main === module) { try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 1; } }
+if (require.main === module) main().then(code => { process.exitCode = code; }).catch(error => { console.error(error.message); process.exitCode = 1; });
