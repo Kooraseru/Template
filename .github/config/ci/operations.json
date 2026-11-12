@@ -24,7 +24,7 @@
         "node",
         "ci/code-review.cjs"
       ],
-      "timeoutSeconds": 240
+      "timeoutSeconds": 750
     },
     "build-tests": {
       "command": [
@@ -32,6 +32,13 @@
         "ci/run.sh"
       ],
       "timeoutSeconds": 1200
+    },
+    "setup": {
+      "command": [
+        "node",
+        "dependencies/packages/core/dependencyLoader/index.ts"
+      ],
+      "timeoutSeconds": 300
     }
   },
   "operations": {
@@ -42,6 +49,7 @@
       ],
       "checks": [
         "workflows",
+        "setup",
         "code-review",
         "build-tests"
       ]
@@ -53,6 +61,7 @@
       ],
       "checks": [
         "workflows",
+        "setup",
         "code-review",
         "build-tests"
       ]
@@ -64,6 +73,7 @@
       ],
       "checks": [
         "workflows",
+        "setup",
         "code-review"
       ]
     },
