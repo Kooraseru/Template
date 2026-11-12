@@ -22,6 +22,13 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
+      - name: Validate GitHub Actions workflows
+        shell: bash
+        run: |
+          curl -fLSs --retry 3 -o "$RUNNER_TEMP/actionlint.tar.gz" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/*.yml
       - name: Install checker dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
       - name: Review source and repository rules
