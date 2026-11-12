@@ -108,4 +108,15 @@ jobs:
       CI_SOURCE_SHA: ${{ github.sha }}
       CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - run: echo 'Publication permissions and environment admission test'
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Receive Verified Build Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: ci-build-bundles
+          path: build/run/${{ env.CI_RUN_ID }}/transport/bundles/
+      - run: echo 'Publication checkout and artifact transfer admission test'
