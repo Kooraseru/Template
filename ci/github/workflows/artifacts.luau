@@ -14,7 +14,7 @@ export type Manifest = { version: number, runId: string, source: string, workspa
 
 --- Select one safe identity for all output produced by this invocation.
 function Artifacts.RunId(): string
-	local id = Process.env.CI_LOCAL_RUN_ID or Process.env.CI_RUN_ID or `{Process.env.GITHUB_RUN_ID or "cli"}-{Process.env.GITHUB_RUN_ATTEMPT or tostring(Process.pid())}`
+	local id = Process.env.CI_LOCAL_RUN_ID or Process.env.CI_RUN_ID or `{Process.env.GITHUB_RUN_ID or "cli"}-{Process.env.GITHUB_RUN_ATTEMPT or "1"}`
 	if not id:match("^[%w_-]+$") then error("Unsafe execution run identity", 0) end
 	return id
 end

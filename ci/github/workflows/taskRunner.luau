@@ -87,7 +87,7 @@ local function bundle(task: Contract.Task, outcome: string?): ()
 	Fs.createDirectory(directory, { makeParents = true })
 	local archive = `{directory}/outputs.tar`
 	Fs.writeStringToFile(`{directory}/manifest.json`, Json.encode(Artifacts.Manifest(task, outcome)))
-	local manifest = `{ARTIFACT_ROOT}/files-{Process.pid()}.txt`
+	local manifest = `{ARTIFACT_ROOT}/files-{Contract.Key(task.identity)}.txt`
 	Fs.writeStringToFile(manifest, table.concat(paths, "\0") .. (if #paths > 0 then "\0" else ""))
 	command({ "-cf", archive, "--no-recursion", "--null", "--files-from", manifest })
 	Fs.remove(manifest)
