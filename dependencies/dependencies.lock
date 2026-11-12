@@ -8,34 +8,34 @@
     },
     "luau.lute": {
       "provider": "github-release",
-      "fingerprint": "18f6c6f07049974ccc97bc05a1c543599b04eaaa4bb00275b14b8344db75388a",
+      "fingerprint": "34cfe210b0b973862cd1ce8285d1fbcff54ad05bc926edf9f08b63a89604ab50",
       "resolution": {
-        "version": "v1.0.0",
+        "version": "v1.0.1-nightly.20261104",
         "platforms": {
           "win32-x64": {
             "asset": "lute-windows-x86_64.zip",
-            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.0/lute-windows-x86_64.zip",
-            "digest": "sha256:4f5de7cb1844d0df4e5796ad08d485ce7b6c35f7ba8d54046c7e7a12e7c28d92"
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-windows-x86_64.zip",
+            "digest": "sha256:ae92b5d2af1efb2e1405cab93169ffe3beefd9a5bc185c086ac3211a91f74727"
           },
           "win32-arm64": {
             "asset": "lute-windows-x86_64.zip",
-            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.0/lute-windows-x86_64.zip",
-            "digest": "sha256:4f5de7cb1844d0df4e5796ad08d485ce7b6c35f7ba8d54046c7e7a12e7c28d92"
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-windows-x86_64.zip",
+            "digest": "sha256:ae92b5d2af1efb2e1405cab93169ffe3beefd9a5bc185c086ac3211a91f74727"
           },
           "linux-x64": {
             "asset": "lute-linux-x86_64.zip",
-            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.0/lute-linux-x86_64.zip",
-            "digest": "sha256:de7a6dab06b21df572c49257ec24a4cf1ecd54fb854de856aa377a1188255c95"
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-linux-x86_64.zip",
+            "digest": "sha256:adfc6547080f79b9a0e9b88458564b197f82931ad0484f372cb7ad20f679e846"
           },
           "linux-arm64": {
             "asset": "lute-linux-aarch64.zip",
-            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.0/lute-linux-aarch64.zip",
-            "digest": "sha256:78638a2013f38e365b31272b60853eb74dc0e0e425a71d806c4930ebd004b318"
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-linux-aarch64.zip",
+            "digest": "sha256:32659ec8cffaadf6a2d14ab39942bd6eb694990f455f793c212e974c8878f811"
           },
           "darwin-arm64": {
             "asset": "lute-macos-aarch64.zip",
-            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.0/lute-macos-aarch64.zip",
-            "digest": "sha256:6d120b5d2804e62ab2453565e755d022bd6902307cabcd0fedb4cdcbd4251e84"
+            "url": "https://github.com/luau-lang/lute/releases/download/v1.0.1-nightly.20261104/lute-macos-aarch64.zip",
+            "digest": "sha256:d90f3d47876ec05d04c41d0c7371b5c587d1ba590e9cf7e7d517d438978745fb"
           }
         }
       }
