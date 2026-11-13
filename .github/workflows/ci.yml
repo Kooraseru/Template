@@ -59,6 +59,11 @@ jobs:
           test -n "$binary"
           "$binary" --version
           "$binary" -C dependencies lock --platform linux-x64,linux-arm64,windows-x64,windows-arm64,macos-arm64
+          echo "MISE_LOCKFILE_BEGIN"
+          cat dependencies/mise.lock
+          echo "MISE_LOCKFILE_END"
+          "$binary" -C dependencies install --locked github:luau-lang/lute
+          "$binary" -C dependencies exec -- lute --version
       - name: Upload native Mise lockfile probe
         if: always()
         uses: actions/upload-artifact@v7
