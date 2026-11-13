@@ -207,7 +207,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-  run:
+  execute:
     name: Run Pipeline
     needs: generate
     runs-on: ubuntu-latest
@@ -268,14 +268,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: controller-manifest-run
+          name: controller-manifest-execute
           path: build/ci-controller/artifacts/
           if-no-files-found: ignore
           retention-days: 3
 
   collect:
     name: Collect Results
-    needs: run
+    needs: execute
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -283,21 +283,21 @@ jobs:
       contents: read
       actions: read
     environment:
-      name: ${{ needs.run.outputs.reporting_environment }}
+      name: ${{ needs.execute.outputs.reporting_environment }}
     outputs:
       digest: ${{ steps.controller.outputs.digest }}
-      bootstrap_environment: ${{ needs.run.outputs.bootstrap_environment }}
-      reporting_environment: ${{ needs.run.outputs.reporting_environment }}
-      app_id_name: ${{ needs.run.outputs.app_id_name }}
-      app_key_name: ${{ needs.run.outputs.app_key_name }}
-      bootstrap_token_name: ${{ needs.run.outputs.bootstrap_token_name }}
-      report_app_id_name: ${{ needs.run.outputs.report_app_id_name }}
-      report_app_key_name: ${{ needs.run.outputs.report_app_key_name }}
-      setup_result: ${{ needs.run.outputs.setup_result }}
-      resolve_result: ${{ needs.run.outputs.resolve_result }}
-      authorize_result: ${{ needs.run.outputs.authorize_result }}
-      generate_result: ${{ needs.run.outputs.generate_result }}
-      run_result: ${{ needs.run.result }}
+      bootstrap_environment: ${{ needs.execute.outputs.bootstrap_environment }}
+      reporting_environment: ${{ needs.execute.outputs.reporting_environment }}
+      app_id_name: ${{ needs.execute.outputs.app_id_name }}
+      app_key_name: ${{ needs.execute.outputs.app_key_name }}
+      bootstrap_token_name: ${{ needs.execute.outputs.bootstrap_token_name }}
+      report_app_id_name: ${{ needs.execute.outputs.report_app_id_name }}
+      report_app_key_name: ${{ needs.execute.outputs.report_app_key_name }}
+      setup_result: ${{ needs.execute.outputs.setup_result }}
+      resolve_result: ${{ needs.execute.outputs.resolve_result }}
+      authorize_result: ${{ needs.execute.outputs.authorize_result }}
+      generate_result: ${{ needs.execute.outputs.generate_result }}
+      run_result: ${{ needs.execute.result }}
     steps:
       - uses: actions/checkout@v7
         with:
