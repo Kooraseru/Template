@@ -12,16 +12,19 @@ environment = "ci-bootstrap"
 
 [operations.review]
 mode = "readonly"
+components = ["quality/code-review", "quality/rules-audit", "quality/test-suites"]
 events = ["pull_request"]
 checks = ["setup", "workflows", "code-review", "rules-audit", "build-tests"]
 
 [operations.validation]
 mode = "readonly"
+components = ["quality/code-review", "quality/rules-audit", "quality/test-suites"]
 events = ["workflow_dispatch"]
 checks = ["setup", "workflows", "code-review", "rules-audit", "build-tests"]
 
 [operations.readiness]
 mode = "readonly"
+components = ["quality/code-review", "quality/rules-audit"]
 events = ["workflow_dispatch"]
 checks = ["setup", "workflows", "code-review", "rules-audit"]
 
@@ -41,6 +44,7 @@ branchPrefix = "ci/run-"
 
 [operations.rules-audit]
 mode = "readonly"
+components = ["quality/rules-audit"]
 events = ["workflow_dispatch"]
 checks = ["rules-audit"]
 
