@@ -255,6 +255,13 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
+      - uses: jdx/mise-action@v5
+        with:
+          version: "2026.11.8"
+          working_directory: dependencies
+          mise_dir: ${{ runner.temp }}/mise-toolchain
+          install_args: github:nektos/act
+          cache: true
       - name: Restore controller dependency archive
         uses: actions/download-artifact@v4
         with:
