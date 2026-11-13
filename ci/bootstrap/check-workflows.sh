@@ -14,5 +14,13 @@ node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run c
 "$directory/actionlint" -shellcheck= "$directory"/generated/*.yml
 if [[ $# -gt 0 ]]; then
   [[ -d "$1" ]] || { echo "Missing generated pipeline directory: $1" >&2; exit 1; }
-  "$directory/actionlint" -shellcheck= "$1"/*.yml
+  # Relative reusable-workflow references are resolved from .github/workflows.
+  # Validate the whole generated bundle in an isolated repository-shaped tree.
+  generated="$directory/staged/.github/workflows"
+  mkdir -p "$generated"
+  cp -- "$1"/*.yml "$generated/"
+  (
+    cd -- "$directory/staged"
+    "$directory/actionlint" -shellcheck= .github/workflows/*.yml
+  )
 fi
