@@ -69,7 +69,7 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 				throw new Error("Unknown checks for operation: " + name);
 			}
 			if (item.events.includes("push")) throw new Error("Push operations must execute through generated branches");
-		} else if (item.plan !== "build" || typeof item.publication !== "boolean" ||
+		} else if (typeof item.plan !== "string" || !NAME.test(item.plan) || typeof item.publication !== "boolean" ||
 			typeof item.branchPrefix !== "string" || !PREFIX.test(item.branchPrefix) ||
 			item.branchPrefix.includes("//") || item.branchPrefix.includes("..")) {
 			throw new Error("Invalid generated operation: " + name);

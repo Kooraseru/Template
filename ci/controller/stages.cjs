@@ -103,7 +103,7 @@ function checkPermissions() {
 	const safe = operation.mode === "readonly";
 	const profile = catalog.profiles[operation.mode === "generated" ? "source-ci" : "validate"];
 	assert(profile, "Missing authorization profile");
-	const environment = safe ? "ci-no-privileges-" + (process.env.GITHUB_RUN_ID || "local") : profile.bootstrapEnvironment;
+	const environment = safe ? "ci-untrusted" : profile.bootstrapEnvironment;
 	const reporting = safe ? environment : profile.reportingEnvironment;
 	const bindings = safe ? {} : catalog.environments[environment];
 	const reportBindings = safe ? {} : catalog.environments[reporting];
@@ -247,7 +247,7 @@ async function runLocal(tasks) {
 				child.on("close", (code, signal) => {
 					clearTimeout(timer);
 					stream.end();
-					resolve({ state: code === 0 ? "passed" : "failed", code, signal, message: diagnostic });
+					resolve({ state: signal === "SIGKILL" ? "cancelled" : code === 0 ? "passed" : "failed", code, signal, message: diagnostic });
 				});
 			});
 			outcomes[id] = result;
@@ -352,7 +352,8 @@ async function runPipeline() {
 	const pipeline = read("pipeline", process.env.CI_PIPELINE_DIGEST);
 	assert(pipeline.operationDigest === operation.digest && pipeline.authorizationDigest === auth.digest, "Pipeline plan provenance mismatch");
 	verifyGenerated(pipeline);
-	const record = { trust: operation.trust, pipelineDigest: pipeline.digest, state: "failed", transport: pipeline.transport };
+	const record = { trust: operation.trust, pipelineDigest: pipeline.digest, state: "failed", transport: pipeline.transport,
+		...(pipeline.branch ? { branch: pipeline.branch } : {}) };
 	let failure = null;
 	try {
 		if (pipeline.transport === "local") {
@@ -360,6 +361,7 @@ async function runPipeline() {
 			Object.assign(record, await runLocal(pipeline.tasks));
 			record.state = record.status === "passed" ? "completed" : "failed";
 		} else {
+			save("execution", record); // Record the owned branch before attempting its launch.
 			Object.assign(record, await launchHosted(pipeline, operation));
 			save("execution", record); // Preserve ref ownership if monitoring fails.
 			Object.assign(record, await waitForHosted(record.branch, record.revision, operation.trust));
@@ -442,6 +444,8 @@ function validate() {
 	if (manifests.execution && (manifests.execution.state !== "completed" ||
 		(manifests.execution.transport === "hosted" && manifests.execution.conclusion !== "success"))) errors.push("Pipeline execution did not complete successfully");
 	if (manifests.results?.state !== "passed") errors.push("Results were not successfully collected");
+	if (manifests.results && manifests.execution && manifests.results.executionDigest !== manifests.execution.digest) errors.push("Collected results do not match the executed pipeline");
+	if (manifests.cleanup && manifests.execution && manifests.cleanup.executionDigest !== manifests.execution.digest) errors.push("Cleanup refers to a different execution");
 	if (manifests.cleanup?.state !== "passed") errors.push("Cleanup failed or was not recorded");
 	for (const key of ["SETUP", "RESOLVE", "AUTHORIZE", "GENERATE", "RUN", "COLLECT", "CLEANUP"]) {
 		if (process.env["CI_JOB_" + key] !== "success") errors.push("Permanent job " + key.toLowerCase() + " did not succeed");
