@@ -154,6 +154,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      mode: ${{ steps.controller.outputs.mode }}
       operation_digest: ${{ needs.authorize.outputs.operation_digest }}
       authorization_digest: ${{ needs.authorize.outputs.digest }}
       toolchain_digest: ${{ needs.authorize.outputs.toolchain_digest }}
@@ -223,8 +224,9 @@ jobs:
       contents: read
       actions: read
     environment:
-      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.generate.outputs.bootstrap_environment || 'ci-untrusted' }}
+      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.generate.outputs.mode == 'generated') && needs.generate.outputs.bootstrap_environment || 'ci-untrusted' }}
     outputs:
+      mode: ${{ needs.generate.outputs.mode }}
       operation_digest: ${{ needs.generate.outputs.operation_digest }}
       authorization_digest: ${{ needs.generate.outputs.authorization_digest }}
       pipeline_digest: ${{ needs.generate.outputs.digest }}
@@ -276,9 +278,9 @@ jobs:
           CI_AUTHORIZATION_DIGEST: ${{ needs.generate.outputs.authorization_digest }}
           CI_PIPELINE_DIGEST: ${{ needs.generate.outputs.digest }}
           GH_TOKEN: ${{ github.token }}
-          CI_CREDENTIAL_APP_ID: ${{ vars[needs.generate.outputs.app_id_name] }}
-          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.generate.outputs.app_key_name] }}
-          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.generate.outputs.bootstrap_token_name] }}
+          CI_CREDENTIAL_APP_ID: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.generate.outputs.mode == 'generated') && vars[needs.generate.outputs.app_id_name] || '' }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.generate.outputs.mode == 'generated') && secrets[needs.generate.outputs.app_key_name] || '' }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.generate.outputs.mode == 'generated') && secrets[needs.generate.outputs.bootstrap_token_name] || '' }}
         run: node ci/controller/stages.cjs run
       - name: Preserve read-only component diagnostics
         if: always()
@@ -305,13 +307,14 @@ jobs:
     needs: execute
     if: ${{ always() }}
     environment:
-      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.execute.outputs.reporting_environment || 'ci-untrusted' }}
+      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.execute.outputs.mode == 'generated') && needs.execute.outputs.reporting_environment || 'ci-untrusted' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
       actions: read
     outputs:
+      mode: ${{ needs.execute.outputs.mode }}
       operation_digest: ${{ needs.execute.outputs.operation_digest }}
       authorization_digest: ${{ needs.execute.outputs.authorization_digest }}
       pipeline_digest: ${{ needs.execute.outputs.pipeline_digest }}
@@ -378,13 +381,14 @@ jobs:
     needs: collect
     if: ${{ always() }}
     environment:
-      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.collect.outputs.bootstrap_environment || 'ci-untrusted' }}
+      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.collect.outputs.mode == 'generated') && needs.collect.outputs.bootstrap_environment || 'ci-untrusted' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       actions: read
     outputs:
+      mode: ${{ needs.collect.outputs.mode }}
       operation_digest: ${{ needs.collect.outputs.operation_digest }}
       authorization_digest: ${{ needs.collect.outputs.authorization_digest }}
       pipeline_digest: ${{ needs.collect.outputs.pipeline_digest }}
@@ -423,9 +427,9 @@ jobs:
           CI_OPERATION_DIGEST: ${{ needs.collect.outputs.operation_digest }}
           CI_EXECUTION_DIGEST: ${{ needs.collect.outputs.execution_digest }}
           GH_TOKEN: ${{ github.token }}
-          CI_CREDENTIAL_APP_ID: ${{ vars[needs.collect.outputs.app_id_name] }}
-          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.collect.outputs.app_key_name] }}
-          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.collect.outputs.bootstrap_token_name] }}
+          CI_CREDENTIAL_APP_ID: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.collect.outputs.mode == 'generated') && vars[needs.collect.outputs.app_id_name] || '' }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.collect.outputs.mode == 'generated') && secrets[needs.collect.outputs.app_key_name] || '' }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.collect.outputs.mode == 'generated') && secrets[needs.collect.outputs.bootstrap_token_name] || '' }}
         run: node ci/controller/stages.cjs cleanup
       - name: Preserve typed stage manifest
         if: always()

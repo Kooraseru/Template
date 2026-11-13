@@ -140,3 +140,29 @@ test("controller binds downloaded manifest provenance to upstream job output dig
 	}
 	assert.match(yaml, /CI_CLEANUP_DIGEST: \$\{\{ needs\.cleanup\.outputs\.digest \}\}/);
 });
+
+
+test("PR-controlled operation outputs cannot select protected credentials", () => {
+	const fs = require("node:fs");
+	const path = require("node:path");
+	const source = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	const jobs = ["execute", "collect", "cleanup", "validate"];
+	const lines = source.split(/\r?\n/);
+	const chunks = Object.fromEntries(jobs.map((job, index) => {
+		const start = lines.findIndex(line => line === "  " + job + ":");
+		const next = index < jobs.length - 1 ? lines.findIndex(line => line === "  " + jobs[index + 1] + ":") : lines.length;
+		assert.ok(start >= 0 && next > start);
+		return [job, lines.slice(start, next).join("\n")];
+	}));
+	for (const job of ["execute", "cleanup"]) {
+		for (const binding of ["CI_CREDENTIAL_APP_ID", "CI_CREDENTIAL_APP_PRIVATE_KEY", "CI_CREDENTIAL_BOOTSTRAP_TOKEN"]) {
+			const line = chunks[job].split("\n").find(text => text.includes(binding + ":"));
+			assert.ok(line && line.includes("github.event_name != 'pull_request'") &&
+				line.includes("github.ref == 'refs/heads/source'") && line.includes("outputs.mode == 'generated'"),
+				"Untrusted PR may access " + binding + " in " + job);
+		}
+	}
+	for (const job of ["execute", "collect", "cleanup"]) {
+		assert.match(chunks[job], /outputs\.mode == 'generated'/);
+	}
+});
