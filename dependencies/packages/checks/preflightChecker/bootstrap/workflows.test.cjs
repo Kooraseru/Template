@@ -40,7 +40,7 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	}
 	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
 	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
-	const config = require(path.join(root, "dependencies/packages/core/dependencyLoader/vendor/toml.cjs")).parse(fs.readFileSync(path.join(root, ".github/config/ci/settings.toml"), "utf8"));
+	const config = require(path.join(root, "dependencies/packages/core/dependencyLoader/vendor/toml.cjs")).parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.toml"), "utf8"));
 	assert.equal(config.triggers.pull_request, "review");
 	assert.equal(config.checks["rules-audit"].group, "audit");
 	assert.ok(config.operations.review.checks.includes("rules-audit"));
@@ -112,7 +112,7 @@ test("generated publication retains branch checks and rehearses release uploads"
 test("unimplemented native Pages and attestation integrations are disabled by default", () => {
 	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
 	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
-	const execution = fs.readFileSync(path.join(root, ".github/config/ci/settings.toml"), "utf8");
+	const execution = fs.readFileSync(path.join(root, ".github/config/ci/execution.toml"), "utf8");
 	assert.match(targets, /^pages = false\b/m);
 	assert.match(attestations, /^mode = "disabled"/m);
 	assert.match(execution, /^"documentation\/pages\/publish" = "success"$/m);

@@ -1,5 +1,5 @@
-# Template CI: one user-editable policy file.
-# Component dependencies come from component.toml contracts; this file does not define a DAG.
+# Operation routing and temporary compatibility checks. Component discovery and execution
+# policy are configured independently in components.toml and execution.toml.
 version = 1
 
 [triggers]
@@ -67,22 +67,3 @@ timeoutSeconds = 750
 command = ["bash", "ci/run.sh"]
 timeoutSeconds = 1200
 
-# Components are discovered by walking ci/components/, not listed centrally.
-[components]
-default = true
-
-[components.enabled]
-# "distribution/packages/publish" = false
-
-# When a component has nothing to do, preserve the configured semantic conclusion.
-[execution.skip]
-default = "neutral"
-
-[execution.skip.components]
-# Fixtures with no external registry metadata.
-"distribution/packages/publish" = "success"
-"documentation/pages/publish" = "success"
-"distribution/attestations/publish" = "success"
-# Optional administration credentials may be unavailable.
-"work/projects/sync" = "success"
-"governance/rulesets/sync" = "success"

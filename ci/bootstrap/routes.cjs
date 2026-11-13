@@ -5,7 +5,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "../..");
-const CONFIG = path.join(ROOT, ".github/config/ci/settings.toml");
+const CONFIG = path.join(ROOT, ".github/config/ci/operations.toml");
 const { parse: parseToml } = require(path.join(ROOT, "dependencies/packages/core/dependencyLoader/vendor/toml.cjs"));
 const EVENTS = new Set(["push", "pull_request", "workflow_dispatch"]);
 const NAME = /^[a-z][a-z0-9-]*$/;

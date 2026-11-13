@@ -48,9 +48,8 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		error("missing ci/components extension point", 0)
 	end
 	self:RejectLinkedEntries()
-	local settingsPath = ".github/config/ci/settings.toml"
-	local decoded = Toml.decode(Fs.readFileToString(settingsPath))
-	local decodedSettings = if type(decoded) == "table" then (decoded :: { [string]: unknown }).components else nil
+	local settingsPath = ".github/config/ci/components.toml"
+	local decodedSettings = Toml.decode(Fs.readFileToString(settingsPath))
 	if type(decodedSettings) ~= "table" then
 		error(`{settingsPath}: expected boolean default and an [enabled] table`, 0)
 	end
