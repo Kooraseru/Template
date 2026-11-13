@@ -5,7 +5,8 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "../..");
-const CONFIG = path.join(ROOT, ".github/config/ci/operations.json");
+const CONFIG = path.join(ROOT, ".github/config/ci/operations.toml");
+const { parse: parseToml } = require(path.join(ROOT, "dependencies/packages/core/dependencyLoader/vendor/toml.cjs"));
 const EVENTS = new Set(["push", "pull_request", "workflow_dispatch"]);
 const NAME = /^[a-z][a-z0-9-]*$/;
 const ALIAS = /^[A-Z][A-Z0-9_]*$/;
@@ -18,7 +19,7 @@ function object(value, label) {
 }
 
 function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
-	const config = object(JSON.parse(fs.readFileSync(filename, "utf8")), "CI operations");
+	const config = object(parseToml(fs.readFileSync(filename, "utf8")), "CI settings");
 	if (config.version !== 1) throw new Error("Unsupported CI operations format");
 	const checks = object(config.checks, "checks");
 	const operations = object(config.operations, "operations");

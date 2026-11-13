@@ -1,4 +1,4 @@
--- ci/entry.luau
+-- ci/init.luau
 --!strict
 
 local GitHub = require("@ci/github")

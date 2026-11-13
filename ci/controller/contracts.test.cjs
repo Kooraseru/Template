@@ -59,41 +59,82 @@ test("authored workflow contains only eight linear controller jobs", () => {
 });
 
 
-test("tokenless local act can compile a read-only graph without hosted action locking", t => {
+test("read-only generation uses the native Luau workflow DAG and act, not a second scheduler", () => {
 	const fs = require("node:fs");
-	const os = require("node:os");
 	const path = require("node:path");
-	const { spawnSync } = require("node:child_process");
-	const root = fs.mkdtempSync(path.join(os.tmpdir(), "ci-offline-generator-"));
-	t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-	const directory = path.join(root, "ci/controller");
-	fs.mkdirSync(directory, { recursive: true });
-	for (const file of ["contracts.cjs", "stages.cjs"]) {
-		fs.copyFileSync(path.join(__dirname, file), path.join(directory, file));
+	const controller = fs.readFileSync(path.join(__dirname, "stages.cjs"), "utf8");
+	assert.match(controller, /ci\/bootstrap\/generateWorkflows\.luau/);
+	assert.match(controller, /async function runAct\(pipeline, operation\)/);
+	assert.match(controller, /pipeline\.transport === "act"/);
+	assert.match(controller, /"push", "--workflows", "\.github\/workflows\/pipeline\.yml"/);
+	assert.doesNotMatch(controller, /function runLocal\(/);
+	assert.doesNotMatch(controller, /function executeCheck\(/);
+	assert.doesNotMatch(controller, /function check\(/);
+});
+test("lightweight controller stages do not restore a full toolchain or reupload inherited manifests", () => {
+	const fs = require("node:fs");
+	const path = require("node:path");
+	const workflow = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	const ids = ["setup", "resolve", "authorize", "generate", "execute", "collect", "cleanup", "validate"];
+	const lines = workflow.split(/\r?\n/);
+	const body = {};
+	for (let index = 0; index < ids.length; index++) {
+		const start = lines.findIndex(line => line === "  " + ids[index] + ":");
+		const end = index < ids.length - 1 ? lines.findIndex(line => line === "  " + ids[index + 1] + ":") : lines.length;
+		assert.ok(start >= 0 && end > start, "Missing permanent job: " + ids[index]);
+		body[ids[index]] = lines.slice(start, end).join("\n");
 	}
-	const C = require(path.join(directory, "contracts.cjs"));
-	const sha = "a".repeat(40);
-	const trusted = C.trust("pull_request", "refs/pull/42/merge", "Kooraseru/Template", sha);
-	const operation = C.write("operation", {
-		trust: trusted, name: "validation", mode: "readonly", event: "pull_request",
-		checks: [{ id: "setup", kind: "command", needs: [], boundary: "read", command: ["node", "--version"], timeoutSeconds: 30 }],
-	});
-	const authorization = C.write("authorization", {
-		trust: trusted, operationDigest: operation.digest, provider: "none", capabilities: [],
-	});
-	const env = { ...process.env, ACT: "true", GITHUB_EVENT_NAME: "pull_request",
-		GITHUB_REF: trusted.ref, GITHUB_SHA: sha, GITHUB_REPOSITORY: trusted.repository,
-		GH_TOKEN: "", GITHUB_TOKEN: "", GITHUB_OUTPUT: "", CI_OPERATION_DIGEST: operation.digest,
-		CI_AUTHORIZATION_DIGEST: authorization.digest };
-	const run = spawnSync(process.execPath, ["ci/controller/stages.cjs", "generate"], {
-		cwd: root, env, encoding: "utf8", timeout: 15000,
-	});
-	assert.ifError(run.error);
-	assert.equal(run.status, 0, run.stdout + run.stderr);
-	const pipeline = C.read("pipeline");
-	assert.equal(pipeline.transport, "local");
-	assert.deepEqual(Object.keys(pipeline.files), ["pipeline.yml"]);
-	const workflow = JSON.parse(fs.readFileSync(path.join(root, "build/ci-controller/generated/pipeline.yml"), "utf8"));
-	assert.ok(workflow.jobs.check_setup);
-	assert.equal(fs.existsSync(path.join(root, "build/ci-controller/generated/actions.lock")), false);
+	for (const id of ["resolve", "collect", "cleanup", "validate"]) {
+		assert.doesNotMatch(body[id], /Restore controller dependency archive|Verify and extract common dependencies|actions\/setup-node@/);
+	}
+	for (const id of ["authorize", "generate", "execute"]) {
+		assert.match(body[id], /CI_TOOLCHAIN_DIGEST: \$\{\{ needs\.[a-z]+\.outputs\.toolchain_digest \}\}/);
+		assert.match(body[id], /Verify and extract common dependencies/);
+	}
+	const manifests = { resolve: "operation", authorize: "authorization", generate: "pipeline",
+		execute: "execution", collect: "results", cleanup: "cleanup" };
+	for (const [id, kind] of Object.entries(manifests)) {
+		assert.match(body[id], new RegExp("path: build/ci-controller/artifacts/" + kind + "\\.json"));
+	}
+	assert.doesNotMatch(body.validate, /Restore controller stage manifests/);
+});
+
+
+test("controller binds downloaded manifest provenance to upstream job output digests", () => {
+	const fs = require("node:fs");
+	const path = require("node:path");
+	const yaml = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	for (const name of ["OPERATION", "AUTHORIZATION", "PIPELINE", "EXECUTION", "RESULTS", "CLEANUP"]) {
+		assert.match(yaml, new RegExp("CI_" + name + "_DIGEST: \\$\\{\\{ needs\\."));
+	}
+	for (const key of ["operation_digest", "authorization_digest", "pipeline_digest", "execution_digest", "results_digest"]) {
+		assert.match(yaml, new RegExp("^      " + key + ": \\$\\{\\{ needs\\.", "m"));
+	}
+	assert.match(yaml, /CI_CLEANUP_DIGEST: \$\{\{ needs\.cleanup\.outputs\.digest \}\}/);
+});
+
+
+test("PR-controlled operation outputs cannot select protected credentials", () => {
+	const fs = require("node:fs");
+	const path = require("node:path");
+	const source = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	const jobs = ["execute", "collect", "cleanup", "validate"];
+	const lines = source.split(/\r?\n/);
+	const chunks = Object.fromEntries(jobs.map((job, index) => {
+		const start = lines.findIndex(line => line === "  " + job + ":");
+		const next = index < jobs.length - 1 ? lines.findIndex(line => line === "  " + jobs[index + 1] + ":") : lines.length;
+		assert.ok(start >= 0 && next > start);
+		return [job, lines.slice(start, next).join("\n")];
+	}));
+	for (const job of ["execute", "cleanup"]) {
+		for (const binding of ["CI_CREDENTIAL_APP_ID", "CI_CREDENTIAL_APP_PRIVATE_KEY", "CI_CREDENTIAL_BOOTSTRAP_TOKEN"]) {
+			const line = chunks[job].split("\n").find(text => text.includes(binding + ":"));
+			assert.ok(line && line.includes("github.event_name != 'pull_request'") &&
+				line.includes("github.ref == 'refs/heads/source'") && line.includes("outputs.mode == 'generated'"),
+				"Untrusted PR may access " + binding + " in " + job);
+		}
+	}
+	for (const job of ["execute", "collect", "cleanup"]) {
+		assert.match(chunks[job], /outputs\.mode == 'generated'/);
+	}
 });

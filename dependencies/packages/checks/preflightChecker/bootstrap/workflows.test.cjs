@@ -14,19 +14,21 @@ test("generated hosted stages enforce Build before Publish and read-only Validat
 	const source = 'local B = require("@ci/bootstrap")\nlocal W = require("@ci/github/workflows/workflow")\nlocal J = require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(), string.rep("a",40), "ci-run-1-1", "push")))';
 	const files = execute(t, source, { ACT: "", CI_OPERATION: "build" }); const controller = JSON.parse(files["pipeline.yml"]);
 	assert.equal(controller.name, "Pipeline");
-	assert.deepEqual(controller.jobs.publish.needs, ["build", "tests"]); assert.deepEqual(controller.jobs.tests.needs, ["build"]); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
+	assert.deepEqual(controller.jobs.publish.needs, ["build"]); assert.equal(controller.jobs.tests, undefined); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
 	for (const file of Object.values(files)) assert.ok(!file.includes('"inherit"'));
 	const build = JSON.parse(files["build.yml"].slice(files["build.yml"].indexOf("{"))); assert.ok(build.on.workflow_call);
+	assert.ok(Object.values(build.jobs).some(job => job.name === "quality/test-suites"), "Test suites must be discovered as a component");
 	for (const job of Object.values(build.jobs)) assert.equal(job.environment, undefined);
 });
 test("local Build omits Publish and every discovered Build component is rendered", t => {
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("only one permanent workflow delegates operations to JSON", () => {
+test("one permanent authored workflow, with temporary generated files only inside the execution graph", () => {
 	const directory = path.join(root, ".github/workflows");
 	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-	assert.deepEqual(authored, ["ci.yml"]);
+	const expected = process.env.CI_GRAPH_RUN === "true" ? ["ci.yml", "pipeline.yml", "validation.yml"] : ["ci.yml"];
+	assert.deepEqual(authored, expected);
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
 	for (const job of ["setup", "resolve", "authorize", "generate", "execute", "collect", "cleanup", "validate"]) {
 		assert.match(workflow, new RegExp("^  " + job + ":$", "m"));
@@ -39,7 +41,7 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	}
 	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
 	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
-	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
+	const config = require(path.join(root, "dependencies/packages/core/dependencyLoader/vendor/toml.cjs")).parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.toml"), "utf8"));
 	assert.equal(config.triggers.pull_request, "review");
 	assert.equal(config.checks["rules-audit"].group, "audit");
 	assert.ok(config.operations.review.checks.includes("rules-audit"));
@@ -52,6 +54,16 @@ test("optional administration components use their current skip policies", t => 
 });
 test("component contract rejects missing phases and privileged Build", t => {
 	const result = execute(t, 'local C=require("@ci/bootstrap/contracts/contract")\nlocal J=require("@formats/json")\nlocal a=pcall(C.new,"example","x","fixture",{provides={"example"}})\nlocal b=pcall(C.new,"example","x","fixture",{provides={"example"},phase="build",boundary="privileged",events={"push"}})\nprint(J.encode({a=a,b=b}))'); assert.equal(result.a, false); assert.equal(result.b, false);
+});
+
+test("read-only command components require no Luau wrapper and reject privileged commands", t => {
+	const source = 'local B=require("@ci/bootstrap")\nlocal C=require("@ci/bootstrap/contracts/contract")\nlocal J=require("@formats/json")\nlocal entries={}\nfor _,task in B.Plan("push") do if task.identity == "quality/code-review" or task.identity == "quality/rules-audit" then entries[task.identity]=task.entry end end\nlocal ok=pcall(C.new,"other/test","x","fixture",{phase="publish",boundary="privileged",provides={"test"},events={"push"},command={"sh","-c","echo unsafe"}})\nprint(J.encode({entries=entries,privilegedAccepted=ok}))';
+	const result = execute(t, source);
+	assert.deepEqual(result.entries, {
+		"quality/code-review": "ci/components/quality/code-review/component.toml",
+		"quality/rules-audit": "ci/components/quality/rules-audit/component.toml",
+	});
+	assert.equal(result.privilegedAccepted, false);
 });
 
 test("Build dependencies on Publish are rejected before rendering", t => {

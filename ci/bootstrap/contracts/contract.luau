@@ -14,6 +14,7 @@ type ContractFields = {
 	identity: string,
 	entry: string,
 	contractFile: string,
+	command: { string }?,
 	provides: { string },
 	requires: { string },
 	inputs: { string },
@@ -222,11 +223,21 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 	if phase == "build" and boundaryValue ~= "read" then
 		return invalid(contractFile, "Build cannot have a privileged boundary")
 	end
+	local command: { string }? = nil
+	if raw.command ~= nil then
+		command = strings(contractFile, "command", raw.command)
+		if #command == 0 then invalid(contractFile, "command must specify an executable") end
+		for _, argument in command do
+			if argument:find("[%z\r\n]") then invalid(contractFile, "command contains a control character") end
+		end
+		if boundaryValue ~= "read" then invalid(contractFile, "declarative commands require a read-only boundary") end
+	end
 	local fields: ContractFields = {
 		phase = phase,
 		identity = identity,
 		entry = entry,
 		contractFile = contractFile,
+		command = command,
 		provides = provides,
 		requires = strings(contractFile, "requires", requirements, "^[a-z][a-z0-9_.:-]*$"),
 		inputs = paths(contractFile, "inputs", inputPatterns),
@@ -242,7 +253,8 @@ function Contract.new(identity: string, entry: string, contractFile: string, sou
 	-- Reject unknown fields so a misspelled policy cannot silently take effect as a default.
 	for field in raw do
 		if field ~= "provides" and field ~= "requires" and field ~= "inputs" and field ~= "outputs"
-			and field ~= "phase" and field ~= "events" and field ~= "boundary" and field ~= "credentials" then
+			and field ~= "phase" and field ~= "events" and field ~= "boundary" and field ~= "credentials"
+			and field ~= "command" then
 			invalid(contractFile, `unknown or reserved contract field: {field}`)
 		end
 	end

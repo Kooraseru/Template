@@ -30,4 +30,4 @@ dependencies=()
 if [[ ${1:-} == --report ]]; then
 	dependencies=(--only workspace.npm)
 fi
-node dependencies/packages/core/dependencyLoader/index.ts "${dependencies[@]}" --exec luau.lute run ci/entry.luau "$@" 2>&1 | tee "$log_directory/$log_name.log"
+node dependencies/packages/core/dependencyLoader/index.ts "${dependencies[@]}" --exec luau.lute run ci/init.luau "$@" 2>&1 | tee "$log_directory/$log_name.log"

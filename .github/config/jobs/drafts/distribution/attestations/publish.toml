@@ -7,7 +7,7 @@ attestations = "write"
 name = "Resolve attestation subjects"
 id = "attestation_options"
 continue-on-error = true
-run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --attestation-options"
+run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/init.luau --attestation-options"
 
 [[steps]]
 name = "Generate build provenance"
@@ -24,7 +24,7 @@ predicate-path = "${{ steps.attestation_options.outputs.predicate_path }}"
 [[steps]]
 name = "Report attestation outcome"
 if = "${{ !cancelled() }}"
-run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --attestation-report"
+run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/init.luau --attestation-report"
 [steps.env]
 CI_ATTESTATION_SETUP = "${{ steps.attestation_options.outcome }}"
 CI_ATTESTATION_ENABLED = "${{ steps.attestation_options.outputs.enabled }}"

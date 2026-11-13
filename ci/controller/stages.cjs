@@ -39,8 +39,19 @@ function save(kind, value) {
 function eventForPlan(operation) {
 	return operation.mode === "generated" ? "push" : operation.event;
 }
+function expectedDigest(kind) {
+	const name = "CI_" + kind.toUpperCase() + "_DIGEST";
+	const value = process.env[name];
+	if (!value) return undefined;
+	// act may leave chained job-output expressions unresolved; a real digest
+	// is still required wherever the transport supplies one.
+	if (process.env.ACT === "true" && /^\$\{\{\s*[^{}]+\s*\}\}$/.test(value)) return undefined;
+	assert(/^[a-f0-9]{64}$/.test(value), "Malformed upstream " + kind + " digest");
+	return value;
+}
+
 function loadOperation() {
-	const manifest = read("operation", process.env.CI_OPERATION_DIGEST);
+	const manifest = read("operation", expectedDigest("operation"));
 	requireSource(manifest.trust);
 	return manifest;
 }
@@ -87,7 +98,8 @@ function restore() {
 }
 function resolveOperation() {
 	const { readConfig, resolve } = require("../bootstrap/routes.cjs");
-	const cfg = readConfig();
+	// Operation routing requires only the declarative settings; credential inspection belongs to Check Permissions.
+	const cfg = readConfig(undefined, { requireCredentials: false });
 	const operation = resolve(cfg);
 	const trust = context();
 	if (operation.mode === "generated") assert(trust.level === "trusted-source", "Generated execution requires trusted source");
@@ -151,45 +163,34 @@ function checkPermissions() {
 }
 function generate() {
 	const operation = loadOperation();
-	const authorization = read("authorization", process.env.CI_AUTHORIZATION_DIGEST);
+	const authorization = read("authorization", expectedDigest("authorization"));
 	assert(authorization.operationDigest === operation.digest, "Authorization refers to a different operation");
 	fs.mkdirSync(GENERATED, { recursive: true });
-	const branch = operation.mode === "generated"
-		? C.safeRef(operation.branchPrefix + (process.env.GITHUB_RUN_ID || "1") + "-" + (process.env.GITHUB_RUN_ATTEMPT || "1"))
-		: null;
-	let tasks;
-	if (operation.mode === "readonly") {
-		tasks = operation.checks;
-		graph(tasks);
-		const jobs = {};
-		for (const task of tasks) {
-			jobs["check_" + task.id.replaceAll("-", "_")] = {
-				name: task.id, "runs-on": "ubuntu-latest", permissions: { contents: "read" },
-				...(task.needs.length ? { needs: task.needs.map(id => "check_" + id.replaceAll("-", "_")) } : {}),
-				steps: [
-					{ uses: "actions/checkout@v7", with: { "persist-credentials": false } },
-					{ uses: "actions/setup-node@v7.1.0", with: { "node-version": 24 } },
-					{ name: "Execute " + task.id, run: "node ci/controller/stages.cjs check " + task.id },
-				],
-			};
-		}
-		fs.writeFileSync(path.join(GENERATED, "pipeline.yml"), JSON.stringify({
-			name: "Configured validation pipeline", on: { workflow_dispatch: {} }, permissions: {}, jobs,
-		}, null, 2) + "\n");
-	} else {
+	const branch = C.safeRef((operation.mode === "generated" ? operation.branchPrefix : "ci/readonly-") +
+		(process.env.GITHUB_RUN_ID || "1") + "-" + (process.env.GITHUB_RUN_ATTEMPT || "1"));
+	if (operation.mode === "generated") {
 		assert(operation.trust.level === "trusted-source", "Cannot generate privileged pipeline from PR");
-		const args = ["dependencies/packages/core/dependencyLoader/index.ts", "--exec",
-			"luau.lute", "run", "ci/bootstrap/generateWorkflows.luau", GENERATED];
-		command("node", args, { env: {
-			...process.env, CI_EVENT: eventForPlan(operation), CI_OPERATION: "build", CI_OPERATION_PLAN: operation.plan,
-			CI_SELECTED_COMPONENTS: JSON.stringify(operation.components),
-			CI_PUBLICATION_ENABLED: String(operation.publication),
-			CI_EXECUTION_PREFIX: operation.branchPrefix, CI_GENERATED_BRANCH: branch,
-		}, timeout: 240000 });
-		const discovered = fs.readdirSync(GENERATED).filter(file => file.endsWith(".yml"));
-		assert(discovered.includes("pipeline.yml"), "Luau generator did not produce pipeline.yml");
-		tasks = discovered.map(name => ({ id: name, kind: "workflow", needs: [] }));
+	} else {
+		assert(operation.mode === "readonly", "Unsupported generated transport");
 	}
+	const args = ["dependencies/packages/core/dependencyLoader/index.ts", "--exec",
+		"luau.lute", "run", "ci/bootstrap/generateWorkflows.luau", GENERATED];
+	command("node", args, { env: {
+		...process.env,
+		// PR and local validation use the same Luau-generated graph, rendered with
+		// act-compatible artifact actions and no privileged jobs or environments.
+		...(operation.mode === "readonly" ? { ACT: "true" } : {}),
+		CI_EVENT: eventForPlan(operation),
+		CI_OPERATION: operation.mode === "readonly" ? "validation" : "build",
+		CI_OPERATION_PLAN: operation.plan || "validation",
+		CI_SELECTED_COMPONENTS: JSON.stringify(operation.components),
+		CI_PUBLICATION_ENABLED: String(operation.mode === "generated" && operation.publication),
+		CI_EXECUTION_PREFIX: operation.branchPrefix || "ci/readonly-",
+		CI_GENERATED_BRANCH: branch,
+	}, timeout: 240000 });
+	const discovered = fs.readdirSync(GENERATED).filter(file => file.endsWith(".yml"));
+	assert(discovered.includes("pipeline.yml"), "Luau generator did not produce pipeline.yml");
+	const tasks = discovered.map(name => ({ id: name, kind: "workflow", needs: [] }));
 	const files = fs.readdirSync(GENERATED).filter(file => file.endsWith(".yml")).sort();
 	assert(files.includes("pipeline.yml"), "Missing generated pipeline");
 	// Lock the workflow under the exact path GitHub will execute, not its temporary artifact path.
@@ -221,11 +222,15 @@ function generate() {
 	} finally {
 		if (attached) command("git", ["worktree", "remove", "--force", lockWorktree], { timeout: 30000 });
 	}
-	command("bash", ["ci/bootstrap/check-workflows.sh", GENERATED], { timeout: 240000 });
+	const checked = spawnSync("bash", ["ci/bootstrap/check-workflows.sh", GENERATED],
+		{ cwd: ROOT, encoding: "utf8", timeout: 240000, maxBuffer: 8 * 1024 * 1024 });
+	if (checked.error || checked.status !== 0) {
+		throw new Error("Generated workflow validation failed: " +
+			(checked.stderr + "\n" + checked.stdout).trim().slice(-6000));
+	}
 	} else {
-		// Local act has no GitHub token. This pipeline runs directly as commands, not hosted Actions.
-		// Never skip action locking for a pipeline that might be dispatched to GitHub.
-		console.log("::notice::Local read-only act run: hosted workflow locking and actionlint deferred to hosted CI");
+		// Tokenless local act: the generated workflow remains authoritative; hosted action locking is performed in CI.
+		console.log("::notice::Local act mode: compiled workflow will execute in the act runner");
 	}
 	const hashes = {};
 	for (const filename of [...files, ...(offlineReadonly ? [] : ["actions.lock"])]) {
@@ -238,7 +243,7 @@ function generate() {
 	}
 	assert(files.includes("pipeline.yml"), "Missing generated pipeline");
 	const manifest = save("pipeline", { trust: operation.trust, operationDigest: operation.digest,
-		authorizationDigest: authorization.digest, branch, transport: operation.mode === "readonly" ? "local" : "hosted",
+		authorizationDigest: authorization.digest, branch, transport: operation.mode === "readonly" ? "act" : "hosted",
 		tasks, files: hashes });
 	output({ mode: operation.mode, branch: branch || "" });
 	console.log("Generated " + files.length + " pipeline workflow file(s) at digest " + manifest.digest);
@@ -251,62 +256,71 @@ function scrubbedEnvironment() {
 	}
 	return env;
 }
-function executeCheck(task) {
-	assert(task.kind === "command" && Array.isArray(task.command) && task.command.length,
-		"Invalid command component");
-	const env = scrubbedEnvironment();
-	const result = spawnSync(task.command[0], task.command.slice(1), { cwd: ROOT, env,
-		encoding: "utf8", timeout: task.timeoutSeconds * 1000, maxBuffer: 24 * 1024 * 1024 });
-	return { state: result.status === 0 && !result.error ? "passed" : "failed",
-		code: result.status, message: (result.error?.message || result.stderr || "").slice(-1500),
-		stdout: result.stdout || "", stderr: result.stderr || "" };
-}
-function check(name) {
-	assert(/^[a-z][a-z0-9-]*$/.test(name), "Invalid component name");
-	const { readConfig } = require("../bootstrap/routes.cjs");
-	const entry = readConfig().checks[name];
-	assert(entry, "Unknown check component");
-	const result = executeCheck({ id: name, kind: "command", command: entry.command, timeoutSeconds: entry.timeoutSeconds });
-	process.stdout.write(result.stdout);
-	process.stderr.write(result.stderr);
-	if (result.state !== "passed") process.exitCode = 1;
-}
-async function runLocal(tasks) {
-	const order = graph(tasks);
-	const outcomes = Object.create(null);
+async function runAct(pipeline, operation) {
+	assert(operation.mode === "readonly" && pipeline.transport === "act", "Cannot run privileged pipeline using act");
+	const root = fs.mkdtempSync(path.join(os.tmpdir(), "ci-generated-act-"));
+	const checkout = path.join(root, "workspace");
+	const eventFile = path.join(root, "event.json");
+	const logFile = path.join(LOGS, "generated-act.log");
 	fs.mkdirSync(LOGS, { recursive: true });
-	// Promise-based scheduler permits independent components to run concurrently.
-	const pending = new Map();
-	for (const id of order) {
-		const task = tasks.find(item => item.id === id);
-		pending.set(id, Promise.all(task.needs.map(required => pending.get(required))).then(async () => {
-			if (task.needs.some(required => outcomes[required].state !== "passed")) {
-				outcomes[id] = { state: "blocked", reason: "Required component failed" };
-				return;
-			}
-			// Run in a child process so expensive checks do not serialize independent components.
-			const filename = path.join(LOGS, id.replaceAll("/", "_") + ".log");
-			const result = await new Promise(resolve => {
-				const child = spawn(task.command[0], task.command.slice(1), { cwd: ROOT, env: scrubbedEnvironment(), stdio: ["ignore", "pipe", "pipe"] });
-				let diagnostic = "";
-				const stream = fs.createWriteStream(filename);
-				const timer = setTimeout(() => child.kill("SIGKILL"), task.timeoutSeconds * 1000);
-				for (const source of [child.stdout, child.stderr]) {
-					source?.on("data", data => { stream.write(data); diagnostic = (diagnostic + data.toString()).slice(-1500); });
-				}
-				child.on("error", error => { diagnostic = error.message; });
-				child.on("close", (code, signal) => {
-					clearTimeout(timer);
-					stream.end();
-					resolve({ state: signal === "SIGKILL" ? "cancelled" : code === 0 ? "passed" : "failed", code, signal, message: diagnostic });
-				});
-			});
-			outcomes[id] = result;
-			console.log("::notice::" + id + " " + result.state);
+	try {
+		command("git", ["clone", "--local", "--no-hardlinks", ROOT, checkout], { timeout: 120000 });
+		command("git", ["-C", checkout, "checkout", "-B", pipeline.branch, operation.trust.sha], { timeout: 120000 });
+		for (const filename of Object.keys(pipeline.files)) {
+			if (!filename.endsWith(".yml")) continue;
+			const source = path.join(GENERATED, filename);
+			const destination = path.join(checkout, ".github/workflows", filename);
+			mkdir(destination);
+			fs.copyFileSync(source, destination);
+		}
+		command("git", ["-C", checkout, "add", "-A", "--", ".github/workflows"], { timeout: 120000 });
+		command("git", ["-C", checkout, "-c", "user.name=CI-generated",
+			"-c", "user.email=ci-generated@localhost", "commit", "--allow-empty",
+			"-m", "Compile authorized read-only workflow"], { timeout: 120000 });
+		fs.writeFileSync(eventFile, JSON.stringify({
+			ref: "refs/heads/" + pipeline.branch, after: operation.trust.sha,
+			repository: { full_name: operation.trust.repository },
+			head_commit: { id: operation.trust.sha },
 		}));
+		const artifactDirectory = path.join(STATE, "act-artifacts");
+		fs.mkdirSync(artifactDirectory, { recursive: true });
+		const args = ["push", "--workflows", ".github/workflows/pipeline.yml",
+			"--eventpath", eventFile, "--platform", "ubuntu-latest=node:24-bookworm",
+			"--secret-file", "/dev/null", "--env", "GITHUB_TOKEN=",
+			"--artifact-server-path", artifactDirectory, "--container-architecture", "linux/amd64"];
+		const environment = { ...scrubbedEnvironment(), ACT: "true",
+			GITHUB_ACTIONS: "false", CI_LINEAR_CONTROLLER: "true", GH_TOKEN: "", GITHUB_TOKEN: "" };
+		const result = await new Promise(resolve => {
+			const child = spawn("act", args, { cwd: checkout, env: environment,
+				stdio: ["ignore", "pipe", "pipe"] });
+			const stream = fs.createWriteStream(logFile);
+			let last = "";
+			let failure;
+			let timedOut = false;
+			const timer = setTimeout(() => { timedOut = true; child.kill("SIGKILL"); }, 65 * 60 * 1000);
+			for (const reader of [child.stdout, child.stderr]) {
+				reader?.on("data", chunk => {
+					const content = chunk.toString();
+					stream.write(content);
+					process.stdout.write(content);
+					last = (last + content).slice(-1500);
+				});
+			}
+			child.on("error", error => { failure = error.message; });
+			child.on("close", (code, signal) => {
+				clearTimeout(timer);
+				stream.end();
+				resolve({ code, signal, reason: failure || (timedOut ? "act timed out" : last) });
+			});
+		});
+		if (result.code !== 0) {
+			throw new Error("Generated act workflow failed: " + String(result.reason).slice(-1500));
+		}
+		return { status: "passed", conclusion: "success", artifactDirectory: "build/ci-controller/act-artifacts",
+			outcomes: { generated: { state: "passed", workflow: "pipeline.yml" } } };
+	} finally {
+		fs.rmSync(root, { recursive: true, force: true, maxRetries: 2 });
 	}
-	await Promise.all(pending.values());
-	return { status: Object.values(outcomes).every(item => item.state === "passed") ? "passed" : "failed", outcomes };
 }
 function verifyGenerated(pipeline) {
 	for (const [filename, digest] of Object.entries(pipeline.files)) {
@@ -399,17 +413,16 @@ async function waitForHosted(branch, revision, source) {
 }
 async function runPipeline() {
 	const operation = loadOperation();
-	const auth = read("authorization", process.env.CI_AUTHORIZATION_DIGEST);
-	const pipeline = read("pipeline", process.env.CI_PIPELINE_DIGEST);
+	const auth = read("authorization", expectedDigest("authorization"));
+	const pipeline = read("pipeline", expectedDigest("pipeline"));
 	assert(pipeline.operationDigest === operation.digest && pipeline.authorizationDigest === auth.digest, "Pipeline plan provenance mismatch");
 	verifyGenerated(pipeline);
 	const record = { trust: operation.trust, pipelineDigest: pipeline.digest, state: "failed", transport: pipeline.transport,
-		...(pipeline.branch ? { branch: pipeline.branch } : {}) };
+		...(pipeline.transport === "hosted" && pipeline.branch ? { branch: pipeline.branch } : {}) };
 	let failure = null;
 	try {
-		if (pipeline.transport === "local") {
-			assert(operation.trust.level === "untrusted" || operation.mode === "readonly", "Invalid local transport");
-			Object.assign(record, await runLocal(pipeline.tasks));
+		if (pipeline.transport === "act") {
+			Object.assign(record, await runAct(pipeline, operation));
 			record.state = record.status === "passed" ? "completed" : "failed";
 		} else {
 			save("execution", record); // Record the owned branch before attempting its launch.
@@ -430,7 +443,7 @@ async function collect() {
 	const operation = loadOperation();
 	let execution = null;
 	const errors = [];
-	try { execution = read("execution", process.env.CI_EXECUTION_DIGEST); }
+	try { execution = read("execution", expectedDigest("execution")); }
 	catch (error) { errors.push("Execution manifest unavailable: " + error.message); }
 	const details = { operationDigest: operation.digest, executionDigest: execution?.digest || null,
 		executionState: execution?.state || "missing", outcomes: execution?.outcomes || {},
@@ -460,7 +473,7 @@ async function collect() {
 async function cleanup() {
 	const operation = loadOperation();
 	let execution;
-	try { execution = read("execution", process.env.CI_EXECUTION_DIGEST); } catch { /* launch may have failed before recording */ }
+	try { execution = read("execution", expectedDigest("execution")); } catch { /* launch may have failed before recording */ }
 	const record = { operationDigest: operation.digest, executionDigest: execution?.digest || null, state: "passed", removed: false };
 	try {
 		if (execution?.branch) {
@@ -488,7 +501,11 @@ function validate() {
 	const errors = [];
 	const manifests = {};
 	for (const kind of ["operation", "authorization", "pipeline", "execution", "results", "cleanup"]) {
-		try { manifests[kind] = read(kind); } catch (error) { errors.push(kind + ": " + error.message); }
+		try {
+			const expected = expectedDigest(kind);
+			if (process.env.ACT !== "true" && !expected) errors.push(kind + ": missing upstream manifest digest");
+			manifests[kind] = read(kind, expected);
+		} catch (error) { errors.push(kind + ": " + error.message); }
 	}
 	if (manifests.operation && manifests.authorization && manifests.authorization.operationDigest !== manifests.operation.digest) errors.push("Operation authorization mismatch");
 	if (manifests.pipeline && manifests.authorization && manifests.pipeline.authorizationDigest !== manifests.authorization.digest) errors.push("Pipeline authorization mismatch");
@@ -509,7 +526,7 @@ function validate() {
 	} else console.log("::notice::Completed generated pipeline and all controller stages");
 }
 async function main() {
-	const [stage, name] = process.argv.slice(2);
+	const [stage] = process.argv.slice(2);
 	switch (stage) {
 		case "setup": stageToolchain(); break;
 		case "restore": restore(); break;
@@ -520,7 +537,6 @@ async function main() {
 		case "collect": await collect(); break;
 		case "cleanup": await cleanup(); break;
 		case "validate": validate(); break;
-		case "check": check(name); break;
 		default: fail("Unknown CI controller stage: " + stage);
 	}
 }
@@ -528,5 +544,5 @@ if (require.main === module) main().catch(error => {
 	console.error("::error::" + String(error.message || error).replace(/[\r\n]+/g, " "));
 	process.exitCode = 1;
 });
-module.exports = { stageToolchain, restore, resolveOperation, checkPermissions, generate, runLocal, runPipeline,
-	collect, cleanup, validate, executeCheck };
+module.exports = { stageToolchain, restore, resolveOperation, checkPermissions, generate, runPipeline,
+	collect, cleanup, validate, runAct };

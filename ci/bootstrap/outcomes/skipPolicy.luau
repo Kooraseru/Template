@@ -34,15 +34,14 @@ local function neutralCheckPermissions(): { [string]: string }
 end
 
 function SkipPolicy.Conclusion(identity: string): string
-	local decoded = record(Toml.decode(Fs.readFileToString(".github/config/ci/execution.toml")))
-
-	for field in decoded do
+	local execution = record(Toml.decode(Fs.readFileToString(".github/config/ci/execution.toml")))
+	for field in execution do
 		if field ~= "skip" then
 			error(`Unknown CI execution setting {field}`, 0)
 		end
 	end
 
-	local settings = record(decoded.skip)
+	local settings = record(execution.skip)
 
 	for field in settings do
 		if field ~= "default" and field ~= "components" then

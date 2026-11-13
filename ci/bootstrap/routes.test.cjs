@@ -67,13 +67,12 @@ test("read-only executor will not run a generated operation", () => {
 });
 
 test("generated operation identifiers and plans are configuration data, not a fixed router enum", () => {
-	const copy = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../.github/config/ci/operations.json"), "utf8"));
-	copy.operations["custom-build"] = { mode: "generated", events: ["workflow_dispatch"],
-		plan: "custom", publication: false, branchPrefix: "run/custom-" };
+	const source = fs.readFileSync(path.resolve(__dirname, "../../.github/config/ci/operations.toml"), "utf8");
+	const addition = '\n[operations.custom-build]\nmode = "generated"\nevents = ["workflow_dispatch"]\nplan = "custom"\npublication = false\nbranchPrefix = "run/custom-"\n';
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "ci-operation-"));
 	try {
-		const filename = path.join(directory, "operations.json");
-		fs.writeFileSync(filename, JSON.stringify(copy));
+		const filename = path.join(directory, "operations.toml");
+		fs.writeFileSync(filename, source + addition);
 		const validated = readConfig(filename, { requireCredentials: false });
 		const route = resolve(validated, { GITHUB_EVENT_NAME: "workflow_dispatch",
 			GITHUB_REF: "refs/heads/source", CI_REQUESTED_OPERATION: "custom-build" });

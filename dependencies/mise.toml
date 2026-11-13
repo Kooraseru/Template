@@ -1,0 +1,87 @@
+# One external-tool authority. External install state is configured in the invoking
+# environment through MISE_DATA_DIR (for this repository: dependencies/managed/mise).
+# Maintained source packages stay in dependencies/packages.
+min_version = "2026.11.8"
+
+[settings]
+lockfile = true
+
+[tools]
+node = "24.22.1"
+
+[tools."github:luau-lang/lute"]
+version = "1.0.1-nightly.20261104"
+prerelease = true
+
+[tools."github:jgm/pandoc"]
+version = "3.13"
+
+[tools."github:github/gh-actions-lock"]
+version = "0.4.1"
+bin = "actions-lock"
+
+[tools."github:rhysd/actionlint"]
+version = "1.7.12"
+
+[tools."github:cli/cli"]
+version = "2.104.0"
+strip_components = 1
+bin_path = "bin"
+
+[tools."github:nektos/act"]
+version = "0.2.97"
+
+# Platform-specific assets are the ones published by the pinned upstream releases.
+# Lute has no native Windows ARM64 asset at this version; Windows-on-ARM uses x64 emulation.
+[tools."github:luau-lang/lute".platforms]
+linux-x64 = { asset_pattern = "lute-linux-x86_64.zip" }
+linux-arm64 = { asset_pattern = "lute-linux-aarch64.zip" }
+macos-arm64 = { asset_pattern = "lute-macos-aarch64.zip" }
+windows-x64 = { asset_pattern = "lute-windows-x86_64.zip" }
+windows-arm64 = { asset_pattern = "lute-windows-x86_64.zip" }
+
+[tools."github:jgm/pandoc".platforms]
+linux-x64 = { asset_pattern = "pandoc-3.13-linux-amd64.tar.gz" }
+linux-arm64 = { asset_pattern = "pandoc-3.13-linux-arm64.tar.gz" }
+macos-x64 = { asset_pattern = "pandoc-3.13-x86_64-macOS.zip" }
+macos-arm64 = { asset_pattern = "pandoc-3.13-arm64-macOS.zip" }
+windows-x64 = { asset_pattern = "pandoc-3.13-windows-x86_64.zip" }
+windows-arm64 = { asset_pattern = "pandoc-3.13-windows-x86_64.zip" }
+
+[tools."github:github/gh-actions-lock".platforms]
+linux-x64 = { asset_pattern = "linux-amd64" }
+linux-arm64 = { asset_pattern = "linux-arm64" }
+macos-x64 = { asset_pattern = "darwin-amd64" }
+macos-arm64 = { asset_pattern = "darwin-arm64" }
+windows-x64 = { asset_pattern = "windows-amd64.exe", bin = "actions-lock.exe" }
+windows-arm64 = { asset_pattern = "windows-arm64.exe", bin = "actions-lock.exe" }
+
+[tools."github:rhysd/actionlint".platforms]
+linux-x64 = { asset_pattern = "actionlint_1.7.12_linux_amd64.tar.gz" }
+linux-arm64 = { asset_pattern = "actionlint_1.7.12_linux_arm64.tar.gz" }
+macos-x64 = { asset_pattern = "actionlint_1.7.12_darwin_amd64.tar.gz" }
+macos-arm64 = { asset_pattern = "actionlint_1.7.12_darwin_arm64.tar.gz" }
+windows-x64 = { asset_pattern = "actionlint_1.7.12_windows_amd64.zip" }
+windows-arm64 = { asset_pattern = "actionlint_1.7.12_windows_arm64.zip" }
+
+[tools."github:cli/cli".platforms]
+linux-x64 = { asset_pattern = "gh_2.104.0_linux_amd64.tar.gz" }
+linux-arm64 = { asset_pattern = "gh_2.104.0_linux_arm64.tar.gz" }
+macos-x64 = { asset_pattern = "gh_2.104.0_macOS_amd64.zip" }
+macos-arm64 = { asset_pattern = "gh_2.104.0_macOS_arm64.zip" }
+windows-x64 = { asset_pattern = "gh_2.104.0_windows_amd64.zip" }
+windows-arm64 = { asset_pattern = "gh_2.104.0_windows_arm64.zip" }
+
+[tools."github:nektos/act".platforms]
+linux-x64 = { asset_pattern = "act_Linux_x86_64.tar.gz" }
+linux-arm64 = { asset_pattern = "act_Linux_arm64.tar.gz" }
+macos-x64 = { asset_pattern = "act_Darwin_x86_64.tar.gz" }
+macos-arm64 = { asset_pattern = "act_Darwin_arm64.tar.gz" }
+windows-x64 = { asset_pattern = "act_Windows_x86_64.zip" }
+windows-arm64 = { asset_pattern = "act_Windows_arm64.zip" }
+
+# These commands execute from the repository root while the config stays in dependencies.
+[tasks.verify-tools]
+description = "Confirm the installed Luau and workflow-validation toolchain"
+dir = "{{ config_root }}/.."
+run = ["lute --version", "actionlint -version", "pandoc --version"]

@@ -306,20 +306,13 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			permissions = { contents = "read", actions = "read" },
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } },
 	}
-	jobs.tests = {
-		name = "Execute Test Suites", needs = { stage }, ["runs-on"] = "ubuntu-latest",
-		["timeout-minutes"] = 30, permissions = { contents = "read" },
-		steps = {
-			{ uses = "actions/checkout@v7", with = { ref = if Process.env.ACT == "true" then nil else sourceSha, ["persist-credentials"] = false } },
-			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
-			{ name = "Run universal and project test suites", run = "bash ci/test.sh" },
-		},
-	}
-	local needs = { stage, "tests" }
+	-- Test suites are an ordinary discovered Build component, not a permanently
+	-- named job layered on top of the generated component graph.
+	local needs = { stage }
 	if operation == "build" and event == "push" and Process.env.ACT ~= "true"
 		and Process.env.CI_PUBLICATION_ENABLED ~= "false" then
 		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
-		jobs.publish = { name = "Publish", needs = { stage, "tests" }, uses = "./.github/workflows/publish.yml",
+		jobs.publish = { name = "Publish", needs = { stage }, uses = "./.github/workflows/publish.yml",
 			permissions = { contents = "write", issues = "write", checks = "write", actions = "read", ["id-token"] = "write" },
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } }
 		table.insert(needs, "publish")
@@ -331,7 +324,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 		steps = {
 			{ uses = "actions/checkout@v7", with = { ref = if Process.env.ACT == "true" then nil else sourceSha, ["persist-credentials"] = false } },
 			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
-			{ name = "Remove owned temporary branch", env = { GH_TOKEN = "${{ github.token }}" }, run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/entry.luau --cleanup-branch" },
+			{ name = "Remove owned temporary branch", env = { GH_TOKEN = "${{ github.token }}" }, run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/init.luau --cleanup-branch" },
 		} }
 	end
 	files["pipeline.yml"] = Json.encode({ name = "Pipeline",

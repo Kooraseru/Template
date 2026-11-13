@@ -2,7 +2,7 @@
 
 One permanently authored workflow, `.github/workflows/ci.yml`, acts solely as the bootstrap and required status gate. It does not enumerate component publication jobs or embed fixed credential names.
 
-`.github/config/ci/operations.json` selects an operation for each event and declares read-only checks, generated execution policies and operation-specific branch prefixes. `.github/config/credentials.json` owns capability roles, protected-environment bindings, and secret or variable aliases. Adding an operation or component should not require modifying `ci.yml`.
+`.github/config/ci/operations.toml` selects event operations and declares operation-specific policies; `components.toml` controls component enablement and `execution.toml` controls skip handling. `.github/config/credentials.json` owns capability roles, protected-environment bindings, and secret or variable aliases. Adding an operation or component should not require modifying `ci.yml`.
 
 Pull requests run configured unprivileged checks in separate Code Review and Rules Audit jobs. Code Review runs actionlint, Preflight, and the full Build/test suite. Rules Audit runs repository rules independently, produces its own diagnostics report, and does not fail the gate for warnings. Forked or untrusted PR code cannot request the privileged bootstrap. Trusted `source` pushes run a guarded bootstrap that generates `pipeline.yml` and its component jobs on a temporary branch. It uses an installation App or explicitly configured bootstrap token, scopes job permissions to each task, then waits until the exact generated run completes before the permanent `validate` check can pass.
 
@@ -55,7 +55,7 @@ Run a command through the loader so its dependencies are available first:
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute --version
-node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check ci/entry.luau
+node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check ci/init.luau
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute lint ci
 ```
 
