@@ -13,7 +13,7 @@ test("hosted publication rejects feature refs while local ACT accepts the checko
 	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "local-act-gate-"));
 	t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
 	for (const [act, ref, allowed] of [["", "refs/heads/feature", false], ["", "refs/heads/source", true], ["true", "refs/heads/feature", true]]) {
-		const result = spawnSync(lute, ["run", "ci/entry.luau", "--credential-provider"], {
+		const result = spawnSync(lute, ["run", "ci/init.luau", "--credential-provider"], {
 			cwd: root, encoding: "utf8", timeout: 15000, windowsHide: true,
 			env: { ...process.env, ACT: act, GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: ref,
 				CI_PROFILE: "source-ci", CI_EVENT: "workflow_dispatch", GITHUB_TOKEN: "", GH_TOKEN: "", CI_GRAPH_RUN: "true", GITHUB_OUTPUT: path.join(temporary, "output") },

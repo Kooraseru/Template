@@ -55,7 +55,7 @@ Run a command through the loader so its dependencies are available first:
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute --version
-node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check ci/entry.luau
+node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check ci/init.luau
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute lint ci
 ```
 

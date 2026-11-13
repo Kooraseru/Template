@@ -31,7 +31,7 @@ end
 for _, artifact in artifacts do
 	if not Fs.exists(artifact) or Fs.metadata(artifact).type ~= "file" then
 		error(
-			`missing {artifact}; build first with node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau`,
+			`missing {artifact}; build first with node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/init.luau`,
 			0
 		)
 	end
