@@ -69,8 +69,19 @@ function restore() {
 	const listing = command("tar", ["-tzf", bundle]).split("\n").filter(Boolean);
 	assert(listing.length > 0 && listing.every(entry => (entry === "dependencies/managed/" ||
 		entry.startsWith("dependencies/managed/")) && !entry.split("/").includes("..")), "Toolchain archive escapes managed dependencies");
-	const types = command("tar", ["-tvzf", bundle]).split("\n");
-	assert(types.every(line => /^[d-]/.test(line)), "Toolchain archive contains links or special file types");
+	const types = command("tar", ["-tvzf", bundle]).split("\n").filter(Boolean);
+	const members = new Set(listing.map(entry => entry.replace(/\/$/, "")));
+	for (const line of types) {
+		const type = line[0];
+		if (type === "d" || type === "-") continue;
+		if (type === "h") {
+			const target = line.match(/ link to ([^\r\n]+)$/)?.[1];
+			assert(target && target.startsWith("dependencies/managed/") && !target.split("/").includes("..") &&
+				members.has(target), "Toolchain hardlink points outside its verified archive");
+			continue;
+		}
+		throw new Error("Toolchain archive contains a link or special file type: " + type);
+	}
 	command("tar", ["-xzf", bundle, "-C", ROOT]);
 	console.log("Restored verified dependency bundle");
 }
