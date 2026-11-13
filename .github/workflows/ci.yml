@@ -76,7 +76,7 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
@@ -124,14 +124,14 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
           merge-multiple: true
@@ -176,14 +176,14 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
           merge-multiple: true
@@ -239,20 +239,20 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
           merge-multiple: true
           path: build/ci-controller/artifacts
       - name: Retrieve compiled pipeline
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-generated
           path: build/ci-controller/generated
@@ -307,14 +307,14 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
           merge-multiple: true
@@ -376,14 +376,14 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
           merge-multiple: true
@@ -430,14 +430,14 @@ jobs:
         with:
           node-version: 24
       - name: Restore controller dependency archive
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
           merge-multiple: true
