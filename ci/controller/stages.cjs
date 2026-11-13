@@ -87,7 +87,8 @@ function restore() {
 }
 function resolveOperation() {
 	const { readConfig, resolve } = require("../bootstrap/routes.cjs");
-	const cfg = readConfig();
+	// Operation routing requires only the declarative settings; credential inspection belongs to Check Permissions.
+	const cfg = readConfig(undefined, { requireCredentials: false });
 	const operation = resolve(cfg);
 	const trust = context();
 	if (operation.mode === "generated") assert(trust.level === "trusted-source", "Generated execution requires trusted source");

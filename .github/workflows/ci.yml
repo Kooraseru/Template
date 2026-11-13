@@ -63,6 +63,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      toolchain_digest: ${{ needs.setup.outputs.digest }}
       digest: ${{ steps.controller.outputs.digest }}
       operation: ${{ steps.controller.outputs.operation }}
       mode: ${{ steps.controller.outputs.mode }}
@@ -72,16 +73,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Restore controller dependency archive
-        uses: actions/download-artifact@v4
-        with:
-          name: controller-toolchain
-          path: build/ci-controller/toolchain
-      - name: Verify and extract common dependencies
-        run: node ci/controller/stages.cjs restore
+
+
       - name: Resolve configured operation
         id: controller
         env:
@@ -93,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: controller-manifest-resolve
-          path: build/ci-controller/artifacts/
+          path: build/ci-controller/artifacts/operation.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -105,6 +98,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      toolchain_digest: ${{ needs.resolve.outputs.toolchain_digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ steps.controller.outputs.environment }}
       reporting_environment: ${{ steps.controller.outputs.reporting_environment }}
@@ -129,6 +123,8 @@ jobs:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
+        env:
+          CI_TOOLCHAIN_DIGEST: ${{ needs.resolve.outputs.toolchain_digest }}
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
         uses: actions/download-artifact@v4
@@ -144,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: controller-manifest-authorize
-          path: build/ci-controller/artifacts/
+          path: build/ci-controller/artifacts/authorization.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -156,6 +152,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      toolchain_digest: ${{ needs.authorize.outputs.toolchain_digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.authorize.outputs.bootstrap_environment }}
       reporting_environment: ${{ needs.authorize.outputs.reporting_environment }}
@@ -181,6 +178,8 @@ jobs:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
+        env:
+          CI_TOOLCHAIN_DIGEST: ${{ needs.authorize.outputs.toolchain_digest }}
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
         uses: actions/download-artifact@v4
@@ -205,7 +204,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: controller-manifest-generate
-          path: build/ci-controller/artifacts/
+          path: build/ci-controller/artifacts/pipeline.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -220,6 +219,7 @@ jobs:
     environment:
       name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.generate.outputs.bootstrap_environment || 'ci-untrusted' }}
     outputs:
+      toolchain_digest: ${{ needs.generate.outputs.toolchain_digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.generate.outputs.bootstrap_environment }}
       reporting_environment: ${{ needs.generate.outputs.reporting_environment }}
@@ -246,6 +246,8 @@ jobs:
           name: controller-toolchain
           path: build/ci-controller/toolchain
       - name: Verify and extract common dependencies
+        env:
+          CI_TOOLCHAIN_DIGEST: ${{ needs.generate.outputs.toolchain_digest }}
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
         uses: actions/download-artifact@v4
@@ -282,7 +284,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: controller-manifest-execute
-          path: build/ci-controller/artifacts/
+          path: build/ci-controller/artifacts/execution.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -316,16 +318,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Restore controller dependency archive
-        uses: actions/download-artifact@v4
-        with:
-          name: controller-toolchain
-          path: build/ci-controller/toolchain
-      - name: Verify and extract common dependencies
-        run: node ci/controller/stages.cjs restore
+
+
       - name: Restore upstream controller manifests
         uses: actions/download-artifact@v4
         with:
@@ -357,7 +351,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: controller-manifest-collect
-          path: build/ci-controller/artifacts/
+          path: build/ci-controller/artifacts/results.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -392,16 +386,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Restore controller dependency archive
-        uses: actions/download-artifact@v4
-        with:
-          name: controller-toolchain
-          path: build/ci-controller/toolchain
-      - name: Verify and extract common dependencies
-        run: node ci/controller/stages.cjs restore
+
+
       - name: Restore upstream controller manifests
         uses: actions/download-artifact@v4
         with:
@@ -421,7 +407,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: controller-manifest-cleanup
-          path: build/ci-controller/artifacts/
+          path: build/ci-controller/artifacts/cleanup.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -446,23 +432,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Restore controller dependency archive
-        uses: actions/download-artifact@v4
-        with:
-          name: controller-toolchain
-          path: build/ci-controller/toolchain
-      - name: Verify and extract common dependencies
-        run: node ci/controller/stages.cjs restore
+
+
       - name: Restore upstream controller manifests
-        uses: actions/download-artifact@v4
-        with:
-          pattern: controller-manifest-*
-          merge-multiple: true
-          path: build/ci-controller/artifacts
-      - name: Restore controller stage manifests
         uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*

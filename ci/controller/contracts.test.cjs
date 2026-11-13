@@ -97,3 +97,32 @@ test("tokenless local act can compile a read-only graph without hosted action lo
 	assert.ok(workflow.jobs.check_setup);
 	assert.equal(fs.existsSync(path.join(root, "build/ci-controller/generated/actions.lock")), false);
 });
+
+
+test("lightweight controller stages do not restore a full toolchain or reupload inherited manifests", () => {
+	const fs = require("node:fs");
+	const path = require("node:path");
+	const workflow = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	const ids = ["setup", "resolve", "authorize", "generate", "execute", "collect", "cleanup", "validate"];
+	const lines = workflow.split(/\r?\n/);
+	const body = {};
+	for (let index = 0; index < ids.length; index++) {
+		const start = lines.findIndex(line => line === "  " + ids[index] + ":");
+		const end = index < ids.length - 1 ? lines.findIndex(line => line === "  " + ids[index + 1] + ":") : lines.length;
+		assert.ok(start >= 0 && end > start, "Missing permanent job: " + ids[index]);
+		body[ids[index]] = lines.slice(start, end).join("\n");
+	}
+	for (const id of ["resolve", "collect", "cleanup", "validate"]) {
+		assert.doesNotMatch(body[id], /Restore controller dependency archive|Verify and extract common dependencies|actions\/setup-node@/);
+	}
+	for (const id of ["authorize", "generate", "execute"]) {
+		assert.match(body[id], /CI_TOOLCHAIN_DIGEST: \$\{\{ needs\.[a-z]+\.outputs\.toolchain_digest \}\}/);
+		assert.match(body[id], /Verify and extract common dependencies/);
+	}
+	const manifests = { resolve: "operation", authorize: "authorization", generate: "pipeline",
+		execute: "execution", collect: "results", cleanup: "cleanup" };
+	for (const [id, kind] of Object.entries(manifests)) {
+		assert.match(body[id], new RegExp("path: build/ci-controller/artifacts/" + kind + "\\.json"));
+	}
+	assert.doesNotMatch(body.validate, /Restore controller stage manifests/);
+});
