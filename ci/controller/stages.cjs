@@ -50,7 +50,7 @@ function stageToolchain() {
 	const metadata = path.join(TOOLCHAIN, "bundle.json");
 	fs.mkdirSync(TOOLCHAIN, { recursive: true });
 	assert(fs.existsSync("dependencies/managed"), "Common managed dependencies were not installed");
-	command("tar", ["-czf", bundle, "dependencies/managed"]);
+	command("tar", ["--dereference", "-czf", bundle, "dependencies/managed"]);
 	const snapshot = { version: 1, source: trust.sha, run: process.env.GITHUB_RUN_ID || "local",
 		trust: trust.level, archive: "managed.tar.gz", digest: fileHash(bundle) };
 	fs.writeFileSync(metadata, JSON.stringify(snapshot, null, 2) + "\n");
@@ -414,6 +414,7 @@ async function cleanup() {
 			assert(execution.branch === operation.branchPrefix + (process.env.GITHUB_RUN_ID || "") + "-" +
 				(process.env.GITHUB_RUN_ATTEMPT || "1"), "Ref outside run namespace");
 			assert(/^[a-f0-9]{40}$/.test(execution.revision), "Missing expected generated revision");
+			assert(process.env.GH_TOKEN, "Cannot verify owned branch without Actions read token");
 			const current = await githubApi("/repos/" + operation.trust.repository + "/git/ref/heads/" +
 				execution.branch.split("/").map(encodeURIComponent).join("/"), process.env.GH_TOKEN);
 			assert(current.object.sha === execution.revision, "Temporary branch moved; refusing deletion");
@@ -437,6 +438,7 @@ function validate() {
 	}
 	if (manifests.operation && manifests.authorization && manifests.authorization.operationDigest !== manifests.operation.digest) errors.push("Operation authorization mismatch");
 	if (manifests.pipeline && manifests.authorization && manifests.pipeline.authorizationDigest !== manifests.authorization.digest) errors.push("Pipeline authorization mismatch");
+	if (manifests.pipeline && manifests.execution && manifests.execution.pipelineDigest !== manifests.pipeline.digest) errors.push("Executed pipeline digest mismatch");
 	if (manifests.execution && (manifests.execution.state !== "completed" ||
 		(manifests.execution.transport === "hosted" && manifests.execution.conclusion !== "success"))) errors.push("Pipeline execution did not complete successfully");
 	if (manifests.results?.state !== "passed") errors.push("Results were not successfully collected");
