@@ -117,7 +117,7 @@ function validateJobConclusions(env, localAct = false) {
 		if (state === "success") continue;
 		// act does not always evaluate nested job outputs. The verified stage manifests
 		// remain mandatory, so only an unresolved expression may be deferred locally.
-		if (localAct && typeof state === "string" && /^\\$\\{\\{[^{}]+\\}\\}$/.test(state)) continue;
+		if (localAct && typeof state === "string" && /^\$\{\{[^{}]+\}\}$/.test(state)) continue;
 		failures.push("Permanent job " + key.toLowerCase() + " did not succeed" + (state ? ": " + state : ""));
 	}
 	return failures;
