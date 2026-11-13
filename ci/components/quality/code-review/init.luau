@@ -1,6 +1,5 @@
 --!strict
 -- An ordinary discovered validation component. Diagnostics retain their own namespace.
-local Fs = require("@std/fs")
 local Process = require("@lute/process")
 
 local Component = {}
@@ -15,10 +14,6 @@ function Component.Run(_self, _context: { event: string }): ()
 	if not result.ok then
 		error("code-review reported blocking findings or an execution error", 0)
 	end
-	local destination = "build/artifacts/quality/code-review"
-	Fs.createDirectory(destination, { makeParents = true })
-	local copied = Process.run({ "cp", "-a", "build/code-review/.", destination .. "/" })
-	if not copied.ok then error("Unable to preserve code-review diagnostic artifacts", 0) end
 end
 
 return Component

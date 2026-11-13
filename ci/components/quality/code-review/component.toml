@@ -2,6 +2,6 @@ phase = "build"
 provides = ["quality.code_review"]
 requires = []
 inputs = ["ci/**", "dependencies/packages/checks/**", ".github/config/ci/**"]
-outputs = ["build/artifacts/quality/code-review/**"]
+outputs = []
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"
