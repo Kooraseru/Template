@@ -8,86 +8,185 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Configured operation identity
+        description: Configured operation name from .github/config/ci/operations.json
         type: string
         required: true
         default: validation
       publish:
-        description: Authorize configured manual publication
+        description: Explicitly authorize manual publication
         type: boolean
         required: true
         default: false
 
 permissions: {}
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
-
-  setup:
-    name: Setup Dependencies
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - run: 'echo "Diagnostic admission: setup"'
   resolve:
-    name: Resolve Operation
-    needs: setup
+    name: Resolve CI Operation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
+    outputs:
+      operation: ${{ steps.route.outputs.operation }}
+      mode: ${{ steps.route.outputs.mode }}
+      environment: ${{ steps.route.outputs.environment }}
+      app_id_name: ${{ steps.route.outputs.app_id_name }}
+      app_private_key_name: ${{ steps.route.outputs.app_private_key_name }}
+      bootstrap_token_name: ${{ steps.route.outputs.bootstrap_token_name }}
+      plan: ${{ steps.route.outputs.plan }}
+      publication: ${{ steps.route.outputs.publication }}
+      branch_prefix: ${{ steps.route.outputs.branch_prefix }}
+      review_checks: ${{ steps.route.outputs.review_checks }}
+      audit_checks: ${{ steps.route.outputs.audit_checks }}
     steps:
-      - run: 'echo "Diagnostic admission: resolve"'
-  authorize:
-    name: Check Permissions
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install credential catalog validator
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Resolve configured operation
+        id: route
+        env:
+          CI_REQUESTED_OPERATION: ${{ inputs.operation }}
+          CI_REQUESTED_PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
+        run: node ci/bootstrap/routes.cjs resolve
+
+  review:
+    name: Code Review
     needs: resolve
+    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.review_checks == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
-      - run: 'echo "Diagnostic admission: authorize"'
-  generate:
-    name: Generate Pipeline
-    needs: authorize
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Execute configured read-only checks
+        env:
+          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
+          CI_CHECK_GROUP: review
+        run: node ci/bootstrap/routes.cjs run
+      - name: Preserve full diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: code-review-findings
+          path: build/code-review/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  audit:
+    name: Rules Audit
+    needs: resolve
+    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.audit_checks == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
     steps:
-      - run: 'echo "Diagnostic admission: generate"'
-  execute:
-    name: Run Pipeline
-    needs: generate
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install rule audit dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Execute configured Rules audit
+        env:
+          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
+          CI_CHECK_GROUP: audit
+        run: node ci/bootstrap/routes.cjs run
+      - name: Preserve Rules audit findings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rules-audit-findings
+          path: build/rules-audit/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  bootstrap:
+    name: Start Generated CI
+    needs: resolve
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.resolve.outputs.mode == 'generated' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: read
+      actions: read
+      id-token: write
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
     steps:
-      - run: 'echo "Diagnostic admission: execute"'
-  collect:
-    name: Collect Results
-    needs: execute
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - run: 'echo "Diagnostic admission: collect"'
-  cleanup:
-    name: Cleanup
-    needs: collect
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - run: 'echo "Diagnostic admission: cleanup"'
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Compile, launch, and verify generated execution
+        env:
+          CI_EVENT: push
+          CI_PROFILE: source-ci
+          CI_OPERATION: ${{ needs.resolve.outputs.plan }}
+          CI_PUBLICATION_ENABLED: ${{ needs.resolve.outputs.publication }}
+          CI_EXECUTION_PREFIX: ${{ needs.resolve.outputs.branch_prefix }}
+          CI_CREDENTIAL_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+          CI_CREDENTIAL_APP_ID: ${{ vars[needs.resolve.outputs.app_id_name] }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.resolve.outputs.app_private_key_name] }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.resolve.outputs.bootstrap_token_name] }}
+          GH_TOKEN: ${{ github.token }}
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau
+      - name: Preserve bootstrap output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: start
+          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          if-no-files-found: ignore
+          retention-days: 3
+
   validate:
     name: validate
-    needs: cleanup
-    if: ${{ always() }}
+    if: always()
+    needs: [resolve, review, audit, bootstrap]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 5
+    permissions: {}
     steps:
-      - run: 'echo "Diagnostic admission: validate"'
+      - name: Require completed selected route
+        env:
+          RESOLVE: ${{ needs.resolve.result }}
+          MODE: ${{ needs.resolve.outputs.mode }}
+          REVIEW: ${{ needs.review.result }}
+          AUDIT: ${{ needs.audit.result }}
+          REVIEW_REQUIRED: ${{ needs.resolve.outputs.review_checks }}
+          AUDIT_REQUIRED: ${{ needs.resolve.outputs.audit_checks }}
+          BOOTSTRAP: ${{ needs.bootstrap.result }}
+        run: |
+          test "$RESOLVE" = success
+          case "$MODE" in
+            readonly)
+              if [ "$REVIEW_REQUIRED" = true ]; then test "$REVIEW" = success; else test "$REVIEW" = skipped; fi
+              if [ "$AUDIT_REQUIRED" = true ]; then test "$AUDIT" = success; else test "$AUDIT" = skipped; fi
+              ;;
+            generated) test "$BOOTSTRAP" = success ;;
+            *) echo "No valid execution route completed" >&2; exit 1 ;;
+          esac
