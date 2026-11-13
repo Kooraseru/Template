@@ -28,13 +28,15 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
 	assert.deepEqual(authored, ["ci.yml"]);
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
-	assert.match(workflow, /^  resolve:$/m);
-	assert.match(workflow, /^  review:$/m);
-	assert.match(workflow, /^  audit:$/m);
-	assert.match(workflow, /^  bootstrap:$/m);
-	assert.match(workflow, /^  validate:$/m);
-	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
-	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs run/);
+	for (const job of ["setup", "resolve", "authorize", "generate", "execute", "collect", "cleanup", "validate"]) {
+		assert.match(workflow, new RegExp("^  " + job + ":$", "m"));
+	}
+	for (const job of ["review", "audit", "bootstrap", "build", "tests", "publish"]) {
+		assert.doesNotMatch(workflow, new RegExp("^  " + job + ":$", "m"));
+	}
+	for (const command of ["resolve", "authorize", "generate", "run", "collect", "cleanup", "validate"]) {
+		assert.match(workflow, new RegExp("node ci/controller/stages\\.cjs " + command));
+	}
 	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
 	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
 	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));

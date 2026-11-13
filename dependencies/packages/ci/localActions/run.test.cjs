@@ -52,8 +52,9 @@ test("local CI adapts the disposable single-launcher copy", t => {
 	assert.equal(prepareStagedWorkflow(file, "local-fixture"), false);
 	const actual = fs.readFileSync(file, "utf8");
 	assert.match(actual, /actions\/upload-artifact@v4/);
-	assert.match(actual, /node ci\/bootstrap\/routes\.cjs resolve/);
-	assert.match(actual, /name: Start Generated CI/);
+	assert.match(actual, /node ci\/controller\/stages\.cjs resolve/);
+	assert.match(actual, /name: Generate Pipeline/);
+	assert.match(actual, /name: Run Pipeline/);
 	assert.doesNotMatch(actual, /actions\/upload-artifact@v7/);
 	assert.doesNotMatch(actual, /^  publish-(general|projects|rulesets):/m);
 	assert.equal(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"), source);

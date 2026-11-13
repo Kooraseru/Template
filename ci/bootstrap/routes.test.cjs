@@ -67,7 +67,7 @@ test("read-only executor will not run a generated operation", () => {
 });
 
 test("generated operation identifiers and plans are configuration data, not a fixed router enum", () => {
-	const copy = structuredClone(config);
+	const copy = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../.github/config/ci/operations.json"), "utf8"));
 	copy.operations["custom-build"] = { mode: "generated", events: ["workflow_dispatch"],
 		plan: "custom", publication: false, branchPrefix: "run/custom-" };
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "ci-operation-"));
