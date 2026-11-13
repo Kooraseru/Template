@@ -1,0 +1,7 @@
+phase = "build"
+provides = ["quality.rules_audit"]
+requires = []
+inputs = ["ci/**", "dependencies/packages/checks/**", ".github/config/ci/**"]
+outputs = ["build/artifacts/quality/rules-audit/**"]
+events = ["push", "pull_request", "workflow_dispatch"]
+boundary = "read"
