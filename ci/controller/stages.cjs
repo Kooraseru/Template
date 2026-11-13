@@ -191,19 +191,42 @@ function generate() {
 		tasks = discovered.map(name => ({ id: name, kind: "workflow", needs: [] }));
 	}
 	const files = fs.readdirSync(GENERATED).filter(file => file.endsWith(".yml")).sort();
-	for (const filename of files) {
-		const target = path.relative(ROOT, path.join(GENERATED, filename)).split(path.sep).join("/");
-		for (const flag of ["--no-interactive --no-narrow", "--verify-local"]) {
-			command("node", ["dependencies/packages/core/dependencyLoader/index.ts",
-				"--exec", "tools.actionsLock", ...flag.split(" "), target], { timeout: 180000 });
+	assert(files.includes("pipeline.yml"), "Missing generated pipeline");
+	// Lock the workflow under the exact path GitHub will execute, not its temporary artifact path.
+	// The detached worktree is never published by the generator.
+	const lockWorktree = fs.mkdtempSync(path.join(os.tmpdir(), "ci-generated-lock-"));
+	fs.rmSync(lockWorktree, { recursive: true, force: true });
+	let attached = false;
+	try {
+		command("git", ["worktree", "add", "--detach", lockWorktree, operation.trust.sha], { timeout: 120000 });
+		attached = true;
+		const loader = path.join(ROOT, "dependencies/packages/core/dependencyLoader/index.ts");
+		for (const filename of files) {
+			const staged = path.join(lockWorktree, ".github/workflows", filename);
+			mkdir(staged);
+			fs.copyFileSync(path.join(GENERATED, filename), staged);
 		}
+		for (const filename of files) {
+			const workflow = ".github/workflows/" + filename;
+			for (const flags of [["--no-interactive", "--no-narrow"], ["--verify-local"]]) {
+				command("node", [loader, "--exec", "tools.actionsLock", ...flags, workflow],
+					{ cwd: lockWorktree, timeout: 180000 });
+			}
+		}
+		const locked = path.join(lockWorktree, ".github/workflows/actions.lock");
+		assert(fs.existsSync(locked), "Generated workflow lockfile missing");
+		fs.copyFileSync(locked, path.join(GENERATED, "actions.lock"));
+	} finally {
+		if (attached) command("git", ["worktree", "remove", "--force", lockWorktree], { timeout: 30000 });
 	}
 	command("bash", ["ci/bootstrap/check-workflows.sh", GENERATED], { timeout: 240000 });
 	const hashes = {};
-	for (const filename of files) {
-		assert(/^[a-z][a-z0-9-]*\.yml$/.test(filename), "Invalid generated filename");
-		const source = fs.readFileSync(path.join(GENERATED, filename), "utf8").replace(/^#.*\n/, "");
-		JSON.parse(source); // The Luau emitter generates JSON, which is valid YAML.
+	for (const filename of [...files, "actions.lock"]) {
+		assert(/^[a-z][a-z0-9-]*\.yml$/.test(filename) || filename === "actions.lock", "Invalid generated filename");
+		if (filename.endsWith(".yml")) {
+			const source = fs.readFileSync(path.join(GENERATED, filename), "utf8").replace(/^#.*\n/, "");
+			JSON.parse(source); // The Luau emitter generates JSON, which is valid YAML.
+		}
 		hashes[filename] = fileHash(path.join(GENERATED, filename));
 	}
 	assert(files.includes("pipeline.yml"), "Missing generated pipeline");
