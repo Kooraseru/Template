@@ -180,6 +180,14 @@ function generate() {
 		tasks = discovered.map(name => ({ id: name, kind: "workflow", needs: [] }));
 	}
 	const files = fs.readdirSync(GENERATED).filter(file => file.endsWith(".yml")).sort();
+	for (const filename of files) {
+		const target = path.relative(ROOT, path.join(GENERATED, filename)).split(path.sep).join("/");
+		for (const flag of ["--no-interactive --no-narrow", "--verify-local"]) {
+			command("node", ["dependencies/packages/core/dependencyLoader/index.ts",
+				"--exec", "tools.actionsLock", ...flag.split(" "), target], { timeout: 180000 });
+		}
+	}
+	command("bash", ["ci/bootstrap/check-workflows.sh", GENERATED], { timeout: 240000 });
 	const hashes = {};
 	for (const filename of files) {
 		assert(/^[a-z][a-z0-9-]*\.yml$/.test(filename), "Invalid generated filename");
