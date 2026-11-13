@@ -194,6 +194,8 @@ function generate() {
 	assert(files.includes("pipeline.yml"), "Missing generated pipeline");
 	// Lock the workflow under the exact path GitHub will execute, not its temporary artifact path.
 	// The detached worktree is never published by the generator.
+	const offlineReadonly = process.env.ACT === "true" && operation.mode === "readonly";
+	if (!offlineReadonly) {
 	const lockWorktree = fs.mkdtempSync(path.join(os.tmpdir(), "ci-generated-lock-"));
 	fs.rmSync(lockWorktree, { recursive: true, force: true });
 	let attached = false;
@@ -220,8 +222,13 @@ function generate() {
 		if (attached) command("git", ["worktree", "remove", "--force", lockWorktree], { timeout: 30000 });
 	}
 	command("bash", ["ci/bootstrap/check-workflows.sh", GENERATED], { timeout: 240000 });
+	} else {
+		// Local act has no GitHub token. This pipeline runs directly as commands, not hosted Actions.
+		// Never skip action locking for a pipeline that might be dispatched to GitHub.
+		console.log("::notice::Local read-only act run: hosted workflow locking and actionlint deferred to hosted CI");
+	}
 	const hashes = {};
-	for (const filename of [...files, "actions.lock"]) {
+	for (const filename of [...files, ...(offlineReadonly ? [] : ["actions.lock"])]) {
 		assert(/^[a-z][a-z0-9-]*\.yml$/.test(filename) || filename === "actions.lock", "Invalid generated filename");
 		if (filename.endsWith(".yml")) {
 			const source = fs.readFileSync(path.join(GENERATED, filename), "utf8").replace(/^#.*\n/, "");
@@ -492,9 +499,7 @@ function validate() {
 	if (manifests.results && manifests.execution && manifests.results.executionDigest !== manifests.execution.digest) errors.push("Collected results do not match the executed pipeline");
 	if (manifests.cleanup && manifests.execution && manifests.cleanup.executionDigest !== manifests.execution.digest) errors.push("Cleanup refers to a different execution");
 	if (manifests.cleanup?.state !== "passed") errors.push("Cleanup failed or was not recorded");
-	for (const key of ["SETUP", "RESOLVE", "AUTHORIZE", "GENERATE", "RUN", "COLLECT", "CLEANUP"]) {
-		if (process.env["CI_JOB_" + key] !== "success") errors.push("Permanent job " + key.toLowerCase() + " did not succeed");
-	}
+	errors.push(...C.validateJobConclusions(process.env, process.env.ACT === "true"));
 	if (manifests.pipeline?.transport === "local" && manifests.execution?.outcomes) {
 		errors.push(...C.validateOutcomes(manifests.pipeline.tasks, manifests.execution.outcomes));
 	}

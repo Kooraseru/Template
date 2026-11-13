@@ -1,7 +1,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { seal, sha256, graph, trust, validateOutcomes } = require("./contracts.cjs");
+const { seal, sha256, graph, trust, validateOutcomes, validateJobConclusions } = require("./contracts.cjs");
 
 test("content-addressed manifest is stable across object key order", () => {
 	const first = seal("operation", { a: 1, z: { c: 3, b: 2 } });
@@ -21,6 +21,17 @@ test("trust classification blocks PR privilege", () => {
 	assert.equal(trust("push", "refs/heads/source", "A/B", sha).level, "trusted-source");
 	assert.equal(trust("workflow_dispatch", "refs/heads/feature", "A/B", sha).level, "untrusted");
 });
+test("act tolerates only unresolved chained outputs; never real failures or missing statuses", () => {
+	const success = Object.fromEntries(["SETUP", "RESOLVE", "AUTHORIZE", "GENERATE", "RUN", "COLLECT", "CLEANUP"].map(key => ["CI_JOB_" + key, "success"]));
+	const unresolved = { ...success, CI_JOB_RESOLVE: "${{ needs.generate.outputs.resolve_result }}", CI_JOB_AUTHORIZE: "${{ needs.generate.outputs.authorize_result }}" };
+	assert.deepEqual(validateJobConclusions(success, false), []);
+	assert.deepEqual(validateJobConclusions(unresolved, true), []);
+	assert.equal(validateJobConclusions(unresolved, false).length, 2);
+	assert.deepEqual(validateJobConclusions({ ...unresolved, CI_JOB_RUN: "skipped" }, true), ["Permanent job run did not succeed: skipped"]);
+	assert.deepEqual(validateJobConclusions({ ...unresolved, CI_JOB_COLLECT: "failure" }, true), ["Permanent job collect did not succeed: failure"]);
+	assert.deepEqual(validateJobConclusions({ ...unresolved, CI_JOB_RUN: "" }, true), ["Permanent job run did not succeed"]);
+});
+
 test("outcome policy does not launder failures or blocking", () => {
 	const tasks = [{ id: "a" }, { id: "b" }, { id: "c" }];
 	assert.deepEqual(validateOutcomes(tasks, { a: { state: "passed" }, b: { state: "skipped" }, c: { state: "blocked" } }), ["c: blocked"]);

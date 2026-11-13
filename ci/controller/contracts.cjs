@@ -110,5 +110,17 @@ function validateOutcomes(tasks, outcomes, allowedSkips = {}) {
 	}
 	return failures;
 }
+function validateJobConclusions(env, localAct = false) {
+	const failures = [];
+	for (const key of ["SETUP", "RESOLVE", "AUTHORIZE", "GENERATE", "RUN", "COLLECT", "CLEANUP"]) {
+		const state = env["CI_JOB_" + key];
+		if (state === "success") continue;
+		// act does not always evaluate nested job outputs. The verified stage manifests
+		// remain mandatory, so only an unresolved expression may be deferred locally.
+		if (localAct && typeof state === "string" && /^\\$\\{\\{[^{}]+\\}\\}$/.test(state)) continue;
+		failures.push("Permanent job " + key.toLowerCase() + " did not succeed" + (state ? ": " + state : ""));
+	}
+	return failures;
+}
 module.exports = { ROOT, STATE, ARTIFACTS, TYPES, assert, sha256, canonical, artifactPath,
-	seal, write, read, output, safeRef, trust, graph, validateOutcomes };
+	seal, write, read, output, safeRef, trust, graph, validateOutcomes, validateJobConclusions };
