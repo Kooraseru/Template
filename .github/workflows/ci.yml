@@ -282,8 +282,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-    environment:
-      name: ${{ needs.execute.outputs.reporting_environment }}
     outputs:
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.execute.outputs.bootstrap_environment }}
@@ -350,8 +348,6 @@ jobs:
     permissions:
       contents: read
       actions: read
-    environment:
-      name: ${{ needs.collect.outputs.bootstrap_environment }}
     outputs:
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.collect.outputs.bootstrap_environment }}
