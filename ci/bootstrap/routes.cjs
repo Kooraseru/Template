@@ -10,6 +10,7 @@ const EVENTS = new Set(["push", "pull_request", "workflow_dispatch"]);
 const NAME = /^[a-z][a-z0-9-]*$/;
 const ALIAS = /^[A-Z][A-Z0-9_]*$/;
 const PREFIX = /^[a-z][a-z0-9/-]*-$/;
+const COMPONENT = /^[a-z0-9][a-z0-9_-]*(?:\/[a-z0-9][a-z0-9_-]*)*$/;
 
 function object(value, label) {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(label + " must be an object");
@@ -73,6 +74,11 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 			typeof item.branchPrefix !== "string" || !PREFIX.test(item.branchPrefix) ||
 			item.branchPrefix.includes("//") || item.branchPrefix.includes("..")) {
 			throw new Error("Invalid generated operation: " + name);
+		}
+		if (item.components !== undefined && (!Array.isArray(item.components) || !item.components.length ||
+			item.components.some(name => typeof name !== "string" || !COMPONENT.test(name)) ||
+			new Set(item.components).size !== item.components.length)) {
+			throw new Error("Invalid component selection: " + name);
 		}
 		if (item.publication && !item.events.every(event => event === "push" || event === "workflow_dispatch")) {
 			throw new Error("Publication cannot be configured for untrusted events: " + name);

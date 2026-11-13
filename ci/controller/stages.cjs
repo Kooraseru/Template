@@ -93,6 +93,7 @@ function resolveOperation() {
 		trust, name: operation.name, mode: operation.mode, event: operation.event,
 		plan: operation.plan || "validation", publication: operation.publication === true,
 		branchPrefix: operation.branchPrefix || "", checks,
+		components: operation.components || null,
 		componentContracts: componentFiles.map(filename => ({ filename, sha256: fileHash(filename) })),
 	});
 	output({ operation: manifest.name, mode: manifest.mode });
@@ -169,7 +170,8 @@ function generate() {
 		const args = ["dependencies/packages/core/dependencyLoader/index.ts", "--exec",
 			"luau.lute", "run", "ci/bootstrap/generateWorkflows.luau", GENERATED];
 		command("node", args, { env: {
-			...process.env, CI_EVENT: eventForPlan(operation), CI_OPERATION: operation.plan,
+			...process.env, CI_EVENT: eventForPlan(operation), CI_OPERATION: "build", CI_OPERATION_PLAN: operation.plan,
+			CI_SELECTED_COMPONENTS: JSON.stringify(operation.components),
 			CI_PUBLICATION_ENABLED: String(operation.publication),
 			CI_EXECUTION_PREFIX: operation.branchPrefix, CI_GENERATED_BRANCH: branch,
 		}, timeout: 240000 });
