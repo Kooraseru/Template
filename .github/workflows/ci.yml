@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: setup"
+      - run: 'echo "Diagnostic admission: setup"'
   resolve:
     name: Resolve Operation
     needs: setup
@@ -39,7 +39,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: resolve"
+      - run: 'echo "Diagnostic admission: resolve"'
   authorize:
     name: Check Permissions
     needs: resolve
@@ -47,7 +47,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: authorize"
+      - run: 'echo "Diagnostic admission: authorize"'
   generate:
     name: Generate Pipeline
     needs: authorize
@@ -55,7 +55,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: generate"
+      - run: 'echo "Diagnostic admission: generate"'
   execute:
     name: Run Pipeline
     needs: generate
@@ -63,7 +63,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: execute"
+      - run: 'echo "Diagnostic admission: execute"'
   collect:
     name: Collect Results
     needs: execute
@@ -72,7 +72,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: collect"
+      - run: 'echo "Diagnostic admission: collect"'
   cleanup:
     name: Cleanup
     needs: collect
@@ -81,7 +81,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: cleanup"
+      - run: 'echo "Diagnostic admission: cleanup"'
   validate:
     name: validate
     needs: cleanup
@@ -90,4 +90,4 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: echo "Diagnostic admission: validate"
+      - run: 'echo "Diagnostic admission: validate"'
