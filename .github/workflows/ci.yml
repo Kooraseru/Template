@@ -97,6 +97,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      operation_digest: ${{ needs.resolve.outputs.digest }}
       toolchain_digest: ${{ needs.resolve.outputs.toolchain_digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ steps.controller.outputs.environment }}
@@ -133,6 +134,8 @@ jobs:
           path: build/ci-controller/artifacts
       - name: Plan capability-scoped authorization
         id: controller
+        env:
+          CI_OPERATION_DIGEST: ${{ needs.resolve.outputs.digest }}
         run: node ci/controller/stages.cjs authorize
       - name: Preserve typed stage manifest
         if: always()
@@ -151,6 +154,8 @@ jobs:
     permissions:
       contents: read
     outputs:
+      operation_digest: ${{ needs.authorize.outputs.operation_digest }}
+      authorization_digest: ${{ needs.authorize.outputs.digest }}
       toolchain_digest: ${{ needs.authorize.outputs.toolchain_digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.authorize.outputs.bootstrap_environment }}
@@ -189,6 +194,8 @@ jobs:
       - name: Compile but do not execute generated pipeline
         id: controller
         env:
+          CI_OPERATION_DIGEST: ${{ needs.authorize.outputs.operation_digest }}
+          CI_AUTHORIZATION_DIGEST: ${{ needs.authorize.outputs.digest }}
           GH_TOKEN: ${{ github.token }}
         run: node ci/controller/stages.cjs generate
       - name: Upload compiled pipeline
@@ -218,6 +225,9 @@ jobs:
     environment:
       name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.generate.outputs.bootstrap_environment || 'ci-untrusted' }}
     outputs:
+      operation_digest: ${{ needs.generate.outputs.operation_digest }}
+      authorization_digest: ${{ needs.generate.outputs.authorization_digest }}
+      pipeline_digest: ${{ needs.generate.outputs.digest }}
       toolchain_digest: ${{ needs.generate.outputs.toolchain_digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.generate.outputs.bootstrap_environment }}
@@ -262,6 +272,9 @@ jobs:
       - name: Launch and await pipeline completion
         id: controller
         env:
+          CI_OPERATION_DIGEST: ${{ needs.generate.outputs.operation_digest }}
+          CI_AUTHORIZATION_DIGEST: ${{ needs.generate.outputs.authorization_digest }}
+          CI_PIPELINE_DIGEST: ${{ needs.generate.outputs.digest }}
           GH_TOKEN: ${{ github.token }}
           CI_CREDENTIAL_APP_ID: ${{ vars[needs.generate.outputs.app_id_name] }}
           CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.generate.outputs.app_key_name] }}
@@ -299,6 +312,10 @@ jobs:
       contents: read
       actions: read
     outputs:
+      operation_digest: ${{ needs.execute.outputs.operation_digest }}
+      authorization_digest: ${{ needs.execute.outputs.authorization_digest }}
+      pipeline_digest: ${{ needs.execute.outputs.pipeline_digest }}
+      execution_digest: ${{ needs.execute.outputs.digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.execute.outputs.bootstrap_environment }}
       reporting_environment: ${{ needs.execute.outputs.reporting_environment }}
@@ -335,6 +352,8 @@ jobs:
       - name: Collect component outcomes and diagnostics
         id: controller
         env:
+          CI_OPERATION_DIGEST: ${{ needs.execute.outputs.operation_digest }}
+          CI_EXECUTION_DIGEST: ${{ needs.execute.outputs.digest }}
           GH_TOKEN: ${{ github.token }}
         run: node ci/controller/stages.cjs collect
       - name: Upload consolidated human report
@@ -366,6 +385,11 @@ jobs:
       contents: read
       actions: read
     outputs:
+      operation_digest: ${{ needs.collect.outputs.operation_digest }}
+      authorization_digest: ${{ needs.collect.outputs.authorization_digest }}
+      pipeline_digest: ${{ needs.collect.outputs.pipeline_digest }}
+      execution_digest: ${{ needs.collect.outputs.execution_digest }}
+      results_digest: ${{ needs.collect.outputs.digest }}
       digest: ${{ steps.controller.outputs.digest }}
       bootstrap_environment: ${{ needs.collect.outputs.bootstrap_environment }}
       reporting_environment: ${{ needs.collect.outputs.reporting_environment }}
@@ -396,6 +420,8 @@ jobs:
       - name: Remove only owned temporary resources
         id: controller
         env:
+          CI_OPERATION_DIGEST: ${{ needs.collect.outputs.operation_digest }}
+          CI_EXECUTION_DIGEST: ${{ needs.collect.outputs.execution_digest }}
           GH_TOKEN: ${{ github.token }}
           CI_CREDENTIAL_APP_ID: ${{ vars[needs.collect.outputs.app_id_name] }}
           CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.collect.outputs.app_key_name] }}
@@ -441,6 +467,12 @@ jobs:
           path: build/ci-controller/artifacts
       - name: Verify all eight stages and the final pipeline conclusion
         env:
+          CI_OPERATION_DIGEST: ${{ needs.cleanup.outputs.operation_digest }}
+          CI_AUTHORIZATION_DIGEST: ${{ needs.cleanup.outputs.authorization_digest }}
+          CI_PIPELINE_DIGEST: ${{ needs.cleanup.outputs.pipeline_digest }}
+          CI_EXECUTION_DIGEST: ${{ needs.cleanup.outputs.execution_digest }}
+          CI_RESULTS_DIGEST: ${{ needs.cleanup.outputs.results_digest }}
+          CI_CLEANUP_DIGEST: ${{ needs.cleanup.outputs.digest }}
           CI_JOB_SETUP: ${{ needs.cleanup.outputs.setup_result }}
           CI_JOB_RESOLVE: ${{ needs.cleanup.outputs.resolve_result }}
           CI_JOB_AUTHORIZE: ${{ needs.cleanup.outputs.authorize_result }}

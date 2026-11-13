@@ -126,3 +126,17 @@ test("lightweight controller stages do not restore a full toolchain or reupload 
 	}
 	assert.doesNotMatch(body.validate, /Restore controller stage manifests/);
 });
+
+
+test("controller binds downloaded manifest provenance to upstream job output digests", () => {
+	const fs = require("node:fs");
+	const path = require("node:path");
+	const yaml = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	for (const name of ["OPERATION", "AUTHORIZATION", "PIPELINE", "EXECUTION", "RESULTS", "CLEANUP"]) {
+		assert.match(yaml, new RegExp("CI_" + name + "_DIGEST: \\$\\{\\{ needs\\."));
+	}
+	for (const key of ["operation_digest", "authorization_digest", "pipeline_digest", "execution_digest", "results_digest"]) {
+		assert.match(yaml, new RegExp("^      " + key + ": \\$\\{\\{ needs\\.", "m"));
+	}
+	assert.match(yaml, /CI_CLEANUP_DIGEST: \$\{\{ needs\.cleanup\.outputs\.digest \}\}/);
+});

@@ -39,8 +39,19 @@ function save(kind, value) {
 function eventForPlan(operation) {
 	return operation.mode === "generated" ? "push" : operation.event;
 }
+function expectedDigest(kind) {
+	const name = "CI_" + kind.toUpperCase() + "_DIGEST";
+	const value = process.env[name];
+	if (!value) return undefined;
+	// act may leave chained job-output expressions unresolved; a real digest
+	// is still required wherever the transport supplies one.
+	if (process.env.ACT === "true" && /^\$\{\{\s*[^{}]+\s*\}\}$/.test(value)) return undefined;
+	assert(/^[a-f0-9]{64}$/.test(value), "Malformed upstream " + kind + " digest");
+	return value;
+}
+
 function loadOperation() {
-	const manifest = read("operation", process.env.CI_OPERATION_DIGEST);
+	const manifest = read("operation", expectedDigest("operation"));
 	requireSource(manifest.trust);
 	return manifest;
 }
@@ -152,7 +163,7 @@ function checkPermissions() {
 }
 function generate() {
 	const operation = loadOperation();
-	const authorization = read("authorization", process.env.CI_AUTHORIZATION_DIGEST);
+	const authorization = read("authorization", expectedDigest("authorization"));
 	assert(authorization.operationDigest === operation.digest, "Authorization refers to a different operation");
 	fs.mkdirSync(GENERATED, { recursive: true });
 	const branch = operation.mode === "generated"
@@ -400,8 +411,8 @@ async function waitForHosted(branch, revision, source) {
 }
 async function runPipeline() {
 	const operation = loadOperation();
-	const auth = read("authorization", process.env.CI_AUTHORIZATION_DIGEST);
-	const pipeline = read("pipeline", process.env.CI_PIPELINE_DIGEST);
+	const auth = read("authorization", expectedDigest("authorization"));
+	const pipeline = read("pipeline", expectedDigest("pipeline"));
 	assert(pipeline.operationDigest === operation.digest && pipeline.authorizationDigest === auth.digest, "Pipeline plan provenance mismatch");
 	verifyGenerated(pipeline);
 	const record = { trust: operation.trust, pipelineDigest: pipeline.digest, state: "failed", transport: pipeline.transport,
@@ -431,7 +442,7 @@ async function collect() {
 	const operation = loadOperation();
 	let execution = null;
 	const errors = [];
-	try { execution = read("execution", process.env.CI_EXECUTION_DIGEST); }
+	try { execution = read("execution", expectedDigest("execution")); }
 	catch (error) { errors.push("Execution manifest unavailable: " + error.message); }
 	const details = { operationDigest: operation.digest, executionDigest: execution?.digest || null,
 		executionState: execution?.state || "missing", outcomes: execution?.outcomes || {},
@@ -461,7 +472,7 @@ async function collect() {
 async function cleanup() {
 	const operation = loadOperation();
 	let execution;
-	try { execution = read("execution", process.env.CI_EXECUTION_DIGEST); } catch { /* launch may have failed before recording */ }
+	try { execution = read("execution", expectedDigest("execution")); } catch { /* launch may have failed before recording */ }
 	const record = { operationDigest: operation.digest, executionDigest: execution?.digest || null, state: "passed", removed: false };
 	try {
 		if (execution?.branch) {
@@ -489,7 +500,11 @@ function validate() {
 	const errors = [];
 	const manifests = {};
 	for (const kind of ["operation", "authorization", "pipeline", "execution", "results", "cleanup"]) {
-		try { manifests[kind] = read(kind); } catch (error) { errors.push(kind + ": " + error.message); }
+		try {
+			const expected = expectedDigest(kind);
+			if (process.env.ACT !== "true" && !expected) errors.push(kind + ": missing upstream manifest digest");
+			manifests[kind] = read(kind, expected);
+		} catch (error) { errors.push(kind + ": " + error.message); }
 	}
 	if (manifests.operation && manifests.authorization && manifests.authorization.operationDigest !== manifests.operation.digest) errors.push("Operation authorization mismatch");
 	if (manifests.pipeline && manifests.authorization && manifests.pipeline.authorizationDigest !== manifests.authorization.digest) errors.push("Pipeline authorization mismatch");
