@@ -5,3 +5,4 @@ inputs = ["ci/**", "dependencies/packages/checks/**", ".github/config/ci/**"]
 outputs = []
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"
+command = ["node", "ci/rules-audit.cjs"]

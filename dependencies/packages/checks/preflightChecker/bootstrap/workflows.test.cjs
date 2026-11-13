@@ -54,6 +54,16 @@ test("component contract rejects missing phases and privileged Build", t => {
 	const result = execute(t, 'local C=require("@ci/bootstrap/contracts/contract")\nlocal J=require("@formats/json")\nlocal a=pcall(C.new,"example","x","fixture",{provides={"example"}})\nlocal b=pcall(C.new,"example","x","fixture",{provides={"example"},phase="build",boundary="privileged",events={"push"}})\nprint(J.encode({a=a,b=b}))'); assert.equal(result.a, false); assert.equal(result.b, false);
 });
 
+test("read-only command components require no Luau wrapper and reject privileged commands", t => {
+	const source = 'local B=require("@ci/bootstrap")\nlocal C=require("@ci/bootstrap/contracts/contract")\nlocal J=require("@formats/json")\nlocal entries={}\nfor _,task in B.Plan("push") do if task.identity == "quality/code-review" or task.identity == "quality/rules-audit" then entries[task.identity]=task.entry end end\nlocal ok=pcall(C.new,"other/test","x","fixture",{phase="publish",boundary="privileged",provides={"test"},events={"push"},command={"sh","-c","echo unsafe"}})\nprint(J.encode({entries=entries,privilegedAccepted=ok}))';
+	const result = execute(t, source);
+	assert.deepEqual(result.entries, {
+		"quality/code-review": "ci/components/quality/code-review/component.toml",
+		"quality/rules-audit": "ci/components/quality/rules-audit/component.toml",
+	});
+	assert.equal(result.privilegedAccepted, false);
+});
+
 test("Build dependencies on Publish are rejected before rendering", t => {
 	const result = execute(t, 'local C=require("@ci/bootstrap/contracts/contract")\nlocal P=require("@ci/bootstrap/planning")\nlocal J=require("@formats/json")\nlocal a=C.new("prepare","x","fixture",{phase="build",provides={"prepared"},requires={"published"},events={"push"}})\nlocal b=C.new("send","x","fixture",{phase="publish",boundary="privileged",provides={"published"},events={"push"}})\nlocal ok=pcall(function() P.new():Resolve({a,b},"push") end)\nprint(J.encode({ok=ok}))'); assert.equal(result.ok, false);
 });

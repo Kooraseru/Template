@@ -116,8 +116,9 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		if not Fs.exists(entry) and not Fs.exists(contractFile) then
 			continue
 		end
-		if not Fs.exists(entry) or Fs.metadata(entry).type ~= "file" then
-			error(`{path}: component directory requires a regular init.luau`, 0)
+		local hasModule = Fs.exists(entry)
+		if hasModule and Fs.metadata(entry).type ~= "file" then
+			error(`{path}: init.luau must be a regular file`, 0)
 		end
 		if not Fs.exists(contractFile) or Fs.metadata(contractFile).type ~= "file" then
 			error(`{path}: component directory requires a regular component.toml`, 0)
@@ -130,7 +131,10 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		if not loaded then
 			error(`{contractFile}: unable to parse component manifest: {source}`, 0)
 		end
-		local component = Contract.new(identity, entry, contractFile, source)
+		local component = Contract.new(identity, if hasModule then entry else contractFile, contractFile, source)
+		if (component.command ~= nil) == hasModule then
+			error(`{contractFile}: component requires exactly one implementation: init.luau or command`, 0)
+		end
 		local enabled = overrides[identity]
 		component.enabled = if enabled ~= nil then enabled else settings.default
 		overrides[identity] = nil
