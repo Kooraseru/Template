@@ -61,7 +61,8 @@ function timeoutMilliseconds(environment = process.env) {
 function prepareStagedWorkflow(file, runId) {
 	const source = fs.readFileSync(file, "utf8");
 	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) {
-		if (!/^  resolve:\r?\n    name: Resolve CI Operation$/m.test(source)) return false;
+		if (!/^  resolve:\r?\n    name: Resolve CI Operation$/m.test(source) &&
+			!/^  setup:\r?\n    name: Setup Dependencies$/m.test(source)) return false;
 		fs.writeFileSync(file, source.replaceAll("actions/upload-artifact@v7", "actions/upload-artifact@v4"));
 		return false;
 	}

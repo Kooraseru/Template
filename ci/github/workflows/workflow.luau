@@ -324,6 +324,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } }
 		table.insert(needs, "publish")
 	end
+	if Process.env.CI_LINEAR_CONTROLLER ~= "true" then
 	jobs.cleanup = { name = "Finish", needs = needs, ["if"] = "${{ always() }}", ["runs-on"] = "ubuntu-latest",
 		permissions = { contents = "write" },
 		env = { CI_EVENT = event, CI_GRAPH_RUN = "true", CI_SOURCE_SHA = sourceSha, CI_RUN_BRANCH = branch, CI_EXECUTION_PREFIX = Configuration.new().branchPrefix, CI_OPERATION = operation },
@@ -332,6 +333,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 			{ uses = "actions/setup-node@v7.1.0", with = { ["node-version"] = "24" } },
 			{ name = "Remove owned temporary branch", env = { GH_TOKEN = "${{ github.token }}" }, run = "node dependencies/packages/core/dependencyLoader/index.ts --only workspace.npm --exec luau.lute run ci/entry.luau --cleanup-branch" },
 		} }
+	end
 	files["pipeline.yml"] = Json.encode({ name = "Pipeline",
 		["run-name"] = `pipeline for {sourceSha:sub(1, 12)}`, on = { push = { branches = { branch } } },
 		permissions = {}, jobs = jobs })

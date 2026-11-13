@@ -1,0 +1,10 @@
+[[steps]]
+name = "Preserve Code Review diagnostics"
+uses = "actions/upload-artifact@v7"
+if = "${{ always() }}"
+
+[steps.with]
+name = "code-review-findings"
+path = "build/code-review/"
+if-no-files-found = "ignore"
+retention-days = 7

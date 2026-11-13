@@ -28,13 +28,15 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
 	assert.deepEqual(authored, ["ci.yml"]);
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
-	assert.match(workflow, /^  resolve:$/m);
-	assert.match(workflow, /^  review:$/m);
-	assert.match(workflow, /^  audit:$/m);
-	assert.match(workflow, /^  bootstrap:$/m);
-	assert.match(workflow, /^  validate:$/m);
-	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
-	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs run/);
+	for (const job of ["setup", "resolve", "authorize", "generate", "execute", "collect", "cleanup", "validate"]) {
+		assert.match(workflow, new RegExp("^  " + job + ":$", "m"));
+	}
+	for (const job of ["review", "audit", "bootstrap", "build", "tests", "publish"]) {
+		assert.doesNotMatch(workflow, new RegExp("^  " + job + ":$", "m"));
+	}
+	for (const command of ["resolve", "authorize", "generate", "run", "collect", "cleanup", "validate"]) {
+		assert.match(workflow, new RegExp("node ci/controller/stages\\.cjs " + command));
+	}
 	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
 	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
 	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
@@ -104,4 +106,26 @@ test("unimplemented native Pages and attestation integrations are disabled by de
 	assert.match(attestations, /^mode = "disabled"/m);
 	assert.match(execution, /^"documentation\/pages\/publish" = "success"$/m);
 	assert.match(execution, /^"distribution\/attestations\/publish" = "success"$/m);
+});
+
+test("linear compiler generates selected components without a second cleanup owner", t => {
+	const directory = fs.mkdtempSync(path.join(root, "build/component-selection-"));
+	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+	const result = spawnSync(lute, ["run", "ci/bootstrap/generateWorkflows.luau", directory], {
+		cwd: root, encoding: "utf8", timeout: 35000, windowsHide: true,
+		env: {
+			...process.env, GITHUB_SHA: "a".repeat(40), CI_GENERATED_BRANCH: "ci/run-fixture-1",
+			CI_EVENT: "push", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "false",
+			CI_SELECTED_COMPONENTS: JSON.stringify(["quality/code-review", "quality/rules-audit"]),
+		},
+	});
+	assert.ifError(result.error);
+	assert.equal(result.status, 0, result.stdout + result.stderr);
+	const pipeline = JSON.parse(fs.readFileSync(path.join(directory, "pipeline.yml"), "utf8"));
+	assert.equal(pipeline.jobs.cleanup, undefined, "Controller cleanup must be the sole branch owner");
+	assert.equal(pipeline.jobs.publish, undefined, "Selection must not publish without authorization");
+	assert.equal(pipeline.jobs.build.name, "Build");
+	const build = JSON.parse(fs.readFileSync(path.join(directory, "build.yml"), "utf8").replace(/^#.*\n/, ""));
+	const components = Object.values(build.jobs).filter(job => job.name?.startsWith("quality/")).map(job => job.name).sort();
+	assert.deepEqual(components, ["quality/code-review", "quality/rules-audit"]);
 });
