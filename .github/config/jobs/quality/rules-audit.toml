@@ -1,0 +1,10 @@
+[[steps]]
+name = "Preserve Rules Audit diagnostics"
+uses = "actions/upload-artifact@v7"
+if = "${{ always() }}"
+
+[steps.with]
+name = "rules-audit-findings"
+path = "build/rules-audit/"
+if-no-files-found = "ignore"
+retention-days = 7
