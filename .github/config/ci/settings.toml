@@ -1,0 +1,88 @@
+# Template CI: one user-editable policy file.
+# Component dependencies come from component.toml contracts; this file does not define a DAG.
+version = 1
+
+[triggers]
+push = "publish"
+pull_request = "review"
+workflow_dispatch = "validation"
+
+[bootstrap]
+environment = "ci-bootstrap"
+
+[operations.review]
+mode = "readonly"
+events = ["pull_request"]
+checks = ["setup", "workflows", "code-review", "rules-audit", "build-tests"]
+
+[operations.validation]
+mode = "readonly"
+events = ["workflow_dispatch"]
+checks = ["setup", "workflows", "code-review", "rules-audit", "build-tests"]
+
+[operations.readiness]
+mode = "readonly"
+events = ["workflow_dispatch"]
+checks = ["setup", "workflows", "code-review", "rules-audit"]
+
+[operations.build]
+mode = "generated"
+events = ["workflow_dispatch"]
+plan = "build"
+publication = false
+branchPrefix = "run/build-"
+
+[operations.publish]
+mode = "generated"
+events = ["push", "workflow_dispatch"]
+plan = "build"
+publication = true
+branchPrefix = "ci/run-"
+
+[operations.rules-audit]
+mode = "readonly"
+events = ["workflow_dispatch"]
+checks = ["rules-audit"]
+
+# Compatibility-only definitions for the current CJS read-only runner.
+# These disappear when Run Pipeline executes the generated workflow itself.
+[checks.setup]
+command = ["node", "dependencies/packages/core/dependencyLoader/index.ts"]
+timeoutSeconds = 300
+
+[checks.workflows]
+command = ["bash", "ci/bootstrap/check-workflows.sh"]
+timeoutSeconds = 90
+
+[checks.code-review]
+command = ["node", "ci/code-review.cjs"]
+timeoutSeconds = 750
+
+[checks.rules-audit]
+command = ["node", "ci/rules-audit.cjs"]
+group = "audit"
+timeoutSeconds = 750
+
+[checks.build-tests]
+command = ["bash", "ci/run.sh"]
+timeoutSeconds = 1200
+
+# Components are discovered by walking ci/components/, not listed centrally.
+[components]
+default = true
+
+[components.enabled]
+# "distribution/packages/publish" = false
+
+# When a component has nothing to do, preserve the configured semantic conclusion.
+[execution.skip]
+default = "neutral"
+
+[execution.skip.components]
+# Fixtures with no external registry metadata.
+"distribution/packages/publish" = "success"
+"documentation/pages/publish" = "success"
+"distribution/attestations/publish" = "success"
+# Optional administration credentials may be unavailable.
+"work/projects/sync" = "success"
+"governance/rulesets/sync" = "success"

@@ -87,7 +87,8 @@ function SetupInstructions.Values(
 	if configuration.enabled then
 		mergeRepository(configuration.roles.bootstrap_token.permissions.repository)
 	end
-	local execution = Publication.Record(Toml.decode(Fs.readFileToString(".github/config/ci/execution.toml")))
+	local ciSettings = Publication.Record(Toml.decode(Fs.readFileToString(".github/config/ci/settings.toml")))
+	local execution = Publication.Record(ciSettings.execution)
 	local skip = Publication.Record(execution.skip)
 	local neutral = skip.default == "neutral"
 	for _, conclusion in Publication.Record(skip.components) do
@@ -139,7 +140,7 @@ function SetupInstructions.Values(
 		variables_url = base .. "/settings/variables/actions",
 		actions_url = base .. "/actions" .. (if run and run:match("^%d+$") then "/runs/" .. run else ""),
 		retry_command = retry,
-		execution_config_url = base .. "/blob/HEAD/.github/config/ci/execution.toml",
+		execution_config_url = base .. "/blob/HEAD/.github/config/ci/settings.toml",
 		app_id = configuration.credentials.app_id or "<credentials.json roles.app_id>",
 		app_private_key = configuration.credentials.app_private_key or "<credentials.json roles.app_private_key>",
 	}
