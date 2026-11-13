@@ -8,65 +8,111 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Configured operation name from .github/config/ci/operations.json
+        description: Configured operation identity
         type: string
         required: true
         default: validation
       publish:
-        description: Explicitly authorize manual publication
+        description: Authorize configured manual publication
         type: boolean
         required: true
         default: false
 
 permissions: {}
-
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
+  setup:
+    name: Setup Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      digest: ${{ steps.controller.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Install common controller dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Package verified dependency bundle
+        id: controller
+        run: node ci/controller/stages.cjs setup
+      - name: Upload common toolchain
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain/
+          if-no-files-found: error
+          retention-days: 3
+
   resolve:
-    name: Resolve CI Operation
+    name: Resolve Operation
+    needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
     outputs:
-      operation: ${{ steps.route.outputs.operation }}
-      mode: ${{ steps.route.outputs.mode }}
-      environment: ${{ steps.route.outputs.environment }}
-      app_id_name: ${{ steps.route.outputs.app_id_name }}
-      app_private_key_name: ${{ steps.route.outputs.app_private_key_name }}
-      bootstrap_token_name: ${{ steps.route.outputs.bootstrap_token_name }}
-      plan: ${{ steps.route.outputs.plan }}
-      publication: ${{ steps.route.outputs.publication }}
-      branch_prefix: ${{ steps.route.outputs.branch_prefix }}
-      review_checks: ${{ steps.route.outputs.review_checks }}
-      audit_checks: ${{ steps.route.outputs.audit_checks }}
+      digest: ${{ steps.controller.outputs.digest }}
+      operation: ${{ steps.controller.outputs.operation }}
+      mode: ${{ steps.controller.outputs.mode }}
+      setup_result: ${{ needs.setup.result }}
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-      - name: Install credential catalog validator
-        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
       - name: Resolve configured operation
-        id: route
+        id: controller
         env:
           CI_REQUESTED_OPERATION: ${{ inputs.operation }}
           CI_REQUESTED_PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
-        run: node ci/bootstrap/routes.cjs resolve
+        run: node ci/controller/stages.cjs resolve
+      - name: Preserve typed stage manifest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-manifest-resolve
+          path: build/ci-controller/artifacts/
+          if-no-files-found: ignore
+          retention-days: 3
 
-  review:
-    name: Code Review
+  authorize:
+    name: Check Permissions
     needs: resolve
-    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.review_checks == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 10
     permissions:
       contents: read
+    outputs:
+      digest: ${{ steps.controller.outputs.digest }}
+      bootstrap_environment: ${{ steps.controller.outputs.environment }}
+      reporting_environment: ${{ steps.controller.outputs.reporting_environment }}
+      app_id_name: ${{ steps.controller.outputs.app_id_name }}
+      app_key_name: ${{ steps.controller.outputs.app_key_name }}
+      bootstrap_token_name: ${{ steps.controller.outputs.bootstrap_token_name }}
+      report_app_id_name: ${{ steps.controller.outputs.report_app_id_name }}
+      report_app_key_name: ${{ steps.controller.outputs.report_app_key_name }}
+      setup_result: ${{ needs.resolve.outputs.setup_result }}
+      resolve_result: ${{ needs.resolve.result }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -75,28 +121,50 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-      - name: Execute configured read-only checks
-        env:
-          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
-          CI_CHECK_GROUP: review
-        run: node ci/bootstrap/routes.cjs run
-      - name: Preserve full diagnostics
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
+      - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v7
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Plan capability-scoped authorization
+        id: controller
+        run: node ci/controller/stages.cjs authorize
+      - name: Preserve typed stage manifest
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: code-review-findings
-          path: build/code-review/
+          name: controller-manifest-authorize
+          path: build/ci-controller/artifacts/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3
 
-  audit:
-    name: Rules Audit
-    needs: resolve
-    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.audit_checks == 'true' }}
+  generate:
+    name: Generate Pipeline
+    needs: authorize
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      digest: ${{ steps.controller.outputs.digest }}
+      bootstrap_environment: ${{ needs.authorize.outputs.bootstrap_environment }}
+      reporting_environment: ${{ needs.authorize.outputs.reporting_environment }}
+      app_id_name: ${{ needs.authorize.outputs.app_id_name }}
+      app_key_name: ${{ needs.authorize.outputs.app_key_name }}
+      bootstrap_token_name: ${{ needs.authorize.outputs.bootstrap_token_name }}
+      report_app_id_name: ${{ needs.authorize.outputs.report_app_id_name }}
+      report_app_key_name: ${{ needs.authorize.outputs.report_app_key_name }}
+      setup_result: ${{ needs.authorize.outputs.setup_result }}
+      resolve_result: ${{ needs.authorize.outputs.resolve_result }}
+      authorize_result: ${{ needs.authorize.result }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -105,34 +173,61 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-      - name: Install rule audit dependencies
-        run: node dependencies/packages/core/dependencyLoader/index.ts
-      - name: Execute configured Rules audit
-        env:
-          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
-          CI_CHECK_GROUP: audit
-        run: node ci/bootstrap/routes.cjs run
-      - name: Preserve Rules audit findings
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
+      - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v7
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Compile but do not execute generated pipeline
+        id: controller
+        run: node ci/controller/stages.cjs generate
+      - name: Upload compiled pipeline
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-generated
+          path: build/ci-controller/generated/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Preserve typed stage manifest
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: rules-audit-findings
-          path: build/rules-audit/
+          name: controller-manifest-generate
+          path: build/ci-controller/artifacts/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3
 
-  bootstrap:
-    name: Start Generated CI
-    needs: resolve
-    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.resolve.outputs.mode == 'generated' }}
+  run:
+    name: Run Pipeline
+    needs: generate
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
       contents: read
       actions: read
-      id-token: write
     environment:
-      name: ${{ needs.resolve.outputs.environment }}
+      name: ${{ needs.generate.outputs.bootstrap_environment }}
+    outputs:
+      digest: ${{ steps.controller.outputs.digest }}
+      bootstrap_environment: ${{ needs.generate.outputs.bootstrap_environment }}
+      reporting_environment: ${{ needs.generate.outputs.reporting_environment }}
+      app_id_name: ${{ needs.generate.outputs.app_id_name }}
+      app_key_name: ${{ needs.generate.outputs.app_key_name }}
+      bootstrap_token_name: ${{ needs.generate.outputs.bootstrap_token_name }}
+      report_app_id_name: ${{ needs.generate.outputs.report_app_id_name }}
+      report_app_key_name: ${{ needs.generate.outputs.report_app_key_name }}
+      setup_result: ${{ needs.generate.outputs.setup_result }}
+      resolve_result: ${{ needs.generate.outputs.resolve_result }}
+      authorize_result: ${{ needs.generate.outputs.authorize_result }}
+      generate_result: ${{ needs.generate.result }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -141,52 +236,217 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-      - name: Compile, launch, and verify generated execution
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
+      - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v7
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Retrieve compiled pipeline
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-generated
+          path: build/ci-controller/generated
+      - name: Launch and await pipeline completion
+        id: controller
         env:
-          CI_EVENT: push
-          CI_PROFILE: source-ci
-          CI_OPERATION: ${{ needs.resolve.outputs.plan }}
-          CI_PUBLICATION_ENABLED: ${{ needs.resolve.outputs.publication }}
-          CI_EXECUTION_PREFIX: ${{ needs.resolve.outputs.branch_prefix }}
-          CI_CREDENTIAL_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
-          CI_CREDENTIAL_APP_ID: ${{ vars[needs.resolve.outputs.app_id_name] }}
-          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.resolve.outputs.app_private_key_name] }}
-          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.resolve.outputs.bootstrap_token_name] }}
           GH_TOKEN: ${{ github.token }}
-        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau
-      - name: Preserve bootstrap output
+          CI_CREDENTIAL_APP_ID: ${{ vars[needs.generate.outputs.app_id_name] }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.generate.outputs.app_key_name] }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.generate.outputs.bootstrap_token_name] }}
+        run: node ci/controller/stages.cjs run
+      - name: Preserve typed stage manifest
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: start
-          path: build/run/${{ env.CI_LOCAL_RUN_ID || format('{0}-{1}', github.run_id, github.run_attempt) }}/start/
+          name: controller-manifest-run
+          path: build/ci-controller/artifacts/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  collect:
+    name: Collect Results
+    needs: run
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    environment:
+      name: ${{ needs.run.outputs.reporting_environment }}
+    outputs:
+      digest: ${{ steps.controller.outputs.digest }}
+      bootstrap_environment: ${{ needs.run.outputs.bootstrap_environment }}
+      reporting_environment: ${{ needs.run.outputs.reporting_environment }}
+      app_id_name: ${{ needs.run.outputs.app_id_name }}
+      app_key_name: ${{ needs.run.outputs.app_key_name }}
+      bootstrap_token_name: ${{ needs.run.outputs.bootstrap_token_name }}
+      report_app_id_name: ${{ needs.run.outputs.report_app_id_name }}
+      report_app_key_name: ${{ needs.run.outputs.report_app_key_name }}
+      setup_result: ${{ needs.run.outputs.setup_result }}
+      resolve_result: ${{ needs.run.outputs.resolve_result }}
+      authorize_result: ${{ needs.run.outputs.authorize_result }}
+      generate_result: ${{ needs.run.outputs.generate_result }}
+      run_result: ${{ needs.run.result }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
+      - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v7
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Collect component outcomes and diagnostics
+        id: controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ci/controller/stages.cjs collect
+      - name: Upload consolidated human report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-report
+          path: build/ci-controller/report.md
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Preserve typed stage manifest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-manifest-collect
+          path: build/ci-controller/artifacts/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  cleanup:
+    name: Cleanup
+    needs: collect
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    environment:
+      name: ${{ needs.collect.outputs.bootstrap_environment }}
+    outputs:
+      digest: ${{ steps.controller.outputs.digest }}
+      bootstrap_environment: ${{ needs.collect.outputs.bootstrap_environment }}
+      reporting_environment: ${{ needs.collect.outputs.reporting_environment }}
+      app_id_name: ${{ needs.collect.outputs.app_id_name }}
+      app_key_name: ${{ needs.collect.outputs.app_key_name }}
+      bootstrap_token_name: ${{ needs.collect.outputs.bootstrap_token_name }}
+      report_app_id_name: ${{ needs.collect.outputs.report_app_id_name }}
+      report_app_key_name: ${{ needs.collect.outputs.report_app_key_name }}
+      setup_result: ${{ needs.collect.outputs.setup_result }}
+      resolve_result: ${{ needs.collect.outputs.resolve_result }}
+      authorize_result: ${{ needs.collect.outputs.authorize_result }}
+      generate_result: ${{ needs.collect.outputs.generate_result }}
+      run_result: ${{ needs.collect.outputs.run_result }}
+      collect_result: ${{ needs.collect.result }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
+      - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v7
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Remove only owned temporary resources
+        id: controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_CREDENTIAL_APP_ID: ${{ vars[needs.collect.outputs.app_id_name] }}
+          CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.collect.outputs.app_key_name] }}
+          CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.collect.outputs.bootstrap_token_name] }}
+        run: node ci/controller/stages.cjs cleanup
+      - name: Preserve typed stage manifest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-manifest-cleanup
+          path: build/ci-controller/artifacts/
           if-no-files-found: ignore
           retention-days: 3
 
   validate:
     name: validate
-    if: always()
-    needs: [resolve, review, audit, bootstrap]
+    needs: cleanup
+    if: ${{ always() }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      setup_result: ${{ needs.cleanup.outputs.setup_result }}
+      resolve_result: ${{ needs.cleanup.outputs.resolve_result }}
+      authorize_result: ${{ needs.cleanup.outputs.authorize_result }}
+      generate_result: ${{ needs.cleanup.outputs.generate_result }}
+      run_result: ${{ needs.cleanup.outputs.run_result }}
+      collect_result: ${{ needs.cleanup.outputs.collect_result }}
+      cleanup_result: ${{ needs.cleanup.result }}
     steps:
-      - name: Require completed selected route
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - name: Restore controller dependency archive
+        uses: actions/download-artifact@v7
+        with:
+          name: controller-toolchain
+          path: build/ci-controller/toolchain
+      - name: Verify and extract common dependencies
+        run: node ci/controller/stages.cjs restore
+      - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v7
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Verify all eight stages and the final pipeline conclusion
         env:
-          RESOLVE: ${{ needs.resolve.result }}
-          MODE: ${{ needs.resolve.outputs.mode }}
-          REVIEW: ${{ needs.review.result }}
-          AUDIT: ${{ needs.audit.result }}
-          REVIEW_REQUIRED: ${{ needs.resolve.outputs.review_checks }}
-          AUDIT_REQUIRED: ${{ needs.resolve.outputs.audit_checks }}
-          BOOTSTRAP: ${{ needs.bootstrap.result }}
-        run: |
-          test "$RESOLVE" = success
-          case "$MODE" in
-            readonly)
-              if [ "$REVIEW_REQUIRED" = true ]; then test "$REVIEW" = success; else test "$REVIEW" = skipped; fi
-              if [ "$AUDIT_REQUIRED" = true ]; then test "$AUDIT" = success; else test "$AUDIT" = skipped; fi
-              ;;
-            generated) test "$BOOTSTRAP" = success ;;
-            *) echo "No valid execution route completed" >&2; exit 1 ;;
-          esac
+          CI_JOB_SETUP: ${{ needs.cleanup.outputs.setup_result }}
+          CI_JOB_RESOLVE: ${{ needs.cleanup.outputs.resolve_result }}
+          CI_JOB_AUTHORIZE: ${{ needs.cleanup.outputs.authorize_result }}
+          CI_JOB_GENERATE: ${{ needs.cleanup.outputs.generate_result }}
+          CI_JOB_RUN: ${{ needs.cleanup.outputs.run_result }}
+          CI_JOB_COLLECT: ${{ needs.cleanup.outputs.collect_result }}
+          CI_JOB_CLEANUP: ${{ needs.cleanup.result }}
+        run: node ci/controller/stages.cjs validate
