@@ -107,3 +107,25 @@ test("unimplemented native Pages and attestation integrations are disabled by de
 	assert.match(execution, /^"documentation\/pages\/publish" = "success"$/m);
 	assert.match(execution, /^"distribution\/attestations\/publish" = "success"$/m);
 });
+
+test("linear compiler generates selected components without a second cleanup owner", t => {
+	const directory = fs.mkdtempSync(path.join(root, "build/component-selection-"));
+	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+	const result = spawnSync(lute, ["run", "ci/bootstrap/generateWorkflows.luau", directory], {
+		cwd: root, encoding: "utf8", timeout: 35000, windowsHide: true,
+		env: {
+			...process.env, GITHUB_SHA: "a".repeat(40), CI_GENERATED_BRANCH: "ci/run-fixture-1",
+			CI_EVENT: "push", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "false",
+			CI_SELECTED_COMPONENTS: JSON.stringify(["quality/code-review", "quality/rules-audit"]),
+		},
+	});
+	assert.ifError(result.error);
+	assert.equal(result.status, 0, result.stdout + result.stderr);
+	const pipeline = JSON.parse(fs.readFileSync(path.join(directory, "pipeline.yml"), "utf8"));
+	assert.equal(pipeline.jobs.cleanup, undefined, "Controller cleanup must be the sole branch owner");
+	assert.equal(pipeline.jobs.publish, undefined, "Selection must not publish without authorization");
+	assert.equal(pipeline.jobs.build.name, "Build");
+	const build = JSON.parse(fs.readFileSync(path.join(directory, "build.yml"), "utf8").replace(/^#.*\n/, ""));
+	const components = Object.values(build.jobs).filter(job => job.name?.startsWith("quality/")).map(job => job.name).sort();
+	assert.deepEqual(components, ["quality/code-review", "quality/rules-audit"]);
+});
