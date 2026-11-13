@@ -264,6 +264,17 @@ jobs:
           CI_CREDENTIAL_APP_PRIVATE_KEY: ${{ secrets[needs.generate.outputs.app_key_name] }}
           CI_CREDENTIAL_BOOTSTRAP_TOKEN: ${{ secrets[needs.generate.outputs.bootstrap_token_name] }}
         run: node ci/controller/stages.cjs run
+      - name: Preserve read-only component diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: controller-execution-diagnostics
+          path: |
+            build/ci-controller/logs/
+            build/code-review/
+            build/rules-audit/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Preserve typed stage manifest
         if: always()
         uses: actions/upload-artifact@v7
@@ -317,6 +328,13 @@ jobs:
           pattern: controller-manifest-*
           merge-multiple: true
           path: build/ci-controller/artifacts
+      - name: Download available execution diagnostics
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          pattern: controller-execution-*
+          merge-multiple: true
+          path: build/ci-controller/diagnostics
       - name: Collect component outcomes and diagnostics
         id: controller
         env:
@@ -433,6 +451,12 @@ jobs:
       - name: Verify and extract common dependencies
         run: node ci/controller/stages.cjs restore
       - name: Restore upstream controller manifests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: controller-manifest-*
+          merge-multiple: true
+          path: build/ci-controller/artifacts
+      - name: Restore controller stage manifests
         uses: actions/download-artifact@v4
         with:
           pattern: controller-manifest-*
