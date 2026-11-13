@@ -4,7 +4,7 @@ GitHub configuration lives under `.github/`. CI implementation lives under root 
 
 ## Discovery and component contracts
 
-The Luau bootstrap recursively discovers components under `ci/components/`. A component is identified by its path relative to that directory and owns a `component.toml`, `init.luau`, and private implementation modules. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
+The Luau bootstrap recursively discovers components under `ci/components/`. A component is identified by its path relative to that directory and owns `component.toml`. Read-only commands may be declared directly in its manifest; otherwise it owns `init.luau` and any private implementation modules. These two invocation modes are mutually exclusive. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
 
 `.github/config/ci/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
 
