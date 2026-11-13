@@ -36,42 +36,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
       - name: Install common controller dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
-      # Temporary migration probe; remove after the native lockfile is recorded.
-      - name: Resolve pinned Mise toolchain and generate native lock
-        env:
-          MISE_YES: "1"
-          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}/dependencies
-          MISE_DATA_DIR: ${{ runner.temp }}/mise-probe-data
-        run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/mise-probe.tar.xz"
-          curl --fail --location --retry 3 --silent --show-error \
-            https://github.com/jdx/mise/releases/download/v2026.11.8/mise-v2026.11.8-linux-x64.tar.xz -o "$archive"
-          echo "dfe43dca5b1ae781c39d50458094a5e28b3d4d8a74c52ae5a543f359d9ec2563  $archive" | sha256sum --check
-          mkdir -p "$RUNNER_TEMP/mise-probe-extract"
-          tar -xJf "$archive" -C "$RUNNER_TEMP/mise-probe-extract"
-          binary="$(find "$RUNNER_TEMP/mise-probe-extract" -type f -name mise -print -quit)"
-          test -n "$binary"
-          "$binary" --version
-          "$binary" -C dependencies lock --platform linux-x64,linux-arm64,windows-x64,windows-arm64,macos-arm64
-          echo "MISE_LOCKFILE_BEGIN"
-          cat dependencies/mise.lock
-          echo "MISE_LOCKFILE_END"
-          "$binary" -C dependencies install --locked github:luau-lang/lute
-          "$binary" -C dependencies exec -- lute --version
-      - name: Upload native Mise lockfile probe
-        if: always()
-        uses: actions/upload-artifact@v7
+      - uses: jdx/mise-action@v5
         with:
-          name: mise-lock-probe
-          path: dependencies/mise.lock
-          if-no-files-found: warn
-          retention-days: 3
+          version: "2026.11.8"
+          working_directory: dependencies
+          mise_dir: ${{ runner.temp }}/mise-toolchain
+          cache: true
+          install: true
       - name: Test immutable controller contracts
         run: node --test ci/controller/contracts.test.cjs
       - name: Package verified dependency bundle
