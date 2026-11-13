@@ -418,7 +418,8 @@ async function collect() {
 			details.reporting = "failed";
 		}
 	}
-	const state = execution?.state === "completed" && !errors.length ? "passed" : "failed";
+	// A failed pipeline can be collected successfully; the final gate judges its conclusion separately.
+	const state = execution && !errors.length ? "passed" : "failed";
 	save("results", { ...details, state });
 	const summary = path.join(STATE, "report.md");
 	fs.writeFileSync(summary, "# CI execution\n\nOperation: " + operation.name +
