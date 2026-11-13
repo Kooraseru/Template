@@ -8,12 +8,28 @@ lockfile = true
 
 [tools]
 node = "24.22.1"
-"github:luau-lang/lute" = { version = "1.0.1-nightly.20261104", prerelease = true }
-"github:jgm/pandoc" = "3.13"
-"github:github/gh-actions-lock" = { version = "0.4.1", bin = "actions-lock" }
-"github:rhysd/actionlint" = "1.7.12"
-"github:cli/cli" = { version = "2.104.0", strip_components = 1, bin_path = "bin" }
-"github:nektos/act" = "0.2.97"
+
+[tools."github:luau-lang/lute"]
+version = "1.0.1-nightly.20261104"
+prerelease = true
+
+[tools."github:jgm/pandoc"]
+version = "3.13"
+
+[tools."github:github/gh-actions-lock"]
+version = "0.4.1"
+bin = "actions-lock"
+
+[tools."github:rhysd/actionlint"]
+version = "1.7.12"
+
+[tools."github:cli/cli"]
+version = "2.104.0"
+strip_components = 1
+bin_path = "bin"
+
+[tools."github:nektos/act"]
+version = "0.2.97"
 
 # Platform-specific assets are the ones published by the pinned upstream releases.
 # Lute has no native Windows ARM64 asset at this version; Windows-on-ARM uses x64 emulation.
