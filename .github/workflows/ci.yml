@@ -42,6 +42,8 @@ jobs:
           node-version: 24
       - name: Install common controller dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Test immutable controller contracts
+        run: node --test ci/controller/contracts.test.cjs
       - name: Package verified dependency bundle
         id: controller
         run: node ci/controller/stages.cjs setup
