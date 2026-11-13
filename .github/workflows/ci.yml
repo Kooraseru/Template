@@ -288,6 +288,8 @@ jobs:
     name: Collect Results
     needs: execute
     if: ${{ always() }}
+    environment:
+      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.execute.outputs.reporting_environment || 'ci-untrusted' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -361,6 +363,8 @@ jobs:
     name: Cleanup
     needs: collect
     if: ${{ always() }}
+    environment:
+      name: ${{ (github.event_name != 'pull_request' && github.ref == 'refs/heads/source') && needs.collect.outputs.bootstrap_environment || 'ci-untrusted' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
