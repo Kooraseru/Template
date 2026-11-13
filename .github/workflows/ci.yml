@@ -190,6 +190,8 @@ jobs:
           path: build/ci-controller/artifacts
       - name: Compile but do not execute generated pipeline
         id: controller
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node ci/controller/stages.cjs generate
       - name: Upload compiled pipeline
         uses: actions/upload-artifact@v7
