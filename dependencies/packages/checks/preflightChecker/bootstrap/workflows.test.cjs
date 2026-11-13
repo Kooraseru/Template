@@ -24,10 +24,11 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("only one permanent workflow delegates operations to JSON", () => {
+test("one permanent authored workflow, with temporary generated files only inside the execution graph", () => {
 	const directory = path.join(root, ".github/workflows");
 	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-	assert.deepEqual(authored, ["ci.yml"]);
+	const expected = process.env.CI_GRAPH_RUN === "true" ? ["ci.yml", "pipeline.yml", "validation.yml"] : ["ci.yml"];
+	assert.deepEqual(authored, expected);
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
 	for (const job of ["setup", "resolve", "authorize", "generate", "execute", "collect", "cleanup", "validate"]) {
 		assert.match(workflow, new RegExp("^  " + job + ":$", "m"));
