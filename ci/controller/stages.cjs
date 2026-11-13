@@ -69,6 +69,8 @@ function restore() {
 	const listing = command("tar", ["-tzf", bundle]).split("\n").filter(Boolean);
 	assert(listing.length > 0 && listing.every(entry => (entry === "dependencies/managed/" ||
 		entry.startsWith("dependencies/managed/")) && !entry.split("/").includes("..")), "Toolchain archive escapes managed dependencies");
+	const types = command("tar", ["-tvzf", bundle]).split("\n");
+	assert(types.every(line => /^[d-]/.test(line)), "Toolchain archive contains links or special file types");
 	command("tar", ["-xzf", bundle, "-C", ROOT]);
 	console.log("Restored verified dependency bundle");
 }
@@ -98,11 +100,11 @@ function resolveOperation() {
 function checkPermissions() {
 	const operation = loadOperation();
 	const catalog = require("../github/authentication/catalog.cjs").load();
-	const safe = operation.trust.level === "untrusted";
+	const safe = operation.mode === "readonly";
 	const profile = catalog.profiles[operation.mode === "generated" ? "source-ci" : "validate"];
 	assert(profile, "Missing authorization profile");
-	const environment = safe ? "ci-untrusted" : profile.bootstrapEnvironment;
-	const reporting = safe ? "ci-untrusted" : profile.reportingEnvironment;
+	const environment = safe ? "ci-no-privileges-" + (process.env.GITHUB_RUN_ID || "local") : profile.bootstrapEnvironment;
+	const reporting = safe ? environment : profile.reportingEnvironment;
 	const bindings = safe ? {} : catalog.environments[environment];
 	const reportBindings = safe ? {} : catalog.environments[reporting];
 	assert(safe || (bindings?.app_id && bindings?.app_private_key && bindings?.bootstrap_token), "No bootstrap binding");
@@ -439,6 +441,9 @@ function validate() {
 		(manifests.execution.transport === "hosted" && manifests.execution.conclusion !== "success"))) errors.push("Pipeline execution did not complete successfully");
 	if (manifests.results?.state !== "passed") errors.push("Results were not successfully collected");
 	if (manifests.cleanup?.state !== "passed") errors.push("Cleanup failed or was not recorded");
+	for (const key of ["SETUP", "RESOLVE", "AUTHORIZE", "GENERATE", "RUN", "COLLECT", "CLEANUP"]) {
+		if (process.env["CI_JOB_" + key] !== "success") errors.push("Permanent job " + key.toLowerCase() + " did not succeed");
+	}
 	if (manifests.pipeline?.transport === "local" && manifests.execution?.outcomes) {
 		errors.push(...C.validateOutcomes(manifests.pipeline.tasks, manifests.execution.outcomes));
 	}

@@ -14,6 +14,7 @@ if not branch or not sha or not sha:match("^[%x]+$") or #sha ~= 40 then
 end
 local event = Process.env.CI_EVENT or "push"
 local tasks = Bootstrap.Plan(event)
+Process.env.CI_LINEAR_CONTROLLER = "true"
 local files = Workflow.Bundle(tasks, sha, branch, event)
 Fs.createDirectory(output, { makeParents = true })
 for name, contents in files do
