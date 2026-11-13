@@ -4,6 +4,7 @@ local Fs = require("@std/fs")
 local Process = require("@lute/process")
 local Bootstrap = require("@ci/bootstrap")
 local Json = require("@formats/json")
+local Contract = require("@ci/bootstrap/contracts/contract")
 local Workflow = require("@ci/github/workflows/workflow")
 
 local output = Process.args[2]
@@ -21,7 +22,7 @@ if selection and selection ~= "null" then
 	if type(decoded) ~= "table" then error("Component selection must be an array", 0) end
 	local requested = decoded :: { string }
 	if #requested == 0 then error("Component selection cannot be empty", 0) end
-	local byIdentity: { [string]: typeof(tasks[1]) } = {}
+	local byIdentity: { [string]: Contract.Task } = {}
 	for _, task in tasks do byIdentity[task.identity] = task end
 	local included: { [string]: boolean } = {}
 	local function include(identity: string): ()
@@ -35,7 +36,7 @@ if selection and selection ~= "null" then
 		if type(index) ~= "number" or type(identity) ~= "string" then error("Invalid component selection", 0) end
 		include(identity)
 	end
-	local filtered: typeof(tasks) = {}
+	local filtered: { Contract.Task } = {}
 	for _, task in tasks do if included[task.identity] then table.insert(filtered, task) end end
 	tasks = filtered
 end
