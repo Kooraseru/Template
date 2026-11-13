@@ -222,7 +222,12 @@ function generate() {
 	} finally {
 		if (attached) command("git", ["worktree", "remove", "--force", lockWorktree], { timeout: 30000 });
 	}
-	command("bash", ["ci/bootstrap/check-workflows.sh", GENERATED], { timeout: 240000 });
+	const checked = spawnSync("bash", ["ci/bootstrap/check-workflows.sh", GENERATED],
+		{ cwd: ROOT, encoding: "utf8", timeout: 240000, maxBuffer: 8 * 1024 * 1024 });
+	if (checked.error || checked.status !== 0) {
+		throw new Error("Generated workflow validation failed: " +
+			(checked.stderr + "\n" + checked.stdout).trim().slice(-6000));
+	}
 	} else {
 		// Tokenless local act: the generated workflow remains authoritative; hosted action locking is performed in CI.
 		console.log("::notice::Local act mode: compiled workflow will execute in the act runner");
