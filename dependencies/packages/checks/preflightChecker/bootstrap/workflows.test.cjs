@@ -29,12 +29,12 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	assert.deepEqual(authored, ["ci.yml"]);
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
 	assert.match(workflow, /^  resolve:$/m);
-	assert.match(workflow, /^  review:$/m);
-	assert.match(workflow, /^  audit:$/m);
+	assert.match(workflow, /^  checks:$/m);
+	assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine@[0-9a-f]{40}/);
 	assert.match(workflow, /^  bootstrap:$/m);
 	assert.match(workflow, /^  validate:$/m);
 	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
-	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs run/);
+	assert.match(workflow, /CI_ENGINE_CONFIG: \.github\/config\/ci\/engine\.json/);
 	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
 	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
 	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
