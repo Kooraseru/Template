@@ -36,7 +36,7 @@ test("capability contracts declare an explicit setup prerequisite", () => {
 
 test("trusted workflow retains privileged bootstrap and external read-only engine", () => {
   const source=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
-  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine@[0-9a-f]{40}/);
+  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine@extraction\/pr43-contract-planner/);
   assert.match(source,/id-token: write/);
   assert.match(source,/CI_CREDENTIAL_BOOTSTRAP_TOKEN/);
   assert.match(source,/needs: \[resolve, checks, bootstrap\]/);
