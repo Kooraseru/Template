@@ -3,6 +3,7 @@ const test = require("node:test"), assert = require("node:assert/strict");
 const fs = require("node:fs"), path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const root = path.resolve(__dirname, "../../../../..");
+const external = fs.existsSync(path.join(root, ".github/config/ci/engine.json"));
 const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
 function execute(t, source, env = {}) {
 	fs.mkdirSync(path.join(root, "build"), { recursive: true });
@@ -24,7 +25,7 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("one permanent authored workflow, with temporary generated files only inside the execution graph", () => {
+test("one permanent authored workflow, with temporary generated files only inside the execution graph", { skip: external ? "Superseded by reusable bootstrap launcher" : false }, () => {
 	const directory = path.join(root, ".github/workflows");
 	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
 	const expected = process.env.CI_GRAPH_RUN === "true" ? ["ci.yml", "pipeline.yml", "validation.yml"] : ["ci.yml"];

@@ -6,6 +6,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
 const root = path.resolve(__dirname, "../../../..");
+const external = fs.existsSync(path.join(root, ".github/config/ci/engine.json"));
 const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
 
 // Exercise the real entry before credentials are read or any CI task is executed.
@@ -42,7 +43,7 @@ test("dotenv input files and event payload operation are respected", t => {
 });
 
 
-test("local CI adapts the disposable single-launcher copy", t => {
+test("local CI adapts the disposable single-launcher copy", { skip: external ? "Local act adapter targets embedded controller" : false }, t => {
 	const { prepareStagedWorkflow, stagedEventArguments, options } = require("./run.cjs");
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
 	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
