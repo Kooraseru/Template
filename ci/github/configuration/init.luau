@@ -278,8 +278,24 @@ function Configuration.new(): Configuration
 	return setmetatable(fields, Configuration)
 end
 
+local function currentRepository(): string
+	local supplied = Process.env.GITHUB_REPOSITORY
+	if supplied and supplied:match("^[%w_.-]+/[%w_.-]+$") then
+		return supplied
+	end
+	local remote = Process.run({ "git", "remote", "get-url", "origin" }, { cwd = Process.cwd() })
+	if remote.ok then
+		local value = remote.stdout:gsub("%s+$", ""):gsub("%.git$", "")
+		local target = value:match("^https://github%.com/([%w_.-]+/[%w_.-]+)$")
+			or value:match("^git@github%.com:([%w_.-]+/[%w_.-]+)$")
+			or value:match("^ssh://git@github%.com/([%w_.-]+/[%w_.-]+)$")
+		if target then return target end
+	end
+	error("github.repository = current needs GITHUB_REPOSITORY or a GitHub origin remote", 0)
+end
+
 function Configuration.ResolveRepository(self: Configuration, reference: string): string
-	local resolved = self.aliases[reference] or reference
+	local resolved = if reference == "current" then currentRepository() else self.aliases[reference] or reference
 	if not resolved:match("^[%w_.-]+/[%w_.-]+$") then
 		return invalid(`{reference} must resolve to owner/repository`)
 	end
