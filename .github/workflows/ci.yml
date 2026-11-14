@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [source]
   pull_request:
-    branches: [source]
   workflow_dispatch:
     inputs:
       operation:
@@ -26,6 +24,7 @@ concurrency:
 
 jobs:
   resolve:
+    if: ${{ github.event_name != 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     name: Resolve CI Operation
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -55,6 +54,7 @@ jobs:
       - name: Resolve configured operation
         id: route
         env:
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           CI_REQUESTED_OPERATION: ${{ inputs.operation }}
           CI_REQUESTED_PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
         run: node ci/bootstrap/routes.cjs resolve
@@ -124,7 +124,7 @@ jobs:
   bootstrap:
     name: Start Generated CI
     needs: resolve
-    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/source' && needs.resolve.outputs.mode == 'generated' }}
+    if: ${{ github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.resolve.outputs.mode == 'generated' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -144,6 +144,7 @@ jobs:
       - name: Compile, launch, and verify generated execution
         env:
           CI_EVENT: push
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           CI_PROFILE: source-ci
           CI_OPERATION: ${{ needs.resolve.outputs.plan }}
           CI_PUBLICATION_ENABLED: ${{ needs.resolve.outputs.publication }}
@@ -165,7 +166,7 @@ jobs:
 
   validate:
     name: validate
-    if: always()
+    if: ${{ always() && (github.event_name != 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) }}
     needs: [resolve, review, audit, bootstrap]
     runs-on: ubuntu-latest
     timeout-minutes: 5
