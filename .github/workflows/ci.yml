@@ -59,28 +59,29 @@ jobs:
           CI_REQUESTED_PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
         run: node ci/bootstrap/routes.cjs resolve
 
-  review:
-    name: Code Review
+
+  checks:
+    name: Validate Project Components
     needs: resolve
-    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.review_checks == 'true' }}
+    if: ${{ needs.resolve.outputs.mode == 'readonly' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     permissions:
       contents: read
+    env:
+      CI_ENGINE_CONFIG: .github/config/ci/engine.json
+      CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout project
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
+      - name: Execute configured read-only components
+        uses: Kooraseru-Hub/CI-Engine@6b897683613b50b4cd56c848f37e5559e8562c49
         with:
-          node-version: 24
-      - name: Execute configured read-only checks
-        env:
-          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
-          CI_CHECK_GROUP: review
-        run: node ci/bootstrap/routes.cjs run
-      - name: Preserve full diagnostics
+          operation: ${{ github.event_name == 'workflow_dispatch' && needs.resolve.outputs.operation || '' }}
+      - name: Preserve Code Review findings
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -88,31 +89,7 @@ jobs:
           path: build/code-review/
           if-no-files-found: ignore
           retention-days: 7
-
-  audit:
-    name: Rules Audit
-    needs: resolve
-    if: ${{ needs.resolve.outputs.mode == 'readonly' && needs.resolve.outputs.audit_checks == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 24
-      - name: Install rule audit dependencies
-        run: node dependencies/packages/core/dependencyLoader/index.ts
-      - name: Execute configured Rules audit
-        env:
-          CI_REQUESTED_OPERATION: ${{ needs.resolve.outputs.operation }}
-          CI_CHECK_GROUP: audit
-        run: node ci/bootstrap/routes.cjs run
-      - name: Preserve Rules audit findings
+      - name: Preserve Rules Audit findings
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -167,7 +144,7 @@ jobs:
   validate:
     name: validate
     if: ${{ always() && (github.event_name != 'push' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) }}
-    needs: [resolve, review, audit, bootstrap]
+    needs: [resolve, checks, bootstrap]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -176,18 +153,12 @@ jobs:
         env:
           RESOLVE: ${{ needs.resolve.result }}
           MODE: ${{ needs.resolve.outputs.mode }}
-          REVIEW: ${{ needs.review.result }}
-          AUDIT: ${{ needs.audit.result }}
-          REVIEW_REQUIRED: ${{ needs.resolve.outputs.review_checks }}
-          AUDIT_REQUIRED: ${{ needs.resolve.outputs.audit_checks }}
+          CHECKS: ${{ needs.checks.result }}
           BOOTSTRAP: ${{ needs.bootstrap.result }}
         run: |
           test "$RESOLVE" = success
           case "$MODE" in
-            readonly)
-              if [ "$REVIEW_REQUIRED" = true ]; then test "$REVIEW" = success; else test "$REVIEW" = skipped; fi
-              if [ "$AUDIT_REQUIRED" = true ]; then test "$AUDIT" = success; else test "$AUDIT" = skipped; fi
-              ;;
+            readonly) test "$CHECKS" = success ;;
             generated) test "$BOOTSTRAP" = success ;;
             *) echo "No valid execution route completed" >&2; exit 1 ;;
           esac
