@@ -6,22 +6,21 @@ const os = require("node:os");
 const path = require("node:path");
 const { readConfig, resolve, appendOutputs, runReadonly } = require("./routes.cjs");
 const config = readConfig();
-const trusted = { GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/source" };
+const trusted = { GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/source", CI_DEFAULT_BRANCH: "source" };
+const manual = { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source", CI_DEFAULT_BRANCH: "source" };
 
 test("all CI events and declared operations route through one manifest", () => {
-	assert.equal(resolve(config, trusted).name, "publish");
+	assert.equal(resolve(config, trusted).name, "validation");
 	assert.equal(resolve(config, { GITHUB_EVENT_NAME: "pull_request", GITHUB_REF: "refs/pull/12/merge" }).name, "review");
-	assert.equal(resolve(config, { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source" }).name, "validation");
-	assert.equal(resolve(config, { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source",
-		CI_REQUESTED_OPERATION: "build" }).mode, "generated");
-	assert.equal(resolve(config, { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source",
-		CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" }).publication, true);
+	assert.equal(resolve(config, manual).name, "validation");
+	assert.equal(resolve(config, { ...manual, CI_REQUESTED_OPERATION: "build" }).mode, "generated");
+	assert.equal(resolve(config, { ...manual, CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" }).publication, true);
 });
 test("publication requires a trusted source ref and explicit manual approval", () => {
 	for (const env of [
-		{ ...trusted, GITHUB_REF: "refs/heads/topic" },
-		{ GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source", CI_REQUESTED_OPERATION: "publish" },
-		{ GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/topic", CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" },
+		{ ...manual, GITHUB_REF: "refs/heads/topic", CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" },
+		{ ...manual, CI_REQUESTED_OPERATION: "publish" },
+		{ ...manual, CI_DEFAULT_BRANCH: "main", CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" },
 	]) assert.throws(() => resolve(config, env));
 	assert.equal(resolve(config, { GITHUB_EVENT_NAME: "pull_request", CI_REQUESTED_OPERATION: "publish" }).name, "review");
 });
@@ -29,7 +28,7 @@ test("bootstrap outputs use aliases rather than credential values", () => {
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "ci-routes-"));
 	try {
 		const file = path.join(directory, "outputs");
-		appendOutputs(resolve(config, trusted), file);
+		appendOutputs(resolve(config, { ...manual, CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" }), file);
 		const output = fs.readFileSync(file, "utf8");
 		assert.match(output, /^app_private_key_name=CI_APP_PRIVATE_KEY$/m);
 		assert.match(output, /^branch_prefix=ci\/run-$/m);
@@ -63,5 +62,12 @@ test("Rules audit is routed separately without privileged access", () => {
 	assert.throws(() => runReadonly(config, route, undefined, { CI_CHECK_GROUP: "unknown" }), /Invalid read-only check group/);
 });
 test("read-only executor will not run a generated operation", () => {
-	assert.throws(() => runReadonly(config, resolve(config, trusted)), /Only unprivileged/);
+	assert.throws(() => runReadonly(config, resolve(config, { ...manual, CI_REQUESTED_OPERATION: "build" })), /Only unprivileged/);
+});
+
+test("trusted default branch may be named development rather than source", () => {
+  const env = { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/development",
+    CI_DEFAULT_BRANCH: "development", CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" };
+  assert.equal(resolve(config, env).mode, "generated");
+  assert.equal(resolve(config, trusted).mode, "readonly");
 });
