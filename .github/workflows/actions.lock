@@ -8,7 +8,7 @@ workflows:
         - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v4'
         - 'actions/upload-artifact@v7'
-        - 'Kooraseru-Hub/CI-Engine@6b897683613b50b4cd56c848f37e5559e8562c49'
+        - 'Kooraseru-Hub/CI-Engine@extraction/pr43-contract-planner'
         - 'jdx/mise-action@v5'
 dependencies:
     'actions/checkout@v7':
@@ -31,8 +31,8 @@ dependencies:
         commit: 'sha1-cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         owner_id: 44036562
         repo_id: 192625955
-    'Kooraseru-Hub/CI-Engine@6b897683613b50b4cd56c848f37e5559e8562c49':
-        ref: '6b897683613b50b4cd56c848f37e5559e8562c49'
+    'Kooraseru-Hub/CI-Engine@extraction/pr43-contract-planner':
+        ref: 'extraction/pr43-contract-planner'
         commit: 'sha1-6b897683613b50b4cd56c848f37e5559e8562c49'
         owner_id: 255195713
         repo_id: 1458028693
