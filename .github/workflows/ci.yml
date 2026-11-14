@@ -16,6 +16,6 @@ permissions:
 
 jobs:
   bootstrap:
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@6634c2ca293a4a3668f2e7b32fe0af3907bd5427
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13ce335c0086c1336191022348c088a30ae10343
     with:
       operation: ${{ inputs.operation || '' }}

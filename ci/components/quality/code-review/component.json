@@ -3,7 +3,9 @@
   "provides": [
     "quality.code_review"
   ],
-  "requires": [],
+  "requires": [
+    "tools.workspace"
+  ],
   "inputs": [
     "ci/**",
     "dependencies/packages/checks/**",

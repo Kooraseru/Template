@@ -3,7 +3,9 @@
   "provides": [
     "quality.test_suites"
   ],
-  "requires": [],
+  "requires": [
+    "tools.workspace"
+  ],
   "inputs": [
     "ci/**",
     "dependencies/**",

@@ -3,7 +3,9 @@
   "provides": [
     "quality.rules_audit"
   ],
-  "requires": [],
+  "requires": [
+    "tools.workspace"
+  ],
   "inputs": [
     "ci/**",
     "dependencies/packages/checks/**",
