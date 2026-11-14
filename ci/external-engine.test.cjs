@@ -9,7 +9,9 @@ const external = fs.existsSync(configPath);
 
 test("one stable, SHA-pinned external launcher with no embedded runtimes", { skip: !external }, () => {
   const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
-  const jobs = [...workflow.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]);
+  const jobSection = workflow.split(/\njobs:\s*\n/)[1];
+  assert.ok(jobSection);
+  const jobs = [...jobSection.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]);
   assert.deepEqual(jobs, ["bootstrap"]);
   assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.doesNotMatch(workflow, /setup-node|node ci\/|secrets\.|secrets: inherit|mise-action|workflow_call:/);
