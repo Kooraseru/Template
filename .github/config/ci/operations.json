@@ -1,7 +1,7 @@
 {
   "version": 1,
   "triggers": {
-    "push": "publish",
+    "push": "validation",
     "pull_request": "review",
     "workflow_dispatch": "validation"
   },
@@ -44,6 +44,13 @@
         "ci/rules-audit.cjs"
       ],
       "timeoutSeconds": 750
+    },
+    "template-updates": {
+      "command": [
+        "node",
+        "ci/template/version.cjs"
+      ],
+      "timeoutSeconds": 60
     }
   },
   "operations": {
@@ -57,12 +64,14 @@
         "workflows",
         "code-review",
         "rules-audit",
-        "build-tests"
+        "build-tests",
+        "template-updates"
       ]
     },
     "validation": {
       "mode": "readonly",
       "events": [
+        "push",
         "workflow_dispatch"
       ],
       "checks": [
@@ -70,7 +79,8 @@
         "workflows",
         "code-review",
         "rules-audit",
-        "build-tests"
+        "build-tests",
+        "template-updates"
       ]
     },
     "readiness": {
@@ -82,7 +92,8 @@
         "setup",
         "workflows",
         "code-review",
-        "rules-audit"
+        "rules-audit",
+        "template-updates"
       ]
     },
     "build": {
