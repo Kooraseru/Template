@@ -167,8 +167,7 @@ function Publication.Begin(setting: string): string?
 	local fixedStage = Process.env.CI_STAGE_MODE == "fixed"
 	if fixedStage then
 		if not graphRun or Process.env.CI_PHASE ~= "publish"
-			or Process.env.GITHUB_REF ~= "refs/heads/source"
-			or defaultBranch ~= "source"
+			or Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}`
 			or (Process.env.GITHUB_EVENT_NAME ~= "push" and Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch") then
 			error("Fixed publication requires a trusted source-branch Publish stage", 0)
 		end
