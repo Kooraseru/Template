@@ -45,8 +45,12 @@ function Component.Run(self: Component, _: { event: string }): string?
 			error("Expected a generated branch directory", 0)
 		end
 		local branch = directory:match("([^/]+)$")
-		if not branch or not branch:match("^[%w][%w_-]*$") or branch == details.default_branch then
-			error("Refusing to publish an unsafe branch or replace the default source branch", 0)
+		if not branch or not branch:match("^[%w][%w_-]*$") then
+			error("Refusing to publish an unsafe generated branch name", 0)
+		end
+		if branch == details.default_branch then
+			print(`::notice::Generated branch {branch} matches the repository default branch; skipping to avoid replacement`)
+			continue
 		end
 		if Fs.exists(`{directory}/.git`) then
 			error("Refusing to reuse a branch publication Git directory", 0)

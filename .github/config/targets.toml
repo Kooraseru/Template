@@ -1,6 +1,7 @@
 # GitHub decisions belong here. Repository paths are owner/repository.
 [github]
-repository = "Kooraseru/Template"
+# "current" automatically resolves to the repository running CI.
+repository = "current"
 
 [github.aliases]
 # Fill in the names used by your project. There are no implicit aliases.

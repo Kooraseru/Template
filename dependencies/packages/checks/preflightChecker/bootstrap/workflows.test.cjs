@@ -41,7 +41,8 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	assert.equal(config.triggers.pull_request, "review");
 	assert.equal(config.checks["rules-audit"].group, "audit");
 	assert.ok(config.operations.review.checks.includes("rules-audit"));
-	assert.equal(config.triggers.push, "publish");
+	assert.equal(config.triggers.push, "validation");
+	assert.ok(config.operations.validation.events.includes("push"), "Default push must be read-only");
 });
 test("optional administration components use their current skip policies", t => {
 	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),default=S.Conclusion("source/build")}))';
