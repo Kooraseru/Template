@@ -17,7 +17,8 @@ local Stages = {}
 
 local function trustedSource(): ()
 	if Process.env.ACT == "true" or Process.env.GITHUB_ACTIONS ~= "true"
-		or Process.env.GITHUB_REF ~= "refs/heads/source"
+		or Process.env.CI_DEFAULT_BRANCH == nil or Process.env.CI_DEFAULT_BRANCH == ""
+		or Process.env.GITHUB_REF ~= `refs/heads/{Process.env.CI_DEFAULT_BRANCH}`
 		or (Process.env.GITHUB_EVENT_NAME ~= "push" and Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch") then
 		error("Publication is restricted to trusted source runs", 0)
 	end
