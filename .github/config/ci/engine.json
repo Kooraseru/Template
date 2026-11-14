@@ -35,5 +35,6 @@
       ],
       "branch": "default"
     }
-  }
+  },
+  "componentRoot": ".github/config/ci/components"
 }
