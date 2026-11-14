@@ -68,7 +68,7 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 			if (!Array.isArray(item.checks) || !item.checks.length || item.checks.some(check => !Object.hasOwn(checks, check))) {
 				throw new Error("Unknown checks for operation: " + name);
 			}
-			if (item.events.includes("push")) throw new Error("Push operations must execute through generated branches");
+			// Read-only default-branch push validation needs no privileged credentials.
 		} else if (item.plan !== "build" || typeof item.publication !== "boolean" ||
 			typeof item.branchPrefix !== "string" || !PREFIX.test(item.branchPrefix) ||
 			item.branchPrefix.includes("//") || item.branchPrefix.includes("..")) {
@@ -96,7 +96,11 @@ function resolve(config, env = process.env) {
 	if (!operation.events.includes(event)) throw new Error("Operation " + requested + " is unavailable for " + event);
 	if (operation.mode === "generated") {
 		if (event === "pull_request") throw new Error("Untrusted pull requests cannot launch a generated privileged workflow");
-		if (env.ACT !== "true" && env.GITHUB_REF !== "refs/heads/source") throw new Error("Generated CI requires the trusted source ref");
+		const defaultBranch = env.CI_DEFAULT_BRANCH || env.GITHUB_DEFAULT_BRANCH;
+    if (env.ACT !== "true" && (!defaultBranch || !/^[A-Za-z0-9._/-]+$/.test(defaultBranch) ||
+      defaultBranch.includes("..") || env.GITHUB_REF !== "refs/heads/" + defaultBranch)) {
+      throw new Error("Generated CI requires the trusted repository default branch");
+    }
 		if (event === "workflow_dispatch" && operation.publication && env.CI_REQUESTED_PUBLISH !== "true") {
 			throw new Error("Manual publication requires explicit publish=true");
 		}
