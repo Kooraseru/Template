@@ -49,9 +49,16 @@ function identity(env = process.env, directory = ROOT) {
 }
 
 function targetRepository(text) {
-  const github = /^\[github\]\s*$([\s\S]*?)(?=^\[|\s*$)/m.exec(text);
-  const found = github?.[1]?.match(/^\s*repository\s*=\s*"([^"]+)"\s*$/m);
-  return found?.[1] || null;
+  let section = null;
+  for (const line of text.split(/\r?\n/)) {
+    const header = /^\s*\[([^\]]+)\]\s*$/.exec(line);
+    if (header) { section = header[1]; continue; }
+    if (section === "github") {
+      const match = /^\s*repository\s*=\s*"([^"]+)"\s*$/.exec(line);
+      if (match) return match[1];
+    }
+  }
+  return null;
 }
 
 function analyze(directory = ROOT, env = process.env) {
