@@ -30,7 +30,7 @@ test("only one permanent workflow delegates operations to JSON", () => {
 	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
 	assert.match(workflow, /^  resolve:$/m);
 	assert.match(workflow, /^  checks:$/m);
-	assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine@[0-9a-f]{40}/);
+	assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine@extraction\/pr43-contract-planner/);
 	assert.match(workflow, /^  bootstrap:$/m);
 	assert.match(workflow, /^  validate:$/m);
 	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
