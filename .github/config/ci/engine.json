@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "triggers": {
+    "push": "validation",
+    "pull_request": "review",
+    "workflow_dispatch": "validation"
+  },
+  "operations": {
+    "review": {
+      "mode": "readonly",
+      "events": [
+        "pull_request"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "validation": {
+      "mode": "readonly",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/*"
+      ],
+      "branch": "default"
+    },
+    "readiness": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/workflows",
+        "quality/code-review",
+        "quality/rules-audit",
+        "quality/template-updates"
+      ]
+    },
+    "rules-audit": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/rules-audit"
+      ]
+    },
+    "build": {
+      "mode": "generated",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "*"
+      ],
+      "branch": "default"
+    },
+    "publish": {
+      "mode": "generated",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "components": [
+        "*"
+      ],
+      "branch": "default"
+    }
+  },
+  "componentRoot": ".github/config/ci/components"
+}

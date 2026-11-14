@@ -1,0 +1,18 @@
+{
+  "provides": [
+    "quality.tests"
+  ],
+  "requires": [
+    "tools.workspace"
+  ],
+  "events": [
+    "push",
+    "pull_request",
+    "workflow_dispatch"
+  ],
+  "boundary": "read",
+  "command": [
+    "bash",
+    "ci/run.sh"
+  ]
+}
