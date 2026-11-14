@@ -1,0 +1,23 @@
+{
+  "phase": "build",
+  "provides": [
+    "quality.code_review"
+  ],
+  "requires": [],
+  "inputs": [
+    "ci/**",
+    "dependencies/packages/checks/**",
+    ".github/config/ci/**"
+  ],
+  "outputs": [],
+  "events": [
+    "push",
+    "pull_request",
+    "workflow_dispatch"
+  ],
+  "boundary": "read",
+  "command": [
+    "node",
+    "ci/code-review.cjs"
+  ]
+}
