@@ -20,7 +20,7 @@ To enable trusted automatic publishing, edit \`.github/config/ci/operations.json
 
 The trusted bootstrap has \`id-token: write\` available for authenticated OIDC providers and supports scoped GitHub App/bootstrap credentials for native workflow generation. An OIDC JWT is not itself a registry credential: npm, extension marketplaces, or other services must independently support trusted publishing and recognize the repository/workflow identity. Unsupported publishing adapters are **not** automatically enabled. The current example GitHub Packages records are staging fixtures, not working npm/NuGet/RubyGems publisher adapters.
 
-Manual **Run workflow** supports the \`validation\`, \`readiness\`, \`build\`, and \`publish\` operations; manual publication additionally requires the \`publish\` confirmation input. Read-only pull requests never receive publishing credentials. Publication permissions and the configured environment are still enforced by GitHub.
+Manual **Run workflow** supports the \`validation\`, \`readiness\`, \`build\`, and \`publish\` operations; manual publication additionally requires the \`publish\` confirmation input. Read-only pull requests never receive publishing credentials. The external engine accepts only read-only components, and the separate trusted bootstrap owns generated branches, publication, result verification, and cleanup. Publication permissions and the configured environment are still enforced by GitHub.
 
 For internals and the local \`act\` path, see [CI documentation](ci/README.md).
 
