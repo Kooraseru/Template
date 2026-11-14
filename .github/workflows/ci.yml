@@ -78,7 +78,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Execute configured read-only components
-        uses: Kooraseru-Hub/CI-Engine@6b897683613b50b4cd56c848f37e5559e8562c49
+        uses: Kooraseru-Hub/CI-Engine@extraction/pr43-contract-planner
         with:
           operation: ${{ github.event_name == 'workflow_dispatch' && needs.resolve.outputs.operation || '' }}
       - name: Preserve Code Review findings
