@@ -25,7 +25,7 @@ concurrency:
 jobs:
   ci:
     name: CI Engine
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@6f09d11246b69f6c99f3744bedb082c848544904
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@6e9bc5da3a7f88c1684252cb294aef8d5575828b
     permissions:
       contents: read
       actions: read
