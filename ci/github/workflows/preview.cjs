@@ -26,16 +26,18 @@ function hosts(root = ROOT) {
 }
 
 function validate(branch, sha) {
-  if (!/^ci\/run-pr-[1-9]\d*-[a-f0-9]{7,12}$/.test(branch))
+  if (!/^ci\/run-(?:pr-[1-9]\d*|push-[1-9]\d*)-[a-f0-9]{7,12}$/.test(branch))
     throw new Error("Unsafe execution branch name");
   if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error("Expected a complete source SHA");
 }
 
-function render(branch, sha, root=ROOT) {
+function render(branch, sha, root=ROOT, event='pull_request') {
   validate(branch,sha);
+  if (!['pull_request','push'].includes(event)) throw new Error('Only build-only push and PR graphs are supported');
   const targets = hosts(root);
   const expr = name => "$" + "{{ " + name + " }}";
   const e = expr;
+  const componentEvent = event;
   const common = [
     "      - uses: actions/checkout@v7",
     "        with:",
@@ -47,7 +49,7 @@ function render(branch, sha, root=ROOT) {
   ];
   const pipeline = [
     "name: Generated CI",
-    "run-name: 'PR validation " + sha.slice(0,12) + "'",
+    "run-name: 'Native " + (event === "push" ? "push" : "PR") + " build " + sha.slice(0,12) + "'",
     "on:",
     "  push:",
     "    branches: ['" + branch + "']",
@@ -68,19 +70,33 @@ function render(branch, sha, root=ROOT) {
     "    uses: ./.github/workflows/quality.yml",
     "  tests:",
     "    name: Tests",
-    "    needs: start",
+    "    needs: build",
     "    permissions:",
     "      contents: read",
+    "      actions: read",
     "    uses: ./.github/workflows/tests.yml",
     "  build:",
     "    name: Build",
-    "    needs: [quality, tests]",
+    "    needs: start",
     "    permissions:",
     "      contents: read",
     "    uses: ./.github/workflows/build.yml",
+    "  plan:",
+    "    name: Plan",
+    "    needs: start",
+    "    permissions:",
+    "      contents: read",
+    "    uses: ./.github/workflows/plan.yml",
+    "  distribution:",
+    "    name: Distribution",
+    "    needs: build",
+    "    permissions:",
+    "      contents: read",
+    "      actions: read",
+    "    uses: ./.github/workflows/distribution.yml",
     "  collect:",
     "    name: Collect",
-    "    needs: [quality, tests, build]",
+    "    needs: [quality, build, tests, plan, distribution]",
     "    if: " + e("always()"),
     "    runs-on: ubuntu-latest",
     "    permissions: {}",
@@ -90,11 +106,15 @@ function render(branch, sha, root=ROOT) {
     "          QUALITY: " + e("needs.quality.result"),
     "          TESTS: " + e("needs.tests.result"),
     "          BUILD: " + e("needs.build.result"),
+    "          PLAN: " + e("needs.plan.result"),
+    "          DISTRIBUTION: " + e("needs.distribution.result"),
     "        run: |",
     "          set -euo pipefail",
     '          test "$QUALITY" = success',
     '          test "$TESTS" = success',
     '          test "$BUILD" = success',
+    '          test "$PLAN" = success',
+    '          test "$DISTRIBUTION" = success',
   ].join("\n") + "\n";
   const quality = [
     "name: Quality",
@@ -117,13 +137,33 @@ function render(branch, sha, root=ROOT) {
     ...common,
     "      - run: node dependencies/packages/core/dependencyLoader/index.ts",
     "      - run: node ci/rules-audit.cjs",
+    "  workflows:",
+    "    name: Workflows",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    ...common,
+    "      - run: bash ci/bootstrap/check-workflows.sh",
+    "  updates:",
+    "    name: Updates",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    ...common,
+    "      - run: node ci/template/version.cjs",
   ].join("\n") + "\n";
+  const nativeTests = targets.flatMap(target => [
+    "          - target: " + target,
+    "            label: " + target.replace(/(^|-)([a-z])/g, (_,p,c)=>(p?" ":"")+c.toUpperCase()),
+    "            runner: " + (target.endsWith("arm64") ? "windows-11-arm" : "windows-latest"),
+    "            expected: " + JSON.stringify(target === "windows-arm64" ? "Windows 11 ARM64" :
+      target === "windows-intel" ? "Windows 11 x86-64 Intel" : "Windows 11 x86-64 AMD"),
+  ]);
   const tests = [
     "name: Tests",
     "on:",
     "  workflow_call:",
     "permissions:",
     "  contents: read",
+    "  actions: read",
     "jobs:",
     "  universal:",
     "    name: Universal",
@@ -132,6 +172,33 @@ function render(branch, sha, root=ROOT) {
     "    steps:",
     ...common,
     "      - run: bash ci/test.sh",
+    "  native:",
+    "    name: " + e("matrix.label"),
+    "    strategy:",
+    "      fail-fast: false",
+    "      matrix:",
+    "        include:",
+    ...nativeTests,
+    "    runs-on: " + e("matrix.runner"),
+    "    timeout-minutes: 20",
+    "    steps:",
+    "      - uses: actions/download-artifact@v8",
+    "        with:",
+    "          name: " + e("matrix.target"),
+    "          path: verified",
+    "      - name: Run and verify " + e("matrix.target"),
+    "        shell: pwsh",
+    "        env:",
+    "          TARGET: " + e("matrix.target"),
+    "          EXPECTED: " + e("matrix.expected"),
+    "        run: |",
+    '          $ErrorActionPreference = "Stop"',
+    '          $binary = Join-Path $PWD ("verified/" + $env:TARGET + ".exe")',
+    '          if (!(Test-Path $binary)) { throw "Missing built executable: $binary" }',
+    '          $lines = @(& $binary)',
+    '          if ($LASTEXITCODE -ne 0) { throw "Executable exited with $LASTEXITCODE" }',
+    '          if ($lines -notcontains "Hello from the shared C application!") { throw "Shared application smoke test failed" }',
+    '          if ($lines -notcontains $env:EXPECTED) { throw "Host-specific output mismatch: $env:EXPECTED" }',
   ].join("\n") + "\n";
   const matrix=targets.flatMap(target=>[
     "          - target: " + target,
@@ -150,7 +217,7 @@ function render(branch, sha, root=ROOT) {
     ...common,
     "      - name: Build " + label,
     "        env:",
-    "          CI_EVENT: pull_request",
+    "          CI_EVENT: " + componentEvent,
     "          CI_GRAPH_RUN: 'true'",
     "          CI_OPERATION: validation",
     "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
@@ -180,7 +247,7 @@ function render(branch, sha, root=ROOT) {
     ...common,
     "      - name: Compile " + e("matrix.target"),
     "        env:",
-    "          CI_EVENT: pull_request",
+    "          CI_EVENT: " + componentEvent,
     "          CI_GRAPH_RUN: 'true'",
     "          CI_OPERATION: validation",
     "          CI_HOST_TARGET: " + e("matrix.target"),
@@ -193,11 +260,57 @@ function render(branch, sha, root=ROOT) {
     "          if-no-files-found: error",
     ...auxiliary,
   ].join("\n") + "\n";
+  const planComponents = [
+    ["rulesets", "Rulesets", "governance/rulesets/plan", "build/github/ruleset-plans/"],
+    ["milestones", "Milestones", "work/milestones/plan", "build/github/milestones/"],
+    ["projects", "Projects", "work/projects/plan", "build/github/project-plans/"],
+  ];
+  const plan = [
+    "name: Plan", "on:", "  workflow_call:", "permissions:", "  contents: read", "jobs:",
+    ...planComponents.flatMap(([id, label, component, artifact]) => [
+      "  " + id + ":", "    name: " + label, "    runs-on: ubuntu-latest",
+      "    timeout-minutes: 25", "    steps:", ...common,
+      "      - name: Plan " + label,
+      "        env:", "          CI_EVENT: " + componentEvent,
+      "          CI_GRAPH_RUN: 'true'", "          CI_OPERATION: validation",
+      "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
+      "      - uses: actions/upload-artifact@v7",
+      "        with:", "          name: plan-" + id,
+      "          path: " + artifact, "          if-no-files-found: error",
+    ]),
+  ].join("\n") + "\n";
+  const distributionComponents = [
+    ["packages", "Packages", "distribution/packages/build", "build/github/packages/"],
+    ["releases", "Releases", "distribution/releases/build", "build/github/releases/"],
+  ];
+  const distribution = [
+    "name: Distribution", "on:", "  workflow_call:",
+    "permissions:", "  contents: read", "  actions: read", "jobs:",
+    ...distributionComponents.flatMap(([id,label,component,artifact])=>[
+      "  " + id + ":", "    name: " + label, "    runs-on: ubuntu-latest",
+      "    timeout-minutes: 30", "    steps:", ...common,
+      "      - uses: actions/download-artifact@v8",
+      "        with:", "          pattern: windows-*",
+      "          merge-multiple: true",
+      "          path: build/artifacts/application",
+      "      - name: Build " + label,
+      "        env:", "          CI_EVENT: " + componentEvent,
+      "          CI_OPERATION: validation", "          CI_GRAPH_RUN: 'true'",
+      "          CI_NATIVE_PREVIEW: 'true'",
+      "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
+      "      - uses: actions/upload-artifact@v7",
+      "        with:", "          name: distribution-" + id,
+      "          path: " + artifact,
+      "          if-no-files-found: error",
+    ]),
+  ].join("\n") + "\n";
   const files={
     "pipeline.yml": pipeline,
     "quality.yml": quality,
     "tests.yml": tests,
     "build.yml": build,
+    "plan.yml": plan,
+    "distribution.yml": distribution,
   };
   for(const content of Object.values(files)){
     if (/publish:|pages: write|id-token: write|secrets: inherit|pull_request_target:/.test(content))
@@ -207,8 +320,8 @@ function render(branch, sha, root=ROOT) {
 }
 
 function main() {
-  const branch=process.argv[2],sha=process.argv[3],output=process.argv[4]||"build/run/workflows";
-  const files=render(branch,sha);
+  const branch=process.argv[2],sha=process.argv[3],output=process.argv[4]||"build/run/workflows",event=process.argv[5]||"pull_request";
+  const files=render(branch,sha,ROOT,event);
   fs.mkdirSync(output,{recursive:true});
   for(const [file,content] of Object.entries(files))fs.writeFileSync(path.join(output,file),content);
   process.stdout.write(JSON.stringify({branch,source:sha,files:Object.keys(files),hosts:hosts()})+"\n");
