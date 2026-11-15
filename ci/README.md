@@ -1,6 +1,6 @@
 # CI implementation
 
-Template owns one authored workflow, .github/workflows/ci.yml. Its only job calls the full-SHA-pinned reusable workflow in Kooraseru-Hub/CI-Engine. The generic Resolve Operation, Execute Selected Components or Execute Configured Pipeline, and required validate jobs live in the engine, not in Template's caller.
+Template owns one authored workflow, .github/workflows/ci.yml. Its only job calls the full-SHA-pinned reusable workflow in Kooraseru-Hub/CI-Engine. The engine exposes one linear lifecycle: Resolve Operation → Prepare Dependencies → Discover Components → Plan Execution → Authorize Operation → Execute Pipeline → Collect Results → Cleanup → validate. Execution mode is selected inside Execute Pipeline; no separate skipped read-only versus generated job appears on the graph.
 
 .github/config/ci/engine.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/config/ci/components/.
 
@@ -136,3 +136,8 @@ Pull requests into the default branch run the configured `review` operation thro
 The external engine's read-only job uploads Code Review diagnostics as `code-review-findings/diagnostics.json` plus `summary.md`; Rules Audit produces its own `rules-audit-findings` artifact. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures block the relevant check; pre-existing errors in unrelated files are reported without blocking an unrelated pull request. Rules Audit excludes expected invalid rule-fixture findings, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
 
 Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node ci/code-review.cjs` and `node ci/rules-audit.cjs` to audit both locally. The reports are written to `build/code-review/` and `build/rules-audit/`. Manual dispatch with `operation=rules-audit` executes only the rules job.
+
+
+## Local act compatibility
+
+The local CI wrapper stages the pinned engine workflow in its disposable checkout, rewriting GitHub-only self-references (`uses: $/`) to standard remote action references at the same SHA. It also uses artifact upload v4 for the local `act` artifact server. Neither the permanent Template launcher nor the hosted engine workflow is modified. The change is covered by `dependencies/packages/ci/localActions/run.test.cjs`.
