@@ -57,9 +57,39 @@ function timeoutMilliseconds(environment = process.env) {
 	return Number(minutes) * 60_000;
 }
 
-// Adapt the isolated checkout for act without changing GitHub's workflow.
-function prepareStagedWorkflow(file, runId) {
+// Keep the hosted launcher immutable. act does not yet recognize GitHub's
+// self-repository action shorthand ($/), so stage a disposable copy only.
+const PINNED_ENGINE = /^\s*uses:\s+(?<repository>[\w.-]+\/[\w.-]+)\/\.github\/workflows\/(?<workflow>[\w.-]+\.ya?ml)@(?<sha>[a-f0-9]{40})\s*$/m;
+function fetchPinnedEngineWorkflow(repository, sha, workflow) {
+	const temporary = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "ci-engine-act-"));
+	const url = "https://github.com/" + repository + ".git";
+	try {
+		execFileSync("git", ["init", "--quiet", temporary], { encoding: "utf8", timeout: 15000, windowsHide: true });
+		execFileSync("git", ["-C", temporary, "remote", "add", "origin", url], { encoding: "utf8", timeout: 15000, windowsHide: true });
+		execFileSync("git", ["-C", temporary, "fetch", "--quiet", "--depth=1", "origin", sha],
+			{ encoding: "utf8", timeout: 90000, windowsHide: true });
+		return execFileSync("git", ["-C", temporary, "show", sha + ":.github/workflows/" + workflow],
+			{ encoding: "utf8", timeout: 15000, windowsHide: true });
+	} finally { fs.rmSync(temporary, { recursive: true, force: true }); }
+}
+function prepareStagedWorkflow(file, runId, pinnedWorkflow) {
 	const source = fs.readFileSync(file, "utf8");
+	const match = PINNED_ENGINE.exec(source);
+	if (match) {
+		const { repository, sha, workflow } = match.groups;
+		let engine = pinnedWorkflow ?? fetchPinnedEngineWorkflow(repository, sha, workflow);
+		if (!/^\s*uses:\s*\$\//m.test(engine))
+			throw new Error("The pinned CI Engine workflow has no local action self-references to adapt");
+		engine = engine.replace(/^(\s*uses:\s*)\$\/([\w./-]*)\s*$/gm,
+			(_, prefix, directory) => prefix + repository + (directory ? "/" + directory : "") + "@" + sha);
+		if (/^\s*uses:\s*\$\//m.test(engine))
+			throw new Error("Unresolved CI Engine self-reference in act staging");
+		const name = "_act-ci-engine.yml";
+		fs.writeFileSync(path.join(path.dirname(file), name), engine);
+		fs.writeFileSync(file, source.replace(match[0],
+			match[0].replace(match[0].trim(), "uses: ./.github/workflows/" + name)));
+		return true;
+	}
 	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) {
 		if (!/^  resolve:\r?\n    name: Resolve CI Operation$/m.test(source)) return false;
 		fs.writeFileSync(file, source.replaceAll("actions/upload-artifact@v7", "actions/upload-artifact@v4"));
