@@ -142,6 +142,16 @@ async function observe(ctx,commit,token,env=process.env,delay=sleep){
   throw new Error("Native build timed out"+(link?": "+link:""));
 }
 
+async function deleteBranch(ctx,token,env=process.env){
+  const ref="heads/"+ctx.branch;
+  // Never delete an unrelated ref, even if cleanup is called independently.
+  if(!/^ci\\/run-push-[1-9]\\d*-[1-9]\\d*-[0-9a-f]{10}$/.test(ctx.branch)){
+    throw new Error("Refusing to delete a non-generated CI branch");
+  }
+  await api("DELETE","/repos/"+ctx.repo+"/git/refs/"+ref,token,undefined,env);
+  console.log("::notice::Deleted build-only branch "+ctx.branch);
+}
+
 async function run(env=process.env){
   const ctx=context(env);
   const files=render(ctx.branch,ctx.sha,undefined,"push");
@@ -149,16 +159,32 @@ async function run(env=process.env){
   const token=await writerToken(ctx.repo,env);
   const revision=await createBranch(ctx,files,token,env);
   console.log("::notice::Created build-only branch "+ctx.branch);
-  const result=await observe(ctx,revision,env.CI_NATIVE_READ_TOKEN||token,env);
-  if(env.GITHUB_STEP_SUMMARY){
-    fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
-      "\n### Native build\n\nSource: "+ctx.sha+"\nBranch: "+ctx.branch+
-      "\nRun: "+result.link+"\nPublication: disabled\n");
+  let failure;
+  try{
+    const result=await observe(ctx,revision,env.CI_NATIVE_READ_TOKEN||token,env);
+    if(env.GITHUB_STEP_SUMMARY){
+      fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
+        "\\n### Native build\\n\\nSource: "+ctx.sha+"\\nBranch: "+ctx.branch+
+        "\\nRun: "+result.link+"\\nPublication: disabled\\n");
+    }
+    console.log("::notice::Native pipeline passed: "+result.link);
+    return {...ctx,...result};
+  }catch(error){
+    failure=error;
+    throw error;
+  }finally{
+    try{
+      await deleteBranch(ctx,token,env);
+    }catch(error){
+      if(failure){
+        console.error("::error::Native branch cleanup also failed: "+String(error.message||error));
+      }else{
+        throw error;
+      }
+    }
   }
-  console.log("::notice::Native pipeline passed: "+result.link);
-  return {...ctx,...result};
 }
-module.exports={context,api,signJWT,requiredAppPermissions,writerToken,createBranch,observe,run};
+module.exports={context,api,signJWT,requiredAppPermissions,writerToken,createBranch,observe,deleteBranch,run};
 if(require.main===module)run().catch(error=>{
   console.error("::error::"+String(error.message||error));process.exitCode=1;
 });
