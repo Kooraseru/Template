@@ -34,12 +34,28 @@ test("capability contracts declare an explicit setup prerequisite", () => {
   }
 });
 
-test("trusted workflow retains privileged bootstrap and external read-only engine", () => {
+test("Template is only a caller; job lifecycle and authorization belong to the reusable engine", () => {
   const source=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
-  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine@extraction\/pr43-contract-planner/);
+  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@extraction\/pr43-contract-planner/);
   assert.match(source,/id-token: write/);
-  assert.match(source,/CI_CREDENTIAL_BOOTSTRAP_TOKEN/);
-  assert.match(source,/needs: \[resolve, checks, bootstrap\]/);
-  assert.match(source,/actions\/upload-artifact@v7/);
+  assert.match(source,/app_private_key: /);
+  assert.match(source,/bootstrap_token: /);
+  assert.match(source,/secrets\.CI_TOKEN/);
   assert.doesNotMatch(source,/secrets: inherit/);
+  const section = source.split(/\njobs:\s*\n/)[1];
+  assert.deepEqual([...section.matchAll(/^  ([\w-]+):$/gm)].map(x=>x[1]),["ci"]);
+});
+test("generated operations retain trusted adapters without hardcoded jobs in Template CI", () => {
+  const ops = engine.operations;
+  for(const name of ["build","publish"]) {
+    const item=ops[name];
+    assert.equal(item.mode,"generated");
+    assert.equal(item.environment,"ci-bootstrap");
+    assert.equal(item.plan,"build");
+    assert.equal(item.branch,"default");
+    assert.equal(item.execution.command[0],"node");
+  }
+  assert.equal(ops.build.publication,false);
+  assert.equal(ops.publish.publication,true);
+  assert.equal(ops.review.mode,"readonly");
 });
