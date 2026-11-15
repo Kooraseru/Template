@@ -25,6 +25,17 @@ function hosts(root = ROOT) {
   return found.sort();
 }
 
+function nativeTest(root, target) {
+  const source = fs.readFileSync(path.join(root, "source/hosts", target, "host.toml"), "utf8");
+  const field = name => new RegExp("^" + name + "\\s*=\\s*\\\"([^\\\"\\r\\n]+)\\\"\\s*$", "m").exec(source)?.[1];
+  const runner = field("test_runner"), expected = field("test_expected");
+  if (!runner || !/^(windows-latest|windows-11-arm|windows-2025|windows-11-vs2026-arm)$/.test(runner) ||
+    !expected || /[\\r\\n]/.test(expected)) {
+    throw new Error("Invalid native test runner/expectation for " + target);
+  }
+  return {runner, expected};
+}
+
 function validate(branch, sha) {
   if (!/^ci\/run-(?:pr-[1-9]\d*|push-[1-9]\d*-[1-9]\d*)-[a-f0-9]{7,12}$/.test(branch))
     throw new Error("Unsafe execution branch name");
@@ -153,9 +164,8 @@ function render(branch, sha, root=ROOT, event='pull_request') {
   const nativeTests = targets.flatMap(target => [
     "          - target: " + target,
     "            label: " + target.replace(/(^|-)([a-z])/g, (_,p,c)=>(p?" ":"")+c.toUpperCase()),
-    "            runner: " + (target.endsWith("arm64") ? "windows-11-arm" : "windows-latest"),
-    "            expected: " + JSON.stringify(target === "windows-arm64" ? "Windows 11 ARM64" :
-      target === "windows-intel" ? "Windows 11 x86-64 Intel" : "Windows 11 x86-64 AMD"),
+    "            runner: " + nativeTest(root,target).runner,
+    "            expected: " + JSON.stringify(nativeTest(root,target).expected),
   ]);
   const tests = [
     "name: Tests",
@@ -326,5 +336,5 @@ function main() {
   for(const [file,content] of Object.entries(files))fs.writeFileSync(path.join(output,file),content);
   process.stdout.write(JSON.stringify({branch,source:sha,files:Object.keys(files),hosts:hosts()})+"\n");
 }
-module.exports={hosts,render,validate};
+module.exports={hosts,nativeTest,render,validate};
 if(require.main===module)main();
