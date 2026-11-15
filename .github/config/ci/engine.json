@@ -24,7 +24,13 @@
       "components": [
         "quality/*"
       ],
-      "branch": "default"
+      "branch": "default",
+      "native": {
+        "command": [
+          "node",
+          "ci/github/workflows/launch.cjs"
+        ]
+      }
     },
     "readiness": {
       "mode": "readonly",
