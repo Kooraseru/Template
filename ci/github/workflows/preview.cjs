@@ -27,13 +27,15 @@ function hosts(root = ROOT) {
 
 function nativeTest(root, target) {
   const source = fs.readFileSync(path.join(root, "source/hosts", target, "host.toml"), "utf8");
-  const field = name => new RegExp("^" + name + "\\s*=\\s*\\\"([^\\\"\\r\\n]+)\\\"\\s*$", "m").exec(source)?.[1];
-  const runner = field("test_runner"), expected = field("test_expected");
-  if (!runner || !/^(windows-latest|windows-11-arm|windows-2025|windows-11-vs2026-arm)$/.test(runner) ||
-    !expected || /[\\r\\n]/.test(expected)) {
+  const fields = Object.fromEntries(
+    [...source.matchAll(/^([a-z_]+)\s*=\s*"([^"\r\n]+)"\s*$/gm)].map(match => [match[1], match[2]])
+  );
+  const runner = fields.test_runner, expected = fields.test_expected;
+  if (!runner || !/^(?:windows-latest|windows-11-arm|windows-2025|windows-11-vs2026-arm)$/.test(runner) ||
+      !expected || /[\r\n]/.test(expected)) {
     throw new Error("Invalid native test runner/expectation for " + target);
   }
-  return {runner, expected};
+  return { runner, expected };
 }
 
 function validate(branch, sha) {
