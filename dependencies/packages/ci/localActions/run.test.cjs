@@ -58,6 +58,7 @@ test("local act stages a pinned reusable workflow without mutating the source la
 		"    runs-on: ubuntu-latest",
 		"    steps:",
 		"      - uses: $/",
+		"      - uses: actions/upload-artifact@v7",
 		"",
 	].join("\n");
 	assert.equal(prepareStagedWorkflow(file, "local-fixture", mockEngine), true);
@@ -68,7 +69,9 @@ test("local act stages a pinned reusable workflow without mutating the source la
 	const sha = /bootstrap\.yml@([a-f0-9]{40})/.exec(source)?.[1];
 	assert.ok(sha);
 	assert.match(stagedEngine, new RegExp("uses: Kooraseru-Hub/CI-Engine@" + sha));
-	assert.doesNotMatch(stagedEngine, /^\s*uses:\s*\$\//m);
+	assert.doesNotMatch(stagedEngine, /^\s*(?:-\s*)?uses:\s*\$\//m);
+	assert.match(stagedEngine, /uses: actions\/upload-artifact@v4/);
+	assert.doesNotMatch(stagedEngine, /actions\/upload-artifact@v7/);
 	assert.match(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"), /bootstrap\.yml@[a-f0-9]{40}/);
 	const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
 	assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
