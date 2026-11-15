@@ -59,3 +59,12 @@ test("generated operations retain trusted adapters without hardcoded jobs in Tem
   assert.equal(ops.publish.publication,true);
   assert.equal(ops.review.mode,"readonly");
 });
+
+test("source ruleset requires the actual external reusable workflow gate", () => {
+  const source = JSON.parse(fs.readFileSync(path.join(root, ".github/config/rulesets/source-gate.json"), "utf8"));
+  const rule = source.rules.find(item => item.type === "required_status_checks");
+  assert.ok(rule, "a required status checks rule must exist");
+  assert.deepEqual(rule.parameters.required_status_checks, [
+    { context: "CI Engine / validate", integration_id: 15368 },
+  ]);
+});
