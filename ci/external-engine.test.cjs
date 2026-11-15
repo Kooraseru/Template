@@ -36,7 +36,7 @@ test("capability contracts declare an explicit setup prerequisite", () => {
 
 test("Template is only a caller; job lifecycle and authorization belong to the reusable engine", () => {
   const source=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
-  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@extraction\/pr43-contract-planner/);
+  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.match(source,/id-token: write/);
   assert.match(source,/app_private_key: /);
   assert.match(source,/bootstrap_token: /);
