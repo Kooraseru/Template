@@ -49,8 +49,14 @@ function HostBuilder.Run(_self: HostBuilder): ()
 		if type(decoded) ~= "table" or type(decoded.artifacts) ~= "table" or #decoded.artifacts == 0 then
 			error(`{contractPath}: artifacts must be a nonempty array`, 0)
 		end
+		if type(decoded.test_runner) ~= "string" or
+			(not decoded.test_runner:match("^[%w][%w_.-]+$")) or
+			type(decoded.test_expected) ~= "string" or decoded.test_expected == "" or
+			decoded.test_expected:find("[%c]") then
+			error(`{contractPath}: test_runner and test_expected must declare a safe host test`, 0)
+		end
 		for field in decoded do
-			if field ~= "artifacts" and field ~= "run" then
+			if field ~= "artifacts" and field ~= "run" and field ~= "test_runner" and field ~= "test_expected" then
 				error(`{contractPath}: unsupported host field {tostring(field)}`, 0)
 			end
 		end
