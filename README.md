@@ -60,3 +60,14 @@ Install the recommended [Workbench Bridge](https://github.com/Kooraseru/workbenc
 For a machine-readable onboarding report, use `node ci/template/setup.cjs --json`. For a local validation run, use `bash ci/run.sh`. For local GitHub Actions, use `node dependencies/packages/ci/localActions/run.cjs`.
 
 See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), and [CI implementation](ci/README.md) for detailed contracts.
+
+
+### Native builds without a pull request
+
+A normal push to the repository's default branch runs the permanent CI Engine controller and, once its read-only checks pass, **automatically launches a separate native build-only GitHub Actions run**. The execution branch is named `ci/run-push-<run-id>-<attempt>-<source-sha>`, and the parent CI summary links to that run. The generated run includes Quality, Windows host builds, real host-specific executable tests, Pages/Branches, read-only Plans, Packages/Releases staging, and the final Collect gate.
+
+Other feature-branch pushes still run the ordinary read-only controller without requiring a PR. Pull requests are build-only and never receive publication credentials. Publishing packages, pages, releases, rulesets or the generated `main` branch remains a separate trusted operation, not part of native validation.
+
+To create the temporary execution branch, configure **either** a GitHub App installed on this repository with Contents/Workflows write and Actions read, exposing `CI_APP_ID` and `CI_APP_PRIVATE_KEY`, **or** the scoped `CI_TOKEN` bootstrap secret with those permissions. The engine gates native creation behind the protected `ci-bootstrap` environment and only permits a default-branch `push` event. Using the ordinary `GITHUB_TOKEN` to create the branch does not trigger the generated push workflow. The run fails explicitly if a required bootstrap credential is missing.
+
+Windows AMD and Intel binaries are tested on Windows x64 runners; Windows ARM64 runs on a native Windows ARM64 runner. Source code is checked out at the immutable triggering commit, while the temporary branch contains only the generated workflow definitions.
