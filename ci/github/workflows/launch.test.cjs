@@ -1,7 +1,7 @@
 "use strict";
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const {context,signJWT,requiredAppPermissions,createBranch,observe}=require("./launch.cjs");
+const {context,signJWT,requiredAppPermissions,createBranch,observe,deleteBranch}=require("./launch.cjs");
 const SHA="a".repeat(40);
 const trusted=()=>({
   GITHUB_ACTIONS:"true",GITHUB_EVENT_NAME:"push",
@@ -94,5 +94,25 @@ test("generated run verifies exact branch, source commit and success",async()=>{
   try{
     const r=await observe(ctx,revision,"read-token",{},async()=>{});
     assert.equal(r.id,123);assert.equal(checks,1);
+  }finally{global.fetch=saved}
+});
+
+test("cleanup deletes only generated branch refs using the write credential",async()=>{
+  const saved=global.fetch;
+  const calls=[];
+  global.fetch=async(url,args)=>{
+    calls.push({url,method:args.method,auth:args.headers.Authorization});
+    return {ok:true,json:async()=>({})};
+  };
+  try{
+    const ctx=context(trusted());
+    await deleteBranch(ctx,"write-token",{});
+    assert.equal(calls.length,1);
+    assert.equal(calls[0].method,"DELETE");
+    assert.equal(calls[0].auth,"Bearer write-token");
+    assert.equal(new URL(calls[0].url).pathname,
+      "/repos/Kooraseru/Template/git/refs/heads/"+ctx.branch);
+    await assert.rejects(deleteBranch({...ctx,branch:"source"},"write-token",{}),/Refusing to delete/);
+    assert.equal(calls.length,1);
   }finally{global.fetch=saved}
 });
