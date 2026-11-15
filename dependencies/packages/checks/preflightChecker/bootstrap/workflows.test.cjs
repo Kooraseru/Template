@@ -31,7 +31,7 @@ test("only one permanent workflow invokes the versioned engine", () => {
   const jobSection = workflow.split(/\njobs:\s*\n/)[1];
   assert.ok(jobSection);
   assert.deepEqual([...jobSection.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]), ["ci"]);
-  assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@extraction\/pr43-contract-planner/);
+  assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /app_private_key: /);
   assert.match(workflow, /bootstrap_token: /);
