@@ -63,14 +63,23 @@ function signJWT(id,key){
   return body+"."+crypto.sign("RSA-SHA256",Buffer.from(body),key).toString("base64url");
 }
 
+function requiredAppPermissions(granted){
+  const required={contents:"write",workflows:"write"};
+  const missing=Object.entries(required).filter(([key,access])=>granted?.[key]!==access).map(([key,access])=>key+":"+access);
+  if(missing.length)throw new Error("GitHub App installation missing required permissions: "+missing.join(", ")+
+    ". Update the App permissions and approve the installation change.");
+  return required;
+}
+
 async function writerToken(repo,env=process.env){
   if(env.CI_NATIVE_APP_ID&&env.CI_NATIVE_APP_PRIVATE_KEY){
     const signed=signJWT(env.CI_NATIVE_APP_ID,env.CI_NATIVE_APP_PRIVATE_KEY);
     const installation=await api("GET","/repos/"+repo+"/installation",signed,undefined,env);
     if(!Number.isSafeInteger(installation?.id))throw new Error("GitHub App installation ID missing");
+    const permissions=requiredAppPermissions(installation.permissions);
     const token=await api("POST","/app/installations/"+installation.id+"/access_tokens",signed,{
       repositories:[repo.split("/")[1]],
-      permissions:{contents:"write",workflows:"write",actions:"read"},
+      permissions,
     },env);
     if(!token?.token)throw new Error("GitHub App returned no installation token");
     console.log("::add-mask::"+token.token);
@@ -149,7 +158,7 @@ async function run(env=process.env){
   console.log("::notice::Native pipeline passed: "+result.link);
   return {...ctx,...result};
 }
-module.exports={context,api,signJWT,writerToken,createBranch,observe,run};
+module.exports={context,api,signJWT,requiredAppPermissions,writerToken,createBranch,observe,run};
 if(require.main===module)run().catch(error=>{
   console.error("::error::"+String(error.message||error));process.exitCode=1;
 });

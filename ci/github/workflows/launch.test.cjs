@@ -1,7 +1,7 @@
 "use strict";
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const {context,signJWT,createBranch,observe}=require("./launch.cjs");
+const {context,signJWT,requiredAppPermissions,createBranch,observe}=require("./launch.cjs");
 const SHA="a".repeat(40);
 const trusted=()=>({
   GITHUB_ACTIONS:"true",GITHUB_EVENT_NAME:"push",
@@ -36,6 +36,13 @@ test("untrusted refs, pull requests, and publication intent fail closed",()=>{
   ]){
     assert.throws(()=>context({...trusted(),...change}));
   }
+});
+test("native GitHub App token scopes only to workflow writing and repository contents",()=>{
+  const permissions=requiredAppPermissions({contents:"write",workflows:"write",metadata:"read"});
+  assert.deepEqual(permissions,{contents:"write",workflows:"write"});
+  assert.equal(permissions.actions,undefined);
+  assert.throws(()=>requiredAppPermissions({contents:"write",actions:"read"}),/workflows:write/);
+  assert.throws(()=>requiredAppPermissions({workflows:"write",contents:"read"}),/contents:write/);
 });
 test("GitHub App token signing does not accept malformed app identities",()=>{
   assert.throws(()=>signJWT("not-an-app-id","bad key"),/Invalid GitHub App ID/);
