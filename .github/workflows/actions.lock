@@ -8,7 +8,9 @@ workflows:
         - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v4'
         - 'actions/upload-artifact@v7'
+        - 'Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@extraction/pr43-contract-planner'
         - 'Kooraseru-Hub/CI-Engine@extraction/pr43-contract-planner'
+        - 'actions/checkout@v4'
         - 'jdx/mise-action@v5'
 dependencies:
     'actions/checkout@v7':
@@ -33,7 +35,7 @@ dependencies:
         repo_id: 192625955
     'Kooraseru-Hub/CI-Engine@extraction/pr43-contract-planner':
         ref: 'extraction/pr43-contract-planner'
-        commit: 'sha1-6b897683613b50b4cd56c848f37e5559e8562c49'
+        commit: 'sha1-fbadf7dee184eabefdf32a89287706bb67efd97a'
         owner_id: 255195713
         repo_id: 1458028693
     'jdx/mise-action@v5':
@@ -41,3 +43,13 @@ dependencies:
         commit: 'sha1-d5574b52816a478f9d4e6529a3f6ff17a8a36785'
         owner_id: 216188
         repo_id: 738284564
+    'Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@extraction/pr43-contract-planner':
+        ref: 'extraction/pr43-contract-planner'
+        commit: 'sha1-fbadf7dee184eabefdf32a89287706bb67efd97a'
+        owner_id: 255195713
+        repo_id: 1458028693
+    'actions/checkout@v4':
+        ref: 'v4'
+        commit: 'sha1-11d5960a326750d5838078e36cf38b85af677262'
+        owner_id: 44036562
+        repo_id: 197814629
