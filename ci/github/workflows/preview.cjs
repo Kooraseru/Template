@@ -138,6 +138,28 @@ function render(branch, sha, root=ROOT) {
     "            label: " + target.replace(/(^|-)([a-z])/g, (_,p,c)=>(p?" ":"")+c.toUpperCase()),
     "            runner: ubuntu-latest",
   ]);
+  const auxiliary = [
+    ["pages", "Pages", "documentation/pages/build", "build/github/pages/"],
+    ["branches", "Branches", "governance/branches/build", "build/github/branches/"],
+  ].flatMap(([id, label, component, artifact]) => [
+    "  " + id + ":",
+    "    name: " + label,
+    "    runs-on: ubuntu-latest",
+    "    timeout-minutes: 25",
+    "    steps:",
+    ...common,
+    "      - name: Build " + label,
+    "        env:",
+    "          CI_EVENT: pull_request",
+    "          CI_GRAPH_RUN: 'true'",
+    "          CI_OPERATION: validation",
+    "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
+    "      - uses: actions/upload-artifact@v7",
+    "        with:",
+    "          name: " + id,
+    "          path: " + artifact,
+    "          if-no-files-found: error",
+  ]);
   const build = [
     "name: Build",
     "on:",
@@ -169,6 +191,7 @@ function render(branch, sha, root=ROOT) {
     "          name: " + e("matrix.target"),
     "          path: build/artifacts/application/" + e("matrix.target") + ".exe",
     "          if-no-files-found: error",
+    ...auxiliary,
   ].join("\n") + "\n";
   const files={
     "pipeline.yml": pipeline,
