@@ -42,19 +42,37 @@ test("dotenv input files and event payload operation are respected", t => {
 });
 
 
-test("local act keeps the stable reusable-workflow launcher untouched", t => {
-  const { prepareStagedWorkflow, stagedEventArguments, options } = require("./run.cjs");
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
-  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
-  const source = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
-  const file = path.join(directory, "ci.yml");
-  fs.writeFileSync(file, source);
-  assert.equal(prepareStagedWorkflow(file, "local-fixture"), false);
-  assert.equal(fs.readFileSync(file, "utf8"), source);
-  assert.match(source, /CI-Engine\/\.github\/workflows\/bootstrap\.yml@/);
-  const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
-  assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
-  assert.equal(stagedEventArguments(["push"], options(["push"]))[0], "push");
+test("local act stages a pinned reusable workflow without mutating the source launcher", t => {
+	const { prepareStagedWorkflow, stagedEventArguments, options } = require("./run.cjs");
+	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
+	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+	const source = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+	const file = path.join(directory, "ci.yml");
+	fs.writeFileSync(file, source);
+	const mockEngine = [
+		"name: CI Engine",
+		"on:",
+		"  workflow_call:",
+		"jobs:",
+		"  resolve:",
+		"    runs-on: ubuntu-latest",
+		"    steps:",
+		"      - uses: $/",
+		"",
+	].join("\n");
+	assert.equal(prepareStagedWorkflow(file, "local-fixture", mockEngine), true);
+	const stagedLauncher = fs.readFileSync(file, "utf8");
+	const stagedEngine = fs.readFileSync(path.join(directory, "_act-ci-engine.yml"), "utf8");
+	assert.match(stagedLauncher, /uses: \.\/\.github\/workflows\/_act-ci-engine\.yml/);
+	assert.doesNotMatch(stagedLauncher, /Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@/);
+	const sha = /bootstrap\.yml@([a-f0-9]{40})/.exec(source)?.[1];
+	assert.ok(sha);
+	assert.match(stagedEngine, new RegExp("uses: Kooraseru-Hub/CI-Engine@" + sha));
+	assert.doesNotMatch(stagedEngine, /^\s*uses:\s*\$\//m);
+	assert.match(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"), /bootstrap\.yml@[a-f0-9]{40}/);
+	const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
+	assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
+	assert.equal(stagedEventArguments(["push"], options(["push"]))[0], "push");
 });
 
 test("local act wrapper streams output and bounds worktree teardown", () => {
