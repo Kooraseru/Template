@@ -26,7 +26,7 @@ function hosts(root = ROOT) {
 }
 
 function validate(branch, sha) {
-  if (!/^ci\/run-(?:pr-[1-9]\d*|push-[1-9]\d*)-[a-f0-9]{7,12}$/.test(branch))
+  if (!/^ci\/run-(?:pr-[1-9]\d*|push-[1-9]\d*-[1-9]\d*)-[a-f0-9]{7,12}$/.test(branch))
     throw new Error("Unsafe execution branch name");
   if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error("Expected a complete source SHA");
 }
