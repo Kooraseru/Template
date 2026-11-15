@@ -40,6 +40,7 @@ function render(branch, sha, root=ROOT) {
     "      - uses: actions/checkout@v7",
     "        with:",
     "          persist-credentials: false",
+    "          ref: " + sha,
     "      - uses: actions/setup-node@v7.1.0",
     "        with:",
     "          node-version: '24'",
