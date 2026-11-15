@@ -57,7 +57,22 @@
       "components": [
         "*"
       ],
-      "branch": "default"
+      "branch": "default",
+      "environment": "ci-bootstrap",
+      "plan": "build",
+      "publication": false,
+      "branchPrefix": "run/build-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "luau.lute",
+          "run",
+          "ci/entry.luau"
+        ],
+        "profile": "source-ci"
+      }
     },
     "publish": {
       "mode": "generated",
@@ -68,7 +83,22 @@
       "components": [
         "*"
       ],
-      "branch": "default"
+      "branch": "default",
+      "environment": "ci-bootstrap",
+      "plan": "build",
+      "publication": true,
+      "branchPrefix": "ci/run-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "luau.lute",
+          "run",
+          "ci/entry.luau"
+        ],
+        "profile": "source-ci"
+      }
     }
   },
   "componentRoot": ".github/config/ci/components"
