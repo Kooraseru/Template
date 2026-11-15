@@ -23,26 +23,23 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("only one permanent workflow delegates operations to JSON", () => {
-	const directory = path.join(root, ".github/workflows");
-	const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-	assert.deepEqual(authored, ["ci.yml"]);
-	const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
-	assert.match(workflow, /^  resolve:$/m);
-	assert.match(workflow, /^  checks:$/m);
-	assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine@extraction\/pr43-contract-planner/);
-	assert.match(workflow, /^  bootstrap:$/m);
-	assert.match(workflow, /^  validate:$/m);
-	assert.match(workflow, /node ci\/bootstrap\/routes\.cjs resolve/);
-	assert.match(workflow, /CI_ENGINE_CONFIG: \.github\/config\/ci\/engine\.json/);
-	assert.doesNotMatch(workflow, /^  publish-(general|projects|rulesets):$/m);
-	assert.doesNotMatch(workflow, /secrets\.CI_TOKEN|secrets\.CI_APP_PRIVATE_KEY/);
-	const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
-	assert.equal(config.triggers.pull_request, "review");
-	assert.equal(config.checks["rules-audit"].group, "audit");
-	assert.ok(config.operations.review.checks.includes("rules-audit"));
-	assert.equal(config.triggers.push, "validation");
-	assert.ok(config.operations.validation.events.includes("push"), "Default push must be read-only");
+test("only one permanent workflow invokes the versioned engine", () => {
+  const directory = path.join(root, ".github/workflows");
+  const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
+  assert.deepEqual(authored, ["ci.yml"]);
+  const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
+  const jobSection = workflow.split(/\njobs:\s*\n/)[1];
+  assert.ok(jobSection);
+  assert.deepEqual([...jobSection.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]), ["ci"]);
+  assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@extraction\/pr43-contract-planner/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /app_private_key: /);
+  assert.match(workflow, /bootstrap_token: /);
+  assert.doesNotMatch(workflow, /setup-node|node ci\/|secrets: inherit|name: Start Generated CI/);
+  const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
+  assert.equal(config.triggers.push, "validation");
+  assert.equal(config.triggers.pull_request, "review");
+  assert.ok(config.operations.validation.events.includes("push"));
 });
 test("optional administration components use their current skip policies", t => {
 	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),default=S.Conclusion("source/build")}))';
