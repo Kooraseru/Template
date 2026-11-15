@@ -64,7 +64,7 @@ See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), 
 
 ### Native builds without a pull request
 
-A normal push to the repository's default branch runs the permanent CI Engine controller and, once its read-only checks pass, **automatically launches a separate native build-only GitHub Actions run**. The execution branch is named `ci/run-push-<run-id>-<attempt>-<source-sha>`, and the parent CI summary links to that run. The generated run includes Quality, Windows host builds, real host-specific executable tests, Pages/Branches, read-only Plans, Packages/Releases staging, and the final Collect gate.
+A normal push to the repository's default branch (or manually running `validation` from that branch) runs the permanent CI Engine controller and, once its read-only checks pass, **automatically launches a separate native build-only GitHub Actions run**. The execution branch is named `ci/run-push-<run-id>-<attempt>-<source-sha>`, and the parent CI summary links to that run. The generated run includes Quality, Windows host builds, real host-specific executable tests, Pages/Branches, read-only Plans, Packages/Releases staging, and the final Collect gate.
 
 Other feature-branch pushes still run the ordinary read-only controller without requiring a PR. Pull requests are build-only and never receive publication credentials. Publishing packages, pages, releases, rulesets or the generated `main` branch remains a separate trusted operation, not part of native validation.
 

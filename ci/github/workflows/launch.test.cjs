@@ -12,6 +12,7 @@ const trusted=()=>({
 test("trusted push gets a deterministic, attempt-specific native branch",()=>{
   const x=context(trusted());
   assert.equal(x.branch,"ci/run-push-1234-2-"+SHA.slice(0,10));
+  assert.equal(context({...trusted(),GITHUB_EVENT_NAME:"workflow_dispatch"}).branch,x.branch);
   const {render}=require("./preview.cjs");
   const files=render(x.branch,x.sha,undefined,"push");
   assert.deepEqual(Object.keys(files).sort(),[
@@ -24,6 +25,7 @@ test("trusted push gets a deterministic, attempt-specific native branch",()=>{
 test("untrusted refs, pull requests, and publication intent fail closed",()=>{
   for(const change of [
     {GITHUB_EVENT_NAME:"pull_request"},
+    {GITHUB_EVENT_NAME:"repository_dispatch"},
     {GITHUB_REF:"refs/heads/topic"},
     {CI_DEFAULT_BRANCH:"../source"},
     {GITHUB_REF:"refs/heads/ci/run-push-123-1-aaaaaaaa"},

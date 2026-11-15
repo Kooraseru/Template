@@ -10,11 +10,11 @@ const BRANCH=/^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 function context(env=process.env){
-  if(env.GITHUB_ACTIONS!=="true"||env.GITHUB_EVENT_NAME!=="push"||
+  if(env.GITHUB_ACTIONS!=="true"||!["push","workflow_dispatch"].includes(env.GITHUB_EVENT_NAME)||
     !env.CI_DEFAULT_BRANCH||!BRANCH.test(env.CI_DEFAULT_BRANCH)||
     env.CI_DEFAULT_BRANCH.includes("..")||
     env.GITHUB_REF!=="refs/heads/"+env.CI_DEFAULT_BRANCH){
-    throw new Error("Native generation requires a trusted default-branch push");
+    throw new Error("Native generation requires a trusted default-branch push or manual validation dispatch");
   }
   if(!REPO.test(env.GITHUB_REPOSITORY||"")||!SHA.test(env.GITHUB_SHA||"")||
      !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID||"")||
