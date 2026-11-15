@@ -145,7 +145,7 @@ async function observe(ctx,commit,token,env=process.env,delay=sleep){
 async function deleteBranch(ctx,token,env=process.env){
   const ref="heads/"+ctx.branch;
   // Never delete an unrelated ref, even if cleanup is called independently.
-  if(!/^ci\\/run-push-[1-9]\\d*-[1-9]\\d*-[0-9a-f]{10}$/.test(ctx.branch)){
+  if(!/^ci\/run-push-[1-9]\d*-[1-9]\d*-[0-9a-f]{10}$/.test(ctx.branch)){
     throw new Error("Refusing to delete a non-generated CI branch");
   }
   await api("DELETE","/repos/"+ctx.repo+"/git/refs/"+ref,token,undefined,env);
