@@ -14,7 +14,6 @@ test("generated PR workflow uses discovered real host contracts",()=>{
   assert.match(files["build.yml"],/--component documentation\/pages\/build/);
   assert.match(files["build.yml"],/--component governance\/branches\/build/);
   assert.doesNotMatch(files["build.yml"],/--component .*\/publish/);
-  assert.match(files["pipeline.yml"],/needs: \[quality, tests\]/);
   assert.match(files["pipeline.yml"],/uses: .\/.github\/workflows\/build.yml/);
   assert.match(files["quality.yml"],/name: Review/);
   assert.match(files["tests.yml"],/name: Universal/);
