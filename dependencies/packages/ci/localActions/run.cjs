@@ -78,11 +78,11 @@ function prepareStagedWorkflow(file, runId, pinnedWorkflow) {
 	if (match) {
 		const { repository, sha, workflow } = match.groups;
 		let engine = pinnedWorkflow ?? fetchPinnedEngineWorkflow(repository, sha, workflow);
-		if (!/^\s*uses:\s*\$\//m.test(engine))
+		if (!/^\s*(?:-\s*)?uses:\s*\$\//m.test(engine))
 			throw new Error("The pinned CI Engine workflow has no local action self-references to adapt");
-		engine = engine.replace(/^(\s*uses:\s*)\$\/([\w./-]*)\s*$/gm,
+		engine = engine.replace(/^(\s*(?:-\s*)?uses:\s*)\$\/([\w./-]*)\s*$/gm,
 			(_, prefix, directory) => prefix + repository + (directory ? "/" + directory : "") + "@" + sha);
-		if (/^\s*uses:\s*\$\//m.test(engine))
+		if (/^\s*(?:-\s*)?uses:\s*\$\//m.test(engine))
 			throw new Error("Unresolved CI Engine self-reference in act staging");
 		const name = "_act-ci-engine.yml";
 		fs.writeFileSync(path.join(path.dirname(file), name), engine);
