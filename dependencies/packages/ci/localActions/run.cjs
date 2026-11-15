@@ -84,6 +84,9 @@ function prepareStagedWorkflow(file, runId, pinnedWorkflow) {
 			(_, prefix, directory) => prefix + repository + (directory ? "/" + directory : "") + "@" + sha);
 		if (/^\s*(?:-\s*)?uses:\s*\$\//m.test(engine))
 			throw new Error("Unresolved CI Engine self-reference in act staging");
+		// act's artifact endpoint still speaks the v4 upload protocol.
+		engine = engine.replaceAll("actions/upload-artifact@v7", "actions/upload-artifact@v4")
+			.replaceAll("actions/download-artifact@v8", "actions/download-artifact@v4");
 		const name = "_act-ci-engine.yml";
 		fs.writeFileSync(path.join(path.dirname(file), name), engine);
 		fs.writeFileSync(file, source.replace(match[0],
