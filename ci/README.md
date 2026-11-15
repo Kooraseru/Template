@@ -1,6 +1,23 @@
 # CI implementation
 
-Template owns one authored workflow, .github/workflows/ci.yml. Its only job calls the full-SHA-pinned reusable workflow in Kooraseru-Hub/CI-Engine. The engine exposes one linear lifecycle: Resolve Operation → Prepare Dependencies → Discover Components → Plan Execution → Authorize Operation → Execute Pipeline → Collect Results → Cleanup → validate. Execution mode is selected inside Execute Pipeline; no separate skipped read-only versus generated job appears on the graph.
+Template owns one authored workflow, .github/workflows/ci.yml. Its only job calls the full-SHA-pinned reusable workflow in Kooraseru-Hub/CI-Engine. The engine exposes a universal **fork-and-join DAG** with short labels. There is one entry point and one final required check:
+
+```mermaid
+flowchart LR
+    R["Resolve"] --> P["Prepare"]
+    R --> D["Discover"]
+    R --> I["Inspect"]
+    D --> L["Plan"]
+    L --> A["Authorize"]
+    I --> A
+    P --> E["Execute"]
+    A --> E
+    E --> C["Collect"]
+    C --> K["Cleanup"]
+    K --> V["validate"]
+```
+
+Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. All controller jobs run on successful operations with no mode-specific skipped jobs. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Generated native pipelines remain separate GitHub Actions runs with real component jobs and matrix expansions.
 
 .github/config/ci/engine.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/config/ci/components/.
 
