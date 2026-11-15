@@ -9,6 +9,11 @@ test("generated PR workflow uses discovered real host contracts",()=>{
   assert.deepEqual(Object.keys(files).sort(),["build.yml","pipeline.yml","quality.yml","tests.yml"]);
   for(const host of hosts()) assert.match(files["build.yml"],new RegExp("target: "+host));
   assert.match(files["build.yml"],/strategy:\n      fail-fast: false\n      matrix:/);
+  assert.match(files["build.yml"],/name: Pages/);
+  assert.match(files["build.yml"],/name: Branches/);
+  assert.match(files["build.yml"],/--component documentation\/pages\/build/);
+  assert.match(files["build.yml"],/--component governance\/branches\/build/);
+  assert.doesNotMatch(files["build.yml"],/--component .*\/publish/);
   assert.match(files["pipeline.yml"],/needs: \[quality, tests\]/);
   assert.match(files["pipeline.yml"],/uses: .\/.github\/workflows\/build.yml/);
   assert.match(files["quality.yml"],/name: Review/);
