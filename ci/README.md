@@ -1,20 +1,31 @@
 # CI implementation
 
-One permanently authored workflow, `.github/workflows/ci.yml`, acts solely as the bootstrap and required status gate. It does not enumerate component publication jobs or embed fixed credential names.
+Template owns one authored workflow, .github/workflows/ci.yml. Its only job calls the full-SHA-pinned reusable workflow in Kooraseru-Hub/CI-Engine. The engine exposes a universal **fork-and-join DAG** with short labels. There is one entry point and one final required check:
 
-`.github/config/ci/operations.json` selects an operation for each event and declares read-only checks, generated execution policies and operation-specific branch prefixes. `.github/config/credentials.json` owns capability roles, protected-environment bindings, and secret or variable aliases. Adding an operation or component should not require modifying `ci.yml`.
+```mermaid
+flowchart LR
+    R["Resolve"] --> P["Prepare"]
+    R --> D["Discover"]
+    R --> I["Inspect"]
+    D --> L["Plan"]
+    L --> A["Authorize"]
+    I --> A
+    P --> E["Execute"]
+    A --> E
+    E --> C["Collect"]
+    C --> K["Cleanup"]
+    K --> V["validate"]
+```
 
-Pull requests run configured unprivileged checks in separate Code Review and Rules Audit jobs. Code Review runs actionlint, Preflight, and the full Build/test suite. Rules Audit runs repository rules independently, produces its own diagnostics report, and does not fail the gate for warnings. Forked or untrusted PR code cannot request the privileged bootstrap. Trusted `source` pushes run a guarded bootstrap that generates `pipeline.yml` and its component jobs on a temporary branch. It uses an installation App or explicitly configured bootstrap token, scopes job permissions to each task, then waits until the exact generated run completes before the permanent `validate` check can pass.
+Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. All controller jobs run on successful operations with no mode-specific skipped jobs. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Generated native pipelines remain separate GitHub Actions runs with real component jobs and matrix expansions.
 
-The authored workflow is the only YAML stored permanently under `.github/workflows/`. Generated YAML is temporary execution output. Generated publication branch prefixes must be permitted by the protected GitHub environments; publication currently defaults to the existing `ci/run-` prefix, while other operations may choose their own. Environment protections are not bypassed. All bootstrap credential values stay in GitHub, not JSON or generated Git.
+.github/config/ci/engine.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/config/ci/components/.
 
-On GitHub, `workflow_dispatch` accepts an operation name from the JSON catalog and a separate explicit `publish=true` approval for manual publication. The default is read-only `validation`. The `validate` job remains the required status check regardless of operation. Local `act` runs use the same routing and create generated workflows only in a disposable checkout – never by pushing a remote branch.
+.github/config/ci/operations.json remains the settings catalog for Template's native generated-workflow adapter and local CLI. Keep operation names, modes and event routes consistent with engine.json; ci/external-engine.test.cjs enforces it. Generated-workflow compilation, branch creation, scoped credential acquisition, result verification and cleanup remain in Template's native adapter under ci/ and are invoked only through the engine's gated generated-operation job. Template does not contain another hosted job controller.
 
-The underlying component planner, archived native adapters and Luau execution engine remain under `ci/`. `ci/bootstrap/routes.cjs` owns safe routing, and `ci/github/resources/branches/branchRun.luau` owns generated ref lifecycle, observation and cleanup. The previous hard-coded staged Publish jobs and standalone Code Review workflow have been removed.
+The trusted engine job is confined to the repository's default branch and an explicitly configured protected GitHub environment. It has id-token: write and accepts two explicitly mapped bootstrap credentials, not the entire secret catalog. Untrusted pull requests cannot enter it; manual publication also requires publish=true. GitHub App tokens, registry trusted publishing and OIDC provider setup remain provider-specific and cannot be assumed configured by a checked-in YAML file.
 
-**Credentials:** Job permissions and environment admission are determined by GitHub before code runs. Only the stable bootstrap transport has fixed fields; the alias names come from the JSON catalog. Component-specific bindings and roles are compiled dynamically for trusted generated jobs. A new role cannot elevate the bootstrap itself, and read-only PR checks do not receive any publication credentials.
-
-The source ruleset should require the aggregate `validate` check from **CI**, which checks both read-only jobs when configured. If a legacy rule requires the standalone Code Review workflow, update that rule after merging; the Code Review job now belongs to CI.
+The caller pins the reusable workflow by full commit SHA; that engine repository owns its own actions.lock. GitHub does not apply the caller's action lockfile to an external reusable workflow. After merging, review required-check configuration: the validated status now originates in the reusable workflow's validate job instead of Template's former local validate job.
 
 ## VS Code setup
 
@@ -30,7 +41,7 @@ bash ci/run.sh
 
 Run the normal unprivileged contributor path with `bash ci/run.sh`. It installs dependencies, executes the read-only Build component graph, then runs the repository test suites. Hosted review invokes these same checks and headless Preflight/Rules through the declared read-only route.
 
-On a trusted source push, the launcher compiles the generated job graph instead of performing publication inline. Component output archives remain integrity-checked, credential environments stay isolated by job, and the required CI status reflects the *completed* generated run. Local GitHub Actions uses an isolated checkout and adapts artifact actions to v4 within that checkout only.
+On a trusted generated operation, the external engine invokes the project adapter that compiles the generated job graph rather than publishing inline. Component output archives remain integrity-checked, credential environments stay isolated by job, and the required CI status reflects the *completed* generated run. Local GitHub Actions uses an isolated checkout and adapts artifact actions to v4 within that checkout only.
 
 Local `act` read-only routes execute directly and do not require remote delegation; generated routes render an ephemeral Pipeline and execute it through the local artifact transport. Neither path changes the authored workflow file.
 
@@ -137,8 +148,22 @@ Current-output ownership and v2 pipeline records live under ignored `.workspace/
 
 ## Headless code review
 
-Pull requests into `source` run the configured `review` operation inside `.github/workflows/ci.yml` without opening an editor or exposing publication credentials. Rules Audit is a separate job in that workflow, not a second permanent YAML. Both jobs install the required managed dependencies. Code Review runs Preflight (`--ci`) and Build/tests; Rules Audit independently runs repository Rules (`--rules`). Each publishes its own GitHub annotations and summary. This does not include VS Code-only or extension-provided diagnostics unless a separate headless analyzer is configured.
+Pull requests into the default branch run the configured `review` operation through the external engine without opening an editor or exposing publication credentials. Rules Audit is a separate discovered component in the read-only engine, not a second permanent YAML. The engine's read-only execution job installs dependencies once through its discovered setup component and retains the Code Review and Rules Audit artifact outputs. Code Review runs Preflight (`--ci`) and Build/tests; Rules Audit independently runs repository Rules (`--rules`). Each publishes its own GitHub annotations and summary. This does not include VS Code-only or extension-provided diagnostics unless a separate headless analyzer is configured.
 
-The Code Review job uploads its diagnostics as `code-review-findings/diagnostics.json` plus `summary.md`; Rules Audit produces its own `rules-audit-findings` artifact. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures block the relevant check; pre-existing errors in unrelated files are reported without blocking an unrelated pull request. Rules Audit excludes expected invalid rule-fixture findings, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
+The external engine's read-only job uploads Code Review diagnostics as `code-review-findings/diagnostics.json` plus `summary.md`; Rules Audit produces its own `rules-audit-findings` artifact. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures block the relevant check; pre-existing errors in unrelated files are reported without blocking an unrelated pull request. Rules Audit excludes expected invalid rule-fixture findings, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
 
 Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node ci/code-review.cjs` and `node ci/rules-audit.cjs` to audit both locally. The reports are written to `build/code-review/` and `build/rules-audit/`. Manual dispatch with `operation=rules-audit` executes only the rules job.
+
+
+## Local act compatibility
+
+The local CI wrapper stages the pinned engine workflow in its disposable checkout, rewriting GitHub-only self-references (`uses: $/`) to standard remote action references at the same SHA. It also uses artifact upload v4 for the local `act` artifact server. Neither the permanent Template launcher nor the hosted engine workflow is modified. The change is covered by `dependencies/packages/ci/localActions/run.test.cjs`.
+
+
+## Generated build-only execution
+
+The native pipeline generator is `ci/github/workflows/preview.cjs`. On default-branch pushes, `ci/github/workflows/launch.cjs` renders the dependency graph, commits six generated workflow files to a unique `ci/run-push-...` branch, waits for the resulting GitHub Actions run, checks its exact SHA and outcome, and fails the parent check if that run fails. A reusable-workflow group holds each category of native jobs, with three build hosts and three host-specific runtime tests in separate matrices. The build-stage generator never emits a publish job.
+
+Quality includes Review, Rules, Workflows and Updates. Build includes three Windows targets, Pages and Branches. Plan contains Rulesets, Milestones and Projects. Tests contains Universal and native Windows host tests. Distribution stages Packages and Releases after the binary build artifacts exist. These components remain enabled/disabled by the project settings and dependency contracts. The test/build matrix runner labels are distinct from the Docker-based cross-compilers.
+
+The engine's readonly `validation.native.command` is invoked only after the normal read-only component checks **and** only on a trusted default-branch push. On other branch pushes or on PRs, the existing read-only checks run with no write tokens. The native launcher uses a scoped App/PAT in the `ci-bootstrap` environment, never passes it into generated jobs, and reports the child execution URL in the parent summary. Application/publisher deployment remains strictly outside this build workflow.

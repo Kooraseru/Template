@@ -1,0 +1,18 @@
+{
+  "provides": [
+    "quality.audit"
+  ],
+  "requires": [
+    "tools.workspace"
+  ],
+  "events": [
+    "push",
+    "pull_request",
+    "workflow_dispatch"
+  ],
+  "boundary": "read",
+  "command": [
+    "node",
+    "ci/rules-audit.cjs"
+  ]
+}

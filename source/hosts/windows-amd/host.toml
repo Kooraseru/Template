@@ -1,2 +1,5 @@
 artifacts = ["build/artifacts/application/windows-amd.exe"]
 run = "build/artifacts/application/windows-amd.exe"
+# Native validation host runner; independent of the Docker cross-build host.
+test_runner = "windows-latest"
+test_expected = "Windows 11 x86-64 AMD"

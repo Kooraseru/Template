@@ -130,12 +130,25 @@ function TaskRunner.Run(
 		if not provider then
 			error(`{identity}: dependency {dependency} is not in the plan`, 0)
 		end
-				local directory = `{ARTIFACT_ROOT}/{Contract.Key(dependency)}`
-		local archive = `{directory}/outputs.tar`
-		if not Fs.exists(archive) or Fs.type(archive) ~= "file" then
-			error(`{identity}: missing dependency artifact {dependency}`, 0)
+				-- Native build-only preview jobs receive prerequisite artifacts from
+		-- GitHub Actions, not from this runner's transport bundle. Validate the
+		-- declared output paths instead of trusting a missing outputs.tar file.
+		if Process.env.CI_NATIVE_PREVIEW == "true" and selected.boundary == "read" and
+			selected.phase == "build" and provider.phase == "build" and
+			#provider.credentials == 0 then
+			for _, pattern in provider.outputs do
+				if #Glob.Find(pattern) == 0 then
+					error(`{identity}: missing native preview prerequisite {dependency}: {pattern}`, 0)
+				end
+			end
+		else
+			local directory = `{ARTIFACT_ROOT}/{Contract.Key(dependency)}`
+			local archive = `{directory}/outputs.tar`
+			if not Fs.exists(archive) or Fs.type(archive) ~= "file" then
+				error(`{identity}: missing dependency artifact {dependency}`, 0)
+			end
+			if TaskRunner.Verify(provider) ~= "passed" then error(`{identity}: prerequisite {dependency} was skipped`, 0) end
 		end
-		if TaskRunner.Verify(provider) ~= "passed" then error(`{identity}: prerequisite {dependency} was skipped`, 0) end
 	end
 
 	local executor = Executor.new(credentials)
