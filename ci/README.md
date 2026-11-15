@@ -158,3 +158,12 @@ Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node ci/c
 ## Local act compatibility
 
 The local CI wrapper stages the pinned engine workflow in its disposable checkout, rewriting GitHub-only self-references (`uses: $/`) to standard remote action references at the same SHA. It also uses artifact upload v4 for the local `act` artifact server. Neither the permanent Template launcher nor the hosted engine workflow is modified. The change is covered by `dependencies/packages/ci/localActions/run.test.cjs`.
+
+
+## Generated build-only execution
+
+The native pipeline generator is `ci/github/workflows/preview.cjs`. On default-branch pushes, `ci/github/workflows/launch.cjs` renders the dependency graph, commits six generated workflow files to a unique `ci/run-push-...` branch, waits for the resulting GitHub Actions run, checks its exact SHA and outcome, and fails the parent check if that run fails. A reusable-workflow group holds each category of native jobs, with three build hosts and three host-specific runtime tests in separate matrices. The build-stage generator never emits a publish job.
+
+Quality includes Review, Rules, Workflows and Updates. Build includes three Windows targets, Pages and Branches. Plan contains Rulesets, Milestones and Projects. Tests contains Universal and native Windows host tests. Distribution stages Packages and Releases after the binary build artifacts exist. These components remain enabled/disabled by the project settings and dependency contracts. The test/build matrix runner labels are distinct from the Docker-based cross-compilers.
+
+The engine's readonly `validation.native.command` is invoked only after the normal read-only component checks **and** only on a trusted default-branch push. On other branch pushes or on PRs, the existing read-only checks run with no write tokens. The native launcher uses a scoped App/PAT in the `ci-bootstrap` environment, never passes it into generated jobs, and reports the child execution URL in the parent summary. Application/publisher deployment remains strictly outside this build workflow.
