@@ -29,7 +29,7 @@ test("generated PR workflow uses discovered real host contracts",()=>{
   assert.match(files["distribution.yml"],/name: Releases/);
   assert.match(files["pipeline.yml"],/needs: \[quality, build, tests, plan, distribution\]/);
   assert.match(files["pipeline.yml"],/needs: build/);
-  const push=render("ci/run-push-1122-abcdef0123",SHA,undefined,"push");
+  const push=render("ci/run-push-1122-1-abcdef0123",SHA,undefined,"push");
   assert.match(push["pipeline.yml"],/Native push build/);
   assert.match(push["build.yml"],/CI_EVENT: push/);
   assert.doesNotMatch(push["pipeline.yml"],/publish/);
