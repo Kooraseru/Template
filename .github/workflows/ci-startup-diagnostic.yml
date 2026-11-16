@@ -1,0 +1,13 @@
+name: CI startup diagnostic
+on:
+  push:
+    branches:
+      - feature/ci-preview-pr-comments
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Confirm runner scheduling
+        run: echo 'Runner scheduled successfully'
