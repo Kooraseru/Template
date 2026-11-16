@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     environment: ci-preview-cloudflare
     steps:
       - name: Check out trusted default branch

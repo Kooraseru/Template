@@ -34,9 +34,11 @@ An open PR must originate from the same repository. Forks, closed PRs, `source`,
 
 The live address follows the leading-subdomain format `https://pr-50.template.pages.dev/Template/`. Production GitHub Pages keeps its own URL and does not store preview assets.
 
+After a successful PR preview deployment, CI automatically posts a comment in the pull request's **Conversation** tab linking to its actual Cloudflare Pages website and source commit. Subsequent previews edit the same bot comment instead of adding duplicate replies. Branch previews do not post to a PR. This requires the generated publisher's `pull-requests: write` permission; no preview URL is announced before a successful deployment.
+
 ## Closing a pull request
 
-The existing authored workflow reacts to `pull_request_target: closed` and runs a trusted cleanup job from the default branch. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
+After cleanup succeeds, the same bot comment is updated to indicate the preview is closed. The existing authored workflow reacts to `pull_request_target: closed` and runs a trusted cleanup job from the default branch. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
 
 Cloudflare cannot delete the latest deployment for a branch. Once the 410 deployment succeeds, cleanup lists previous deployments for that exact PR alias and deletes them using the Cloudflare Pages API. The latest 410 deployment stays in place because Cloudflare prohibits deleting a branch's latest deployment. Failed cleanup is reported as a failed job; it does not silently claim the historical URLs were removed.
 
