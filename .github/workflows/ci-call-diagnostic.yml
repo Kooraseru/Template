@@ -1,0 +1,15 @@
+name: CI external-call diagnostic
+on:
+  push:
+    branches: [feature/ci-preview-pr-comments]
+permissions: {}
+jobs:
+  call:
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@196feed4b093ab31ca0e98842539bee8a3a1bb41
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    with:
+      operation: ""
+      publish: false
