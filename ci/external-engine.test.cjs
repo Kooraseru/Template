@@ -43,9 +43,12 @@ test("Template is only a caller; job lifecycle and authorization belong to the r
   assert.match(source,/secrets\.CI_TOKEN/);
   assert.doesNotMatch(source,/secrets: inherit/);
   const section = source.split(/\njobs:\s*\n/)[1];
-  assert.deepEqual([...section.matchAll(/^  ([\w-]+):$/gm)].map(x=>x[1]),["ci","preview-close"]);
-  assert.match(source,/if: github\.event_name == 'pull_request_target' && github\.event\.action == 'closed'/);
-  assert.match(source,/name: Preview \/ Retire closed PR/);
+  assert.deepEqual([...section.matchAll(/^  ([\w-]+):$/gm)].map(x=>x[1]),["ci"]);
+  assert.match(source,/pull_request_target:/);
+  assert.match(source,/pull-requests: write/);
+  assert.match(source,/cloudflare_api_token: /);
+  assert.match(source,/type: choice/);
+  assert.doesNotMatch(source,/preview-close:|publish\.cjs --closed/);
 });
 test("generated operations retain trusted adapters without hardcoded jobs in Template CI", () => {
   const ops = engine.operations;

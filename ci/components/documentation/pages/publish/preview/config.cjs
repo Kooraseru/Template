@@ -70,6 +70,26 @@ function target(input, config) {
   throw new Error('Preview target must begin with pr: or branch:');
 }
 
+// GitHub workflow_dispatch choice inputs are static; the PR number or branch
+// identifier remains typed while the target class is selected from a dropdown.
+function workflowTarget(inputs) {
+  const kind = inputs?.preview_kind;
+  if (!['pr', 'branch', 'delete-pr', 'delete-branch'].includes(kind))
+    throw new Error('Choose a valid preview_kind from the workflow dropdown');
+  const remove = kind.startsWith('delete-');
+  const type = remove ? kind.slice(7) : kind;
+  if (type === 'pr') {
+    const raw = inputs.preview_pr;
+    const number = typeof raw === 'number' && Number.isSafeInteger(raw)
+      ? String(raw) : raw;
+    if (typeof number !== 'string' || !/^[1-9][0-9]{0,8}$/.test(number))
+      throw new Error('Enter a valid preview_pr number (without a field name)');
+    return (remove ? 'delete:' : '') + 'pr:' + number;
+  }
+  if (typeof inputs.preview_branch !== 'string' || !inputs.preview_branch)
+    throw new Error('Enter an existing preview_branch name');
+  return (remove ? 'delete:' : '') + 'branch:' + inputs.preview_branch;
+}
 function sourceContext(env = process.env) {
   const defaults = env.CI_DEFAULT_BRANCH || '';
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_dispatch' ||
@@ -81,9 +101,7 @@ function sourceContext(env = process.env) {
       !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
     throw new Error('Invalid trusted dispatch identity');
   const payload = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
-  const requested = payload?.inputs?.preview_target;
-  if (typeof requested !== 'string' || !requested)
-    throw new Error('Set the workflow_dispatch preview_target input');
+  const requested = workflowTarget(payload?.inputs);
   return { sourceSha: env.GITHUB_SHA, sourceBranch: defaults,
     runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT,
     target: requested };
@@ -106,4 +124,4 @@ async function resolveTarget(candidate, config, api) {
   return { ...candidate, sha: branch.object.sha };
 }
 
-module.exports = { root, section, settings, target, sourceContext, resolveTarget };
+module.exports = { root, section, settings, target, workflowTarget, sourceContext, resolveTarget };

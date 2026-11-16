@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
+const { settings, target, workflowTarget, sourceContext, resolveTarget } = require('./config.cjs');
 const { render } = require('./launch.cjs');
 const { selected, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
 const { marker, bodyFor, syncComment } = require('./comment.cjs');
@@ -42,7 +42,7 @@ test('preview targets are stable and reserved branches are rejected', () => {
 });
 test('dispatch requires a trusted source revision and an explicit approval', t => {
   const event = path.join(temporary(t), 'event.json');
-  fs.writeFileSync(event, JSON.stringify({ inputs: { preview_target: 'pr:50' } }));
+  fs.writeFileSync(event, JSON.stringify({ inputs: { preview_kind: 'pr', preview_pr: 50 } }));
   const ctx = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch',
     GITHUB_REF: 'refs/heads/source', CI_DEFAULT_BRANCH: 'source',
     CI_ENGINE_OPERATION: 'preview', CI_PUBLICATION_ENABLED: 'true',
@@ -50,6 +50,22 @@ test('dispatch requires a trusted source revision and an explicit approval', t =
     GITHUB_RUN_ATTEMPT: '1', GITHUB_EVENT_PATH: event };
   assert.equal(sourceContext(ctx).target, 'pr:50');
   assert.throws(() => sourceContext({ ...ctx, GITHUB_REF: 'refs/heads/topic' }), /trusted source/);
+});
+test('typed workflow choices build valid preview targets without manual prefixes', () => {
+  assert.equal(workflowTarget({ preview_kind: 'pr', preview_pr: 52 }), 'pr:52');
+  assert.equal(workflowTarget({ preview_kind: 'delete-pr', preview_pr: '52' }), 'delete:pr:52');
+  assert.equal(workflowTarget({ preview_kind: 'branch', preview_branch: 'feature/docs' }),
+    'branch:feature/docs');
+  assert.equal(workflowTarget({ preview_kind: 'delete-branch',
+    preview_branch: 'feature/docs' }), 'delete:branch:feature/docs');
+  assert.throws(() => workflowTarget({ preview_kind: 'pr',
+    preview_pr: 'preview_pr=52' }), /valid preview_pr/);
+  assert.throws(() => workflowTarget({ preview_kind: 'pr', preview_pr: 0 }),
+    /valid preview_pr/);
+  assert.throws(() => workflowTarget({ preview_kind: 'branch' }),
+    /preview_branch/);
+  assert.throws(() => workflowTarget({ preview_kind: 'unexpected' }),
+    /preview_kind/);
 });
 test('only open same-repository PRs can be previewed', async () => {
   const sha = 'b'.repeat(40);

@@ -22,13 +22,15 @@ Create a protected GitHub environment named `ci-preview-cloudflare` with the `CL
 
 ## Publish a preview
 
-From Actions → CI → Run workflow, choose the `source` branch and supply:
+From Actions → CI → Run workflow, choose `source`. The operation and preview kind are dropdowns; enter a PR number or existing branch name only when relevant:
 
 | Input | Value |
 | --- | --- |
 | `operation` | `preview` |
 | `publish` | `true` |
-| `preview_target` | `pr:50` or `branch:demo/site-redesign` |
+| `preview_kind` | `pr` (dropdown; also `branch`, `delete-pr`, `delete-branch`) |
+| `preview_pr` | `50` for PR targets; `0` otherwise |
+| `preview_branch` | `demo/site-redesign` for branch targets; otherwise blank |
 
 An open PR must originate from the same repository. Forks, closed PRs, `source`, and generated CI branches cannot be previewed. The selected SHA is checked again before publishing, and the build job never receives publishing credentials.
 
@@ -38,11 +40,11 @@ After a successful PR preview deployment, CI automatically posts a comment in th
 
 ## Closing a pull request
 
-After cleanup succeeds, the same bot comment is updated to indicate the preview is closed. The existing authored workflow reacts to `pull_request_target: closed` and runs a trusted cleanup job from the default branch. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
+After cleanup succeeds, the same bot comment is updated to indicate the preview is closed. The single authored workflow forwards `pull_request_target: closed` to CI Engine, which runs a protected lifecycle component against trusted default-branch code. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
 
 Cloudflare cannot delete the latest deployment for a branch. Once the 410 deployment succeeds, cleanup lists previous deployments for that exact PR alias and deletes them using the Cloudflare Pages API. The latest 410 deployment stays in place because Cloudflare prohibits deleting a branch's latest deployment. Failed cleanup is reported as a failed job; it does not silently claim the historical URLs were removed.
 
-Use a manual `preview_target` of `delete:pr:50` or `delete:branch:demo/site-redesign` to retire an alias without closing a PR.
+To retire an alias without closing a PR, choose `delete-pr` or `delete-branch` in the `preview_kind` dropdown and supply the corresponding number or branch name. Native GitHub Actions dropdowns cannot dynamically list existing PRs or branches.
 
 ## Demo content
 
