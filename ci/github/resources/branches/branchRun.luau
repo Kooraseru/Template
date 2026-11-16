@@ -13,6 +13,7 @@ local Credentials = require("@ci/github/authentication/credentials")
 local Workflow = require("@ci/github/workflows/workflow")
 local TokenPermissions = require("@ci/github/authentication/tokenPermissions")
 local Responses = require("@ci/github/reporting/responses")
+local Publication = require("@ci/github/publication")
 
 local GitFailure = require("@ci/github/publication/gitFailure")
 
@@ -79,6 +80,14 @@ local function launch(
 	local stage = "writing generated workflow"
 	local ok, failure = xpcall(function(): boolean
 		Fs.createDirectory(`{worktree}/.github/workflows`, { makeParents = true })
+		-- The generated branch has its own entry point. Keeping the permanent
+		-- controller here schedules a second read-only CI run and makes the
+		-- generated-workflow-only test fail.
+		local permanent = `{worktree}/.github/workflows/ci.yml`
+		if Fs.exists(permanent) then
+			if Fs.type(permanent) ~= "file" then error("Expected regular permanent CI workflow", 0) end
+			Fs.remove(permanent)
+		end
 		for name, contents in files do
 			Fs.writeStringToFile(`{worktree}/.github/workflows/{name}`, contents)
 			stage = `locking {name}`
@@ -137,7 +146,7 @@ local function waitForPipeline(repository: string, branch: string, revision: str
 		error("Bootstrap needs the read-only GITHUB_TOKEN to observe Pipeline scheduling", 0)
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
-	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+	local encoded = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local started = os.time()
@@ -219,6 +228,149 @@ local function waitForPipeline(repository: string, branch: string, revision: str
 			else "GitHub did not schedule Pipeline for the generated branch",
 		0
 	)
+end
+
+-- Remove only this parent's own generated ref, and only when the expected
+-- generated workflow commit is still at its tip. This is independent of the
+-- child workflow's Cleanup job, which cannot execute on startup failure.
+local function removeOwnedRun(
+	configuration: Configuration.Configuration,
+	repository: string,
+	branch: string,
+	revision: string,
+	runId: string,
+	attempt: string,
+	token: string
+): ()
+	if
+		branch ~= `{configuration.branchPrefix}{runId}-{attempt}`
+		or not runId:match("^[1-9]%d*$")
+		or not attempt:match("^[1-9]%d*$")
+		or #revision ~= 40 or not revision:match("^%x+$")
+		or branch == (Process.env.CI_DEFAULT_BRANCH or "source")
+	then
+		error("Refusing to clean an unrelated CI branch", 0)
+	end
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local encoded = branch:gsub("([^%w_./~-])", function(character: string): string
+		return string.format("%%%02X", string.byte(character))
+	end)
+	local headers = {
+		Authorization = "Bearer " .. token,
+		Accept = "application/vnd.github+json",
+		["User-Agent"] = "Luau-CI-bootstrap",
+	}
+	local path = `{api}/repos/{repository}/git/ref/heads/{encoded}`
+	local current = Net.request(path, { headers = headers })
+	if current.status == 404 then
+		print(`::notice::Generated CI branch {branch} was already removed`)
+		return
+	end
+	if not current.ok then
+		error(`Unable to inspect generated CI branch: HTTP {current.status}`, 0)
+	end
+	local decoded: unknown = Json.decode(current.body)
+	if type(decoded) ~= "table" or type(decoded.object) ~= "table"
+		or type(decoded.object.sha) ~= "string" or decoded.object.sha ~= revision then
+		error("Generated CI branch changed after launch; refusing to delete", 0)
+	end
+	local deleted = Net.request(path:gsub("/git/ref/", "/git/refs/"), {
+		method = "DELETE", headers = headers,
+	})
+	if not deleted.ok and deleted.status ~= 404 then
+		error(`Unable to remove generated CI branch: HTTP {deleted.status}`, 0)
+	end
+	print(`::notice::Removed generated CI branch {branch}`)
+end
+
+-- Recover abandoned generated refs from earlier completed source runs.
+-- A name match alone is never sufficient: verify the original Actions run,
+-- the generated commit message and its parent before deleting an exact SHA.
+local function reconcileOrphans(
+	configuration: Configuration.Configuration,
+	repository: string,
+	writer: string,
+	reader: string,
+	currentRun: string
+): ()
+	local prefix = configuration.branchPrefix
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local encodedPrefix = prefix:gsub("([^%w_./~-])", function(character: string): string
+		return string.format("%%%02X", string.byte(character))
+	end)
+	local function headers(token: string): { [string]: string }
+		return {
+			Authorization = "Bearer " .. token,
+			Accept = "application/vnd.github+json",
+			["User-Agent"] = "Luau-CI-bootstrap",
+		}
+	end
+	local listed = Net.request(`{api}/repos/{repository}/git/matching-refs/heads/{encodedPrefix}`, {
+		headers = headers(writer),
+	})
+	if listed.status == 404 then return end
+	if not listed.ok then
+		error(`Cannot inspect completed CI branches: HTTP {listed.status}`, 0)
+	end
+	local entries: unknown = Json.decode(listed.body)
+	if type(entries) ~= "table" then error("Invalid generated-ref list", 0) end
+	local inspected = 0
+	for _, raw in entries do
+		if inspected >= 25 then
+			print("::warning::Orphan scan reached its 25-ref safety limit")
+			break
+		end
+		if type(raw) ~= "table" then continue end
+		local candidate = Publication.Record(raw)
+		if type(candidate.ref) ~= "string" or type(candidate.object) ~= "table" then continue end
+		local object = Publication.Record(candidate.object)
+		if type(object.sha) ~= "string" then continue end
+		local branch = candidate.ref:match("^refs/heads/(.+)$")
+		if not branch or branch:sub(1, #prefix) ~= prefix then continue end
+		local runId, attempt = branch:sub(#prefix + 1):match("^(%d+)%-(%d+)$")
+		if not runId or not attempt or runId == currentRun then continue end
+		inspected += 1
+		local previous = Net.request(`{api}/repos/{repository}/actions/runs/{runId}`, {
+			headers = headers(reader),
+		})
+		if not previous.ok then
+			print(`::warning::Cannot inspect originating CI run {runId}: HTTP {previous.status}`)
+			continue
+		end
+		local rawRun: unknown = Json.decode(previous.body)
+		if type(rawRun) ~= "table" then continue end
+		local parentRun = Publication.Record(rawRun)
+		if type(parentRun.status) ~= "string" or parentRun.status ~= "completed"
+			or parentRun.head_branch ~= (Process.env.CI_DEFAULT_BRANCH or "source")
+			or (parentRun.event ~= "push" and parentRun.event ~= "workflow_dispatch")
+			or type(parentRun.head_sha) ~= "string" or #parentRun.head_sha ~= 40 then
+			continue
+		end
+		local originSha = parentRun.head_sha
+		local revision = object.sha
+		if #revision ~= 40 or not revision:match("^%x+$") then continue end
+		local commit = Net.request(`{api}/repos/{repository}/git/commits/{revision}`, {
+			headers = headers(writer),
+		})
+		if not commit.ok then continue end
+		local rawCommit: unknown = Json.decode(commit.body)
+		if type(rawCommit) ~= "table" then continue end
+		local generated = Publication.Record(rawCommit)
+		local parents = generated.parents
+		if type(parents) ~= "table" then continue end
+		local firstParent: unknown = nil
+		for _, record in parents do
+			firstParent = record
+			break
+		end
+		if type(firstParent) ~= "table" then continue end
+		local original = Publication.Record(firstParent)
+		if generated.message ~= "CI execution graph for " .. originSha or original.sha ~= originSha then
+			continue
+		end
+		local ok, failure = pcall(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, writer)
+		if not ok then print(`::warning::Unable to reconcile {branch}: {failure}`) end
+	end
 end
 
 --[[
@@ -307,6 +459,12 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	if not access then
 		return false
 	end
+	-- Reconcile only refs from completed prior runs, never this active run.
+	local readToken = Process.env.GH_TOKEN
+	if readToken and readToken ~= "" then
+		local reconciled, failure = pcall(reconcileOrphans, configuration, repository, access.token, readToken, runId)
+		if not reconciled then print(`::warning::Orphan reconciliation unavailable: {failure}`) end
+	end
 	local branch = `{configuration.branchPrefix}{runId}-{attempt}`
 	local revision = ""
 	local ok, failure = xpcall(function(): boolean
@@ -323,7 +481,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end
 
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
-	local query = branch:gsub("([^%w_.~-])", function(character: string): string
+	local query = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local url = `{server}/{repository}/actions?query=branch%3A{query}`
@@ -337,9 +495,25 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end
 	record("dispatched")
 	local completed, problem = pcall(waitForPipeline, repository, branch, revision, true)
+	-- Always make a parent-side cleanup attempt, including when GitHub refuses
+	-- the generated workflow before any of its jobs can start.
+	local cleaned, cleanupProblem = pcall(function(): ()
+		local fresh = Authentication.Acquire(configuration, credentials, repository, roles)
+		if not fresh then error("Cannot obtain a generated-branch cleanup credential", 0) end
+		local ok, failure = pcall(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, fresh.token)
+		Authentication.Release(fresh)
+		if not ok then error(failure, 0) end
+	end)
+	if not cleaned then
+		print(`::error::Generated branch cleanup failed: {cleanupProblem}`)
+	end
 	if not completed then
 		record("failed", tostring(problem))
 		error(`Generated CI did not complete successfully: {problem}`, 0)
+	end
+	if not cleaned then
+		record("failed", tostring(cleanupProblem))
+		error(`Generated CI succeeded but branch cleanup failed: {cleanupProblem}`, 0)
 	end
 	record("passed")
 	print(`::notice::Verified CI execution on {branch}: {url}`)
@@ -401,7 +575,7 @@ function BranchRun.Cleanup(): ()
 	if branch == metadata.default_branch then
 		error("Refusing to delete the default branch", 0)
 	end
-	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+	local encoded = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local current = Net.request(`{api}/repos/{repository}/git/ref/heads/{encoded}`, { headers = headers })

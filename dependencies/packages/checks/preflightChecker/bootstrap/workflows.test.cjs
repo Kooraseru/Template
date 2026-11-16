@@ -15,6 +15,18 @@ test("generated hosted stages enforce Build before Publish and read-only Validat
 	const files = execute(t, source, { ACT: "", CI_OPERATION: "build" }); const controller = JSON.parse(files["pipeline.yml"]);
 	assert.equal(controller.name, "Pipeline");
 	assert.deepEqual(controller.jobs.publish.needs, ["build", "tests"]); assert.deepEqual(controller.jobs.tests.needs, ["build"]); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
+	// A reusable workflow cannot elevate the caller's GitHub token scope.
+	// Validate all generated jobs so a new component cannot silently cause
+	// a zero-job GitHub Actions startup_failure.
+	const called = JSON.parse(files["publish.yml"].slice(files["publish.yml"].indexOf("{")));
+	const allowed = controller.jobs.publish.permissions;
+	for (const [name, job] of Object.entries(called.jobs)) {
+		for (const [permission, access] of Object.entries(job.permissions || {})) {
+			if (access === "write") assert.equal(allowed[permission], "write", name + ": " + permission);
+			else assert.ok(["read", "write"].includes(allowed[permission]), name + ": " + permission);
+		}
+	}
+	assert.equal(controller.jobs.publish.permissions.pages, "write");
 	for (const file of Object.values(files)) assert.ok(!file.includes('"inherit"'));
 	const build = JSON.parse(files["build.yml"].slice(files["build.yml"].indexOf("{"))); assert.ok(build.on.workflow_call);
 	for (const job of Object.values(build.jobs)) assert.equal(job.environment, undefined);
@@ -94,6 +106,16 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(runtime, /pcall\(waitForPipeline, repository, branch, revision, true\)/);
 	assert.match(runtime, /record\("failed", tostring\(problem\)\)/);
 	assert.match(runtime, /Temporary CI branch moved after this run started/);
+	assert.match(runtime, /Fs\.remove\(permanent\)/);
+	assert.match(runtime, /pcall\(waitForPipeline, repository, branch, revision, true\)/);
+	assert.match(runtime, /pcall\(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, fresh\.token\)/);
+	assert.match(runtime, /decoded\.object\.sha ~= revision/);
+	assert.match(runtime, /Generated CI succeeded but branch cleanup failed/);
+	assert.match(runtime, /git\/matching-refs\/heads\//);
+	assert.match(runtime, /parentRun\.status ~= "completed"/);
+	assert.match(runtime, /generated\.message ~= "CI execution graph for " \.\. originSha/);
+	assert.match(runtime, /original\.sha ~= originSha/);
+	assert.match(runtime, /gsub\("\(\[\^%w_\.\/~\-\]\)"/);
 });
 test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
 	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
