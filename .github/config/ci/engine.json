@@ -106,6 +106,27 @@
         ],
         "profile": "source-ci"
       }
+    },
+    "preview": {
+      "mode": "generated",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
+      "plan": "build",
+      "publication": true,
+      "branchPrefix": "ci/preview-",
+      "execution": {
+        "command": [
+          "node",
+          "ci/components/documentation/pages/publish/preview/launch.cjs"
+        ],
+        "profile": "source-ci"
+      }
     }
   },
   "componentRoot": ".github/config/ci/components"
