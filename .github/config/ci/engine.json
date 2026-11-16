@@ -119,7 +119,7 @@
       "environment": "ci-bootstrap",
       "plan": "build",
       "publication": true,
-      "branchPrefix": "ci/preview-",
+      "branchPrefix": "ci/run-preview-",
       "execution": {
         "command": [
           "node",

@@ -1,6 +1,6 @@
 # Native Pages adapter appended to this component's generated job.
 [permissions]
-contents = "write"
+contents = "read"
 pages = "write"
 id-token = "write"
 
@@ -20,18 +20,11 @@ run = "node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lut
 GH_TOKEN = "${{ github.token }}"
 
 [[steps]]
-name = "Stage production and active preview snapshots"
-if = "${{ steps.pages.outputs.enabled == 'true' }}"
-run = "node ci/components/documentation/pages/publish/preview/publish.cjs --production"
-[steps.env]
-GH_TOKEN = "${{ github.token }}"
-
-[[steps]]
 name = "Upload Pages artifact"
 uses = "actions/upload-pages-artifact@v4"
 if = "${{ steps.pages.outputs.enabled == 'true' }}"
 [steps.with]
-path = "build/preview-staged"
+path = "build/github/pages"
 
 [[steps]]
 name = "Deploy Pages"

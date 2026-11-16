@@ -19,19 +19,15 @@ branch_prefix = "ci/run-"
 # Omitted switches default to enabled on eligible pushes.
 releases = false
 packages = false
-branches = true
+branches = false # Keep generated main disabled unless explicitly re-enabled.
 pages = true # Pages deployments run only after a successful trusted source CI push.
 milestones = false
 
-# Preview publication uses an explicit, trusted source-branch dispatch.
-# Pull request and branch builds run with read-only GitHub permissions.
+# Cloudflare Pages is the only preview host; ci/run-preview-* refs are temporary.
 [github.previews]
 enabled = true
-provider = "github-pages" # "github-pages" or "cloudflare-pages"
 pull_requests = true
 branches = true
-path_prefix = "previews"
-state_branch = "pages-state"
 retention_days = 14
-# Cloudflare Direct Upload project name, required when provider = "cloudflare-pages".
-cloudflare_project = ""
+# Set this to your existing Cloudflare Pages Direct Upload project.
+cloudflare_project = "template"

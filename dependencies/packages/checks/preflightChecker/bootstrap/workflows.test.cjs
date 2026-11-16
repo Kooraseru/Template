@@ -42,12 +42,16 @@ test("the single authored CI workflow delegates generation and publication to th
   const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
   const jobSection = workflow.split(/\njobs:\s*\n/)[1];
   assert.ok(jobSection);
-  assert.deepEqual([...jobSection.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]), ["ci"]);
+  assert.deepEqual([...jobSection.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]), ["ci", "preview-close"]);
   assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /app_private_key: /);
   assert.match(workflow, /bootstrap_token: /);
-  assert.doesNotMatch(workflow, /setup-node|node ci\/|secrets: inherit|name: Start Generated CI/);
+  assert.doesNotMatch(workflow, /secrets: inherit|name: Start Generated CI/);
+  assert.match(workflow, /pull_request_target:/);
+  assert.match(workflow, /types: \[closed\]/);
+  assert.match(workflow, /publish\.cjs --closed/);
+  assert.match(workflow, /environment: ci-preview-cloudflare/);
   const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
   assert.equal(config.triggers.push, "validation");
   assert.equal(config.triggers.default_push, "publish");
