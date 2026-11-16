@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const root = path.resolve(__dirname, '../../../../../..');
 const site = __dirname;
 const output = path.join(root, 'build/github/pages');
+const staging = path.join(site, 'dist');
 const docs = path.join(root, 'content/docs');
 const images = path.join(root, 'content/images');
 
@@ -57,6 +58,12 @@ function build() {
   const cli = path.join(site, 'node_modules/astro', bin);
   if (!fs.existsSync(cli)) throw new Error('Missing Astro CLI: ' + cli);
   run(process.execPath, [cli, 'build', '--root', site]);
+  // Keep dynamic prerender dependencies under the Starlight package while
+  // compiling, then export plain static assets into the CI output contract.
+  if (!fs.existsSync(path.join(staging, 'index.html'))) {
+    throw new Error('Starlight did not produce dist/index.html');
+  }
+  fs.cpSync(staging, output, { recursive: true, force: true });
   copyAssets(images, path.join(output, 'images'));
   if (!fs.existsSync(path.join(output, 'index.html'))) {
     throw new Error('Starlight failed to produce build/github/pages/index.html');

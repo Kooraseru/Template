@@ -14,7 +14,8 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(manifest.dependencies.astro);
   const astro = fs.readFileSync(path.join(site, 'astro.config.mjs'), 'utf8');
   const collection = fs.readFileSync(path.join(site, 'src/content.config.mjs'), 'utf8');
-  assert.ok(astro.includes('build/github/pages'));
+  assert.ok(astro.includes("resolve(here, 'dist')"));
+  assert.ok(fs.readFileSync(path.join(site, 'build.cjs'), 'utf8').includes('build/github/pages'));
   assert.ok(astro.includes('starlight({'));
   assert.ok(!astro.includes('sidebar: ['));
   assert.ok(collection.includes('content/docs'));

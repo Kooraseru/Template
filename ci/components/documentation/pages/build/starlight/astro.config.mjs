@@ -21,7 +21,8 @@ if (!/^\/(?:[A-Za-z0-9._~-]+\/)*$/.test(base)) {
 
 export default defineConfig({
   srcDir: resolve(here, 'src'),
-  outDir: resolve(repositoryRoot, 'build/github/pages'),
+  // Prerendered server chunks must resolve dependencies from this package.
+  outDir: resolve(here, 'dist'),
   cacheDir: resolve(repositoryRoot, 'build/cache/astro'),
   site,
   base,
