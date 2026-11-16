@@ -51,6 +51,9 @@ test("builders stage the authored docs into branch and Pages outputs", () => {
   const branches = fs.readFileSync(path.join(root, "ci/components/governance/branches/build/branchBuilder.luau"), "utf8");
   assert.match(site, /Starlight/);
   assert.match(site, /starlight\/build\.cjs/);
+  const contract = fs.readFileSync(path.join(root, "ci/components/documentation/pages/build/component.toml"), "utf8");
+  assert.match(contract, /"content\\/theme\\.css"/);
+  assert.ok(fs.existsSync(path.join(root, "content/theme.css")));
   assert.match(branches, /CONTENT_ROOT = "content\/docs\/repository"/);
   assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);
   assert.match(branches, /OUTPUT_ROOT = "build\/github\/branches"/);
