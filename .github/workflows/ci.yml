@@ -15,6 +15,11 @@ on:
         type: boolean
         required: false
         default: false
+      preview_target:
+        description: "Manual preview target: pr:50, branch:feature/demo, or delete:pr:50"
+        type: string
+        required: false
+        default: ""
 
 permissions: {}
 
