@@ -28,6 +28,7 @@ export default defineConfig({
   base,
   integrations: [starlight({
     title,
+    favicon: '/images/favicon.png',
     // Navigation stays filesystem-generated. Authored Markdown is staged into
     // src/content/docs before each build or local preview.
     customCss: ['./src/styles/layout.css', './src/styles/palette.css', './src/styles/project.css'],

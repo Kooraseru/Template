@@ -12,6 +12,21 @@ const images = path.join(root, 'content/images');
 const theme = path.join(root, 'content/theme.css');
 const stagedDocs = path.join(site, 'src/content/docs');
 const stagedTheme = path.join(site, 'src/styles/project.css');
+const favicon = path.join(images, 'favicon.png');
+const stagedFavicon = path.join(site, 'public/images/favicon.png');
+
+function stageFavicon(input = favicon, destination = stagedFavicon) {
+  if (!fs.existsSync(input) || fs.lstatSync(input).isSymbolicLink() ||
+      !fs.statSync(input).isFile()) {
+    throw new Error('Missing or invalid authored favicon: ' + input);
+  }
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  if (fs.existsSync(destination) && fs.lstatSync(destination).isSymbolicLink())
+    throw new Error('Refusing symlinked staged favicon: ' + destination);
+  fs.copyFileSync(input, destination);
+  return destination;
+}
+
 
 function assertDirectory(input) {
   if (!fs.existsSync(input) || fs.lstatSync(input).isSymbolicLink() || !fs.statSync(input).isDirectory())
@@ -51,7 +66,8 @@ function prepareSite(options = {}) {
   } else {
     fs.writeFileSync(stagedCss, '/* No project theme override. */\n');
   }
-  return { staged, stagedCss };
+  const stagedIcon = stageFavicon(options.favicon || favicon, options.stagedFavicon || stagedFavicon);
+  return { staged, stagedCss, stagedIcon };
 }
 
 
@@ -116,7 +132,7 @@ function build() {
   process.stdout.write('Starlight: built ' + output + '\n');
 }
 
-module.exports = { build, prepareSite, copyAssets, root, site, output, docs };
+module.exports = { build, prepareSite, stageFavicon, copyAssets, root, site, output, docs };
 if (require.main === module) {
   try { if (process.argv.includes('--prepare')) prepareSite(); else build(); }
   catch (error) { console.error(String(error)); process.exitCode = 1; }

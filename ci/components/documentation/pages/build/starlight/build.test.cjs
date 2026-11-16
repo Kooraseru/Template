@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { copyAssets, prepareSite, root } = require('./build.cjs');
+const { copyAssets, prepareSite, stageFavicon, root } = require('./build.cjs');
 
 test('Starlight site is configured as a component, not another workflow', () => {
   const site = __dirname;
@@ -21,6 +21,11 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(collection.includes('docsLoader()'));
   assert.ok(!collection.includes('glob('));
   assert.ok(astro.includes('./src/styles/project.css'));
+  assert.ok(astro.includes("favicon: '/images/favicon.png'"));
+  const authoredFavicon = path.join(root, 'content/images/favicon.png');
+  assert.ok(fs.existsSync(authoredFavicon));
+  const signature = fs.readFileSync(authoredFavicon).subarray(0, 8).toString('hex');
+  assert.equal(signature, '89504e470d0a1a0a');
   assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
   const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
   const palette = fs.readFileSync(path.join(site, 'src/styles/palette.css'), 'utf8');
@@ -72,4 +77,15 @@ test('Content staging creates a flat docs root, excludes repository templates an
   fs.rmSync(path.join(docs, 'guides'), { recursive: true });
   prepareSite({ docs, stagedDocs: output, theme, stagedTheme: stylesheet });
   assert.ok(!fs.existsSync(path.join(output, 'guides')));
+});
+
+test('favicon is staged from authored assets and can be replaced per repository', t => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'starlight-favicon-'));
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  const source = path.join(root, 'content/images/favicon.png');
+  const destination = path.join(temp, 'public/images/favicon.png');
+  stageFavicon(source, destination);
+  assert.deepEqual(fs.readFileSync(destination), fs.readFileSync(source));
+  assert.throws(() => stageFavicon(path.join(temp, 'missing.png'), destination),
+    /Missing or invalid authored favicon/);
 });
