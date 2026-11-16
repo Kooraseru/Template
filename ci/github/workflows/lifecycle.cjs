@@ -7,8 +7,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
-const engineRevision = '58055301b521de8b104f9d2567d48e2e477176e6';
-const engineBlob = '166e8b09ba1386e03007f0b07ddcf4ef124c1b37';
+const engineRevision = '8969daa7c59f240b7b70923741f17f35d271cdd1';
+const engineBlob = '0e715093c5b99e13b8b34513526e2d3f346af53c';
 const engineUrl = 'https://raw.githubusercontent.com/Kooraseru-Hub/CI-Engine/' +
   engineRevision + '/src/lifecycle/dispatch.cjs';
 
