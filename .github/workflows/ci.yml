@@ -32,7 +32,6 @@ concurrency:
 jobs:
   ci:
     name: CI Engine
-    if: github.event_name != 'pull_request_target'
     uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@196feed4b093ab31ca0e98842539bee8a3a1bb41
     permissions:
       contents: read
@@ -41,9 +40,6 @@ jobs:
     with:
       operation: ${{ inputs.operation || '' }}
       publish: ${{ inputs.publish || false }}
-    secrets:
-      app_private_key: ${{ secrets.CI_APP_PRIVATE_KEY }}
-      bootstrap_token: ${{ secrets.CI_TOKEN }}
 
   preview-close:
     name: Preview / Retire closed PR
