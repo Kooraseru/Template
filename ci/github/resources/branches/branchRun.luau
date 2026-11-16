@@ -79,6 +79,14 @@ local function launch(
 	local stage = "writing generated workflow"
 	local ok, failure = xpcall(function(): boolean
 		Fs.createDirectory(`{worktree}/.github/workflows`, { makeParents = true })
+		-- The generated branch has its own entry point. Keeping the permanent
+		-- controller here schedules a second read-only CI run and makes the
+		-- generated-workflow-only test fail.
+		local permanent = `{worktree}/.github/workflows/ci.yml`
+		if Fs.exists(permanent) then
+			if Fs.type(permanent) ~= "file" then error("Expected regular permanent CI workflow", 0) end
+			Fs.remove(permanent)
+		end
 		for name, contents in files do
 			Fs.writeStringToFile(`{worktree}/.github/workflows/{name}`, contents)
 			stage = `locking {name}`
@@ -221,6 +229,59 @@ local function waitForPipeline(repository: string, branch: string, revision: str
 	)
 end
 
+-- Remove only this parent's own generated ref, and only when the expected
+-- generated workflow commit is still at its tip. This is independent of the
+-- child workflow's Cleanup job, which cannot execute on startup failure.
+local function removeOwnedRun(
+	configuration: Configuration.Configuration,
+	repository: string,
+	branch: string,
+	revision: string,
+	runId: string,
+	attempt: string,
+	token: string
+): ()
+	if
+		branch ~= `{configuration.branchPrefix}{runId}-{attempt}`
+		or not runId:match("^[1-9]%d*$")
+		or not attempt:match("^[1-9]%d*$")
+		or #revision ~= 40 or not revision:match("^%x+$")
+		or branch == (Process.env.CI_DEFAULT_BRANCH or "source")
+	then
+		error("Refusing to clean an unrelated CI branch", 0)
+	end
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+		return string.format("%%%02X", string.byte(character))
+	end)
+	local headers = {
+		Authorization = "Bearer " .. token,
+		Accept = "application/vnd.github+json",
+		["User-Agent"] = "Luau-CI-bootstrap",
+	}
+	local path = `{api}/repos/{repository}/git/ref/heads/{encoded}`
+	local current = Net.request(path, { headers = headers })
+	if current.status == 404 then
+		print(`::notice::Generated CI branch {branch} was already removed`)
+		return
+	end
+	if not current.ok then
+		error(`Unable to inspect generated CI branch: HTTP {current.status}`, 0)
+	end
+	local decoded: unknown = Json.decode(current.body)
+	if type(decoded) ~= "table" or type(decoded.object) ~= "table"
+		or type(decoded.object.sha) ~= "string" or decoded.object.sha ~= revision then
+		error("Generated CI branch changed after launch; refusing to delete", 0)
+	end
+	local deleted = Net.request(path:gsub("/git/ref/", "/git/refs/"), {
+		method = "DELETE", headers = headers,
+	})
+	if not deleted.ok and deleted.status ~= 404 then
+		error(`Unable to remove generated CI branch: HTTP {deleted.status}`, 0)
+	end
+	print(`::notice::Removed generated CI branch {branch}`)
+end
+
 --[[
 	Prepares local act artifacts or launches native CI on a generated branch. Pull request plans may contain only read-boundary tasks.
 
@@ -337,9 +398,25 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end
 	record("dispatched")
 	local completed, problem = pcall(waitForPipeline, repository, branch, revision, true)
+	-- Always make a parent-side cleanup attempt, including when GitHub refuses
+	-- the generated workflow before any of its jobs can start.
+	local cleaned, cleanupProblem = pcall(function(): ()
+		local fresh = Authentication.Acquire(configuration, credentials, repository, roles)
+		if not fresh then error("Cannot obtain a generated-branch cleanup credential", 0) end
+		local ok, failure = pcall(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, fresh.token)
+		Authentication.Release(fresh)
+		if not ok then error(failure, 0) end
+	end)
+	if not cleaned then
+		print(`::error::Generated branch cleanup failed: {cleanupProblem}`)
+	end
 	if not completed then
 		record("failed", tostring(problem))
 		error(`Generated CI did not complete successfully: {problem}`, 0)
+	end
+	if not cleaned then
+		record("failed", tostring(cleanupProblem))
+		error(`Generated CI succeeded but branch cleanup failed: {cleanupProblem}`, 0)
 	end
 	record("passed")
 	print(`::notice::Verified CI execution on {branch}: {url}`)

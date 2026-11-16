@@ -320,7 +320,7 @@ function Workflow.Bundle(tasks: { Contract.Task }, sourceSha: string, branch: st
 		and Process.env.CI_PUBLICATION_ENABLED ~= "false" then
 		files["publish.yml"] = Workflow.Render(tasks, sourceSha, branch, event, "publish")
 		jobs.publish = { name = "Publish", needs = { stage, "tests" }, uses = "./.github/workflows/publish.yml",
-			permissions = { contents = "write", issues = "write", checks = "write", actions = "read", ["id-token"] = "write" },
+			permissions = { contents = "write", issues = "write", checks = "write", actions = "read", pages = "write", ["id-token"] = "write" },
 			with = { ["run-id"] = Process.env.CI_LOCAL_RUN_ID or "${{ github.run_id }}-${{ github.run_attempt }}" } }
 		table.insert(needs, "publish")
 	end
