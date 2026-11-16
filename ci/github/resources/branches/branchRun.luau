@@ -13,6 +13,7 @@ local Credentials = require("@ci/github/authentication/credentials")
 local Workflow = require("@ci/github/workflows/workflow")
 local TokenPermissions = require("@ci/github/authentication/tokenPermissions")
 local Responses = require("@ci/github/reporting/responses")
+local Publication = require("@ci/github/publication")
 
 local GitFailure = require("@ci/github/publication/gitFailure")
 
@@ -314,16 +315,17 @@ local function reconcileOrphans(
 	local entries: unknown = Json.decode(listed.body)
 	if type(entries) ~= "table" then error("Invalid generated-ref list", 0) end
 	local inspected = 0
-	for _, value in entries do
+	for _, raw in entries do
 		if inspected >= 25 then
 			print("::warning::Orphan scan reached its 25-ref safety limit")
 			break
 		end
-		if type(value) ~= "table" or type(value.ref) ~= "string"
-			or type(value.object) ~= "table" or type(value.object.sha) ~= "string" then
-			continue
-		end
-		local branch = value.ref:match("^refs/heads/(.+)$")
+		if type(raw) ~= "table" then continue end
+		local candidate = Publication.Record(raw)
+		if type(candidate.ref) ~= "string" or type(candidate.object) ~= "table" then continue end
+		local object = Publication.Record(candidate.object)
+		if type(object.sha) ~= "string" then continue end
+		local branch = candidate.ref:match("^refs/heads/(.+)$")
 		if not branch or branch:sub(1, #prefix) ~= prefix then continue end
 		local runId, attempt = branch:sub(#prefix + 1):match("^(%d+)%-(%d+)$")
 		if not runId or not attempt or runId == currentRun then continue end
@@ -335,23 +337,35 @@ local function reconcileOrphans(
 			print(`::warning::Cannot inspect originating CI run {runId}: HTTP {previous.status}`)
 			continue
 		end
-		local parentRun: unknown = Json.decode(previous.body)
-		if type(parentRun) ~= "table" or parentRun.status ~= "completed"
+		local rawRun: unknown = Json.decode(previous.body)
+		if type(rawRun) ~= "table" then continue end
+		local parentRun = Publication.Record(rawRun)
+		if type(parentRun.status) ~= "string" or parentRun.status ~= "completed"
 			or parentRun.head_branch ~= (Process.env.CI_DEFAULT_BRANCH or "source")
 			or (parentRun.event ~= "push" and parentRun.event ~= "workflow_dispatch")
 			or type(parentRun.head_sha) ~= "string" or #parentRun.head_sha ~= 40 then
 			continue
 		end
-		local revision = value.object.sha
+		local originSha = parentRun.head_sha
+		local revision = object.sha
 		if #revision ~= 40 or not revision:match("^%x+$") then continue end
 		local commit = Net.request(`{api}/repos/{repository}/git/commits/{revision}`, {
 			headers = headers(writer),
 		})
 		if not commit.ok then continue end
-		local generated: unknown = Json.decode(commit.body)
-		if type(generated) ~= "table" or generated.message ~= "CI execution graph for " .. parentRun.head_sha
-			or type(generated.parents) ~= "table" or type(generated.parents[1]) ~= "table"
-			or generated.parents[1].sha ~= parentRun.head_sha then
+		local rawCommit: unknown = Json.decode(commit.body)
+		if type(rawCommit) ~= "table" then continue end
+		local generated = Publication.Record(rawCommit)
+		local parents = generated.parents
+		if type(parents) ~= "table" then continue end
+		local firstParent: unknown = nil
+		for _, record in parents do
+			firstParent = record
+			break
+		end
+		if type(firstParent) ~= "table" then continue end
+		local original = Publication.Record(firstParent)
+		if generated.message ~= "CI execution graph for " .. originSha or original.sha ~= originSha then
 			continue
 		end
 		local ok, failure = pcall(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, writer)
