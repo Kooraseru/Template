@@ -30,7 +30,7 @@ export default defineConfig({
     title,
     // Navigation stays filesystem-generated. Authored Markdown is staged into
     // src/content/docs before each build or local preview.
-    customCss: ['./src/styles/layout.css', './src/styles/project.css'],
+    customCss: ['./src/styles/layout.css', './src/styles/palette.css', './src/styles/project.css'],
     social: repository ? [{ icon: 'github', label: 'GitHub', href: 'https://github.com/' + repository }] : [],
     // Omit sidebar: Starlight derives it from the staged Markdown tree.
     editLink: projectSite ? { baseUrl: 'https://github.com/' + repository + '/edit/source/content/docs/' } : undefined,

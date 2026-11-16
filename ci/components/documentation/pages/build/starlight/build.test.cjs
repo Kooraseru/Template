@@ -23,15 +23,22 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(astro.includes('./src/styles/project.css'));
   assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
   const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
+  const palette = fs.readFileSync(path.join(site, 'src/styles/palette.css'), 'utf8');
   const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
-  assert.match(layout, /--sl-color-bg: Canvas;/);
-  assert.match(layout, /--sl-color-text: CanvasText;/);
-  assert.match(layout, /--sl-color-accent: LinkText;/);
-  assert.match(layout, /--sl-color-bg-accent: AccentColor;/);
-  assert.match(layout, /@media \\(forced-colors: active\\)/);
-  assert.match(layout, /:root\\[data-theme='light'\\]/);
-  assert.doesNotMatch(layout + projectTheme, /#[0-9a-fA-F]{3,8}\\b/);
-  assert.doesNotMatch(projectTheme, /--sl-color-accent:/);
+  assert.ok(astro.includes('./src/styles/palette.css'));
+  // Hardcoded fallback precedes a supported system-color override.
+  assert.ok(palette.includes('--sl-color-bg: #141821;'));
+  assert.ok(palette.includes('--sl-color-bg: #ffffff;'));
+  assert.ok(palette.includes('@supports (color: Canvas)'));
+  assert.ok(palette.includes('color-mix(in srgb'));
+  assert.ok(palette.includes('--sl-color-bg: Canvas;'));
+  assert.ok(palette.indexOf('--sl-color-bg: #ffffff;') < palette.indexOf('--sl-color-bg: Canvas;'));
+  assert.ok(palette.includes('@media (forced-colors: active)'));
+  assert.ok(palette.includes("root[data-theme='light']"));
+  assert.ok(layout.includes('--sl-content-width: 52rem;'));
+  assert.ok(layout.includes('--sl-sidebar-width: 17rem;'));
+  assert.ok(!layout.includes('--sl-color-bg:'));
+  assert.ok(!projectTheme.includes('--sl-color-accent:'));
   assert.ok(!collection.includes('content/i18n'));
 });
 
