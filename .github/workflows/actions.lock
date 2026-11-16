@@ -3,7 +3,9 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/ci.yml': []
+    '.github/workflows/ci.yml':
+        - 'actions/checkout@v7'
+        - 'actions/setup-node@v7.1.0'
 dependencies:
     'actions/checkout@v7':
         ref: 'v7'
