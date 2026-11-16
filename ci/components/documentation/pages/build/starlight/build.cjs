@@ -36,8 +36,8 @@ function build() {
     if (fs.lstatSync(output).isSymbolicLink()) throw new Error('Refusing symlinked Pages output');
     fs.rmSync(output, { recursive: true });
   }
-  const executable = path.join(site, 'node_modules/astro/astro.js');
-  if (!fs.existsSync(executable)) {
+  const astroManifest = path.join(site, 'node_modules/astro/package.json');
+  if (!fs.existsSync(astroManifest)) {
     // Exact direct versions are declared in the component's package.json.
     // This install is isolated from the workspace npm dependency loader.
     let npm = 'npm', args = ['install', '--no-audit', '--no-fund', '--no-package-lock'];
@@ -51,7 +51,12 @@ function build() {
     }
     run(npm, args, site);
   }
-  run(process.execPath, [executable, 'build', '--root', site]);
+  const installed = JSON.parse(fs.readFileSync(astroManifest, 'utf8'));
+  const bin = typeof installed.bin === 'string' ? installed.bin : installed.bin?.astro;
+  if (typeof bin !== 'string' || !bin) throw new Error('Astro installation has no CLI entry point');
+  const cli = path.join(site, 'node_modules/astro', bin);
+  if (!fs.existsSync(cli)) throw new Error('Missing Astro CLI: ' + cli);
+  run(process.execPath, [cli, 'build', '--root', site]);
   copyAssets(images, path.join(output, 'images'));
   if (!fs.existsSync(path.join(output, 'index.html'))) {
     throw new Error('Starlight failed to produce build/github/pages/index.html');
