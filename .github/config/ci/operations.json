@@ -124,6 +124,15 @@
       "checks": [
         "rules-audit"
       ]
+    },
+    "preview": {
+      "mode": "generated",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "plan": "build",
+      "publication": true,
+      "branchPrefix": "ci/preview-"
     }
   }
 }
