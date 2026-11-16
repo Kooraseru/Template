@@ -3,8 +3,6 @@ title: Publishing
 description: Generated main branch and GitHub Pages publication paths.
 ---
 
-# Publishing
-
 Publication runs as the Publish stage of the CI Engine-generated execution graph on the default `source` branch. Feature branch pushes and pull requests use read-only validation.
 
 ## Generated main branch

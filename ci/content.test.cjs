@@ -29,7 +29,7 @@ test("published documentation has predictable Markdown metadata", () => {
     const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n---\n/);
     assert.ok(metadata, file + ": requires title/description YAML front matter");
     assert.ok(metadata[1].trim() && metadata[2].trim(), file + ": empty metadata");
-    assert.equal((source.match(/^# /gm) || []).length, 1, file + ": requires one H1");
+    assert.equal((source.match(/^# /gm) || []).length, 0, file + ": Starlight renders the frontmatter title as H1");
     for (const match of source.matchAll(/\]\(([^)]+\.md)\)/g)) {
       const destination = path.resolve(path.dirname(file), match[1]);
       assert.ok(fs.existsSync(destination), file + ": broken relative link " + match[1]);

@@ -1,0 +1,15 @@
+/* Renderer-owned layout defaults. Projects override colors and branding in content/theme.css. */
+:root {
+  --sl-content-width: 52rem;
+  --sl-sidebar-width: 17rem;
+  --sl-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.sl-markdown-content {
+  line-height: 1.75;
+}
+.sl-markdown-content :is(h2, h3) {
+  scroll-margin-top: 6rem;
+}
+.sl-markdown-content :not(pre) > code {
+  border-radius: 0.3rem;
+}

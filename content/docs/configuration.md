@@ -3,8 +3,6 @@ title: Configuration
 description: Where repository, CI, branch, and publishing settings live.
 ---
 
-# Configuration
-
 The authoritative repository configuration lives under `.github/config/`.
 
 | Path | Purpose |

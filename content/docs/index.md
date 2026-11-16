@@ -3,8 +3,6 @@ title: Template documentation
 description: Start here to configure, develop, validate, and publish from the repository template.
 ---
 
-# Template documentation
-
 This documentation is the authored source for the Template repository. The default development branch is `source`; the generated `main` branch and GitHub Pages are publication outputs.
 
 ## Guides
