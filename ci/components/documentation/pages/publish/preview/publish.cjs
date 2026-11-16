@@ -149,8 +149,10 @@ async function retireClosed(env = process.env) {
 module.exports = { selected, prepareUpload, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
 if (require.main === module) {
   const command = process.argv[2], handler = command === '--preview'
-    ? publishPreview : command === '--closed' ? retireClosed : null;
-  if (!handler) { console.error('Expected --preview or --closed'); process.exitCode = 2; }
+    ? publishPreview : command === '--retire' ? retireClosed
+      : command === '--closed' ? () =>
+        require('../../../../../github/workflows/lifecycle.cjs').runLifecycle() : null;
+  if (!handler) { console.error('Expected --preview, --closed, or --retire'); process.exitCode = 2; }
   else Promise.resolve().then(() => handler()).catch(e => {
     console.error('::error::' + e.message); process.exitCode = 1;
   });
