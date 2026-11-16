@@ -42,7 +42,7 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 	local configuration = Publication.Record(Toml.decode(Fs.readFileToString(path)))
 
 	for field in configuration do
-		if field ~= "permissions" and field ~= "environment" and field ~= "steps" then
+		if field ~= "permissions" and field ~= "environment" and field ~= "steps" and field ~= "concurrency" then
 			error(`{path}: unsupported native job field {field}`, 0)
 		end
 	end
@@ -64,6 +64,21 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 
 	if configuration.environment then
 		job.environment = strings(configuration.environment)
+	end
+	if configuration.concurrency then
+		local settings = Publication.Record(configuration.concurrency)
+		for field in settings do
+			if field ~= "group" and field ~= "cancel-in-progress" then
+				error(`{path}: unknown concurrency field {field}`, 0)
+			end
+		end
+		if type(settings.group) ~= "string" or not settings.group:match("^pages%-site%-%$") and settings.group ~= "pages-site-${{ github.repository }}" then
+			error(`{path}: unsupported shared Pages concurrency group`, 0)
+		end
+		if settings["cancel-in-progress"] ~= false then
+			error(`{path}: publication concurrency must not cancel running deployments`, 0)
+		end
+		job.concurrency = { group = settings.group, ["cancel-in-progress"] = false }
 	end
 	local nativeSteps = configuration.steps
 	if type(nativeSteps) ~= "table" then

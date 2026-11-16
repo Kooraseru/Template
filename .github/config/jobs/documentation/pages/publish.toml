@@ -4,6 +4,10 @@ contents = "write"
 pages = "write"
 id-token = "write"
 
+[concurrency]
+group = "pages-site-${{ github.repository }}"
+cancel-in-progress = false
+
 [environment]
 name = "github-pages"
 url = "${{ steps.deployment.outputs.page_url }}"

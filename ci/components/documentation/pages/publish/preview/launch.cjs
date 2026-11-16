@@ -69,6 +69,8 @@ function render(ctx, candidate, config) {
       ...(candidate.remove ? {} : { needs: ['build'] }),
       permissions: cloudflare ? { contents: 'read' } :
         { contents: 'write', pages: 'write', 'id-token': 'write' },
+      ...(!cloudflare ? { concurrency: { group: 'pages-site-' +
+        expression('github.repository'), 'cancel-in-progress': false } } : {}),
       environment: cloudflare ? { name: 'ci-preview-cloudflare' } :
         { name: 'github-pages', url: expression('steps.deployment.outputs.page_url') },
       steps: publishSteps,
