@@ -33,7 +33,7 @@ jobs:
   ci:
     name: CI Engine
     if: github.event_name != 'pull_request_target'
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@196feed4b093ab31ca0e98842539bee8a3a1bb41
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@378464d22eb3e8dcbce51b18aadcfb65c136f7b0
     permissions:
       contents: read
       actions: read
