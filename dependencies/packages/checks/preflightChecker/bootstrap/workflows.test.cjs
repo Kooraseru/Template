@@ -115,6 +115,7 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(runtime, /parentRun\.status ~= "completed"/);
 	assert.match(runtime, /generated\.message ~= "CI execution graph for " \.\. parentRun\.head_sha/);
 	assert.match(runtime, /generated\.parents\[1\]\.sha ~= parentRun\.head_sha/);
+	assert.match(runtime, /gsub\("\(\[\^%w_\.\/~\-\]\)"/);
 });
 test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
 	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");

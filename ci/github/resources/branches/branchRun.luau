@@ -145,7 +145,7 @@ local function waitForPipeline(repository: string, branch: string, revision: str
 		error("Bootstrap needs the read-only GITHUB_TOKEN to observe Pipeline scheduling", 0)
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
-	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+	local encoded = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local started = os.time()
@@ -251,7 +251,7 @@ local function removeOwnedRun(
 		error("Refusing to clean an unrelated CI branch", 0)
 	end
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
-	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+	local encoded = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local headers = {
@@ -294,7 +294,7 @@ local function reconcileOrphans(
 ): ()
 	local prefix = configuration.branchPrefix
 	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
-	local encodedPrefix = prefix:gsub("([^%w_.~-])", function(character: string): string
+	local encodedPrefix = prefix:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local function headers(token: string): { [string]: string }
@@ -467,7 +467,7 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	end
 
 	local server = Process.env.GITHUB_SERVER_URL or "https://github.com"
-	local query = branch:gsub("([^%w_.~-])", function(character: string): string
+	local query = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local url = `{server}/{repository}/actions?query=branch%3A{query}`
@@ -561,7 +561,7 @@ function BranchRun.Cleanup(): ()
 	if branch == metadata.default_branch then
 		error("Refusing to delete the default branch", 0)
 	end
-	local encoded = branch:gsub("([^%w_.~-])", function(character: string): string
+	local encoded = branch:gsub("([^%w_./~-])", function(character: string): string
 		return string.format("%%%02X", string.byte(character))
 	end)
 	local current = Net.request(`{api}/repos/{repository}/git/ref/heads/{encoded}`, { headers = headers })
