@@ -9,9 +9,15 @@
 default = "neutral"
 
 [skip.components]
+# These publication targets are deliberately disabled in targets.toml.
+# An accepted skip must not depend on a separate GitHub Check Run credential.
+# If you enable either target, revisit its skip policy.
+"distribution/releases/publish" = "success"
+"work/milestones/sync" = "success"
 # The sample packages are staging fixtures with no registry metadata.
 "distribution/packages/publish" = "success"
-# These native integrations are not yet wired into fixed-stage CI; skipped is expected.
+# Pages publishes through the generated CI component; an intentional skip is accepted.
+# Attestation signing is disabled, so its skipped status is expected.
 "documentation/pages/publish" = "success"
 "distribution/attestations/publish" = "success"
 # Missing optional account/repository administration credentials are accepted skips.

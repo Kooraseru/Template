@@ -3,8 +3,6 @@ title: Preview deployments
 description: Publish temporary Starlight previews from trusted CI without changing production or generated main.
 ---
 
-# Preview deployments
-
 Template supports on-demand documentation previews from a trusted source-branch CI dispatch. The selected PR/branch builds in a read-only job; a separate job checks out trusted source code and publishes only the static site artifact.
 
 Preview publication does not update packages, releases, or the generated `main` branch. An explicit maintainer dispatch is required. No new permanent workflow YAML is used.

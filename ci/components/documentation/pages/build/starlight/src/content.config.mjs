@@ -1,18 +1,10 @@
 import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-// Content belongs to the repository, not the Astro application.
-const documentation = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../../../content/docs');
-
+// The component stages authored content/docs/ here before each build. Using
+// Starlight's native loader keeps sidebar paths relative to the docs root;
+// pointing glob() outside src/ produced nested '..' groups in navigation.
 export const collections = {
-  docs: defineCollection({
-    loader: glob({
-      base: documentation,
-      pattern: ['**/*.{md,mdx}', '!repository/**'],
-    }),
-    schema: docsSchema(),
-  }),
+  docs: defineCollection({ loader: docsLoader(), schema: docsSchema() }),
 };

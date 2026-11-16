@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { copyAssets, root } = require('./build.cjs');
+const { copyAssets, prepareSite, root } = require('./build.cjs');
 
 test('Starlight site is configured as a component, not another workflow', () => {
   const site = __dirname;
@@ -18,8 +18,27 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(fs.readFileSync(path.join(site, 'build.cjs'), 'utf8').includes('build/github/pages'));
   assert.ok(astro.includes('starlight({'));
   assert.ok(!astro.includes('sidebar: ['));
-  assert.ok(collection.includes('content/docs'));
-  assert.ok(collection.includes('!repository/**'));
+  assert.ok(collection.includes('docsLoader()'));
+  assert.ok(!collection.includes('glob('));
+  assert.ok(astro.includes('./src/styles/project.css'));
+  assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
+  const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
+  const palette = fs.readFileSync(path.join(site, 'src/styles/palette.css'), 'utf8');
+  const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
+  assert.ok(astro.includes('./src/styles/palette.css'));
+  // Hardcoded fallback precedes a supported system-color override.
+  assert.ok(palette.includes('--sl-color-bg: #141821;'));
+  assert.ok(palette.includes('--sl-color-bg: #ffffff;'));
+  assert.ok(palette.includes('@supports (color: Canvas)'));
+  assert.ok(palette.includes('color-mix(in srgb'));
+  assert.ok(palette.includes('--sl-color-bg: Canvas;'));
+  assert.ok(palette.indexOf('--sl-color-bg: #ffffff;') < palette.indexOf('--sl-color-bg: Canvas;'));
+  assert.ok(palette.includes('@media (forced-colors: active)'));
+  assert.ok(palette.includes("root[data-theme='light']"));
+  assert.ok(layout.includes('--sl-content-width: 52rem;'));
+  assert.ok(layout.includes('--sl-sidebar-width: 17rem;'));
+  assert.ok(!layout.includes('--sl-color-bg:'));
+  assert.ok(!projectTheme.includes('--sl-color-accent:'));
   assert.ok(!collection.includes('content/i18n'));
 });
 
@@ -32,4 +51,25 @@ test('Static image copier preserves nested paths', t => {
   copyAssets(from, to);
   assert.equal(fs.readFileSync(path.join(to, 'nested/logo.svg'), 'utf8'), 'image');
   assert.ok(fs.existsSync(path.join(root, 'content/docs/index.md')));
+});
+
+test('Content staging creates a flat docs root, excludes repository templates and copies the project theme', t => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'starlight-stage-'));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const docs = path.join(temporary, 'authored'), output = path.join(temporary, 'staged');
+  const theme = path.join(temporary, 'theme.css'), stylesheet = path.join(temporary, 'project.css');
+  fs.mkdirSync(path.join(docs, 'guides'), { recursive: true });
+  fs.mkdirSync(path.join(docs, 'repository'), { recursive: true });
+  fs.writeFileSync(path.join(docs, 'index.md'), '---\ntitle: Home\n---\n');
+  fs.writeFileSync(path.join(docs, 'guides', 'intro.mdx'), '---\ntitle: Intro\n---\n');
+  fs.writeFileSync(path.join(docs, 'repository', 'README.md'), '# Generated README');
+  fs.writeFileSync(theme, ':root { --sl-color-accent: blue; }');
+  prepareSite({ docs, stagedDocs: output, theme, stagedTheme: stylesheet });
+  assert.ok(fs.existsSync(path.join(output, 'index.md')));
+  assert.ok(fs.existsSync(path.join(output, 'guides', 'intro.mdx')));
+  assert.ok(!fs.existsSync(path.join(output, 'repository')));
+  assert.match(fs.readFileSync(stylesheet, 'utf8'), /accent: blue/);
+  fs.rmSync(path.join(docs, 'guides'), { recursive: true });
+  prepareSite({ docs, stagedDocs: output, theme, stagedTheme: stylesheet });
+  assert.ok(!fs.existsSync(path.join(output, 'guides')));
 });

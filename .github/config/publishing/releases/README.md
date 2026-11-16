@@ -5,7 +5,7 @@
 ```json
 {
   "release": {
-    "on_existing": "replace"
+    "on_existing": "skip"
   }
 }
 ```
@@ -14,7 +14,7 @@ The policy applies when either the Git tag or the GitHub Release already exists:
 
 - `skip`: leave it untouched and continue.
 - `fail`: stop before making changes.
-- `replace` (default): point a mutable existing tag at the configured source
+- `replace` (opt-in): point a mutable existing tag at the configured source
   commit and update the existing release's metadata/notes in place. Create a
   release when only its tag exists. Configured assets are uploaded or replaced; unrelated release assets remain untouched.
 

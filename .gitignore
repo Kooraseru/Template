@@ -26,3 +26,7 @@
 
 # Starlight's local prerender staging tree.
 /ci/components/documentation/pages/build/starlight/dist/
+
+# Documentation content and project CSS staged for the Starlight renderer.
+/ci/components/documentation/pages/build/starlight/src/content/docs/
+/ci/components/documentation/pages/build/starlight/src/styles/project.css

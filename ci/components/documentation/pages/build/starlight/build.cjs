@@ -9,6 +9,51 @@ const output = path.join(root, 'build/github/pages');
 const staging = path.join(site, 'dist');
 const docs = path.join(root, 'content/docs');
 const images = path.join(root, 'content/images');
+const theme = path.join(root, 'content/theme.css');
+const stagedDocs = path.join(site, 'src/content/docs');
+const stagedTheme = path.join(site, 'src/styles/project.css');
+
+function assertDirectory(input) {
+  if (!fs.existsSync(input) || fs.lstatSync(input).isSymbolicLink() || !fs.statSync(input).isDirectory())
+    throw new Error('Expected a non-symlink documentation directory: ' + input);
+}
+
+function stageDocs(source, destination, skipRepository = false) {
+  assertDirectory(source);
+  fs.mkdirSync(destination, { recursive: true });
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    if (entry.isSymbolicLink()) throw new Error('Refusing linked documentation source: ' + entry.name);
+    if (skipRepository && entry.name === 'repository') continue;
+    const from = path.join(source, entry.name), to = path.join(destination, entry.name);
+    if (entry.isDirectory()) stageDocs(from, to);
+    else if (entry.isFile() && /\.(?:md|mdx|mdoc)$/.test(entry.name)) fs.copyFileSync(from, to);
+  }
+}
+
+function prepareSite(options = {}) {
+  const source = options.docs || docs;
+  const staged = options.stagedDocs || stagedDocs;
+  const themeFile = options.theme || theme;
+  const stagedCss = options.stagedTheme || stagedTheme;
+  assertDirectory(source);
+  if (fs.existsSync(staged)) {
+    if (fs.lstatSync(staged).isSymbolicLink()) throw new Error('Refusing linked Starlight staging directory');
+    fs.rmSync(staged, { recursive: true });
+  }
+  stageDocs(source, staged, true);
+  if (!fs.existsSync(path.join(staged, 'index.md')))
+    throw new Error('Missing staged documentation homepage');
+  fs.mkdirSync(path.dirname(stagedCss), { recursive: true });
+  if (fs.existsSync(themeFile)) {
+    if (fs.lstatSync(themeFile).isSymbolicLink() || !fs.statSync(themeFile).isFile())
+      throw new Error('Refusing invalid project theme: ' + themeFile);
+    fs.copyFileSync(themeFile, stagedCss);
+  } else {
+    fs.writeFileSync(stagedCss, '/* No project theme override. */\n');
+  }
+  return { staged, stagedCss };
+}
+
 
 function run(program, args, cwd = root) {
   const result = spawnSync(program, args, { cwd, stdio: 'inherit', shell: false,
@@ -32,7 +77,7 @@ function copyAssets(source, destination) {
 }
 
 function build() {
-  if (!fs.existsSync(path.join(docs, 'index.md'))) throw new Error('Missing content/docs/index.md');
+  prepareSite();
   if (fs.existsSync(output)) {
     if (fs.lstatSync(output).isSymbolicLink()) throw new Error('Refusing symlinked Pages output');
     fs.rmSync(output, { recursive: true });
@@ -71,7 +116,8 @@ function build() {
   process.stdout.write('Starlight: built ' + output + '\n');
 }
 
-module.exports = { build, copyAssets, root, site, output, docs };
+module.exports = { build, prepareSite, copyAssets, root, site, output, docs };
 if (require.main === module) {
-  try { build(); } catch (error) { console.error(String(error)); process.exitCode = 1; }
+  try { if (process.argv.includes('--prepare')) prepareSite(); else build(); }
+  catch (error) { console.error(String(error)); process.exitCode = 1; }
 }
