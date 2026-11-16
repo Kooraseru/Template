@@ -44,8 +44,22 @@ function cloudflareDeploy(config, candidate, env = process.env) {
   // Validation is done before passing these values to Wrangler; no shell.
   if (!/^[a-f0-9]{32}$/.test(config.accountId))
     throw new Error('Invalid Cloudflare account ID');
+  // The Cloudflare branch alias has an independent origin, but the site's
+  // public URL retains the configured project path (e.g. /Template/).
+  // Wrangler serves the upload directory from '/', so stage the site under
+  // the desired path rather than uploading index.html to the wrong root.
+  const upload = path.join(root, 'build/preview-cloudflare');
+  if (fs.existsSync(upload)) {
+    if (fs.lstatSync(upload).isSymbolicLink())
+      throw new Error('Refusing linked Cloudflare upload directory');
+    fs.rmSync(upload, { recursive: true });
+  }
+  const basePath = config.base.slice(1);
+  const directory = path.join(upload, basePath);
+  fs.mkdirSync(directory, { recursive: true });
+  fs.cpSync(candidateDir, directory, { recursive: true });
   const cli = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const args = ['--yes', 'wrangler@4.47.0', 'pages', 'deploy', candidateDir,
+  const args = ['--yes', 'wrangler@4.47.0', 'pages', 'deploy', upload,
     '--project-name=' + config.cloudflare_project, '--branch=' + candidate.alias,
     '--commit-hash=' + candidate.sha];
   const result = spawnSync(cli, args, {
