@@ -1,92 +1,67 @@
 'use strict';
-// Trusted source dispatch -> generated workflow. The candidate builds without
-// credentials. The publisher checks out the trusted source and reads static assets.
 const fs = require('node:fs');
 const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
 const { api, writerToken, createBranch, observe } = require('../../../../../github/workflows/launch.cjs');
-const SHA = /^[a-f0-9]{40}$/;
-const expression = x => '$' + '{{ ' + x + ' }}';
+const SHA = /^[0-9a-f]{40}$/;
+const expr = x => '$' + '{{ ' + x + ' }}';
 
+function previewUrl(config, candidate) {
+  return 'https://' + candidate.alias + '.' + config.cloudflare_project + '.pages.dev' + config.base;
+}
 function render(ctx, candidate, config) {
-  const cloudflare = config.provider === 'cloudflare-pages';
-  const host = cloudflare ? 'https://' + candidate.alias + '.' +
-    config.cloudflare_project + '.pages.dev' : config.site;
-  const base = cloudflare ? config.base :
-    config.base + config.path_prefix + '/' + candidate.alias + '/';
-  const publishSteps = [
-    { uses: 'actions/checkout@v7',
-      with: { ref: ctx.sha, 'persist-credentials': false } },
+  const host = 'https://' + candidate.alias + '.' + config.cloudflare_project + '.pages.dev';
+  const steps = [
+    { uses: 'actions/checkout@v7', with: { ref: ctx.sha, 'persist-credentials': false } },
     { uses: 'actions/setup-node@v7.1.0', with: { 'node-version': '24' } },
     ...(candidate.remove ? [] : [
       { uses: 'actions/download-artifact@v8',
         with: { name: 'preview-site', path: 'build/preview-candidate' } },
     ]),
-    { name: 'Prepare preview publication',
-      env: {
-        GH_TOKEN: expression('github.token'),
-        CI_PREVIEW_TRUSTED_SOURCE: 'true',
-        CI_PREVIEW_TARGET: ctx.target,
-        CI_PREVIEW_ALIAS: candidate.alias,
-        CI_PREVIEW_SHA: candidate.sha || '',
-        ...(cloudflare ? {
-          CLOUDFLARE_API_TOKEN: expression('secrets.CLOUDFLARE_API_TOKEN'),
-          CLOUDFLARE_ACCOUNT_ID: expression('vars.CLOUDFLARE_ACCOUNT_ID'),
-        } : {}),
-      },
-      run: 'node ci/components/documentation/pages/preview/publish.cjs --preview',
-    },
+    { name: 'Publish Cloudflare preview', env: {
+      GH_TOKEN: expr('github.token'),
+      CI_PREVIEW_TRUSTED_SOURCE: 'true',
+      CI_PREVIEW_TARGET: ctx.target,
+      CI_PREVIEW_ALIAS: candidate.alias,
+      CI_PREVIEW_SHA: candidate.sha || '',
+      CLOUDFLARE_API_TOKEN: expr('secrets.CLOUDFLARE_API_TOKEN'),
+      CLOUDFLARE_ACCOUNT_ID: expr('vars.CLOUDFLARE_ACCOUNT_ID'),
+    }, run: 'node ci/components/documentation/pages/publish/preview/publish.cjs --preview' },
   ];
-  if (!cloudflare) publishSteps.push(
-    { name: 'Upload combined GitHub Pages artifact',
-      uses: 'actions/upload-pages-artifact@v4',
-      with: { path: 'build/preview-staged' } },
-    { name: 'Deploy combined Pages site', id: 'deployment',
-      uses: 'actions/deploy-pages@v4' },
-  );
   const jobs = {
-    ...(candidate.remove ? {} : {
-      build: {
-        name: 'Preview / Build (unprivileged)',
-        'runs-on': 'ubuntu-latest', permissions: { contents: 'read' },
-        steps: [
-          { uses: 'actions/checkout@v7',
-            with: { ref: candidate.sha, 'persist-credentials': false } },
-          { uses: 'actions/setup-node@v7.1.0', with: { 'node-version': '24' } },
-          { name: 'Generate static documentation', env: {
-            DOCS_BASE: base, DOCS_SITE: host,
-          }, run: 'node ci/components/documentation/pages/build/starlight/build.cjs' },
-          { name: 'Preserve static preview only',
-            uses: 'actions/upload-artifact@v7',
-            with: { name: 'preview-site', path: 'build/github/pages/',
-              'if-no-files-found': 'error',
-              'retention-days': config.retention_days } },
-        ],
-      },
-    }),
+    ...(candidate.remove ? {} : { build: {
+      name: 'Preview / Build (unprivileged)', 'runs-on': 'ubuntu-latest',
+      permissions: { contents: 'read' },
+      steps: [
+        { uses: 'actions/checkout@v7',
+          with: { ref: candidate.sha, 'persist-credentials': false } },
+        { uses: 'actions/setup-node@v7.1.0', with: { 'node-version': '24' } },
+        { name: 'Generate static documentation', env: {
+          DOCS_BASE: config.base, DOCS_SITE: host,
+        }, run: 'node ci/components/documentation/pages/build/starlight/build.cjs' },
+        { name: 'Upload static preview',
+          uses: 'actions/upload-artifact@v7',
+          with: { name: 'preview-site', path: 'build/github/pages/',
+            'if-no-files-found': 'error', 'retention-days': config.retention_days } },
+      ],
+    } }),
     publish: {
-      name: 'Preview / Publish (trusted)',
-      'runs-on': 'ubuntu-latest',
+      name: 'Preview / Publish (trusted)', 'runs-on': 'ubuntu-latest',
       ...(candidate.remove ? {} : { needs: ['build'] }),
-      permissions: cloudflare ? { contents: 'read', actions: 'read' } :
-        { contents: 'write', actions: 'read', pages: 'write', 'id-token': 'write' },
-      ...(!cloudflare ? { concurrency: { group: 'pages-site-' +
-        expression('github.repository'), 'cancel-in-progress': false } } : {}),
-      environment: cloudflare ? { name: 'ci-preview-cloudflare' } :
-        { name: 'github-pages', url: expression('steps.deployment.outputs.page_url') },
-      steps: publishSteps,
+      permissions: { contents: 'read', actions: 'read' },
+      environment: { name: 'ci-preview-cloudflare' },
+      steps,
     },
   };
-  return { 'pipeline.yml': '# Generated from trusted source; do not edit.\n' +
+  return { 'pipeline.yml': '# Generated by trusted source; disposable.\n' +
     JSON.stringify({ name: 'Preview', 'run-name': 'preview ' + candidate.alias,
-      on: { push: { branches: [ctx.branch] } },
-      permissions: {}, jobs }, null, 2) + '\n' };
+      on: { push: { branches: [ctx.branch] } }, permissions: {}, jobs }, null, 2) + '\n' };
 }
 
 async function deleteGenerated(ctx, expected, token, env) {
-  const expectedName = 'ci/preview-' + env.GITHUB_RUN_ID + '-' +
+  const expectedName = 'ci/run-preview-' + env.GITHUB_RUN_ID + '-' +
     env.GITHUB_RUN_ATTEMPT + '-' + ctx.sha.slice(0, 10);
   if (ctx.branch !== expectedName || !SHA.test(expected))
-    throw new Error('Refusing unrelated preview branch cleanup');
+    throw new Error('Refusing unrelated CI branch cleanup');
   const ref = '/repos/' + ctx.repo + '/git/ref/heads/' + ctx.branch;
   let current;
   try { current = await api('GET', ref, token, undefined, env); }
@@ -95,54 +70,41 @@ async function deleteGenerated(ctx, expected, token, env) {
     throw new Error('Preview execution ref changed; refusing to delete');
   await api('DELETE', '/repos/' + ctx.repo + '/git/refs/heads/' + ctx.branch,
     token, undefined, env);
-  console.log('::notice::Removed generated preview branch ' + ctx.branch);
+  console.log('::notice::Removed transient ' + ctx.branch);
 }
 
 async function run(env = process.env) {
-  const context = sourceContext(env);
-  const config = settings(undefined, env);
-  if (!config.enabled) throw new Error('Previews are disabled in targets.toml');
-  const candidate = target(context.target, config);
-  if (config.provider === 'cloudflare-pages' && candidate.remove)
-    throw new Error('Cloudflare cannot delete the latest alias. Use provider controls.');
-  const reader = env.GH_TOKEN;
-  if (!reader) throw new Error('Missing read-only GitHub token');
-  const selected = await resolveTarget(candidate, config,
+  const ctx = sourceContext(env), config = settings(undefined, env);
+  if (!config.enabled) throw new Error('Previews disabled');
+  const request = target(ctx.target, config), reader = env.GH_TOKEN;
+  if (!reader) throw new Error('Missing GitHub read token');
+  const candidate = await resolveTarget(request, config,
     (method, resource) => api(method, resource, reader, undefined, env));
-  const ctx = { repo: config.repo, sha: context.sourceSha, target: context.target,
-    branch: 'ci/preview-' + context.runId + '-' + context.attempt +
-      '-' + context.sourceSha.slice(0, 10) };
-  const workflows = render(ctx, selected, config);
-  const auth = { ...env,
-    CI_NATIVE_APP_ID: env.CI_CREDENTIAL_APP_ID,
+  const execution = { repo: config.repo, sha: ctx.sourceSha, target: ctx.target,
+    branch: 'ci/run-preview-' + ctx.runId + '-' + ctx.attempt + '-' + ctx.sourceSha.slice(0, 10) };
+  const auth = { ...env, CI_NATIVE_APP_ID: env.CI_CREDENTIAL_APP_ID,
     CI_NATIVE_APP_PRIVATE_KEY: env.CI_CREDENTIAL_APP_PRIVATE_KEY,
     CI_NATIVE_WRITE_TOKEN: env.CI_CREDENTIAL_BOOTSTRAP_TOKEN,
     CI_NATIVE_READ_TOKEN: reader };
-  const writer = await writerToken(ctx.repo, auth);
-  const revision = await createBranch(ctx, workflows, writer, env);
+  const writer = await writerToken(execution.repo, auth);
+  const revision = await createBranch(execution, render(execution, candidate, config), writer, env);
   let failure;
   try {
-    const result = await observe(ctx, revision, reader, env);
-    const url = config.provider === 'github-pages'
-      ? config.site + config.base + config.path_prefix + '/' + selected.alias + '/'
-      : 'https://' + selected.alias + '.' + config.cloudflare_project +
-        '.pages.dev' + config.base;
+    const outcome = await observe(execution, revision, reader, env);
     if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
-      '\n### Documentation preview\n\nTarget: ' + context.target +
-      '\n\nURL: ' + url + '\n\nGenerated run: ' + result.link + '\n');
-    console.log('::notice::Preview publication succeeded: ' + url);
-    return { ...selected, url };
-  } catch (error) {
-    failure = error; throw error;
-  } finally {
-    try { await deleteGenerated(ctx, revision, writer, env); }
+      '\n### Documentation preview\n\nTarget: ' + ctx.target +
+      '\n\nURL: ' + previewUrl(config, candidate) + '\n\nRun: ' + outcome.link + '\n');
+    console.log('::notice::Published preview: ' + previewUrl(config, candidate));
+    return { ...candidate, url: previewUrl(config, candidate) };
+  } catch (error) { failure = error; throw error; }
+  finally {
+    try { await deleteGenerated(execution, revision, writer, env); }
     catch (error) {
-      if (failure) console.error('::error::Preview cleanup also failed: ' + error.message);
+      if (failure) console.error('::error::Preview branch cleanup: ' + error.message);
       else throw error;
     }
   }
 }
-
-module.exports = { render, deleteGenerated, run };
+module.exports = { previewUrl, render, deleteGenerated, run };
 if (require.main === module)
   run().catch(e => { console.error('::error::' + e.message); process.exitCode = 1; });

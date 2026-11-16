@@ -29,29 +29,20 @@ function section(file, name) {
 
 function settings(file = path.join(root, '.github/config/targets.toml'), env = process.env) {
   const config = section(file, 'github.previews');
-  const defaults = { enabled: false, provider: 'github-pages', pull_requests: true,
-    branches: true, path_prefix: 'previews', state_branch: 'pages-state',
-    retention_days: 14, cloudflare_project: '' };
+  const defaults = { enabled: false, pull_requests: true,
+    branches: true, retention_days: 14, cloudflare_project: '' };
   const all = { ...defaults, ...config };
   for (const field of ['enabled', 'pull_requests', 'branches'])
     if (typeof all[field] !== 'boolean') throw new Error('Invalid preview toggle: ' + field);
-  if (!['github-pages', 'cloudflare-pages'].includes(all.provider))
-    throw new Error('Unsupported preview provider: ' + all.provider);
-  if (!/^[a-z][a-z0-9-]{0,30}$/.test(all.path_prefix))
-    throw new Error('Invalid preview path prefix');
-  if (!/^[a-z][a-z0-9-]{0,40}$/.test(all.state_branch))
-    throw new Error('Invalid preview state branch');
   if (!Number.isInteger(all.retention_days) || all.retention_days < 1 || all.retention_days > 90)
     throw new Error('Preview retention must be between 1 and 90 days');
-  if (all.provider === 'cloudflare-pages' &&
-    !/^[a-z0-9][a-z0-9-]{0,62}$/.test(all.cloudflare_project))
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(all.cloudflare_project))
     throw new Error('Configure github.previews.cloudflare_project for Cloudflare Pages');
   const repo = env.GITHUB_REPOSITORY || '';
   if (!repositoryPattern.test(repo)) throw new Error('Missing valid GitHub repository');
   const [owner, name] = repo.split('/');
   const base = name.toLowerCase() === (owner + '.github.io').toLowerCase() ? '/' : '/' + name + '/';
   return { ...all, repo, owner, name, base,
-    site: 'https://' + owner.toLowerCase() + '.github.io',
     accountId: env.CLOUDFLARE_ACCOUNT_ID || '' };
 }
 
