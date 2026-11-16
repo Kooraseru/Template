@@ -20,9 +20,9 @@ Use `content/images/` for illustrations, referenced from the published site unde
 
 ## Custom themes
 
-The repository owns its theme in `content/theme.css`. It is applied after the shared renderer styling and supports Starlight's native design variables for both dark and light mode. Edit this file to change accent colors, backgrounds, fonts, and custom styles without modifying the CI component.
+The default site intentionally defines **no fixed color palette**. Its component stylesheet uses the browser's CSS system colors (`Canvas`, `CanvasText`, `LinkText`, `AccentColor`, and the associated text colors) with derived shades through `color-mix()`. Starlight's built-in Auto/light/dark selector selects the color scheme; high-contrast mode uses direct native system colors. This approach may inherit operating-system colors where the browser exposes them, but privacy protections can substitute browser defaults instead of the user's exact OS accent or desktop theme. The optional `content/theme.css` starts without colors and remains available for explicit project branding.
 
-Community [Starlight themes](https://starlight.astro.build/resources/themes/) can also be installed as plugins in the renderer's `astro.config.mjs` when a project needs a more extensive redesign. For one-off changes to Starlight's header, sidebar, or other UI elements, use [component overrides](https://starlight.astro.build/guides/overriding-components/).
+A normal website cannot query Chrome's complete toolbar theme, Firefox extension themes, or KDE/GNOME theme files. Such details require a browser extension or a native bridge, neither of which is part of this template.\n\nCommunity [Starlight themes](https://starlight.astro.build/resources/themes/) can also be installed as plugins in the renderer's `astro.config.mjs` when a project needs a more extensive redesign. For one-off changes to Starlight's header, sidebar, or other UI elements, use [component overrides](https://starlight.astro.build/guides/overriding-components/).
 
 During builds, the component copies `content/docs/` into its ignored `src/content/docs/` staging directory. This prevents absolute filesystem paths from appearing as navigation headings. The generated directory is never an authoring location, and `content/docs/repository/` remains excluded from the site.
 

@@ -1,15 +1,81 @@
-/* Renderer-owned layout defaults. Projects override colors and branding in content/theme.css. */
+/* Renderer layout: only geometries/typography are defined here.
+ * Browser system colors are the source of truth for the color palette.
+ * Starlight's built-in dark/light/auto control determines color-scheme.
+ */
 :root {
+  color-scheme: dark;
   --sl-content-width: 52rem;
   --sl-sidebar-width: 17rem;
   --sl-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root,
+:root[data-theme='light'] {
+  /* The browser selects these colors. Neither OS detection nor stored hex
+   * palettes are necessary. A browser may return standardized values. */
+  --sl-color-white: CanvasText;
+  --sl-color-black: Canvas;
+  --sl-color-gray-1: color-mix(in srgb, CanvasText 94%, Canvas);
+  --sl-color-gray-2: color-mix(in srgb, CanvasText 82%, Canvas);
+  --sl-color-gray-3: color-mix(in srgb, CanvasText 63%, Canvas);
+  --sl-color-gray-4: color-mix(in srgb, CanvasText 45%, Canvas);
+  --sl-color-gray-5: color-mix(in srgb, CanvasText 27%, Canvas);
+  --sl-color-gray-6: color-mix(in srgb, CanvasText 12%, Canvas);
+  --sl-color-gray-7: color-mix(in srgb, CanvasText 5%, Canvas);
+
+  /* LinkText is chosen for text because AccentColor is not guaranteed to
+   * contrast against Canvas. AccentColorText pairs with AccentColor on UI. */
+  --sl-color-accent: LinkText;
+  --sl-color-accent-high: LinkText;
+  --sl-color-accent-low: color-mix(in srgb, AccentColor 13%, Canvas);
+  --sl-color-text: CanvasText;
+  --sl-color-text-accent: LinkText;
+  --sl-color-text-invert: AccentColorText;
+  --sl-color-bg-accent: AccentColor;
+
+  --sl-color-bg: Canvas;
+  --sl-color-bg-nav: color-mix(in srgb, Canvas 95%, CanvasText);
+  --sl-color-bg-sidebar: color-mix(in srgb, Canvas 96%, CanvasText);
+  --sl-color-bg-inline-code: color-mix(in srgb, Canvas 90%, CanvasText);
+  --sl-color-hairline-light: color-mix(in srgb, CanvasText 20%, Canvas);
+  --sl-color-hairline: color-mix(in srgb, CanvasText 14%, Canvas);
+  --sl-color-hairline-shade: color-mix(in srgb, CanvasText 10%, Canvas);
+}
+
+/* In high-contrast/forced-color modes, never interpolate the supplied
+ * palette. Preserve the browser's native foreground/background pairs. */
+@media (forced-colors: active) {
+  :root,
+  :root[data-theme='light'] {
+    --sl-color-accent-low: Canvas;
+    --sl-color-bg-nav: Canvas;
+    --sl-color-bg-sidebar: Canvas;
+    --sl-color-bg-inline-code: Field;
+    --sl-color-hairline-light: ButtonBorder;
+    --sl-color-hairline: ButtonBorder;
+    --sl-color-hairline-shade: ButtonBorder;
+    --sl-color-gray-1: CanvasText;
+    --sl-color-gray-2: CanvasText;
+    --sl-color-gray-3: GrayText;
+    --sl-color-gray-4: GrayText;
+    --sl-color-gray-5: ButtonBorder;
+    --sl-color-gray-6: Canvas;
+    --sl-color-gray-7: Canvas;
+  }
+}
+
 .sl-markdown-content {
   line-height: 1.75;
 }
+
 .sl-markdown-content :is(h2, h3) {
   scroll-margin-top: 6rem;
 }
+
 .sl-markdown-content :not(pre) > code {
   border-radius: 0.3rem;
 }

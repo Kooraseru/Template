@@ -22,6 +22,16 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(!collection.includes('glob('));
   assert.ok(astro.includes('./src/styles/project.css'));
   assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
+  const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
+  const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
+  assert.match(layout, /--sl-color-bg: Canvas;/);
+  assert.match(layout, /--sl-color-text: CanvasText;/);
+  assert.match(layout, /--sl-color-accent: LinkText;/);
+  assert.match(layout, /--sl-color-bg-accent: AccentColor;/);
+  assert.match(layout, /@media \\(forced-colors: active\\)/);
+  assert.match(layout, /:root\\[data-theme='light'\\]/);
+  assert.doesNotMatch(layout + projectTheme, /#[0-9a-fA-F]{3,8}\\b/);
+  assert.doesNotMatch(projectTheme, /--sl-color-accent:/);
   assert.ok(!collection.includes('content/i18n'));
 });
 

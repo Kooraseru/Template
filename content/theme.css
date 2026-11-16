@@ -1,21 +1,11 @@
-/* Template's default Starlight theme.
- * Edit this file in repositories created from Template.
- * These values are applied after the component-owned layout CSS.
- * Starlight automatically supports dark, light, and system preference modes.
+/* Optional project-specific Starlight overrides.
+ *
+ * The shared renderer uses CSS system colors (Canvas, CanvasText, LinkText,
+ * AccentColor, etc.) supplied by the visitor's browser. No site-defined
+ * colors are needed. Starlight's built-in Auto / light / dark selector still
+ * works, including when the user's system preference changes.
+ *
+ * This file remains available for projects that explicitly want branding.
+ * A web page cannot access arbitrary browser chrome/extension theme colors
+ * or KDE/GNOME desktop theme metadata.
  */
-:root {
-  --sl-color-accent-low: #1b2c50;
-  --sl-color-accent: #9cbcff;
-  --sl-color-accent-high: #ecf3ff;
-  --sl-color-bg: #10131b;
-  --sl-color-bg-nav: #161b27;
-  --sl-color-bg-sidebar: #141925;
-}
-:root[data-theme='light'] {
-  --sl-color-accent-low: #e7eeff;
-  --sl-color-accent: #2855b0;
-  --sl-color-accent-high: #142e63;
-  --sl-color-bg: #ffffff;
-  --sl-color-bg-nav: #f9faff;
-  --sl-color-bg-sidebar: #f6f8fd;
-}
