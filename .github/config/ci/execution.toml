@@ -14,6 +14,8 @@ default = "neutral"
 # If you enable either target, revisit its skip policy.
 "distribution/releases/publish" = "success"
 "work/milestones/sync" = "success"
+# The generated main branch publisher is disabled.
+"governance/branches/publish" = "success"
 # The sample packages are staging fixtures with no registry metadata.
 "distribution/packages/publish" = "success"
 # Pages publishes through the generated CI component; an intentional skip is accepted.

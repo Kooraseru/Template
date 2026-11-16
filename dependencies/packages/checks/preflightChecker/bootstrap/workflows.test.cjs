@@ -126,6 +126,9 @@ test("trusted Pages publication is enabled while attestation signing remains dis
 	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
 	const execution = fs.readFileSync(path.join(root, ".github/config/ci/execution.toml"), "utf8");
 	assert.match(targets, /^pages = true\b/m);
+  assert.match(targets, /^branches = false\b/m);
+  assert.ok(!targets.includes("pages-state"));
+  assert.ok(targets.includes("cloudflare_project ="));
 	assert.match(targets, /^releases = false\b/m);
 	assert.match(targets, /^milestones = false\b/m);
 	assert.match(execution, /^"distribution\/releases\/publish" = "success"$/m);

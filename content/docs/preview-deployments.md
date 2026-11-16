@@ -1,35 +1,28 @@
 ---
 title: Preview deployments
-description: Publish temporary Starlight previews from trusted CI without changing production or generated main.
+description: Review temporary documentation websites using Cloudflare Pages.
 ---
 
-Template supports on-demand documentation previews from a trusted source-branch CI dispatch. The selected PR/branch builds in a read-only job; a separate job checks out trusted source code and publishes only the static site artifact.
+Documentation previews are hosted by Cloudflare Pages. The authored `source` branch remains independent of the hosted site. The engine creates temporary `ci/run-preview-*` branches to execute CI, deletes them after completion, and uploads the resulting static assets to Cloudflare. No Git branch stores website snapshots.
 
-Preview publication does not update packages, releases, or the generated `main` branch. An explicit maintainer dispatch is required. No new permanent workflow YAML is used.
+## Setup
 
-## Configure the provider
-
-Use the existing `.github/config/targets.toml`:
+Create a Cloudflare Pages **Direct Upload** project, for example `template`, and set its actual name in `.github/config/targets.toml`:
 
 ```toml
 [github.previews]
 enabled = true
-provider = "github-pages" # or "cloudflare-pages"
 pull_requests = true
 branches = true
-path_prefix = "previews"
-state_branch = "pages-state"
 retention_days = 14
-cloudflare_project = ""
+cloudflare_project = "template"
 ```
 
-For GitHub Pages, configure Settings → Pages → Source: GitHub Actions. The first successful trusted `source` Publish run initializes the orphan `pages-state` branch, and subsequent runs preserve active previews.
+Create a protected GitHub environment named `ci-preview-cloudflare` with the `CLOUDFLARE_API_TOKEN` secret (Pages Write permissions) and the `CLOUDFLARE_ACCOUNT_ID` variable. CI does not automatically provision the Cloudflare project or its credentials.
 
-For Cloudflare Pages, set `cloudflare_project` to an existing Cloudflare Pages project. Create a protected GitHub environment named `ci-preview-cloudflare` containing the secret `CLOUDFLARE_API_TOKEN` and variable `CLOUDFLARE_ACCOUNT_ID`. The token needs Pages Write access. The preview uses Wrangler Direct Upload of prebuilt static files; production remains on GitHub Pages.
+## Publish a preview
 
-## Create a preview
-
-In Actions → CI → Run workflow, select `source` and provide:
+From Actions → CI → Run workflow, choose the `source` branch and supply:
 
 | Input | Value |
 | --- | --- |
@@ -37,20 +30,18 @@ In Actions → CI → Run workflow, select `source` and provide:
 | `publish` | `true` |
 | `preview_target` | `pr:50` or `branch:demo/site-redesign` |
 
-Only open same-repository PRs and named branches are accepted. Fork PRs, `source`, and generated CI branches are rejected. The publisher checks that the selected commit did not change while it was being built.
+An open PR must originate from the same repository. Forks, closed PRs, `source`, and generated CI branches cannot be previewed. The selected SHA is checked again before publishing, and the build job never receives publishing credentials.
 
-With GitHub Pages, the example address is `https://kooraseru.github.io/Template/previews/pr-50/`. Cloudflare uses `https://pr-50.<project>.pages.dev/Template/`. The actual link appears in the run summary after successful publication.
+The live address follows the leading-subdomain format `https://pr-50.template.pages.dev/Template/`. Production GitHub Pages keeps its own URL and does not store preview assets.
 
-GitHub Pages previews share the production site origin. Only use that provider for explicitly trusted contributions, because preview scripts execute in the production origin. Cloudflare previews have distinct hostnames.
+## Closing a pull request
 
-## Demo-only pages
+The existing authored workflow reacts to `pull_request_target: closed` and runs a trusted cleanup job from the default branch. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
 
-Create a temporary branch from the implementation PR head, put demonstration pages on it, and publish `branch:demo/site-redesign`. That demo branch is not merged with the implementation PR. There is no reliable `.gitignore` or `.gitattributes` switch that removes already-tracked demo files from a merge.
+Cloudflare cannot delete the latest deployment for a branch. Immutable hash-based historical deployment URLs may remain accessible, even when the stable alias returns 410. This is a Cloudflare limitation, not a Git branch setting.
 
-## Cleanup
+Use a manual `preview_target` of `delete:pr:50` or `delete:branch:demo/site-redesign` to retire an alias without closing a PR.
 
-For GitHub Pages, dispatch `delete:pr:50` or `delete:branch:demo/site-redesign` with the same `preview` operation and confirmation. That removes the preview in the next combined Pages deployment.
+## Demo content
 
-Expired GitHub Pages previews are pruned when another production or preview publication occurs, not by a background timer. Cloudflare Pages can prevent deletion of the latest alias deployment, so the GitHub cleanup command does not apply to the Cloudflare provider.
-
-Production and previews are combined into one GitHub Pages artifact, with file snapshots persisted separately in `pages-state`. Production is stored at the site root, and preview assets under `previews/<id>/`. A shared concurrency group serializes updates.
+Use a separate `demo/site-redesign` branch based on the implementation PR for pages that must not be merged. Preview that branch, then delete it when no longer needed. `.gitignore` and `.gitattributes` do not automatically remove tracked demo files during a GitHub merge.
