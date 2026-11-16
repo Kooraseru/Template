@@ -3,7 +3,8 @@
   "triggers": {
     "push": "validation",
     "pull_request": "review",
-    "workflow_dispatch": "validation"
+    "workflow_dispatch": "validation",
+    "default_push": "publish"
   },
   "operations": {
     "review": {

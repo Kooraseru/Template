@@ -79,7 +79,9 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 		}
 	}
 	for (const [event, name] of Object.entries(triggers)) {
-		if (!EVENTS.has(event) || !Object.hasOwn(operations, name) || !operations[name].events.includes(event)) {
+		const routedEvent = event === "default_push" ? "push" : event;
+		if ((!EVENTS.has(event) && event !== "default_push") ||
+			!Object.hasOwn(operations, name) || !operations[name].events.includes(routedEvent)) {
 			throw new Error("Invalid event route: " + event);
 		}
 	}
@@ -90,7 +92,12 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 function resolve(config, env = process.env) {
 	const event = env.GITHUB_EVENT_NAME || "workflow_dispatch";
 	if (!EVENTS.has(event)) throw new Error("Unsupported GitHub event: " + event);
-	const requested = event === "workflow_dispatch" ? env.CI_REQUESTED_OPERATION || config.triggers[event] : config.triggers[event];
+	const defaultBranch = env.CI_DEFAULT_BRANCH || env.GITHUB_DEFAULT_BRANCH;
+	const trustedSourcePush = event === "push" && typeof defaultBranch === "string" &&
+		defaultBranch.length > 0 && env.GITHUB_REF === "refs/heads/" + defaultBranch;
+	const routed = trustedSourcePush && config.triggers.default_push
+		? config.triggers.default_push : config.triggers[event];
+	const requested = event === "workflow_dispatch" ? env.CI_REQUESTED_OPERATION || routed : routed;
 	if (!NAME.test(requested) || !Object.hasOwn(config.operations, requested)) throw new Error("Unknown CI operation: " + requested);
 	const operation = config.operations[requested];
 	if (!operation.events.includes(event)) throw new Error("Operation " + requested + " is unavailable for " + event);

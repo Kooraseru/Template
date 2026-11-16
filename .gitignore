@@ -23,3 +23,6 @@
 
 # act discovery file generated from .vscode/config/act/actrc.
 /.actrc
+
+# Starlight's local prerender staging tree.
+/ci/components/documentation/pages/build/starlight/dist/

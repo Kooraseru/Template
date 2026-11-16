@@ -18,7 +18,7 @@ GH_TOKEN = "${{ github.token }}"
 [[steps]]
 name = "Upload Pages artifact"
 uses = "actions/upload-pages-artifact@v4"
-if = "${{ steps.pages.outputs.enabled == toJSON(true) }}"
+if = "${{ steps.pages.outputs.enabled == 'true' }}"
 [steps.with]
 path = "${{ steps.pages.outputs.path }}"
 
@@ -26,4 +26,4 @@ path = "${{ steps.pages.outputs.path }}"
 name = "Deploy Pages"
 id = "deployment"
 uses = "actions/deploy-pages@v4"
-if = "${{ steps.pages.outputs.enabled == toJSON(true) }}"
+if = "${{ steps.pages.outputs.enabled == 'true' }}"
