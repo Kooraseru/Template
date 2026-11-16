@@ -282,6 +282,83 @@ local function removeOwnedRun(
 	print(`::notice::Removed generated CI branch {branch}`)
 end
 
+-- Recover abandoned generated refs from earlier completed source runs.
+-- A name match alone is never sufficient: verify the original Actions run,
+-- the generated commit message and its parent before deleting an exact SHA.
+local function reconcileOrphans(
+	configuration: Configuration.Configuration,
+	repository: string,
+	writer: string,
+	reader: string,
+	currentRun: string
+): ()
+	local prefix = configuration.branchPrefix
+	local api = Process.env.GITHUB_API_URL or "https://api.github.com"
+	local encodedPrefix = prefix:gsub("([^%w_.~-])", function(character: string): string
+		return string.format("%%%02X", string.byte(character))
+	end)
+	local function headers(token: string): { [string]: string }
+		return {
+			Authorization = "Bearer " .. token,
+			Accept = "application/vnd.github+json",
+			["User-Agent"] = "Luau-CI-bootstrap",
+		}
+	end
+	local listed = Net.request(`{api}/repos/{repository}/git/matching-refs/heads/{encodedPrefix}`, {
+		headers = headers(writer),
+	})
+	if listed.status == 404 then return end
+	if not listed.ok then
+		error(`Cannot inspect completed CI branches: HTTP {listed.status}`, 0)
+	end
+	local entries: unknown = Json.decode(listed.body)
+	if type(entries) ~= "table" then error("Invalid generated-ref list", 0) end
+	local inspected = 0
+	for _, value in entries do
+		if inspected >= 25 then
+			print("::warning::Orphan scan reached its 25-ref safety limit")
+			break
+		end
+		if type(value) ~= "table" or type(value.ref) ~= "string"
+			or type(value.object) ~= "table" or type(value.object.sha) ~= "string" then
+			continue
+		end
+		local branch = value.ref:match("^refs/heads/(.+)$")
+		if not branch or branch:sub(1, #prefix) ~= prefix then continue end
+		local runId, attempt = branch:sub(#prefix + 1):match("^(%d+)%-(%d+)$")
+		if not runId or not attempt or runId == currentRun then continue end
+		inspected += 1
+		local previous = Net.request(`{api}/repos/{repository}/actions/runs/{runId}`, {
+			headers = headers(reader),
+		})
+		if not previous.ok then
+			print(`::warning::Cannot inspect originating CI run {runId}: HTTP {previous.status}`)
+			continue
+		end
+		local parentRun: unknown = Json.decode(previous.body)
+		if type(parentRun) ~= "table" or parentRun.status ~= "completed"
+			or parentRun.head_branch ~= (Process.env.CI_DEFAULT_BRANCH or "source")
+			or (parentRun.event ~= "push" and parentRun.event ~= "workflow_dispatch")
+			or type(parentRun.head_sha) ~= "string" or #parentRun.head_sha ~= 40 then
+			continue
+		end
+		local revision = value.object.sha
+		if #revision ~= 40 or not revision:match("^%x+$") then continue end
+		local commit = Net.request(`{api}/repos/{repository}/git/commits/{revision}`, {
+			headers = headers(writer),
+		})
+		if not commit.ok then continue end
+		local generated: unknown = Json.decode(commit.body)
+		if type(generated) ~= "table" or generated.message ~= "CI execution graph for " .. parentRun.head_sha
+			or type(generated.parents) ~= "table" or type(generated.parents[1]) ~= "table"
+			or generated.parents[1].sha ~= parentRun.head_sha then
+			continue
+		end
+		local ok, failure = pcall(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, writer)
+		if not ok then print(`::warning::Unable to reconcile {branch}: {failure}`) end
+	end
+end
+
 --[[
 	Prepares local act artifacts or launches native CI on a generated branch. Pull request plans may contain only read-boundary tasks.
 
@@ -367,6 +444,12 @@ function BranchRun.TryLaunch(tasks: { Contract.Task }, event: string, credential
 	local access = Authentication.Acquire(configuration, credentials, repository, roles)
 	if not access then
 		return false
+	end
+	-- Reconcile only refs from completed prior runs, never this active run.
+	local readToken = Process.env.GH_TOKEN
+	if readToken and readToken ~= "" then
+		local reconciled, failure = pcall(reconcileOrphans, configuration, repository, access.token, readToken, runId)
+		if not reconciled then print(`::warning::Orphan reconciliation unavailable: {failure}`) end
 	end
 	local branch = `{configuration.branchPrefix}{runId}-{attempt}`
 	local revision = ""

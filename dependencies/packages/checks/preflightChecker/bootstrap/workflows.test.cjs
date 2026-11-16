@@ -111,6 +111,10 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(runtime, /pcall\(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, fresh\.token\)/);
 	assert.match(runtime, /decoded\.object\.sha ~= revision/);
 	assert.match(runtime, /Generated CI succeeded but branch cleanup failed/);
+	assert.match(runtime, /git\/matching-refs\/heads\//);
+	assert.match(runtime, /parentRun\.status ~= "completed"/);
+	assert.match(runtime, /generated\.message ~= "CI execution graph for " \.\. parentRun\.head_sha/);
+	assert.match(runtime, /generated\.parents\[1\]\.sha ~= parentRun\.head_sha/);
 });
 test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
 	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
