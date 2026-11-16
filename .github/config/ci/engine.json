@@ -123,7 +123,7 @@
       "execution": {
         "command": [
           "node",
-          "ci/components/documentation/pages/preview/launch.cjs"
+          "ci/components/documentation/pages/publish/preview/launch.cjs"
         ],
         "profile": "source-ci"
       }

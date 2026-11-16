@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const root = path.resolve(__dirname, '../../../../..');
+const root = path.resolve(__dirname, '../../../../../..');
 const shaPattern = /^[a-f0-9]{40}$/;
 const repositoryPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const safeBranch = /^(?!\/)(?!.*(?:\.\.|\/\/|@\{|\\|[\x00-\x20~^:?*\[]))[A-Za-z0-9_./-]+$/;

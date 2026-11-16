@@ -18,7 +18,7 @@ GH_TOKEN = "${{ github.token }}"
 [[steps]]
 name = "Stage production and active preview snapshots"
 if = "${{ steps.pages.outputs.enabled == 'true' }}"
-run = "node ci/components/documentation/pages/preview/publish.cjs --production"
+run = "node ci/components/documentation/pages/publish/preview/publish.cjs --production"
 [steps.env]
 GH_TOKEN = "${{ github.token }}"
 

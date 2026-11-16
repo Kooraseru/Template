@@ -3,7 +3,7 @@
 // credentials. The publisher checks out the trusted source and reads static assets.
 const fs = require('node:fs');
 const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
-const { api, writerToken, createBranch, observe } = require('../../../../github/workflows/launch.cjs');
+const { api, writerToken, createBranch, observe } = require('../../../../../github/workflows/launch.cjs');
 const SHA = /^[a-f0-9]{40}$/;
 const expression = x => '$' + '{{ ' + x + ' }}';
 
