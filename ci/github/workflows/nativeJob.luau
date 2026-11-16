@@ -72,7 +72,7 @@ function NativeJob.Configure(identity: string, boundary: string, steps: { Step }
 				error(`{path}: unknown concurrency field {field}`, 0)
 			end
 		end
-		if type(settings.group) ~= "string" or not settings.group:match("^pages%-site%-%$") and settings.group ~= "pages-site-${{ github.repository }}" then
+		if settings.group ~= "pages-site-${{ github.repository }}" then
 			error(`{path}: unsupported shared Pages concurrency group`, 0)
 		end
 		if settings["cancel-in-progress"] ~= false then
