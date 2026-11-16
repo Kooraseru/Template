@@ -8,9 +8,9 @@
   ],
   "boundary": "privileged",
   "credentials": [
-    "GH_TOKEN",
-    "CLOUDFLARE_API_TOKEN",
-    "CLOUDFLARE_ACCOUNT_ID"
+    "gh_token",
+    "cloudflare_api_token",
+    "cloudflare_account_id"
   ],
   "command": [
     "node",
