@@ -67,8 +67,8 @@ function render(ctx, candidate, config) {
       name: 'Preview / Publish (trusted)',
       'runs-on': 'ubuntu-latest',
       ...(candidate.remove ? {} : { needs: ['build'] }),
-      permissions: cloudflare ? { contents: 'read' } :
-        { contents: 'write', pages: 'write', 'id-token': 'write' },
+      permissions: cloudflare ? { contents: 'read', actions: 'read' } :
+        { contents: 'write', actions: 'read', pages: 'write', 'id-token': 'write' },
       ...(!cloudflare ? { concurrency: { group: 'pages-site-' +
         expression('github.repository'), 'cancel-in-progress': false } } : {}),
       environment: cloudflare ? { name: 'ci-preview-cloudflare' } :
