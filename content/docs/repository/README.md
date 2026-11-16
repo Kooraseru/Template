@@ -1,9 +1,5 @@
-# {{tag:project_name}}
+# {{project.name}}
 
-{{tag:language_navigation}}
+This is the generated repository branch for {{project.name}}.
 
-{{tag:project_description}}
-
-{{tag:generated_branch_start}}{{tag:branch_name}}{{tag:generated_branch_middle}}{{tag:development_branch}}{{tag:generated_branch_end}}
-
-{{tag:readme_edit_instruction}}
+The editable source is maintained on the `{{branch.source}}` branch. This `{{branch.name}}` branch is generated automatically; make changes in the source repository instead.

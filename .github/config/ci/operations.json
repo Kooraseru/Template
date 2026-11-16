@@ -1,7 +1,7 @@
 {
   "version": 1,
   "triggers": {
-    "push": "validation",
+    "push": "publish",
     "pull_request": "review",
     "workflow_dispatch": "validation"
   },

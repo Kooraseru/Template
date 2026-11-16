@@ -1,3 +1,3 @@
-# {{tag:contributing_title}}
+# Contributing
 
-{{tag:contributing_start}}{{tag:development_branch}}{{tag:contributing_middle}}
+Contributions should be made against the `{{branch.source}}` branch. The `{{branch.name}}` branch contains generated output and should not be edited directly.

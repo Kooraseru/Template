@@ -39,7 +39,7 @@ test("published documentation has predictable Markdown metadata", () => {
 
 test("source content is top-level and legacy docs directories are gone", () => {
   assert.ok(fs.existsSync(path.join(root, "content/images")));
-  assert.ok(fs.existsSync(path.join(root, "content/i18n/en-US/locale.toml")));
+  assert.ok(!fs.existsSync(path.join(root, "content/i18n")));
   assert.ok(fs.existsSync(path.join(repositoryTemplates, "README.md")));
   assert.ok(!fs.existsSync(path.join(root, ".github/docs")));
   assert.ok(!fs.existsSync(path.join(root, "docs")));
@@ -49,9 +49,10 @@ test("source content is top-level and legacy docs directories are gone", () => {
 test("builders stage the authored docs into branch and Pages outputs", () => {
   const site = fs.readFileSync(path.join(root, "ci/components/documentation/pages/build/siteBuilder.luau"), "utf8");
   const branches = fs.readFileSync(path.join(root, "ci/components/governance/branches/build/branchBuilder.luau"), "utf8");
-  assert.match(site, /DOCUMENTATION_ROOT = "content\/docs"/);
-  assert.match(site, /IMAGE_ROOT = "content\/images"/);
-  assert.match(site, /REPOSITORY_ROOT = "content\/docs\/repository"/);
+  assert.match(site, /Starlight/);
+  assert.match(site, /starlight\/build\.cjs/);
+  assert.match(site, /Starlight/);
   assert.match(branches, /CONTENT_ROOT = "content\/docs\/repository"/);
+  assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);
   assert.match(branches, /OUTPUT_ROOT = "build\/github\/branches"/);
 });

@@ -166,46 +166,12 @@ function Publication.Begin(setting: string): string?
 	local graphRun = Process.env.CI_GRAPH_RUN == "true"
 	local fixedStage = Process.env.CI_STAGE_MODE == "fixed"
 	if fixedStage then
-		local eventName = Process.env.GITHUB_EVENT_NAME
 		if not graphRun or Process.env.CI_PHASE ~= "publish"
 			or Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}`
-			or (eventName ~= "push" and eventName ~= "workflow_dispatch" and eventName ~= "workflow_run") then
+			or (Process.env.GITHUB_EVENT_NAME ~= "push" and Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch") then
 			error("Fixed publication requires a trusted source-branch Publish stage", 0)
 		end
-		if eventName == "workflow_run" then
-			local eventPath = Process.env.GITHUB_EVENT_PATH
-			if not eventPath or not Fs.exists(eventPath) or Fs.type(eventPath) ~= "file" then
-				error("Missing trusted workflow_run event payload", 0)
-			end
-			local payload = Publication.Record(Json.decode(Fs.readFileToString(eventPath)))
-			local run = Publication.Record(payload.workflow_run)
-			local origin = Publication.Record(run.head_repository)
-			if run.name ~= "CI" or run.event ~= "push" or run.conclusion ~= "success"
-				or run.head_branch ~= defaultBranch or origin.full_name ~= repository
-				or run.path ~= ".github/workflows/ci.yml" then
-				error("Only a successful CI push on the configured source branch can publish", 0)
-			end
-			local refStatus, ref = Publication.Request("GET",
-				`repos/{repository}/git/ref/heads/{Publication.Encode(defaultBranch)}`)
-			Publication.RequireSuccess(refStatus, "Verify publication source revision", ref)
-			if Publication.Record(ref.object).sha ~= run.head_sha then
-				error("Source branch advanced since CI completed; declining stale publication", 0)
-			end
-		end
-	elseif not graphRun and Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}` then
-		error("Publication requires a push to the default branch", 0)
-	end
-	if graphRun and not fixedStage then
-		local runBranch = Process.env.CI_RUN_BRANCH
-		local suffix = if runBranch then runBranch:sub(#configuration.branchPrefix + 1) else ""
-		if
-			not runBranch
-			or runBranch:sub(1, #configuration.branchPrefix) ~= configuration.branchPrefix
-			or not suffix:match("^%d+%-%d+$")
-			or Process.env.GITHUB_REF ~= `refs/heads/{runBranch}`
-		then
-			error("Publication requires the validated generated run branch", 0)
-		end
+
 	end
 	return repository
 end

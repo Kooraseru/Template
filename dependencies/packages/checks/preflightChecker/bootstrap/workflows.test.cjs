@@ -23,15 +23,10 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("only CI invokes the engine; publication is an isolated trusted workflow", () => {
+test("the single authored CI workflow delegates generation and publication to the engine", () => {
   const directory = path.join(root, ".github/workflows");
   const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-  assert.deepEqual(authored, ["ci.yml", "publish.yml"]);
-  const publication = fs.readFileSync(path.join(directory, "publish.yml"), "utf8");
-  assert.match(publication, /workflow_run:/);
-  assert.match(publication, /github\.event\.workflow_run\.conclusion/);
-  assert.match(publication, /permissions:\s*\{\}/);
-  assert.doesNotMatch(publication, /Kooraseru-Hub\/CI-Engine/);
+  assert.deepEqual(authored, ["ci.yml"]);
   const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
   const jobSection = workflow.split(/\njobs:\s*\n/)[1];
   assert.ok(jobSection);
@@ -42,7 +37,7 @@ test("only CI invokes the engine; publication is an isolated trusted workflow", 
   assert.match(workflow, /bootstrap_token: /);
   assert.doesNotMatch(workflow, /setup-node|node ci\/|secrets: inherit|name: Start Generated CI/);
   const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
-  assert.equal(config.triggers.push, "validation");
+  assert.equal(config.triggers.push, "publish");
   assert.equal(config.triggers.pull_request, "review");
   assert.ok(config.operations.validation.events.includes("push"));
 });

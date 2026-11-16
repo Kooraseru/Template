@@ -4,7 +4,7 @@
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Glob = require("@ci/bootstrap/discovery/glob")
-local TagRenderer = require("./tagRenderer")
+local Process = require("@lute/process")
 
 local CONFIG_ROOT = ".github/config/branches"
 local CONTENT_ROOT = "content/docs/repository"
@@ -76,55 +76,29 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 	return copied
 end
 
-local function overlayTranslations(branchRoot: string, defaultLocale: string, branchName: string): number
-	local copied = 0
-	for _, source in Glob.Find(`{CONTENT_ROOT}/**`) do
-		if not source:match("%.md$") or (if Fs.exists(source) then Fs.type(source) else nil) ~= "file" then
-			continue
-		end
-		local relativePath = source:gsub(`^{CONTENT_ROOT}/`, "")
-		local translationStem = relativePath:gsub("%.md$", ".toml")
-		for _, locale in TagRenderer.Locales() do
-			if locale == defaultLocale then
-				continue
-			end
-			local translation = `content/i18n/{locale}/repository/{translationStem}`
-			if not (Fs.exists(translation) and Fs.type(translation) == "file") then
-				continue
-			end
-			local destination = `{branchRoot}/docs/{locale}/{relativePath}`
-			local parent = destination:match("^(.*)/[^/]+$")
-			if parent then
-				ensureDirectory(parent)
-			end
-			local tags = TagRenderer.new(locale)
-			local overrides = { branch_name = branchName }
-			if relativePath == "README.md" then
-				overrides.language_navigation = TagRenderer.LanguageNavigation(relativePath, locale)
-			end
-			Fs.writeStringToFile(destination, tags:Render(Fs.readFileToString(source), source, overrides))
-			copied += 1
-		end
+-- Repository documents use explicit English placeholders, independent of site i18n.
+local function renderTemplate(content: string, source: string, branchName: string): string
+	local repository = Process.env.GITHUB_REPOSITORY or ""
+	local projectName = repository:match("^[%w_.-]+/([%w_.-]+)$") or "Project"
+	local values = {
+		["project.name"] = projectName,
+		["branch.name"] = branchName,
+		["branch.source"] = "source",
+	}
+	local rendered = content:gsub("{{([%w_.-]+)}}", function(key: string): string
+		return values[key] or error(`{source}: unknown repository placeholder {key}`, 0)
+	end)
+	if rendered:find("{{", 1, true) then
+		error(`{source}: invalid repository template placeholder`, 0)
 	end
-	return copied
+	return rendered
 end
 
-local function copyAuthoredFile(
-	source: string,
-	destination: string,
-	tags: TagRenderer.TagRenderer,
-	branchName: string
-): ()
+local function copyAuthoredFile(source: string, destination: string, branchName: string): ()
 	local parent = destination:match("^(.*)/[^/]+$")
-	if parent then
-		ensureDirectory(parent)
-	end
+	if parent then ensureDirectory(parent) end
 	if source:match("%.md$") then
-		local overrides = { branch_name = branchName }
-		if source == `{CONTENT_ROOT}/README.md` then
-			overrides.language_navigation = TagRenderer.LanguageNavigation("README.md", TagRenderer.DefaultLocale())
-		end
-		Fs.writeStringToFile(destination, tags:Render(Fs.readFileToString(source), source, overrides))
+		Fs.writeStringToFile(destination, renderTemplate(Fs.readFileToString(source), source, branchName))
 	else
 		Fs.copy(source, destination)
 	end
@@ -133,7 +107,6 @@ end
 local function overlayTemplates(
 	sourceRoot: string,
 	destinationRoot: string,
-	tags: TagRenderer.TagRenderer,
 	branchName: string
 ): number
 	local copied = 0
@@ -147,7 +120,7 @@ local function overlayTemplates(
 		if metadata == "dir" then
 			ensureDirectory(destination)
 		elseif metadata == "file" then
-			copyAuthoredFile(source, destination, tags, branchName)
+			copyAuthoredFile(source, destination, branchName)
 			copied += 1
 		else
 			error(`unsupported authored template entry: {source}`, 0)
@@ -164,7 +137,6 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	if not (Fs.exists(CONTENT_ROOT) and Fs.type(CONTENT_ROOT) == "dir") then
 		error(`missing repository content directory: {CONTENT_ROOT}`, 0)
 	end
-	TagRenderer.Validate({ CONTENT_ROOT })
 
 	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
 	if outputMetadata == "link" then
@@ -178,8 +150,6 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
-	local defaultLocale = TagRenderer.DefaultLocale()
-	local tags = TagRenderer.new(defaultLocale)
 	local branchCount = 0
 	local records = Glob.Find(`{CONFIG_ROOT}/*.toml`)
 	table.sort(records)
@@ -208,8 +178,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 			table.insert(sources, source)
 		end
 		local copied = copySource(sources, branchRoot, path)
-		copied += overlayTemplates(CONTENT_ROOT, branchRoot, tags, name)
-		copied += overlayTranslations(branchRoot, defaultLocale, name)
+		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
 		if copied == 0 then
 			error(`branch {name} has no source files or templates`, 0)
 		end
