@@ -96,7 +96,9 @@ async function publishProduction(env = process.env) {
   const config = settings(undefined, env);
   if (env.CI_EVENT !== 'push' || env.CI_GRAPH_RUN !== 'true' ||
       env.CI_PHASE !== 'publish' || env.GITHUB_EVENT_NAME !== 'push' ||
-      env.GITHUB_REF !== 'refs/heads/' + (env.CI_DEFAULT_BRANCH || 'source'))
+      !env.CI_RUN_BRANCH || !/^ci\/run-[1-9][0-9]*-[1-9][0-9]*$/.test(env.CI_RUN_BRANCH) ||
+      env.GITHUB_REF !== 'refs/heads/' + env.CI_RUN_BRANCH ||
+      !/^[a-f0-9]{40}$/.test(env.CI_SOURCE_SHA || ''))
     throw new Error('Production snapshot requires the trusted source Publish stage');
   if (!config.enabled || config.provider !== 'github-pages') {
     copyProduction();
