@@ -18,7 +18,6 @@ Do not add an H1 in the Markdown body: Starlight renders the frontmatter `title`
 
 Use `content/images/` for illustrations, referenced from the published site under `/images/` (including the Pages base path). The build script automatically copies these assets after Starlight generates the HTML. The website is currently English-only. Starlight automatically builds navigation from the documentation directory and validates page front matter. Use nested directories to group guides, with `sidebar.order` in front matter only when an explicit ordering is needed. Files under `content/docs/repository/` are authored inputs for generated repository documents. Their `{{project.name}}`, `{{branch.name}}`, and `{{branch.source}}` placeholders are resolved by the branch builder, not by Starlight.
 
-
 ## Custom themes
 
 The repository owns its theme in `content/theme.css`. It is applied after the shared renderer styling and supports Starlight's native design variables for both dark and light mode. Edit this file to change accent colors, backgrounds, fonts, and custom styles without modifying the CI component.

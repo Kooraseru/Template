@@ -26,7 +26,7 @@ function stageDocs(source, destination, skipRepository = false) {
     if (skipRepository && entry.name === 'repository') continue;
     const from = path.join(source, entry.name), to = path.join(destination, entry.name);
     if (entry.isDirectory()) stageDocs(from, to);
-    else if (entry.isFile() && /\\.(?:md|mdx|mdoc)$/.test(entry.name)) fs.copyFileSync(from, to);
+    else if (entry.isFile() && /\.(?:md|mdx|mdoc)$/.test(entry.name)) fs.copyFileSync(from, to);
   }
 }
 
@@ -49,7 +49,7 @@ function prepareSite(options = {}) {
       throw new Error('Refusing invalid project theme: ' + themeFile);
     fs.copyFileSync(themeFile, stagedCss);
   } else {
-    fs.writeFileSync(stagedCss, '/* No project theme override. */\\n');
+    fs.writeFileSync(stagedCss, '/* No project theme override. */\n');
   }
   return { staged, stagedCss };
 }

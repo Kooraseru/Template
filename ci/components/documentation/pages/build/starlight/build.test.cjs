@@ -43,8 +43,8 @@ test('Content staging creates a flat docs root, excludes repository templates an
   const theme = path.join(temporary, 'theme.css'), stylesheet = path.join(temporary, 'project.css');
   fs.mkdirSync(path.join(docs, 'guides'), { recursive: true });
   fs.mkdirSync(path.join(docs, 'repository'), { recursive: true });
-  fs.writeFileSync(path.join(docs, 'index.md'), '---\\ntitle: Home\\n---\\n');
-  fs.writeFileSync(path.join(docs, 'guides', 'intro.mdx'), '---\\ntitle: Intro\\n---\\n');
+  fs.writeFileSync(path.join(docs, 'index.md'), '---\ntitle: Home\n---\n');
+  fs.writeFileSync(path.join(docs, 'guides', 'intro.mdx'), '---\ntitle: Intro\n---\n');
   fs.writeFileSync(path.join(docs, 'repository', 'README.md'), '# Generated README');
   fs.writeFileSync(theme, ':root { --sl-color-accent: blue; }');
   prepareSite({ docs, stagedDocs: output, theme, stagedTheme: stylesheet });

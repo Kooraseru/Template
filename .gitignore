@@ -29,4 +29,4 @@
 
 # Documentation content and project CSS staged for the Starlight renderer.
 /ci/components/documentation/pages/build/starlight/src/content/docs/
-/ci/components/documentation/pages/build/starlight/src/styles/project.css/
+/ci/components/documentation/pages/build/starlight/src/styles/project.css
