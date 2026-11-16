@@ -17,8 +17,8 @@ branch_prefix = "ci/run-"
 
 [github.publication]
 # Omitted switches default to enabled on eligible pushes.
-releases = true
-packages = true
+releases = false
+packages = false
 branches = true
 pages = true # Pages deployments run only after a successful trusted source CI push.
-milestones = true
+milestones = false

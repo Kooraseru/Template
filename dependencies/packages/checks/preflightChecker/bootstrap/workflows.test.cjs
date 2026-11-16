@@ -37,7 +37,8 @@ test("the single authored CI workflow delegates generation and publication to th
   assert.match(workflow, /bootstrap_token: /);
   assert.doesNotMatch(workflow, /setup-node|node ci\/|secrets: inherit|name: Start Generated CI/);
   const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
-  assert.equal(config.triggers.push, "publish");
+  assert.equal(config.triggers.push, "validation");
+  assert.equal(config.triggers.default_push, "publish");
   assert.equal(config.triggers.pull_request, "review");
   assert.ok(config.operations.validation.events.includes("push"));
 });

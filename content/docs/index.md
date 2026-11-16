@@ -15,4 +15,4 @@ This documentation is the authored source for the Template repository. The defau
 - [Publishing](publishing.md) – understand the generated branch and site deployment.
 - [Writing documentation](authoring.md) – follow the Markdown format used here.
 
-The site is currently assembled from Markdown by the existing build component. MkDocs is not configured yet.
+The site is rendered with Astro Starlight from this Markdown directory. Navigation and search are provided by Starlight automatically.

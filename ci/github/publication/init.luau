@@ -171,7 +171,20 @@ function Publication.Begin(setting: string): string?
 			or (Process.env.GITHUB_EVENT_NAME ~= "push" and Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch") then
 			error("Fixed publication requires a trusted source-branch Publish stage", 0)
 		end
-
+	elseif not graphRun and Process.env.GITHUB_REF ~= `refs/heads/{defaultBranch}` then
+		error("Publication requires a push to the default branch", 0)
+	end
+	if graphRun and not fixedStage then
+		local runBranch = Process.env.CI_RUN_BRANCH
+		local suffix = if runBranch then runBranch:sub(#configuration.branchPrefix + 1) else ""
+		if
+			not runBranch
+			or runBranch:sub(1, #configuration.branchPrefix) ~= configuration.branchPrefix
+			or not suffix:match("^%d+%-%d+$")
+			or Process.env.GITHUB_REF ~= `refs/heads/{runBranch}`
+		then
+			error("Publication requires the validated generated run branch", 0)
+		end
 	end
 	return repository
 end

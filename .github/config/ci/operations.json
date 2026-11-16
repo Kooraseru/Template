@@ -1,9 +1,10 @@
 {
   "version": 1,
   "triggers": {
-    "push": "publish",
+    "push": "validation",
     "pull_request": "review",
-    "workflow_dispatch": "validation"
+    "workflow_dispatch": "validation",
+    "default_push": "publish"
   },
   "bootstrap": {
     "environment": "ci-bootstrap"
