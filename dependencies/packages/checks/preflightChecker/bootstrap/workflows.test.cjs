@@ -55,9 +55,9 @@ test("the single authored CI workflow delegates generation and publication to th
   assert.ok(config.operations.validation.events.includes("push"));
 });
 test("optional administration components use their current skip policies", t => {
-	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),default=S.Conclusion("source/build")}))';
+	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),releases=S.Conclusion("distribution/releases/publish"),milestones=S.Conclusion("work/milestones/sync"),default=S.Conclusion("source/build")}))';
 	const results = execute(t, source);
-	assert.deepEqual(results, { projects: "success", rulesets: "success", default: "neutral" });
+	assert.deepEqual(results, { projects: "success", rulesets: "success", default: "neutral", releases: "success", milestones: "success" });
 });
 test("component contract rejects missing phases and privileged Build", t => {
 	const result = execute(t, 'local C=require("@ci/bootstrap/contracts/contract")\nlocal J=require("@formats/json")\nlocal a=pcall(C.new,"example","x","fixture",{provides={"example"}})\nlocal b=pcall(C.new,"example","x","fixture",{provides={"example"},phase="build",boundary="privileged",events={"push"}})\nprint(J.encode({a=a,b=b}))'); assert.equal(result.a, false); assert.equal(result.b, false);
@@ -122,6 +122,10 @@ test("trusted Pages publication is enabled while attestation signing remains dis
 	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
 	const execution = fs.readFileSync(path.join(root, ".github/config/ci/execution.toml"), "utf8");
 	assert.match(targets, /^pages = true\b/m);
+	assert.match(targets, /^releases = false\b/m);
+	assert.match(targets, /^milestones = false\b/m);
+	assert.match(execution, /^"distribution\/releases\/publish" = "success"$/m);
+	assert.match(execution, /^"work\/milestones\/sync" = "success"$/m);
 	assert.match(attestations, /^mode = "disabled"/m);
 	assert.match(execution, /^"documentation\/pages\/publish" = "success"$/m);
 	assert.match(execution, /^"distribution\/attestations\/publish" = "success"$/m);

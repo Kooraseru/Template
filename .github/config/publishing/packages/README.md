@@ -45,12 +45,12 @@ Shared policy:
 
 ```toml
 [packages]
-on_existing = "replace"
+on_existing = "skip"
 ```
 
 - `skip`: preserve an existing remote package version.
 - `fail`: stop when that version already exists.
-- `replace` (default): replace where the registry and its permissions allow it;
+- `replace` (opt-in): replace where the registry and its permissions allow it;
   otherwise fail explicitly. It does not authorize automatic delete/recreate.
 
 GitHub Packages and GitHub Releases are separate. Releases use
