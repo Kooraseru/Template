@@ -113,8 +113,8 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(runtime, /Generated CI succeeded but branch cleanup failed/);
 	assert.match(runtime, /git\/matching-refs\/heads\//);
 	assert.match(runtime, /parentRun\.status ~= "completed"/);
-	assert.match(runtime, /generated\.message ~= "CI execution graph for " \.\. parentRun\.head_sha/);
-	assert.match(runtime, /generated\.parents\[1\]\.sha ~= parentRun\.head_sha/);
+	assert.match(runtime, /generated\.message ~= "CI execution graph for " \.\. originSha/);
+	assert.match(runtime, /original\.sha ~= originSha/);
 	assert.match(runtime, /gsub\("\(\[\^%w_\.\/~\-\]\)"/);
 });
 test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
