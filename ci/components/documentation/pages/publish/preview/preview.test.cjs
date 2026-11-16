@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
 const { render } = require('./launch.cjs');
-const { selected, prepareUpload, retireClosed } = require('./publish.cjs');
+const { selected, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
 
 function temporary(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-preview-'));
@@ -106,4 +106,34 @@ test('retirement replaces preview with HTTP 410 Worker', t => {
   assert.ok(content.includes('status: 410'));
   assert.ok(content.includes('no-store'));
   assert.ok(fs.existsSync(path.join(output, 'index.html')));
+});
+
+test('Cloudflare cleanup deletes only prior deployments of the selected PR', async () => {
+  const calls = [];
+  const keep = '00000000-0000-0000-0000-000000000050';
+  const older = '00000000-0000-0000-0000-000000000049';
+  const other = '00000000-0000-0000-0000-000000000060';
+  const deployments = [
+    { id: older, environment: 'preview', created_on: '2026-11-15T00:00:00Z',
+      deployment_trigger: { metadata: { branch: 'pr-50' } } },
+    { id: keep, environment: 'preview', created_on: '2026-11-16T00:00:00Z',
+      deployment_trigger: { metadata: { branch: 'pr-50' } } },
+    { id: other, environment: 'preview', created_on: '2026-11-16T00:00:00Z',
+      deployment_trigger: { metadata: { branch: 'pr-60' } } },
+  ];
+  const mock = async (url, init) => {
+    calls.push({ url, method: init.method });
+    if (init.method === 'GET') return {
+      ok: true, json: async () => ({ success: true, result: deployments,
+        result_info: { total_pages: 1 } })
+    };
+    assert.ok(url.includes(older));
+    return { ok: true, json: async () => ({ success: true }) };
+  };
+  const removed = await pruneRetired(config(), target('delete:pr:50', config()),
+    { CLOUDFLARE_API_TOKEN: 'example' }, mock);
+  assert.equal(removed, 1);
+  assert.equal(calls.filter(x => x.method === 'DELETE').length, 1);
+  assert.ok(!calls.some(x => x.url.includes(other)));
+  assert.ok(!calls.some(x => x.url.includes(keep)));
 });

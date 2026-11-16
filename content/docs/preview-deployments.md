@@ -38,7 +38,7 @@ The live address follows the leading-subdomain format `https://pr-50.template.pa
 
 The existing authored workflow reacts to `pull_request_target: closed` and runs a trusted cleanup job from the default branch. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
 
-Cloudflare cannot delete the latest deployment for a branch. Immutable hash-based historical deployment URLs may remain accessible, even when the stable alias returns 410. This is a Cloudflare limitation, not a Git branch setting.
+Cloudflare cannot delete the latest deployment for a branch. Once the 410 deployment succeeds, cleanup lists previous deployments for that exact PR alias and deletes them using the Cloudflare Pages API. The latest 410 deployment stays in place because Cloudflare prohibits deleting a branch's latest deployment. Failed cleanup is reported as a failed job; it does not silently claim the historical URLs were removed.
 
 Use a manual `preview_target` of `delete:pr:50` or `delete:branch:demo/site-redesign` to retire an alias without closing a PR.
 

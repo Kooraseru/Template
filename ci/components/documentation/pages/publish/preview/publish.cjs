@@ -43,7 +43,46 @@ function prepareUpload(config, candidate) {
   }
   return uploadDir;
 }
-function cloudflareDeploy(config, candidate, env = process.env) {
+// Cloudflare's latest branch deployment cannot be deleted. After publishing a
+// 410 replacement, remove older immutable deployments from this exact alias.
+async function pruneRetired(config, candidate, env, request = fetch) {
+  if (!candidate.remove) return 0;
+  const base = 'https://api.cloudflare.com/client/v4/accounts/' + config.accountId +
+    '/pages/projects/' + config.cloudflare_project + '/deployments';
+  const headers = { Authorization: 'Bearer ' + env.CLOUDFLARE_API_TOKEN,
+    Accept: 'application/json' };
+  async function call(url, method) {
+    const response = await request(url, { method, headers, signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error('Cloudflare cleanup HTTP ' + response.status);
+    const json = await response.json();
+    if (json.success !== true) throw new Error('Cloudflare cleanup API returned failure');
+    return json;
+  }
+  const matching = [];
+  for (let page = 1; page <= 30; page++) {
+    const response = await call(base + '?env=preview&per_page=100&page=' + page, 'GET');
+    if (!Array.isArray(response.result)) throw new Error('Invalid Cloudflare deployment list');
+    matching.push(...response.result.filter(record =>
+      record.environment === 'preview' &&
+      record.deployment_trigger?.metadata?.branch === candidate.alias));
+    if (page >= (response.result_info?.total_pages || 1)) break;
+    if (page === 30) throw new Error('Cloudflare deployment listing exceeds cleanup page limit');
+  }
+  matching.sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on));
+  if (matching.length === 0)
+    throw new Error('Cloudflare did not list the newly retired alias deployment');
+  // Keep the newest successful 410 deployment. Deleting it is prohibited by Pages.
+  let removed = 0;
+  for (const older of matching.slice(1)) {
+    if (!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(older.id || ''))
+      throw new Error('Invalid Cloudflare deployment ID');
+    await call(base + '/' + older.id + '?force=true', 'DELETE');
+    removed++;
+  }
+  return removed;
+}
+
+async function cloudflareDeploy(config, candidate, env = process.env) {
   if (!env.CLOUDFLARE_API_TOKEN || !/^[0-9a-f]{32}$/i.test(config.accountId))
     throw new Error('Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in ci-preview-cloudflare');
   const dest = prepareUpload(config, candidate);
@@ -57,6 +96,10 @@ function cloudflareDeploy(config, candidate, env = process.env) {
   });
   if (result.error || result.status !== 0)
     throw new Error('Cloudflare deployment failed: ' + (result.error?.message || result.status));
+  if (candidate.remove) {
+    const removed = await pruneRetired(config, candidate, env);
+    console.log('::notice::Deleted ' + removed + ' older preview deployments');
+  }
   const label = candidate.remove ? 'Retired preview alias: ' : 'Published preview: ';
   console.log('::notice::' + label + url(config, candidate));
   if (env.GITHUB_STEP_SUMMARY)
@@ -93,7 +136,7 @@ async function retireClosed(env = process.env) {
   if (!config.enabled || !config.pull_requests) return null;
   return cloudflareDeploy(config, target('delete:pr:' + number, config), env);
 }
-module.exports = { selected, prepareUpload, cloudflareDeploy, publishPreview, retireClosed };
+module.exports = { selected, prepareUpload, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
 if (require.main === module) {
   const command = process.argv[2], handler = command === '--preview'
     ? publishPreview : command === '--closed' ? retireClosed : null;
