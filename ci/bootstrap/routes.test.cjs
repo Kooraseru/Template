@@ -10,7 +10,8 @@ const trusted = { GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/source", CI
 const manual = { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source", CI_DEFAULT_BRANCH: "source" };
 
 test("all CI events and declared operations route through one manifest", () => {
-	assert.equal(resolve(config, trusted).name, "validation");
+	assert.equal(resolve(config, trusted).name, "publish");
+	assert.equal(resolve(config, { ...trusted, GITHUB_REF: "refs/heads/topic" }).name, "validation");
 	assert.equal(resolve(config, { GITHUB_EVENT_NAME: "pull_request", GITHUB_REF: "refs/pull/12/merge" }).name, "review");
 	assert.equal(resolve(config, manual).name, "validation");
 	assert.equal(resolve(config, { ...manual, CI_REQUESTED_OPERATION: "build" }).mode, "generated");
@@ -69,5 +70,20 @@ test("trusted default branch may be named development rather than source", () =>
   const env = { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/development",
     CI_DEFAULT_BRANCH: "development", CI_REQUESTED_OPERATION: "publish", CI_REQUESTED_PUBLISH: "true" };
   assert.equal(resolve(config, env).mode, "generated");
-  assert.equal(resolve(config, trusted).mode, "readonly");
+  assert.equal(resolve(config, trusted).mode, "generated");
+});
+
+test("default_push routes only trusted source pushes, not arbitrary refs", () => {
+  assert.equal(resolve(config, trusted).publication, true);
+  assert.equal(resolve(config, { ...trusted, GITHUB_REF: "refs/heads/topic" }).mode, "readonly");
+  const copy = structuredClone(config);
+  copy.triggers.default_push = "validation";
+  assert.equal(resolve(copy, trusted).mode, "readonly");
+  copy.triggers.default_push = "does-not-exist";
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "ci-routes-invalid-"));
+  try {
+    const file = path.join(temporary, "operations.json");
+    fs.writeFileSync(file, JSON.stringify(copy));
+    assert.throws(() => readConfig(file, { requireCredentials: false }), /Invalid event route: default_push/);
+  } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
 });
