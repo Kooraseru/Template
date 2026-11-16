@@ -40,8 +40,16 @@ function build() {
   if (!fs.existsSync(executable)) {
     // Exact direct versions are declared in the component's package.json.
     // This install is isolated from the workspace npm dependency loader.
-    const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    run(npm, ['install', '--no-audit', '--no-fund', '--no-package-lock'], site);
+    let npm = 'npm', args = ['install', '--no-audit', '--no-fund', '--no-package-lock'];
+    if (process.platform === 'win32') {
+      const candidates = [path.dirname(process.execPath), ...(process.env.PATH || '').split(path.delimiter)]
+        .filter(Boolean).map(dir => path.join(dir, 'node_modules/npm/bin/npm-cli.js'));
+      const cli = candidates.find(file => fs.existsSync(file));
+      if (!cli) throw new Error('Cannot locate npm-cli.js');
+      npm = process.execPath;
+      args = [cli, ...args];
+    }
+    run(npm, args, site);
   }
   run(process.execPath, [executable, 'build', '--root', site]);
   copyAssets(images, path.join(output, 'images'));
