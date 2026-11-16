@@ -7,6 +7,7 @@ const path = require('node:path');
 const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
 const { render } = require('./launch.cjs');
 const { selected, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
+const { marker, bodyFor, syncComment } = require('./comment.cjs');
 
 function temporary(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-preview-'));
@@ -72,6 +73,7 @@ test('Cloudflare publishing is isolated from untrusted static compilation', () =
   assert.equal(graph.jobs.publish.steps[0].with.ref, ctx.sha);
   assert.equal(graph.jobs.publish.permissions.contents, 'read');
   assert.equal(graph.jobs.publish.permissions.actions, 'read');
+  assert.equal(graph.jobs.publish.permissions['pull-requests'], 'write');
   assert.equal(graph.jobs.publish.environment.name, 'ci-preview-cloudflare');
   assert.ok(!JSON.stringify(graph.jobs.build).includes('secrets.'));
   assert.ok(!JSON.stringify(graph).includes('deploy-pages@'));
@@ -136,4 +138,73 @@ test('Cloudflare cleanup deletes only prior deployments of the selected PR', asy
   assert.equal(calls.filter(x => x.method === 'DELETE').length, 1);
   assert.ok(!calls.some(x => x.url.includes(other)));
   assert.ok(!calls.some(x => x.url.includes(keep)));
+});
+
+
+test('a successful PR preview produces a live link, but closed notes contain none', () => {
+  const c = config(), candidate = {
+    ...target('pr:52', c), sha: 'a'.repeat(40)
+  };
+  const live = bodyFor(c, candidate, false);
+  assert.ok(live.includes(marker));
+  assert.ok(live.includes('https://pr-52.template.pages.dev/Template/'));
+  assert.ok(live.includes('/commit/' + candidate.sha));
+  const closed = bodyFor(c, { ...candidate, remove: true }, true);
+  assert.ok(closed.includes('Closed'));
+  assert.ok(!closed.includes('pages.dev'));
+  assert.throws(() => bodyFor(c, { ...candidate, sha: undefined }, false),
+    /published revision/);
+});
+
+test('PR comments are created once and updated in place across deployments', async () => {
+  const configValue = config(), env = { GH_TOKEN: 'test-token' };
+  const existing = [];
+  const calls = [];
+  const request = async (method, resource, token, body) => {
+    calls.push({ method, resource, body });
+    assert.equal(token, env.GH_TOKEN);
+    if (method === 'GET') return [...existing];
+    if (method === 'POST') {
+      assert.equal(resource, '/repos/Kooraseru/Template/issues/52/comments');
+      const result = { id: 100, user: { id: 41898282, login: 'github-actions[bot]' },
+        body: body.body };
+      existing.push(result);
+      return result;
+    }
+    if (method === 'PATCH') {
+      assert.equal(resource, '/repos/Kooraseru/Template/issues/comments/100');
+      existing[0].body = body.body;
+      return existing[0];
+    }
+    throw new Error('Unexpected API request');
+  };
+  const candidate = { ...target('pr:52', configValue), sha: 'a'.repeat(40) };
+  assert.equal((await syncComment(configValue, candidate, env, false, request)).action, 'created');
+  assert.equal((await syncComment(configValue, candidate, env, false, request)).action, 'unchanged');
+  const next = { ...candidate, sha: 'b'.repeat(40) };
+  assert.equal((await syncComment(configValue, next, env, false, request)).action, 'updated');
+  assert.equal((await syncComment(configValue, next, env, true, request)).action, 'updated');
+  assert.ok(existing[0].body.includes('Closed'));
+  assert.equal(calls.filter(x => x.method === 'POST').length, 1);
+  assert.equal(calls.filter(x => x.method === 'PATCH').length, 2);
+});
+
+test('PR comments cannot edit other authors or post closure-only notes', async () => {
+  const c = config(), env = { GH_TOKEN: 'test-token' };
+  const candidate = { ...target('pr:52', c), sha: 'a'.repeat(40) };
+  const spoof = { id: 44, user: { login: 'someone-else', id: 1 },
+    body: marker + '\nspoofed' };
+  const calls = [];
+  const request = async (method, resource, token, body) => {
+    calls.push({ method, resource });
+    if (method === 'GET') return [spoof];
+    if (method === 'POST') return { id: 99 };
+    throw new Error('Unexpected API action');
+  };
+  assert.equal(await syncComment(c, candidate, env, true, request), null);
+  assert.equal(calls.length, 1);
+  assert.equal((await syncComment(c, candidate, env, false, request)).action, 'created');
+  assert.equal(calls.at(-1).method, 'POST');
+  assert.equal(await syncComment(c, { ...target('branch:demo/test', c),
+    sha: 'a'.repeat(40) }, env, false, request), null);
 });

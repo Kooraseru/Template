@@ -47,7 +47,7 @@ function render(ctx, candidate, config) {
     publish: {
       name: 'Preview / Publish (trusted)', 'runs-on': 'ubuntu-latest',
       ...(candidate.remove ? {} : { needs: ['build'] }),
-      permissions: { contents: 'read', actions: 'read' },
+      permissions: { contents: 'read', actions: 'read', 'pull-requests': 'write' },
       environment: { name: 'ci-preview-cloudflare' },
       steps,
     },
