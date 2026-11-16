@@ -79,11 +79,12 @@ test("default_push routes only trusted source pushes, not arbitrary refs", () =>
   const copy = structuredClone(config);
   copy.triggers.default_push = "validation";
   assert.equal(resolve(copy, trusted).mode, "readonly");
-  copy.triggers.default_push = "does-not-exist";
+  const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../.github/config/ci/operations.json"), "utf8"));
+  raw.triggers.default_push = "does-not-exist";
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "ci-routes-invalid-"));
   try {
     const file = path.join(temporary, "operations.json");
-    fs.writeFileSync(file, JSON.stringify(copy));
+    fs.writeFileSync(file, JSON.stringify(raw));
     assert.throws(() => readConfig(file, { requireCredentials: false }), /Invalid event route: default_push/);
   } finally { fs.rmSync(temporary, { recursive: true, force: true }); }
 });
