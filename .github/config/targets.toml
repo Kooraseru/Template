@@ -20,5 +20,5 @@ branch_prefix = "ci/run-"
 releases = true
 packages = true
 branches = true
-pages = false # Native Pages deployment is not wired into the fixed CI workflow yet.
+pages = true # Pages deployments run only after a successful trusted source CI push.
 milestones = true

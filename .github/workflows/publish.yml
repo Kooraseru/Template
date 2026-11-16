@@ -1,0 +1,161 @@
+name: Publish
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [source]
+
+permissions: {}
+
+concurrency:
+  group: template-publication
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare publication outputs
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+          github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      current: ${{ steps.gate.outputs.current }}
+      branches: ${{ steps.settings.outputs.branches }}
+      pages: ${{ steps.settings.outputs.pages }}
+    steps:
+      - name: Verify the successful revision is still current
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SOURCE_BRANCH" --jq '.object.sha')
+          if [ "$current" = "$SOURCE_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping superseded source revision"
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: ${{ steps.gate.outputs.current == 'true' }}
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@v7.1.0
+        if: ${{ steps.gate.outputs.current == 'true' }}
+        with:
+          node-version: '24'
+
+      - name: Resolve enabled publication targets
+        id: settings
+        if: ${{ steps.gate.outputs.current == 'true' }}
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib, tomllib
+          settings = tomllib.loads(pathlib.Path(".github/config/targets.toml").read_text())
+          targets = settings.get("github", {}).get("publication", {})
+          for target in ("branches", "pages"):
+              value = targets.get(target, True)
+              if not isinstance(value, bool):
+                  raise ValueError(f"Invalid publication switch: {target}")
+              print(f"{target}={str(value).lower()}")
+          PY
+
+      - name: Stage generated main branch
+        if: ${{ steps.settings.outputs.branches == 'true' }}
+        env:
+          CI_EVENT: push
+          CI_GRAPH_RUN: 'true'
+          CI_OPERATION: validation
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component governance/branches/build
+
+      - name: Stage documentation site
+        if: ${{ steps.settings.outputs.pages == 'true' }}
+        env:
+          CI_EVENT: push
+          CI_GRAPH_RUN: 'true'
+          CI_OPERATION: validation
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component documentation/pages/build
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ steps.settings.outputs.branches == 'true' }}
+        with:
+          name: generated-branches
+          path: build/github/branches/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ steps.settings.outputs.pages == 'true' }}
+        with:
+          name: generated-pages
+          path: build/github/pages/
+          if-no-files-found: error
+
+  branches:
+    name: Publish generated main branch
+    needs: prepare
+    if: ${{ needs.prepare.outputs.current == 'true' && needs.prepare.outputs.branches == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-branches
+          path: build/github/branches/
+
+      - name: Publish generated branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_EVENT: push
+          CI_GRAPH_RUN: 'true'
+          CI_STAGE_MODE: fixed
+          CI_PHASE: publish
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component governance/branches/publish
+
+  pages:
+    name: Deploy GitHub Pages
+    needs: prepare
+    if: ${{ needs.prepare.outputs.current == 'true' && needs.prepare.outputs.pages == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-pages
+          path: site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+      - name: Deploy site
+        id: deployment
+        uses: actions/deploy-pages@v4

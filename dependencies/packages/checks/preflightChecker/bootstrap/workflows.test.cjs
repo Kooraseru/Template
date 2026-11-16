@@ -23,10 +23,15 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("only one permanent workflow invokes the versioned engine", () => {
+test("only CI invokes the engine; publication is an isolated trusted workflow", () => {
   const directory = path.join(root, ".github/workflows");
   const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-  assert.deepEqual(authored, ["ci.yml"]);
+  assert.deepEqual(authored, ["ci.yml", "publish.yml"]);
+  const publication = fs.readFileSync(path.join(directory, "publish.yml"), "utf8");
+  assert.match(publication, /workflow_run:/);
+  assert.match(publication, /github\.event\.workflow_run\.conclusion/);
+  assert.match(publication, /permissions:\s*\{\}/);
+  assert.doesNotMatch(publication, /Kooraseru-Hub\/CI-Engine/);
   const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
   const jobSection = workflow.split(/\njobs:\s*\n/)[1];
   assert.ok(jobSection);
@@ -94,11 +99,11 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(runtime, /record\("failed", tostring\(problem\)\)/);
 	assert.match(runtime, /Temporary CI branch moved after this run started/);
 });
-test("unimplemented native Pages and attestation integrations are disabled by default", () => {
+test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
 	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
 	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
 	const execution = fs.readFileSync(path.join(root, ".github/config/ci/execution.toml"), "utf8");
-	assert.match(targets, /^pages = false\b/m);
+	assert.match(targets, /^pages = true\b/m);
 	assert.match(attestations, /^mode = "disabled"/m);
 	assert.match(execution, /^"documentation\/pages\/publish" = "success"$/m);
 	assert.match(execution, /^"distribution\/attestations\/publish" = "success"$/m);
