@@ -5,7 +5,7 @@ local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 
-const LOCALE_ROOT = ".github/docs/i18n"
+const LOCALE_ROOT = "content/i18n"
 const LOCALE_METADATA = "locale.toml"
 
 type Fields = { locale: string }
@@ -89,13 +89,13 @@ local function localeConfiguration(): { default: string, supported: { string }, 
 end
 
 local function readPageTags(locale: string, source: string): { [string]: string }
-	local category, relative = source:match("^%.github/docs/templates/([^/]+)/(.+)$")
+	local category, relative = source:match("^content/docs/([^/]+)/(.+)$")
 	if not category or not relative then
-		error(`documentation template must be under .github/docs/templates: {source}`, 0)
+		error(`documentation source must be under content/docs: {source}`, 0)
 	end
 	assert(category and relative)
 	relative = relative:gsub("%.md$", ".toml")
-	local path = `.github/docs/i18n/{locale}/{category}/{relative}`
+	local path = `content/i18n/{locale}/{category}/{relative}`
 	if not Fs.exists(path) or Fs.metadata(path).type ~= "file" then
 		return {}
 	end
@@ -226,9 +226,9 @@ function TagRenderer.FindMissing(roots: { string }): { MissingTranslation }
 			if pageTags[occurrence.name] == nil then
 				local key = `{locale}:{occurrence.name}`
 				if not reported[key] then
-					local category, relative = occurrence.path:match("^%.github/docs/templates/([^/]+)/(.+)$")
+					local category, relative = occurrence.path:match("^content/docs/([^/]+)/(.+)$")
 					assert(category and relative)
-					local localeFile = `.github/docs/i18n/{locale}/{category}/{relative:gsub("%.md$", ".toml")}`
+					local localeFile = `content/i18n/{locale}/{category}/{relative:gsub("%.md$", ".toml")}`
 					local line, column, endColumn = missingTagLocation(localeFile, occurrence.name)
 					table.insert(missing, {
 						path = localeFile,

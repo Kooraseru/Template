@@ -12,7 +12,7 @@ const { executeServiceRehearsal } = require("../../../../../dependencies/managed
 
 function extraFiles(workspace) {
 	return execFileSync("git", ["ls-files", "-z", "--others", "--exclude-standard", "--",
-		"ci", ".github/config", ".github/docs", "dependencies/packages"], { cwd: workspace, encoding: "utf8" })
+		"ci", ".github/config", "content", "dependencies/packages"], { cwd: workspace, encoding: "utf8" })
 		.split("\0").filter(Boolean);
 }
 

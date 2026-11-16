@@ -7,7 +7,7 @@ local Glob = require("@ci/bootstrap/discovery/glob")
 local TagRenderer = require("./tagRenderer")
 
 local CONFIG_ROOT = ".github/config/branches"
-local CONTENT_ROOT = ".github/docs/templates/repo"
+local CONTENT_ROOT = "content/docs/repository"
 local OUTPUT_ROOT = "build/github/branches"
 
 local BranchBuilder = {}
@@ -88,7 +88,7 @@ local function overlayTranslations(branchRoot: string, defaultLocale: string, br
 			if locale == defaultLocale then
 				continue
 			end
-			local translation = `.github/docs/i18n/{locale}/repo/{translationStem}`
+			local translation = `content/i18n/{locale}/repository/{translationStem}`
 			if not (Fs.exists(translation) and Fs.type(translation) == "file") then
 				continue
 			end

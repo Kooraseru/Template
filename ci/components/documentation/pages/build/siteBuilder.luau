@@ -7,7 +7,9 @@ local Glob = require("@ci/bootstrap/discovery/glob")
 local MarkdownRenderer = require("./markdownRenderer")
 local StaticAssetCopier = require("./staticAssetCopier")
 
-local DOCUMENTATION_ROOT = ".github/docs/templates/site"
+local DOCUMENTATION_ROOT = "content/docs"
+local REPOSITORY_ROOT = "content/docs/repository"
+local IMAGE_ROOT = "content/images"
 local OUTPUT_ROOT = "build/github/pages"
 
 local SiteBuilder = {}
@@ -43,7 +45,7 @@ end
 local function renderTree(self: SiteBuilder, sourceRoot: string, outputRoot: string): ()
 	ensureDirectory(outputRoot)
 	for _, source in Glob.Find(`{sourceRoot}/**`) do
-		if source == sourceRoot then
+		if source == sourceRoot or source == REPOSITORY_ROOT or source:sub(1, #REPOSITORY_ROOT + 1) == REPOSITORY_ROOT .. "/" or source:match("/%.gitkeep$") then
 			continue
 		end
 		local destination = outputPath(source, sourceRoot, outputRoot)
@@ -95,6 +97,9 @@ function SiteBuilder.Run(self: SiteBuilder): ()
 	ensureDirectory(OUTPUT_ROOT)
 
 	renderTree(self, DOCUMENTATION_ROOT, OUTPUT_ROOT)
+	if Fs.exists(IMAGE_ROOT) and Fs.type(IMAGE_ROOT) == "dir" then
+		renderTree(self, IMAGE_ROOT, `{OUTPUT_ROOT}/images`)
+	end
 
 	if not (Fs.exists(`{OUTPUT_ROOT}/index.html`) and Fs.type(`{OUTPUT_ROOT}/index.html`) == "file") then
 		error(`Pages build did not produce {OUTPUT_ROOT}/index.html`, 0)
