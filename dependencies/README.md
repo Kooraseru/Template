@@ -32,3 +32,7 @@ The export root `managed` resolves inside `dependencies/managed/`. Legacy provid
 `build/` is disposable output. `dependencies/managed/` holds installed dependencies and loader state; `.workspace/` holds persistent local editor, agent, and CI execution state. Both are ignored. Setup copies old `build/dependencies/` under the old loader lock and publishes the copy atomically; the original remains a recovery copy. Existing new-layout installations take precedence. Session selections from `build/run/editor-problems/` are copied without overwriting existing selections. Setup never cleans `.workspace/`. Remove legacy copies only after verifying your installation; no user data is deleted by this migration.
 
 Workspace setup also generates the ignored root `.actrc` from `.vscode/config/act/actrc` so standard act and editor workflow buttons share the same local options.
+
+## Delegated workflow dependencies
+
+The `github-workflow` provider acquires the exact reusable workflow commit declared in an authored workflow. Its version is already locked by that SHA, so it is deliberately excluded from `dependencies.lock`. A changed workflow pin invalidates the derived installation fingerprint. `tools.ciEngine` is installed into `dependencies/managed/packages/ci-engine` and exports its CLI. Use `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine run validation`.

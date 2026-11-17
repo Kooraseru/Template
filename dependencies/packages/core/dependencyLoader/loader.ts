@@ -228,19 +228,26 @@ export async function load(workspace: string, generated: string, stage: string, 
 			next.set(dependency.id, { provider: dependency.provider, fingerprint, resolution });
 			if (needed.has(dependency.id)) await prepare(dependency);
 		}
-		atomicJson(lockFile, { version: lockVersion, entries: Object.fromEntries(next) });
+		atomicJson(lockFile, { version: lockVersion, entries: Object.fromEntries([...next].filter(([id]) => !providers.get(ordered.find(definition => definition.id === id)!.provider)!.implementation.delegatedLock)) });
 		return undefined;
 	}
 
 	for (const dependency of ordered) {
-		const entry = previous.get(dependency.id);
+		const provider = providers.get(dependency.provider)!.implementation;
 		const fingerprint = declaredFingerprint(dependency);
+		if (provider.delegatedLock) {
+			if (previous.has(dependency.id)) throw new Error("Delegated dependency must not have a duplicate lock entry: " + dependency.id);
+			const resolution = await call(provider, context(dependency, "resolve"));
+			next.set(dependency.id, { provider: dependency.provider, fingerprint, resolution });
+			continue;
+		}
+		const entry = previous.get(dependency.id);
 		if (!entry || entry.provider !== dependency.provider || entry.fingerprint !== fingerprint || !Object.hasOwn(entry, "resolution")) {
 			throw new Error("Missing or stale lock entry for " + dependency.id + "; run --update-lock");
 		}
 		next.set(dependency.id, entry);
 	}
-	if (previous.size !== next.size) throw new Error("dependencies.lock contains removed dependencies; run --update-lock");
+	if ([...previous.keys()].some(id => !next.has(id))) throw new Error("dependencies.lock contains removed dependencies; run --update-lock");
 
 	const selectedIds = new Set<string>();
 	if (only) {

@@ -55,11 +55,6 @@
       "fingerprint": "70c4bb8e345f116de5a9eca6af9229f80e37ce6d3c2644b8b9960058d60fbcf9",
       "resolution": null
     },
-    "tools.localActions": {
-      "provider": "local",
-      "fingerprint": "6913ebcf023b58aa67ae096f9eb6d80484e1a61af10827b1859d22a9a862920a",
-      "resolution": null
-    },
     "tools.editorIntegration": {
       "provider": "local",
       "fingerprint": "bd70e345a90be30b01c8b3c2b7da59edf7f9d51a9c9e6fa3e56efe5d61c1a1d3",

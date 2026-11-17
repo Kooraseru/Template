@@ -1,0 +1,53 @@
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { contained, record, relativePath, type Provider, type ProviderRequest } from "./contract.ts";
+
+const pinPattern = /^\s*uses:\s+(?<repository>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/\.github\/workflows\/(?<workflow>[A-Za-z0-9_.-]+\.ya?ml)@(?<sha>[a-f0-9]{40})(?:[ \t]+#[^\r\n]*)?[ \t]*$/gm;
+
+export function workflowPin(workspace: string, source: unknown) {
+  const file = contained(workspace, source);
+  const matches = [...fs.readFileSync(file, "utf8").matchAll(pinPattern)];
+  if (matches.length !== 1) throw new Error("Expected exactly one full-SHA reusable workflow dependency in " + file);
+  const { repository, workflow, sha } = matches[0].groups!;
+  return { repository, workflow, sha };
+}
+
+function git(directory: string, args: string[]) {
+  return execFileSync("git", ["-C", directory, "-c", "core.hooksPath=/dev/null", ...args], {
+    encoding: "utf8", timeout: 120_000, windowsHide: true,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+  }).trim();
+}
+
+export const githubWorkflow: Provider = {
+  delegatedLock: true,
+  resolve({ workspace, options }) {
+    return workflowPin(workspace, options.source);
+  },
+  install({ workspace, stage, options, resolution }: ProviderRequest) {
+    const selected = record(resolution, "Missing delegated workflow revision");
+    const pin = workflowPin(workspace, options.source);
+    if (pin.repository !== selected.repository || pin.workflow !== selected.workflow || pin.sha !== selected.sha)
+      throw new Error("Workflow revision changed during dependency installation");
+    const destination = relativePath(options.packagePath);
+    const directory = path.join(stage, "package");
+    fs.mkdirSync(directory);
+    git(directory, ["init", "--quiet"]);
+    git(directory, ["fetch", "--quiet", "--depth=1", "https://github.com/" + pin.repository + ".git", pin.sha]);
+    if (git(directory, ["rev-parse", "FETCH_HEAD^{commit}"]) !== pin.sha)
+      throw new Error("Fetched workflow commit differs from authoritative pin");
+    git(directory, ["checkout", "--quiet", "--detach", pin.sha]);
+    fs.rmSync(path.join(directory, ".git"), { recursive: true, force: true });
+    const workflow = ".github/workflows/" + pin.workflow;
+    if (!fs.statSync(contained(directory, workflow)).isFile())
+      throw new Error("Pinned repository is missing the requested workflow");
+    fs.writeFileSync(path.join(directory, ".dependency-revision.json"), JSON.stringify(pin) + "\n", { flag: "wx" });
+    const exports = {
+      source: { root: "managed" as const, path: destination },
+      workflow: { root: "managed" as const, path: destination + "/" + workflow },
+      cli: { root: "managed" as const, path: destination + "/cli.cjs" },
+    };
+    return { outputs: [{ from: "package", to: destination }], exports, executable: { export: "cli", interpreter: ["node"] } };
+  },
+};
