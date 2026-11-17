@@ -62,6 +62,6 @@ test("source ruleset requires the actual external reusable workflow gate", () =>
   const rule = source.rules.find(item => item.type === "required_status_checks");
   assert.ok(rule, "a required status checks rule must exist");
   assert.deepEqual(rule.parameters.required_status_checks, [
-    { context: "CI Engine / validate", integration_id: 15368 },
+    { context: "CI Engine / engine / validate", integration_id: 15368 },
   ]);
 });
