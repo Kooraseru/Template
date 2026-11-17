@@ -14,7 +14,7 @@
   ],
   "command": [
     "node",
-    "ci/components/documentation/pages/publish/preview/publish.cjs",
+    ".github/components/documentation/pages/publish/preview/publish.cjs",
     "--retire"
   ]
 }

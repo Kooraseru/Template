@@ -123,7 +123,7 @@
       "execution": {
         "command": [
           "node",
-          "ci/components/documentation/pages/publish/preview/launch.cjs"
+          ".github/components/documentation/pages/publish/preview/launch.cjs"
         ],
         "profile": "source-ci"
       }
@@ -154,5 +154,5 @@
       ]
     }
   },
-  "componentRoot": ".github/config/ci/components"
+  "componentRoot": ".github/components"
 }

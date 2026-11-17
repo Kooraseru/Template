@@ -50,7 +50,7 @@ concurrency:
 jobs:
   ci:
     name: CI Engine Manual
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
+    uses: ./.github/workflows/bootstrap.yml
     permissions:
       contents: read
       actions: read

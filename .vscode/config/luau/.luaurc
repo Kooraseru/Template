@@ -10,6 +10,7 @@
     "dependencies": "@workspace/dependencies",
 
     "ci": "@workspace/ci",
+    "components": "@workspace/.github/components",
     "tooling": "@workspace/tooling",
     "build": "@workspace/build/run",
 

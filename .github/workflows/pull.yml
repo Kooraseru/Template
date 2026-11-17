@@ -16,7 +16,7 @@ jobs:
   review:
     name: CI Engine
     if: github.event_name == 'pull_request'
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
+    uses: ./.github/workflows/bootstrap.yml
     permissions:
       contents: read
     with:
@@ -25,7 +25,7 @@ jobs:
   retire:
     name: CI Engine Retirement
     if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == github.event.repository.default_branch
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
+    uses: ./.github/workflows/bootstrap.yml
     permissions:
       contents: read
       pull-requests: write

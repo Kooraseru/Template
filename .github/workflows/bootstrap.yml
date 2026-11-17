@@ -1,0 +1,32 @@
+# Internal dependency reference. Keep this the only CI-Engine version pin.
+name: Bootstrap
+on:
+  workflow_call:
+    inputs:
+      operation:
+        type: string
+        required: true
+      publish:
+        type: boolean
+        default: false
+      component_variables:
+        type: string
+        default: '{}'
+    secrets:
+      app_private_key:
+        required: false
+      bootstrap_token:
+        required: false
+      component_credentials:
+        required: false
+jobs:
+  engine:
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@5684ebdbce503b56935a42fe4e2d4aff1013b543
+    with:
+      operation: ${{ inputs.operation }}
+      publish: ${{ inputs.publish }}
+      component_variables: ${{ inputs.component_variables }}
+    secrets:
+      app_private_key: ${{ secrets.app_private_key }}
+      bootstrap_token: ${{ secrets.bootstrap_token }}
+      component_credentials: ${{ secrets.component_credentials }}
