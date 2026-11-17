@@ -19,9 +19,9 @@ flowchart LR
 
 Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. All controller jobs run on successful operations with no mode-specific skipped jobs. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Generated native pipelines remain separate GitHub Actions runs with real component jobs and matrix expansions.
 
-config/ci/engine.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/components/.
+config/ci/operations.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/components/.
 
-config/ci/operations.json remains the settings catalog for Template's native generated-workflow adapter and local CLI. Keep operation names, modes and event routes consistent with engine.json; ci/external-engine.test.cjs enforces it. Generated-workflow compilation, branch creation, scoped credential acquisition, result verification and cleanup remain in Template's native adapter under ci/ and are invoked only through the engine's gated generated-operation job. Template does not contain another hosted job controller.
+Generated-workflow compilation and project-specific native adapter logic remain under ci/ during the migration. The canonical catalog is config/ci/operations.json.
 
 The trusted engine job is confined to the repository's default branch and an explicitly configured protected GitHub environment. It has id-token: write and accepts two explicitly mapped bootstrap credentials, not the entire secret catalog. Untrusted pull requests cannot enter it; manual publication also requires publish=true. GitHub App tokens, registry trusted publishing and OIDC provider setup remain provider-specific and cannot be assumed configured by a checked-in YAML file.
 
@@ -120,7 +120,7 @@ See the [Rules settings contract](../rules/general/workflows/review/checker-cont
 
 ## Local GitHub Actions
 
-From the repository root, run `node dependencies/packages/ci/localActions/run.cjs` or use the **Run GitHub Actions locally** VS Code task.
+From the repository root, run `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine` or use the **Run GitHub Actions locally** VS Code task.
 
 
 ## Local execution
@@ -129,9 +129,9 @@ Run normal dependency setup, then use the **CI: Run locally** task or GitHub Loc
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts
-node dependencies/packages/ci/localActions/run.cjs
-node dependencies/packages/ci/localActions/run.cjs --input operation=build
-node dependencies/packages/ci/localActions/run.cjs --input operation=readiness
+node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine
+node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine --input operation=build
+node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine --input operation=readiness
 ```
 
 Local `act` stages default to a 30-minute timeout, adjustable with `CI_LOCAL_TIMEOUT_MINUTES` (1–240). The launcher allocates a run-specific artifact server path and port, so do not pin either in `.actrc`. Failed runs preserve their stage logs under `build/run/<id>/` and invocation records in `.workspace/ci/runs/`.
@@ -157,7 +157,7 @@ Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node ci/c
 
 ## Local act compatibility
 
-The local CI wrapper stages the pinned engine workflow in its disposable checkout, rewriting GitHub-only self-references (`uses: $/`) to standard remote action references at the same SHA. It also uses artifact upload v4 for the local `act` artifact server. Neither the authored Template entry points nor the hosted engine workflow is modified. The change is covered by `dependencies/packages/ci/localActions/run.test.cjs`.
+The installed engine stages a temporary copy of its own workflows and action sources; the authored bootstrap pin is preserved, and compatibility-only artifacts remain in the disposable checkout.
 
 
 ## Generated build-only execution

@@ -39,7 +39,7 @@ test("authored event workflows delegate to one bootstrap reference", () => {
   const directory = path.join(root, ".github/workflows");
   const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
   assert.match(bootstrap, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
-  const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name) && name !== "bootstrap.yml");
+  const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name) && name !== "bootstrap.yml" && !(process.env.ACT === "true" && name.startsWith("_act-")));
   for (const file of authored) {
     const workflow = fs.readFileSync(path.join(directory, file), "utf8");
     assert.match(workflow, /uses: \.\/\.github\/workflows\/bootstrap\.yml/);

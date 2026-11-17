@@ -29,7 +29,7 @@ test("capability contracts declare an explicit setup prerequisite", () => {
 
 test("Grouped callers share one pinned engine dependency reference", () => {
   const directory = path.join(root, ".github/workflows");
-  const names = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
+  const names = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name) && !(process.env.ACT === "true" && name.startsWith("_act-"))).sort();
   const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
   assert.match(bootstrap, /workflow_call:/);
   assert.doesNotMatch(bootstrap, /workflow_dispatch:|runs-on:/);

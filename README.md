@@ -14,7 +14,7 @@ A reusable development workspace and CI foundation for packages, editor extensio
 
 ## CI and optional publishing
 
-The grouped event workflows under `.github/workflows/` call the shared bootstrap.yml reference to the SHA-pinned external CI Engine. Pushes select `validation` (trusted default-branch pushes also launch native Build and Tests); PRs select `review`; manual and remote entry points select their explicitly permitted operations. `config/ci/engine.json` declares components and execution adapters; `config/ci/operations.json` remains the native adapter and local CLI catalog.
+The grouped event workflows under `.github/workflows/` call the shared bootstrap.yml reference to the SHA-pinned external CI Engine. Pushes select `validation` (trusted default-branch pushes also launch native Build and Tests); PRs select `review`; manual and remote entry points select their explicitly permitted operations. `config/ci/operations.json` is the sole operation and execution-adapter catalog.
 
 Generated `main` and Pages publication use generated component jobs from the CI Engine workflow and their toggles under `config/targets.toml`. Other publication adapters retain their own explicit operation and credential requirements. Review the publication records under `config/publishing/` and the role/environment bindings in `config/credentials.json`; configure declared credentials in repository settings, never in committed files.
 
@@ -59,7 +59,7 @@ The existing dependency loader owns custom providers and pins in `dependencies/d
 
 Install the recommended [Workbench Bridge](https://github.com/Kooraseru/workbench-bridge) extension for status-bar dependency setup, Preflight, rules diagnostics, and editor integration. The `.vscode/config/workflow.json` configuration owns editor commands and watch paths. No editor installation is needed for headless CI.
 
-For a machine-readable onboarding report, use `node ci/template/setup.cjs --json`. For a local validation run, use `bash ci/run.sh`. For local GitHub Actions, use `node dependencies/packages/ci/localActions/run.cjs`.
+For a machine-readable onboarding report, use `node ci/template/setup.cjs --json`. For a local validation run, use `bash ci/run.sh`. For local GitHub Actions, use `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine`.
 
 See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), and [CI implementation](ci/README.md) for detailed contracts.
 
