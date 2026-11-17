@@ -1,0 +1,38 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    name: CI Engine
+    if: github.event_name == 'pull_request'
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
+    permissions:
+      contents: read
+    with:
+      operation: review
+
+  retire:
+    name: CI Engine Retirement
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.base.ref == github.event.repository.default_branch
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
+    permissions:
+      contents: read
+      pull-requests: write
+    with:
+      operation: preview-retire
+      component_variables: >-
+        ${{ format('{{"cloudflare_account_id":{0}}}', toJSON(vars.CLOUDFLARE_ACCOUNT_ID)) }}
+    secrets:
+      component_credentials: >-
+        ${{ format('{{"cloudflare_api_token":{0}}}', toJSON(secrets.CLOUDFLARE_API_TOKEN)) }}

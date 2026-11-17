@@ -1,0 +1,20 @@
+name: Remote
+
+on:
+  repository_dispatch:
+    types: [ci-validation]
+
+permissions: {}
+
+concurrency:
+  group: ci-remote-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI Engine Remote
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
+    permissions:
+      contents: read
+    with:
+      operation: remote-validation

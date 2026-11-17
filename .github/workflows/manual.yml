@@ -1,10 +1,6 @@
-name: CI
+name: Manual
 
 on:
-  push:
-  pull_request:
-  pull_request_target:
-    types: [closed]
   workflow_dispatch:
     inputs:
       operation:
@@ -48,22 +44,20 @@ on:
 permissions: {}
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-manual-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   ci:
-    name: CI Engine
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@519fac0b132a81d54d8589e1e2e5641fa003b253
+    name: CI Engine Manual
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@13494137ff72f812d6b792d80b94e6018870b5b0
     permissions:
       contents: read
       actions: read
       id-token: write
-      pull-requests: write
     with:
-      operation: ${{ inputs.operation || '' }}
-      publish: ${{ inputs.publish || false }}
+      operation: ${{ inputs.operation }}
+      publish: ${{ inputs.publish }}
     secrets:
       app_private_key: ${{ secrets.CI_APP_PRIVATE_KEY }}
       bootstrap_token: ${{ secrets.CI_TOKEN }}
-      cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}

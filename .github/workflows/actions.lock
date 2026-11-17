@@ -3,5 +3,8 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/ci.yml': []
+    '.github/workflows/manual.yml': []
+    '.github/workflows/pull.yml': []
+    '.github/workflows/push.yml': []
+    '.github/workflows/remote.yml': []
 dependencies: {}
