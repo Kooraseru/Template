@@ -28,4 +28,4 @@ Community [Starlight themes](https://starlight.astro.build/resources/themes/) ca
 
 During builds, the component copies `content/docs/` into its ignored `src/content/docs/` staging directory. This prevents absolute filesystem paths from appearing as navigation headings. The generated directory is never an authoring location, and `content/docs/repository/` remains excluded from the site.
 
-After installing the component's dependencies, run `npm run dev` from `ci/components/documentation/pages/build/starlight/` to preview. Each new development server start regenerates the staged docs; restart it after adding or moving files. For a CI-equivalent static build, use `node ci/components/documentation/pages/build/starlight/build.cjs` from the repository root.
+After installing the component's dependencies, run `npm run dev` from `.github/components/documentation/pages/build/starlight/` to preview. Each new development server start regenerates the staged docs; restart it after adding or moving files. For a CI-equivalent static build, use `node .github/components/documentation/pages/build/starlight/build.cjs` from the repository root.

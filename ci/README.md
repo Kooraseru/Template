@@ -1,6 +1,6 @@
 # CI implementation
 
-Template owns grouped event workflows (push, pull, manual and remote), each directly calling the same full-SHA-pinned bootstrap.yml in Kooraseru-Hub/CI-Engine. The engine exposes a universal **fork-and-join DAG** with short labels. There is one entry point and one final required check:
+Template owns grouped event workflows (push, pull, manual and remote), each calling the single local bootstrap.yml dependency reference to the full-SHA-pinned bootstrap.yml in Kooraseru-Hub/CI-Engine. The engine exposes a universal **fork-and-join DAG** with short labels. There is one entry point and one final required check:
 
 ```mermaid
 flowchart LR
@@ -19,9 +19,9 @@ flowchart LR
 
 Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. All controller jobs run on successful operations with no mode-specific skipped jobs. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Generated native pipelines remain separate GitHub Actions runs with real component jobs and matrix expansions.
 
-.github/config/ci/engine.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/config/ci/components/.
+config/ci/engine.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/components/.
 
-.github/config/ci/operations.json remains the settings catalog for Template's native generated-workflow adapter and local CLI. Keep operation names, modes and event routes consistent with engine.json; ci/external-engine.test.cjs enforces it. Generated-workflow compilation, branch creation, scoped credential acquisition, result verification and cleanup remain in Template's native adapter under ci/ and are invoked only through the engine's gated generated-operation job. Template does not contain another hosted job controller.
+config/ci/operations.json remains the settings catalog for Template's native generated-workflow adapter and local CLI. Keep operation names, modes and event routes consistent with engine.json; ci/external-engine.test.cjs enforces it. Generated-workflow compilation, branch creation, scoped credential acquisition, result verification and cleanup remain in Template's native adapter under ci/ and are invoked only through the engine's gated generated-operation job. Template does not contain another hosted job controller.
 
 The trusted engine job is confined to the repository's default branch and an explicitly configured protected GitHub environment. It has id-token: write and accepts two explicitly mapped bootstrap credentials, not the entire secret catalog. Untrusted pull requests cannot enter it; manual publication also requires publish=true. GitHub App tokens, registry trusted publishing and OIDC provider setup remain provider-specific and cannot be assumed configured by a checked-in YAML file.
 
@@ -170,4 +170,4 @@ The engine's readonly `validation.native.command` is invoked only after the norm
 
 ### Documentation preview publication
 
-The explicit `preview` CI Engine operation runs only on trusted source-branch workflow dispatch. It generates an isolated read-only Starlight build of the selected PR or branch, then publishes the verified static artifact in a separately permissioned job. Cloudflare Pages is the only preview destination, selected through `[github.previews]` in `.github/config/targets.toml`; no Git branch stores preview assets. The single authored CI workflow delegates PR closure to CI Engine's protected lifecycle job, whose project-owned component retires the Cloudflare preview alias with HTTP 410. See [Preview deployments](../content/docs/preview-deployments.md). No additional workflow file is used.
+The explicit `preview` CI Engine operation runs only on trusted source-branch workflow dispatch. It generates an isolated read-only Starlight build of the selected PR or branch, then publishes the verified static artifact in a separately permissioned job. Cloudflare Pages is the only preview destination, selected through `[github.previews]` in `config/targets.toml`; no Git branch stores preview assets. The single authored CI workflow delegates PR closure to CI Engine's protected lifecycle job, whose project-owned component retires the Cloudflare preview alias with HTTP 410. See [Preview deployments](../content/docs/preview-deployments.md). No additional workflow file is used.

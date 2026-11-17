@@ -7,7 +7,7 @@ Documentation previews are hosted by Cloudflare Pages. The authored `source` bra
 
 ## Setup
 
-Create a Cloudflare Pages **Direct Upload** project, for example `template`, and set its actual name in `.github/config/targets.toml`:
+Create a Cloudflare Pages **Direct Upload** project, for example `template`, and set its actual name in `config/targets.toml`:
 
 ```toml
 [github.previews]

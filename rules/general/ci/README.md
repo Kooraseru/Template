@@ -4,9 +4,9 @@ GitHub configuration lives under `.github/`. CI implementation lives under root 
 
 ## Discovery and component contracts
 
-The Luau bootstrap recursively discovers components under `ci/components/`. A component is identified by its path relative to that directory and owns a `component.toml`, `init.luau`, and private implementation modules. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
+The Luau bootstrap recursively discovers components under `.github/components/`. A component is identified by its path relative to that directory and owns a `component.toml`, `init.luau`, and private implementation modules. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
 
-`.github/config/ci/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
+`.github/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
 
 Host build implementations belong under `source/hosts/<host>/`. The source build component discovers `host.toml` files, loads the adjacent `init.luau`, and checks all declared artifact paths. Hosts own their toolchain, artifact list, and optional launch artifact. The CI launcher does not maintain host names or executable lookups and must work when a project has no launchable application.
 
@@ -24,13 +24,13 @@ Generated output belongs under ignored `build/`. Compiled products use `build/ar
 
 Configuration and authored records live with their owner:
 
-- `.github/config/targets.toml` stores repository identity, aliases, and publication policy.
-- `.github/config/branches/` contains one branch source record per branch.
-- `.github/config/rulesets/` contains desired ruleset records.
-- `.github/config/issues/` owns labels and milestones. `.github/config/projects/` owns project blueprints.
-- `.github/config/publishing/` owns release, package, and attestation records.
+- `config/targets.toml` stores repository identity, aliases, and publication policy.
+- `config/branches/` contains one branch source record per branch.
+- `config/rulesets/` contains desired ruleset records.
+- `config/issues/` owns labels and milestones. `config/projects/` owns project blueprints.
+- `config/publishing/` owns release, package, and attestation records.
 - `.github/publication/` owns Pages and Wiki publication settings when supported.
-- `.github/config/ci/` owns CI policy. Credential roles and permissions live in `config/credentials.json`. Report templates live in `config/reports/`.
+- `config/ci/` owns CI policy. Credential roles and permissions live in `config/credentials.json`. Report templates live in `config/reports/`.
 
 Discover records from their owner directory. Adding a host, milestone, branch, project, ruleset, release, or package record should not require a CI registry edit. Malformed present records fail with a path-specific diagnostic. Preserve user project items, fields, options, and views during reconciliation. Preserve the existing source-gate and source-admin enforcement semantics. Do not treat planned Wiki ownership as implemented publication.
 
