@@ -1,4 +1,4 @@
--- ci/components/governance/branches/build/init.luau
+-- .github/components/governance/branches/build/init.luau
 --!strict
 
 local BranchBuilder = require("@self/branchBuilder")

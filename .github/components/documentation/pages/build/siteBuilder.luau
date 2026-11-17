@@ -1,4 +1,4 @@
--- ci/components/documentation/pages/build/siteBuilder.luau
+-- .github/components/documentation/pages/build/siteBuilder.luau
 --!strict
 
 -- Starlight is the renderer; this component only owns the CI build contract.
@@ -14,7 +14,7 @@ function SiteBuilder.new(): SiteBuilder
 end
 
 function SiteBuilder.Run(_self: SiteBuilder): ()
-	local result = Process.run({ "node", "ci/components/documentation/pages/build/starlight/build.cjs" }, {
+	local result = Process.run({ "node", ".github/components/documentation/pages/build/starlight/build.cjs" }, {
 		cwd = Process.cwd(),
 		stdio = "inherit",
 	})

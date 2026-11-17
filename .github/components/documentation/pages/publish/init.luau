@@ -1,4 +1,4 @@
--- ci/components/documentation/pages/publish/init.luau
+-- .github/components/documentation/pages/publish/init.luau
 --!strict
 
 local PagesDeployment = require("@ci/github/publication/pagesDeployment")

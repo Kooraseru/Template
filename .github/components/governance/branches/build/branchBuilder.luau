@@ -1,4 +1,4 @@
--- ci/components/governance/branches/build/branchBuilder.luau
+-- .github/components/governance/branches/build/branchBuilder.luau
 --!strict
 
 local Fs = require("@std/fs")
@@ -6,7 +6,7 @@ local Toml = require("@formats/toml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Process = require("@lute/process")
 
-local CONFIG_ROOT = ".github/config/branches"
+local CONFIG_ROOT = "config/branches"
 local CONTENT_ROOT = "content/docs/repository"
 local OUTPUT_ROOT = "build/github/branches"
 

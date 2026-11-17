@@ -1,4 +1,4 @@
--- ci/components/documentation/pages/build/init.luau
+-- .github/components/documentation/pages/build/init.luau
 --!strict
 
 -- Coordinate the site assembly stage for the Pages component.
