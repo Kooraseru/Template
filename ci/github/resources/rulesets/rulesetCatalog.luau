@@ -6,7 +6,7 @@ local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/github/publication")
 
-const ROOT = ".github/config/rulesets"
+const ROOT = "config/rulesets"
 
 local RulesetCatalog = {}
 export type Ruleset = { identity: string, definition: { [string]: unknown } }

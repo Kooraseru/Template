@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "../..");
-const CONFIG = path.join(ROOT, ".github/config/template.json");
+const CONFIG = path.join(ROOT, "config/template.json");
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/;
 const RELEASE_TAG = /^template\/v(.+)$/;
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
@@ -50,7 +50,7 @@ function configFromFile(file = CONFIG) {
     (source.revision !== null && !/^[a-f0-9]{40}$/.test(source.revision)) ||
     !Array.isArray(source.managed) ||
     source.managed.some(value => typeof value !== "string" || !value || value.includes(".."))) {
-    throw new Error("Invalid .github/config/template.json");
+    throw new Error("Invalid config/template.json");
   }
   return source;
 }

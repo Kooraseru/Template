@@ -35,7 +35,7 @@ end
 
 -- Native adapters keyed by component identity are data, never another component inventory.
 function NativeJob.Configure(identity: string, boundary: string, steps: { Step }, job: { [string]: unknown }): ()
-	local path = `.github/config/jobs/{identity}.toml`
+	local path = `config/jobs/{identity}.toml`
 	if not Fs.exists(path) or Fs.type(path) ~= "file" then
 		return
 	end

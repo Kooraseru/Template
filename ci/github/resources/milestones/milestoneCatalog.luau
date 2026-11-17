@@ -6,7 +6,7 @@ local Json = require("@formats/json")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/github/publication")
 
-const CONFIG_PATH = ".github/config/issues/milestones/records"
+const CONFIG_PATH = "config/issues/milestones/records"
 
 local MilestoneCatalog = {}
 

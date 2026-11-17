@@ -6,7 +6,7 @@ local Json = require("@formats/json")
 local Net = require("@lute/net/client")
 local Publication = require("@ci/github/publication")
 
-const QUERY_PATH = "ci/components/work/projects/sync/query.graphql"
+const QUERY_PATH = ".github/components/work/projects/sync/query.graphql"
 
 local ProjectClient = {}
 ProjectClient.__index = ProjectClient

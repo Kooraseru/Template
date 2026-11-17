@@ -44,7 +44,7 @@ export type Project = {
 
 --# Constants
 
-const ROOT = ".github/config/projects"
+const ROOT = "config/projects"
 local SCHEMA_PATH = `{ROOT}/project.schema.json`
 local SUPPORTED_SCHEMA_KEYS = {
 	"$schema",
