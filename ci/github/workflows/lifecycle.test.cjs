@@ -17,20 +17,20 @@ test('PR review and privileged retirement share the pull workflow, not permissio
   assert.match(source, /types: \[closed\]/);
 });
 test('project declares retirement as a normal protected component operation', () => {
-  const config = JSON.parse(fs.readFileSync(path.join(root, '.github/config/ci/engine.json'), 'utf8'));
+  const config = JSON.parse(fs.readFileSync(path.join(root, 'config/ci/engine.json'), 'utf8'));
   const operation = config.operations['preview-retire'];
   assert.equal(operation.mode, 'protected');
   assert.deepEqual(operation.actions, ['closed']);
   assert.deepEqual(operation.events, ['pull_request_target']);
   assert.deepEqual(operation.components, ['lifecycle/preview-retire']);
-  const component = JSON.parse(fs.readFileSync(path.join(root, '.github/config/ci/components/lifecycle/preview-retire/component.json'), 'utf8'));
+  const component = JSON.parse(fs.readFileSync(path.join(root, '.github/components/lifecycle/preview-retire/component.json'), 'utf8'));
   assert.equal(component.boundary, 'privileged');
-  assert.equal(fs.existsSync(path.join(root, '.github/config/ci/lifecycle.json')), false);
+  assert.equal(fs.existsSync(path.join(root, 'config/ci/lifecycle.json')), false);
 });
 test('dropdown choices correspond to configured manual operations', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/manual.yml'), 'utf8');
   const config = JSON.parse(fs.readFileSync(path.join(root,
-    '.github/config/ci/engine.json'), 'utf8'));
+    'config/ci/engine.json'), 'utf8'));
   const options = workflow.split('      operation:')[1].split('      publish:')[0];
   for (const [name, operation] of Object.entries(config.operations)) {
     if (operation.events.includes('workflow_dispatch'))

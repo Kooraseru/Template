@@ -35,13 +35,14 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("authored event workflows delegate directly to one external engine", () => {
+test("authored event workflows delegate to one bootstrap reference", () => {
   const directory = path.join(root, ".github/workflows");
-  const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-  assert.deepEqual(authored, ["manual.yml","pull.yml","push.yml","remote.yml"]);
+  const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
+  assert.match(bootstrap, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
+  const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name) && name !== "bootstrap.yml");
   for (const file of authored) {
     const workflow = fs.readFileSync(path.join(directory, file), "utf8");
-    assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
+    assert.match(workflow, /uses: \.\/\.github\/workflows\/bootstrap\.yml/);
     assert.doesNotMatch(workflow, /runs-on:|secrets: inherit|workflow_call:/);
   }
 });
@@ -82,8 +83,8 @@ test("generated graph binds credential environments and isolates publication", t
 	assert.equal(disabled["publish.yml"], undefined);
 });
 test("example release and package policies never replace existing assets by default", () => {
-	const release = JSON.parse(fs.readFileSync(path.join(root, ".github/config/publishing/releases/settings.json"), "utf8"));
-	const packages = fs.readFileSync(path.join(root, ".github/config/publishing/packages/settings.toml"), "utf8");
+	const release = JSON.parse(fs.readFileSync(path.join(root, "config/publishing/releases/settings.json"), "utf8"));
+	const packages = fs.readFileSync(path.join(root, "config/publishing/packages/settings.toml"), "utf8");
 	assert.equal(release.release.on_existing, "skip");
 	assert.match(packages, /^on_existing = "skip"$/m);
 });
@@ -109,9 +110,9 @@ test("generated publication retains branch checks and rehearses release uploads"
 	assert.match(runtime, /gsub\("\(\[\^%w_\.\/~\-\]\)"/);
 });
 test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
-	const targets = fs.readFileSync(path.join(root, ".github/config/targets.toml"), "utf8");
-	const attestations = fs.readFileSync(path.join(root, ".github/config/publishing/attestations.toml"), "utf8");
-	const execution = fs.readFileSync(path.join(root, ".github/config/ci/execution.toml"), "utf8");
+	const targets = fs.readFileSync(path.join(root, "config/targets.toml"), "utf8");
+	const attestations = fs.readFileSync(path.join(root, "config/publishing/attestations.toml"), "utf8");
+	const execution = fs.readFileSync(path.join(root, "config/ci/execution.toml"), "utf8");
 	assert.match(targets, /^pages = true\b/m);
   assert.match(targets, /^branches = false\b/m);
   assert.ok(!targets.includes("pages-state"));

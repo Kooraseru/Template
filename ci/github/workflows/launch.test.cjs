@@ -57,7 +57,7 @@ test("generated commit includes only read-only workflows and removes permanent l
     const path=new URL(url).pathname;
     calls.push({path,method:args.method,body:args.body&&JSON.parse(args.body)});
     if(path.endsWith("/git/commits/"+SHA))return response(parent);
-    if(path.endsWith("/git/trees/"+"b".repeat(40)))return response({tree:["manual.yml","pull.yml","push.yml","remote.yml","actions.lock"].map(name=>({type:"blob",path:".github/workflows/"+name}))});
+    if(path.endsWith("/git/trees/"+"b".repeat(40)))return response({tree:["bootstrap.yml","manual.yml","pull.yml","push.yml","remote.yml","actions.lock"].map(name=>({type:"blob",path:".github/workflows/"+name}))});
     if(path.endsWith("/git/blobs"))return response({sha:"c".repeat(40)});
     if(path.endsWith("/git/trees"))return response({sha:"d".repeat(40)});
     if(path.endsWith("/git/commits"))return response({sha:"e".repeat(40)});
@@ -73,9 +73,9 @@ test("generated commit includes only read-only workflows and removes permanent l
     assert.equal(result,"e".repeat(40));
     const tree=calls.find(c=>c.path.endsWith("/git/trees")).body.tree;
     assert.deepEqual(tree.map(x=>x.path).sort(),[
-      ".github/workflows/manual.yml",".github/workflows/pipeline.yml",".github/workflows/pull.yml",".github/workflows/push.yml",".github/workflows/remote.yml",".github/workflows/tests.yml"
+      ".github/workflows/bootstrap.yml",".github/workflows/manual.yml",".github/workflows/pipeline.yml",".github/workflows/pull.yml",".github/workflows/push.yml",".github/workflows/remote.yml",".github/workflows/tests.yml"
     ]);
-    for(const name of ["manual","pull","push","remote"])assert.equal(tree.find(x=>x.path.endsWith("/"+name+".yml")).sha,null);
+    for(const name of ["bootstrap","manual","pull","push","remote"])assert.equal(tree.find(x=>x.path.endsWith("/"+name+".yml")).sha,null);
     assert.deepEqual(calls.find(c=>c.path.endsWith("/git/refs")).body,{
       ref:"refs/heads/"+ctx.branch,sha:"e".repeat(40)
     });

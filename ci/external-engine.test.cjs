@@ -7,8 +7,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const engine = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/engine.json"), "utf8"));
-const routing = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
+const engine = JSON.parse(fs.readFileSync(path.join(root, "config/ci/engine.json"), "utf8"));
+const routing = JSON.parse(fs.readFileSync(path.join(root, "config/ci/operations.json"), "utf8"));
 
 test("external engine routes stay synchronized with canonical CI operations", () => {
   assert.equal(engine.version, 1);
@@ -34,19 +34,18 @@ test("capability contracts declare an explicit setup prerequisite", () => {
   }
 });
 
-test("Grouped entry points call the same SHA-pinned engine directly", () => {
+test("Grouped callers share one pinned engine dependency reference", () => {
   const directory = path.join(root, ".github/workflows");
   const names = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-  assert.deepEqual(names, ["manual.yml", "pull.yml", "push.yml", "remote.yml"]);
-  const pins = new Set();
-  for (const name of names) {
+  const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
+  assert.match(bootstrap, /workflow_call:/);
+  assert.doesNotMatch(bootstrap, /workflow_dispatch:|runs-on:/);
+  assert.equal([...bootstrap.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/g)].length, 1);
+  for (const name of names.filter(name => name !== "bootstrap.yml")) {
     const workflow = fs.readFileSync(path.join(directory, name), "utf8");
-    const matches = [...workflow.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@([a-f0-9]{40})/g)];
-    assert.ok(matches.length, name);
-    for (const match of matches) pins.add(match[1]);
-    assert.doesNotMatch(workflow, /runs-on:|secrets: inherit|workflow_call:/);
+    assert.match(workflow, /uses: \.\/\.github\/workflows\/bootstrap\.yml/);
+    assert.doesNotMatch(workflow, /Kooraseru-Hub\/CI-Engine|runs-on:|secrets: inherit|workflow_call:/);
   }
-  assert.equal(pins.size, 1);
   const lock = fs.readFileSync(path.join(directory, "actions.lock"), "utf8");
   for (const name of names) assert.ok(lock.includes(".github/workflows/" + name));
 });
@@ -66,7 +65,7 @@ test("generated operations retain trusted adapters without hardcoded jobs in Tem
 });
 
 test("source ruleset requires the actual external reusable workflow gate", () => {
-  const source = JSON.parse(fs.readFileSync(path.join(root, ".github/config/rulesets/source-gate.json"), "utf8"));
+  const source = JSON.parse(fs.readFileSync(path.join(root, "config/rulesets/source-gate.json"), "utf8"));
   const rule = source.rules.find(item => item.type === "required_status_checks");
   assert.ok(rule, "a required status checks rule must exist");
   assert.deepEqual(rule.parameters.required_status_checks, [

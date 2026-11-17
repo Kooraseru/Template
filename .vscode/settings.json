@@ -7,7 +7,7 @@
 	],
 	// File Associations
 	"files.associations": {
-		"**/.github/config/credentials.json": "jsonc",
+		"**/config/credentials.json": "jsonc",
 		".luaurc": "jsonc"
 	},
 
@@ -58,7 +58,7 @@
 
 	// JSON Schemas
 	"json.schemas": [
-		{ "fileMatch": ["/.github/config/credentials.json"], "url": "./.github/config/credentials.schema.json" },
+		{ "fileMatch": ["/config/credentials.json"], "url": "./config/credentials.schema.json" },
 		{
 			"fileMatch": ["/dependencies/dependencies.json"],
 			"url": "./dependencies/dependencies.schema.json"
@@ -73,9 +73,9 @@
 		},
 		{
 			"fileMatch": [
-				".github/config/projects/**/project.json"
+				"config/projects/**/project.json"
 			],
-			"url": "./.github/config/projects/project.schema.json"
+			"url": "./config/projects/project.schema.json"
 		}
 	]
 }

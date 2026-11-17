@@ -1,7 +1,7 @@
 phase = "build"
 provides = ["pages.generated"]
 requires = []
-inputs = ["content/docs/**", "content/images/**", "content/theme.css", "ci/components/documentation/pages/build/starlight/**"]
+inputs = ["content/docs/**", "content/images/**", "content/theme.css", ".github/components/documentation/pages/build/starlight/**"]
 outputs = ["build/github/pages/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"
