@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
-const { api, writerToken, createBranch, observe } = require('../../../../../github/workflows/launch.cjs');
+const { api, writerToken, createBranch, observe } = require('../../../../../../ci/github/workflows/launch.cjs');
 const SHA = /^[0-9a-f]{40}$/;
 const expr = x => '$' + '{{ ' + x + ' }}';
 
@@ -25,7 +25,7 @@ function render(ctx, candidate, config) {
       CI_PREVIEW_SHA: candidate.sha || '',
       CLOUDFLARE_API_TOKEN: expr('secrets.CLOUDFLARE_API_TOKEN'),
       CLOUDFLARE_ACCOUNT_ID: expr('vars.CLOUDFLARE_ACCOUNT_ID'),
-    }, run: 'node ci/components/documentation/pages/publish/preview/publish.cjs --preview' },
+    }, run: 'node .github/components/documentation/pages/publish/preview/publish.cjs --preview' },
   ];
   const jobs = {
     ...(candidate.remove ? {} : { build: {
@@ -37,7 +37,7 @@ function render(ctx, candidate, config) {
         { uses: 'actions/setup-node@v7.1.0', with: { 'node-version': '24' } },
         { name: 'Generate static documentation', env: {
           DOCS_BASE: config.base, DOCS_SITE: host,
-        }, run: 'node ci/components/documentation/pages/build/starlight/build.cjs' },
+        }, run: 'node .github/components/documentation/pages/build/starlight/build.cjs' },
         { name: 'Upload static preview',
           uses: 'actions/upload-artifact@v7',
           with: { name: 'preview-site', path: 'build/github/pages/',

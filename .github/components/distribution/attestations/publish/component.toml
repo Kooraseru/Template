@@ -1,7 +1,7 @@
 phase = "publish"
 provides = ["attestations.prepared"]
 requires = ["releases.generated"]
-inputs = [".github/config/publishing/attestations.toml", ".github/config/reports/**", "build/github/releases/**"]
+inputs = ["config/publishing/attestations.toml", "config/reports/**", "build/github/releases/**"]
 outputs = ["build/github/attestations/**"]
 events = ["push"]
 boundary = "privileged"

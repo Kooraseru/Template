@@ -2,7 +2,7 @@
 // An idempotent GitHub Actions bot comment on the PR Conversation tab.
 // Never post a preview link until Cloudflare returns successful deployment.
 // Never edit comments by other authors, even if they copy the marker.
-const { api } = require('../../../../../github/workflows/launch.cjs');
+const { api } = require('../../../../../../ci/github/workflows/launch.cjs');
 
 const marker = '<!-- template-ci:documentation-preview:v1 -->';
 const botId = 41898282; // github-actions[bot]

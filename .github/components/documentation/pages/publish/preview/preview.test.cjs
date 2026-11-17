@@ -27,7 +27,7 @@ test('Cloudflare is the only preview backend and requires a project', t => {
   fs.writeFileSync(file, '[github.previews]\nenabled = true\ncloudflare_project = ""\n');
   assert.throws(() => settings(file, { GITHUB_REPOSITORY: repo }), /cloudflare_project/);
   const root = path.resolve(__dirname, '../../../../../..');
-  const targets = fs.readFileSync(path.join(root, '.github/config/targets.toml'), 'utf8');
+  const targets = fs.readFileSync(path.join(root, 'config/targets.toml'), 'utf8');
   assert.ok(!targets.includes('pages-state'));
   assert.ok(targets.includes('branches = false'));
 });
@@ -94,7 +94,7 @@ test('Cloudflare publishing is isolated from untrusted static compilation', () =
   assert.ok(!JSON.stringify(graph.jobs.build).includes('secrets.'));
   assert.ok(!JSON.stringify(graph).includes('deploy-pages@'));
   assert.ok(graph.jobs.publish.steps.some(x =>
-    x.run === 'node ci/components/documentation/pages/publish/preview/publish.cjs --preview'));
+    x.run === 'node .github/components/documentation/pages/publish/preview/publish.cjs --preview'));
   const closed = JSON.parse(render(ctx, { ...candidate, remove: true }, config())['pipeline.yml']
     .split('\n').slice(1).join('\n'));
   assert.equal(closed.jobs.build, undefined);

@@ -27,7 +27,7 @@ function section(file, name) {
   return result;
 }
 
-function settings(file = path.join(root, '.github/config/targets.toml'), env = process.env) {
+function settings(file = path.join(root, 'config/targets.toml'), env = process.env) {
   const config = section(file, 'github.previews');
   const defaults = { enabled: false, pull_requests: true,
     branches: true, retention_days: 14, cloudflare_project: '' };
