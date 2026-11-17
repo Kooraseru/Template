@@ -1,4 +1,4 @@
--- ci/components/distribution/packages/build/packageRecords.luau
+-- .github/components/distribution/packages/build/packageRecords.luau
 --!strict
 
 local Fs = require("@std/fs")
@@ -7,8 +7,8 @@ local Process = require("@lute/process")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
 
-local ROOT = ".github/config/publishing/packages"
-local RECORD_ROOT = ".github/config/publishing/packages"
+local ROOT = "config/publishing/packages"
+local RECORD_ROOT = "config/publishing/packages"
 
 local PackageRecords = {}
 

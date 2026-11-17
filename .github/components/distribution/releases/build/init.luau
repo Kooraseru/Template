@@ -1,4 +1,4 @@
--- ci/components/distribution/releases/build/init.luau
+-- .github/components/distribution/releases/build/init.luau
 --!strict
 
 local ReleaseBuilder = require("@self/releaseBuilder")

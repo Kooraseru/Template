@@ -1,4 +1,4 @@
--- ci/components/distribution/releases/build/releaseAssets.luau
+-- .github/components/distribution/releases/build/releaseAssets.luau
 --!strict
 
 local Fs = require("@std/fs")

@@ -1,4 +1,4 @@
--- ci/components/distribution/packages/build/packageBuilder.luau
+-- .github/components/distribution/packages/build/packageBuilder.luau
 --!strict
 
 local Fs = require("@std/fs")

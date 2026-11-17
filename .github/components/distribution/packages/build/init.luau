@@ -1,4 +1,4 @@
--- ci/components/distribution/packages/build/init.luau
+-- .github/components/distribution/packages/build/init.luau
 --!strict
 
 local PackageBuilder = require("@self/packageBuilder")

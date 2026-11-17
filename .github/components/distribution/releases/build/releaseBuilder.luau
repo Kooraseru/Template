@@ -1,4 +1,4 @@
--- ci/components/distribution/releases/build/releaseBuilder.luau
+-- .github/components/distribution/releases/build/releaseBuilder.luau
 --!strict
 
 local Fs = require("@std/fs")
@@ -8,8 +8,8 @@ local Glob = require("@ci/bootstrap/discovery/glob")
 local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
 local ReleaseAssets = require("./releaseAssets")
 
-local CONFIG_PATH = ".github/config/publishing/releases/settings.json"
-local RECORD_ROOT = ".github/config/publishing/releases"
+local CONFIG_PATH = "config/publishing/releases/settings.json"
+local RECORD_ROOT = "config/publishing/releases"
 local OUTPUT_ROOT = "build/github/releases"
 
 type ReleaseRecord = {

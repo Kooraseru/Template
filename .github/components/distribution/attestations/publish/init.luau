@@ -1,4 +1,4 @@
--- ci/components/distribution/attestations/publish/init.luau
+-- .github/components/distribution/attestations/publish/init.luau
 --!strict
 
 local Attestations = require("@ci/github/publication/attestations")

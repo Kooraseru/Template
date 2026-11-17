@@ -1,4 +1,4 @@
--- ci/components/distribution/packages/publish/init.luau
+-- .github/components/distribution/packages/publish/init.luau
 --!strict
 
 const Publication = require("@ci/github/publication")
@@ -26,7 +26,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 
 		if not package.format or not package.repository or not package.version then
 			print(
-				`Package {name}: registry publication skipped; configure format, version, and repository in .github/config/publishing/packages/{name}/package.toml`
+				`Package {name}: registry publication skipped; configure format, version, and repository in config/publishing/packages/{name}/package.toml`
 			)
 			continue
 		end
