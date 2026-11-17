@@ -1,6 +1,6 @@
 # CI implementation
 
-Template owns one authored workflow, .github/workflows/ci.yml. Its only job calls the full-SHA-pinned reusable workflow in Kooraseru-Hub/CI-Engine. The engine exposes a universal **fork-and-join DAG** with short labels. There is one entry point and one final required check:
+Template owns grouped event workflows (push, pull, manual and remote), each directly calling the same full-SHA-pinned bootstrap.yml in Kooraseru-Hub/CI-Engine. The engine exposes a universal **fork-and-join DAG** with short labels. There is one entry point and one final required check:
 
 ```mermaid
 flowchart LR
@@ -25,7 +25,7 @@ Prepare, Discover, and Inspect can start concurrently. Authorize waits for both 
 
 The trusted engine job is confined to the repository's default branch and an explicitly configured protected GitHub environment. It has id-token: write and accepts two explicitly mapped bootstrap credentials, not the entire secret catalog. Untrusted pull requests cannot enter it; manual publication also requires publish=true. GitHub App tokens, registry trusted publishing and OIDC provider setup remain provider-specific and cannot be assumed configured by a checked-in YAML file.
 
-The caller pins the reusable workflow by full commit SHA; that engine repository owns its own actions.lock. GitHub does not apply the caller's action lockfile to an external reusable workflow. After merging, review required-check configuration: the validated status now originates in the reusable workflow's validate job instead of Template's former local validate job.
+The callers pin the same reusable workflow by full commit SHA; that engine repository owns its own actions.lock. GitHub does not apply the caller's action lockfile to an external reusable workflow. After merging, review required-check configuration: the validated status now originates in the reusable workflow's validate job instead of Template's former local validate job.
 
 ## VS Code setup
 
@@ -43,7 +43,7 @@ Run the normal unprivileged contributor path with `bash ci/run.sh`. It installs 
 
 On a trusted generated operation, the external engine invokes the project adapter that compiles the generated job graph rather than publishing inline. Component output archives remain integrity-checked, credential environments stay isolated by job, and the required CI status reflects the *completed* generated run. Local GitHub Actions uses an isolated checkout and adapts artifact actions to v4 within that checkout only.
 
-Local `act` read-only routes execute directly and do not require remote delegation; generated routes render an ephemeral Pipeline and execute it through the local artifact transport. Neither path changes the authored workflow file.
+Local `act` read-only routes execute directly and do not require remote delegation; generated routes render an ephemeral Pipeline and execute it through the local artifact transport. Neither path changes the authored workflow files.
 
 ## Dependencies and local checks
 
@@ -157,7 +157,7 @@ Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node ci/c
 
 ## Local act compatibility
 
-The local CI wrapper stages the pinned engine workflow in its disposable checkout, rewriting GitHub-only self-references (`uses: $/`) to standard remote action references at the same SHA. It also uses artifact upload v4 for the local `act` artifact server. Neither the permanent Template launcher nor the hosted engine workflow is modified. The change is covered by `dependencies/packages/ci/localActions/run.test.cjs`.
+The local CI wrapper stages the pinned engine workflow in its disposable checkout, rewriting GitHub-only self-references (`uses: $/`) to standard remote action references at the same SHA. It also uses artifact upload v4 for the local `act` artifact server. Neither the authored Template entry points nor the hosted engine workflow is modified. The change is covered by `dependencies/packages/ci/localActions/run.test.cjs`.
 
 
 ## Generated build-only execution

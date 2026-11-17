@@ -34,21 +34,21 @@ test("capability contracts declare an explicit setup prerequisite", () => {
   }
 });
 
-test("Template is only a caller; job lifecycle and authorization belong to the reusable engine", () => {
-  const source=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
-  assert.match(source,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
-  assert.match(source,/id-token: write/);
-  assert.match(source,/app_private_key: /);
-  assert.match(source,/bootstrap_token: /);
-  assert.match(source,/secrets\.CI_TOKEN/);
-  assert.doesNotMatch(source,/secrets: inherit/);
-  const section = source.split(/\njobs:\s*\n/)[1];
-  assert.deepEqual([...section.matchAll(/^  ([\w-]+):$/gm)].map(x=>x[1]),["ci"]);
-  assert.match(source,/pull_request_target:/);
-  assert.match(source,/pull-requests: write/);
-  assert.match(source,/cloudflare_api_token: /);
-  assert.match(source,/type: choice/);
-  assert.doesNotMatch(source,/preview-close:|publish\.cjs --closed/);
+test("Grouped entry points call the same SHA-pinned engine directly", () => {
+  const directory = path.join(root, ".github/workflows");
+  const names = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
+  assert.deepEqual(names, ["manual.yml", "pull.yml", "push.yml", "remote.yml"]);
+  const pins = new Set();
+  for (const name of names) {
+    const workflow = fs.readFileSync(path.join(directory, name), "utf8");
+    const matches = [...workflow.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@([a-f0-9]{40})/g)];
+    assert.ok(matches.length, name);
+    for (const match of matches) pins.add(match[1]);
+    assert.doesNotMatch(workflow, /runs-on:|secrets: inherit|workflow_call:/);
+  }
+  assert.equal(pins.size, 1);
+  const lock = fs.readFileSync(path.join(directory, "actions.lock"), "utf8");
+  for (const name of names) assert.ok(lock.includes(".github/workflows/" + name));
 });
 test("generated operations retain trusted adapters without hardcoded jobs in Template CI", () => {
   const ops = engine.operations;

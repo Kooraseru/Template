@@ -14,7 +14,7 @@ A reusable development workspace and CI foundation for packages, editor extensio
 
 ## CI and optional publishing
 
-The sole authored `.github/workflows/ci.yml` calls the **SHA-pinned CI-Engine reusable workflow**. Default-branch pushes enter the engine's generated publication operation, while feature pushes and pull requests remain read-only. The engine reads `.github/config/ci/engine.json` for event routing, discovered components and generated adapters. `.github/config/ci/operations.json` is retained for the native generated-workflow adapter and local CI. Both catalogs must declare the same operation/event modes. Default-branch pushes select `validation`; pull requests select `review`.
+The grouped event workflows under `.github/workflows/` call the same SHA-pinned external CI Engine directly. Pushes select `validation` (trusted default-branch pushes also launch native Build and Tests); PRs select `review`; manual and remote entry points select their explicitly permitted operations. `.github/config/ci/engine.json` declares components and execution adapters; `.github/config/ci/operations.json` remains the native adapter and local CLI catalog.
 
 Generated `main` and Pages publication use generated component jobs from the CI Engine workflow and their toggles under `.github/config/targets.toml`. Other publication adapters retain their own explicit operation and credential requirements. Review the publication records under `.github/config/publishing/` and the role/environment bindings in `.github/config/credentials.json`; configure declared credentials in repository settings, never in committed files.
 
@@ -53,7 +53,7 @@ Template-owned paths are listed in the version record for future reviewable upgr
 
 `.github/dependabot.yml` enables weekly GitHub Actions update pull requests. For a project that adds a standard package manifest such as `package.json`, `Cargo.toml`, or `pyproject.toml`, add the appropriate Dependabot ecosystem and directory entry. GitHub does not automatically support the custom `dependencies/dependencies.json` format.
 
-The existing dependency loader owns custom providers and pins in `dependencies/dependencies.lock`. To update those, edit the declarations, run `--update-lock`, and review the lockfile changes. External reusable workflows are pinned by full commit SHA in `.github/workflows/ci.yml`; CI-Engine's own action lockfile covers the actions invoked by that reusable workflow. Template's local action lockfile is separate.
+The existing dependency loader owns custom providers and pins in `dependencies/dependencies.lock`. To update those, edit the declarations, run `--update-lock`, and review the lockfile changes. External reusable workflows are pinned by full commit SHA in the event workflows; CI-Engine's own action lockfile covers the actions invoked by that reusable workflow. Template's local action lockfile is separate.
 
 ## VS Code and diagnostics
 

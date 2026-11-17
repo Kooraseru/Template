@@ -35,30 +35,15 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("the single authored CI workflow delegates generation and publication to the engine", () => {
+test("authored event workflows delegate directly to one external engine", () => {
   const directory = path.join(root, ".github/workflows");
   const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name)).sort();
-  assert.deepEqual(authored, ["ci.yml"]);
-  const workflow = fs.readFileSync(path.join(directory, "ci.yml"), "utf8").replace(/\r\n/g, "\n");
-  const jobSection = workflow.split(/\njobs:\s*\n/)[1];
-  assert.ok(jobSection);
-  assert.deepEqual([...jobSection.matchAll(/^  ([\w-]+):$/gm)].map(match => match[1]), ["ci"]);
-  assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
-  assert.match(workflow, /id-token: write/);
-  assert.match(workflow, /app_private_key: /);
-  assert.match(workflow, /bootstrap_token: /);
-  assert.doesNotMatch(workflow, /secrets: inherit|name: Start Generated CI/);
-  assert.match(workflow, /pull_request_target:/);
-  assert.match(workflow, /types: \[closed\]/);
-  assert.match(workflow, /pull-requests: write/);
-  assert.match(workflow, /cloudflare_api_token: /);
-  assert.match(workflow, /type: choice/);
-  assert.doesNotMatch(workflow, /preview-close:|publish\.cjs --closed/);
-  const config = JSON.parse(fs.readFileSync(path.join(root, ".github/config/ci/operations.json"), "utf8"));
-  assert.equal(config.triggers.push, "validation");
-  assert.equal(config.triggers.default_push, "publish");
-  assert.equal(config.triggers.pull_request, "review");
-  assert.ok(config.operations.validation.events.includes("push"));
+  assert.deepEqual(authored, ["manual.yml","pull.yml","push.yml","remote.yml"]);
+  for (const file of authored) {
+    const workflow = fs.readFileSync(path.join(directory, file), "utf8");
+    assert.match(workflow, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
+    assert.doesNotMatch(workflow, /runs-on:|secrets: inherit|workflow_call:/);
+  }
 });
 test("optional administration components use their current skip policies", t => {
 	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),releases=S.Conclusion("distribution/releases/publish"),milestones=S.Conclusion("work/milestones/sync"),default=S.Conclusion("source/build")}))';

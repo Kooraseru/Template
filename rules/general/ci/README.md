@@ -1,6 +1,6 @@
 # CI architecture and operating rules
 
-GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. The single authored ci.yml routes source Build/Publish, Validation, and Readiness through `ci/entry.luau`. Bootstrap owns planning and scheduling.
+GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. Authored workflows group event consumers and select operations through the pinned external CI Engine bootstrap.yml. Bootstrap owns planning and scheduling; consumer components own implementation.
 
 ## Discovery and component contracts
 

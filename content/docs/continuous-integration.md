@@ -3,7 +3,7 @@ title: Continuous integration
 description: Read-only validation, native execution, and publication boundaries.
 ---
 
-The permanent `.github/workflows/ci.yml` delegates orchestration to CI Engine. Feature-branch pushes and pull requests run read-only checks. Trusted pushes to the default `source` branch launch the generated Build, Tests, and Publish graph through the CI Engine's `default_push` route.
+The grouped push, pull, manual and remote workflows delegate orchestration directly to CI Engine. Feature-branch pushes and pull requests run read-only checks. Trusted default-branch pushes additionally launch the generated Build and Tests graph. Publishing requires a separately authorized operation.
 
 The generated graph validates builds, documentation assets, generated branch contents, and distribution staging before entering privileged publication components. Temporary execution branches are removed after completion.
 

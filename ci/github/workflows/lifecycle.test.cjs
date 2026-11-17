@@ -5,33 +5,30 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../../..');
 
-test('one authored CI job delegates close events to a pinned reusable engine', () => {
-  const source = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
+test('PR review and privileged retirement share the pull workflow, not permissions', () => {
+  const source = fs.readFileSync(path.join(root, '.github/workflows/pull.yml'), 'utf8');
   const jobs = source.split(/\njobs:\s*\n/)[1];
-  assert.deepEqual([...jobs.matchAll(/^  ([\w-]+):$/gm)].map(m => m[1]), ['ci']);
-  assert.match(source, /pull_request_target:/);
+  assert.deepEqual([...jobs.matchAll(/^  ([\w-]+):$/gm)].map(m => m[1]), ['review', 'retire']);
+  const [review, retire] = jobs.split(/\n  retire:/);
+  assert.match(review, /operation: review/);
+  assert.doesNotMatch(review, /pull-requests: write|secrets:/);
+  assert.match(retire, /operation: preview-retire/);
+  assert.match(retire, /pull-requests: write/);
   assert.match(source, /types: \[closed\]/);
-  assert.match(source, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
-  assert.match(source, /pull-requests: write/);
-  assert.doesNotMatch(source, /preview-close:|publish\.cjs --closed/);
 });
-
-test('project declares only its protected preview retirement component', () => {
-  const config = JSON.parse(fs.readFileSync(path.join(root,
-    '.github/config/ci/lifecycle.json'), 'utf8'));
-  const route = config.routes.find(r => r.event === 'pull_request_target' && r.action === 'closed');
-  assert.equal(route.component, 'lifecycle/preview-retire');
-  assert.equal(route.sameRepository, true);
-  const component = JSON.parse(fs.readFileSync(path.join(root,
-    '.github/config/ci/components/lifecycle/preview-retire/component.json'), 'utf8'));
+test('project declares retirement as a normal protected component operation', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(root, '.github/config/ci/engine.json'), 'utf8'));
+  const operation = config.operations['preview-retire'];
+  assert.equal(operation.mode, 'protected');
+  assert.deepEqual(operation.actions, ['closed']);
+  assert.deepEqual(operation.events, ['pull_request_target']);
+  assert.deepEqual(operation.components, ['lifecycle/preview-retire']);
+  const component = JSON.parse(fs.readFileSync(path.join(root, '.github/config/ci/components/lifecycle/preview-retire/component.json'), 'utf8'));
   assert.equal(component.boundary, 'privileged');
-  assert.deepEqual(component.command,
-    ['node', 'ci/components/documentation/pages/publish/preview/publish.cjs', '--retire']);
-  assert.equal(fs.existsSync(path.join(root, 'ci/github/workflows/lifecycle.cjs')), false);
+  assert.equal(fs.existsSync(path.join(root, '.github/config/ci/lifecycle.json')), false);
 });
-
 test('dropdown choices correspond to configured manual operations', () => {
-  const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/manual.yml'), 'utf8');
   const config = JSON.parse(fs.readFileSync(path.join(root,
     '.github/config/ci/engine.json'), 'utf8'));
   const options = workflow.split('      operation:')[1].split('      publish:')[0];
