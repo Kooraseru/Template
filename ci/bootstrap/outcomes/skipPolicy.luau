@@ -34,7 +34,7 @@ local function neutralCheckPermissions(): { [string]: string }
 end
 
 function SkipPolicy.Conclusion(identity: string): string
-	local decoded = record(Toml.decode(Fs.readFileToString(".github/config/ci/execution.toml")))
+	local decoded = record(Toml.decode(Fs.readFileToString("config/ci/execution.toml")))
 
 	for field in decoded do
 		if field ~= "skip" then

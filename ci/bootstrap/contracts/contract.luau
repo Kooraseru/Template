@@ -43,7 +43,7 @@ export type Task = {
 --# Constants
 
 const TASK_INVOKER = "ci/bootstrap/execution/invoke.luau"
-const COMPONENT_ROOT = "ci/components"
+const COMPONENT_ROOT = ".github/components"
 Contract.ComponentRoot = COMPONENT_ROOT
 
 --# Helpers

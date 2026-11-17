@@ -5,7 +5,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "../..");
-const CONFIG = path.join(ROOT, ".github/config/ci/operations.json");
+const CONFIG = path.join(ROOT, "config/ci/operations.json");
 const EVENTS = new Set(["push", "pull_request", "workflow_dispatch"]);
 const NAME = /^[a-z][a-z0-9-]*$/;
 const ALIAS = /^[A-Z][A-Z0-9_]*$/;
@@ -28,7 +28,7 @@ function readConfig(filename = CONFIG, { requireCredentials = true } = {}) {
 	}
 	if (requireCredentials) {
 		const catalog = require(path.join(ROOT, "ci/github/authentication/catalog.cjs"))
-			.load(path.join(ROOT, ".github/config/credentials.json"));
+			.load(path.join(ROOT, "config/credentials.json"));
 		const sourceProfile = catalog.profiles["source-ci"];
 		const binding = catalog.environments[bootstrap.environment];
 		if (sourceProfile.bootstrapEnvironment !== bootstrap.environment || !binding) {

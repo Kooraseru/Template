@@ -34,7 +34,7 @@ function Discovery.RejectLinkedEntries(self: Discovery): ()
 			error(`invalid tracked component entry: {line}`, 0)
 		end
 		if mode == "120000" or mode == "160000" then
-			error(`{path}: symlinks and gitlinks are not allowed in ci/components`, 0)
+			error(`{path}: symlinks and gitlinks are not allowed in .github/components`, 0)
 		end
 	end
 end
@@ -45,10 +45,10 @@ entry point; its private implementation directories are not extension points.
 ]]
 function Discovery.Discover(self: Discovery): { Contract.Contract }
 	if not Fs.exists(Contract.ComponentRoot) or Fs.metadata(Contract.ComponentRoot).type ~= "dir" then
-		error("missing ci/components extension point", 0)
+		error("missing .github/components extension point", 0)
 	end
 	self:RejectLinkedEntries()
-	local settingsPath = ".github/config/ci/components.toml"
+	local settingsPath = ".github/components.toml"
 	local decodedSettings = Toml.decode(Fs.readFileToString(settingsPath))
 	if type(decodedSettings) ~= "table" then
 		error(`{settingsPath}: expected boolean default and an [enabled] table`, 0)

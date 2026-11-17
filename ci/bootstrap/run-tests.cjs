@@ -24,6 +24,7 @@ function walk(directory, root = ROOT, found = []) {
 function discover(root = ROOT) {
 	const universal = [
 		...walk(path.join(root, "ci"), root),
+		...walk(path.join(root, ".github/components"), root),
 		...walk(path.join(root, "dependencies/packages"), root),
 		...walk(path.join(root, "tests/universal"), root),
 	].filter(file => FILE.test(file)).sort();

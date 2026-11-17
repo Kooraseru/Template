@@ -5,7 +5,7 @@ local Process = require("@lute/process")
 local Outcome = require("@ci/bootstrap/outcomes/outcome")
 local Contract = require("@ci/bootstrap/contracts/contract")
 
-const COMPONENTS_MODULE_PREFIX = "@ci/components"
+const COMPONENTS_MODULE_PREFIX = "@components"
 
 type ComponentInstance = {
 	Run: (self: ComponentInstance, context: { event: string }) -> unknown,

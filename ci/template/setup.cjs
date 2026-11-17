@@ -13,12 +13,12 @@ const REQUIRED = [
   ".github/workflows/pull.yml",
   ".github/workflows/manual.yml",
   ".github/workflows/remote.yml",
-  ".github/config/ci/operations.json",
-  ".github/config/targets.toml",
-  ".github/config/template.json",
-  ".github/config/branches/main.toml",
-  "ci/components/governance/branches/build/init.luau",
-  "ci/components/governance/branches/publish/init.luau",
+  "config/ci/operations.json",
+  "config/targets.toml",
+  "config/template.json",
+  "config/branches/main.toml",
+  ".github/components/governance/branches/build/init.luau",
+  ".github/components/governance/branches/publish/init.luau",
   "dependencies/dependencies.json",
   "dependencies/dependencies.lock",
 ];
@@ -72,21 +72,21 @@ function analyze(directory = ROOT, env = process.env) {
   }
   const project = identity(env, directory);
   let version = null, operation = null, declaredTarget = null;
-  try { version = configFromFile(path.join(directory, ".github/config/template.json")); }
+  try { version = configFromFile(path.join(directory, "config/template.json")); }
   catch (error) { issues.push("Template metadata: " + error.message); }
   try {
-    operation = JSON.parse(fs.readFileSync(path.join(directory, ".github/config/ci/operations.json"), "utf8"));
+    operation = JSON.parse(fs.readFileSync(path.join(directory, "config/ci/operations.json"), "utf8"));
     if (!operation.triggers || !operation.operations || !operation.operations[operation.triggers.pull_request])
       issues.push("CI operation routing is missing the pull-request validation route");
     if (!operation.operations?.[operation.triggers.push]) issues.push("CI push route is not defined");
   } catch (error) { issues.push("CI operations: " + error.message); }
   try {
-    declaredTarget = targetRepository(fs.readFileSync(path.join(directory, ".github/config/targets.toml"), "utf8"));
+    declaredTarget = targetRepository(fs.readFileSync(path.join(directory, "config/targets.toml"), "utf8"));
     if (!declaredTarget) issues.push("GitHub repository target is missing");
     else if (declaredTarget !== "current" && project.repository && declaredTarget.toLowerCase() !== project.repository.toLowerCase())
       issues.push("GitHub target " + declaredTarget + " does not match " + project.repository + "; set github.repository = \"current\"");
   } catch (error) { issues.push("GitHub targets: " + error.message); }
-  const branchSource = path.join(directory, ".github/config/branches/main.toml");
+  const branchSource = path.join(directory, "config/branches/main.toml");
   if (fs.existsSync(branchSource) && !/\[branch\]/.test(fs.readFileSync(branchSource, "utf8"))) {
     issues.push("Main branch generation record is missing its [branch] declaration");
   }
