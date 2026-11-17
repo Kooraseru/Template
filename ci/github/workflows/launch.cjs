@@ -103,7 +103,12 @@ async function createBranch(ctx,files,token,env=process.env){
     if(!SHA.test(blob?.sha||""))throw new Error("Workflow blob creation failed");
     entries.push({path:".github/workflows/"+name,type:"blob",mode:"100644",sha:blob.sha});
   }
-  entries.push({path:".github/workflows/ci.yml",type:"blob",mode:"100644",sha:null});
+  const sourceTree=await api("GET",base+"/git/trees/"+parent.tree.sha+"?recursive=1",token,undefined,env);
+  if(sourceTree?.truncated||!Array.isArray(sourceTree?.tree))throw new Error("Cannot discover authored workflows");
+  for(const item of sourceTree.tree){
+    if(item.type!=="blob"||!/^\.github\/workflows\/[^/]+\.ya?ml$/.test(item.path))continue;
+    if(!Object.hasOwn(files,item.path.split("/").at(-1)))entries.push({path:item.path,type:"blob",mode:"100644",sha:null});
+  }
   const tree=await api("POST",base+"/git/trees",token,{base_tree:parent.tree.sha,tree:entries},env);
   if(!SHA.test(tree?.sha||""))throw new Error("Generated tree creation failed");
   const commit=await api("POST",base+"/git/commits",token,{

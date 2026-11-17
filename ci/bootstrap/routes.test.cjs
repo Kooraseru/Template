@@ -41,7 +41,7 @@ test("new operations do not require a change to authored YAML", () => {
 	copy.operations["format-check"] = { mode: "readonly", events: ["workflow_dispatch"], checks: ["workflows"] };
 	assert.equal(resolve(copy, { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/source",
 		CI_REQUESTED_OPERATION: "format-check" }).name, "format-check");
-	const workflow = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/ci.yml"), "utf8");
+	const workflow = fs.readFileSync(path.resolve(__dirname, "../../.github/workflows/manual.yml"), "utf8");
 	assert.doesNotMatch(workflow, /publish-(general|projects|rulesets):/);
 });
 test("read-only route parsing does not require managed credential packages", () => {

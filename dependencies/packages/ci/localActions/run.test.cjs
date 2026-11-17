@@ -46,8 +46,8 @@ test("local act stages a pinned reusable workflow without mutating the source la
 	const { prepareStagedWorkflow, stagedEventArguments, options } = require("./run.cjs");
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "staged-ci-"));
 	t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
-	const source = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
-	const file = path.join(directory, "ci.yml");
+	const source = fs.readFileSync(path.join(root, ".github/workflows/pull.yml"), "utf8");
+	const file = path.join(directory, "pull.yml");
 	fs.writeFileSync(file, source);
 	const mockEngine = [
 		"name: CI Engine",
@@ -72,8 +72,8 @@ test("local act stages a pinned reusable workflow without mutating the source la
 	assert.doesNotMatch(stagedEngine, /^\s*(?:-\s*)?uses:\s*\$\//m);
 	assert.match(stagedEngine, /uses: actions\/upload-artifact@v4/);
 	assert.doesNotMatch(stagedEngine, /actions\/upload-artifact@v7/);
-	assert.match(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"), /bootstrap\.yml@[a-f0-9]{40}/);
-	const args = ["--workflows", ".github/workflows/ci.yml", "--secret-file", ""];
+	assert.match(fs.readFileSync(path.join(root, ".github/workflows/pull.yml"), "utf8"), /bootstrap\.yml@[a-f0-9]{40}/);
+	const args = ["--workflows", ".github/workflows/pull.yml", "--secret-file", ""];
 	assert.equal(stagedEventArguments(args, options(args))[0], "pull_request");
 	assert.equal(stagedEventArguments(["push"], options(["push"]))[0], "push");
 });

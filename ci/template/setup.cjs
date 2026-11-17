@@ -9,7 +9,10 @@ const { configFromFile } = require("./version.cjs");
 
 const ROOT = path.resolve(__dirname, "../..");
 const REQUIRED = [
-  ".github/workflows/ci.yml",
+  ".github/workflows/push.yml",
+  ".github/workflows/pull.yml",
+  ".github/workflows/manual.yml",
+  ".github/workflows/remote.yml",
   ".github/config/ci/operations.json",
   ".github/config/targets.toml",
   ".github/config/template.json",

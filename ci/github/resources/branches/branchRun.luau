@@ -83,10 +83,14 @@ local function launch(
 		-- The generated branch has its own entry point. Keeping the permanent
 		-- controller here schedules a second read-only CI run and makes the
 		-- generated-workflow-only test fail.
-		local permanent = `{worktree}/.github/workflows/ci.yml`
-		if Fs.exists(permanent) then
-			if Fs.type(permanent) ~= "file" then error("Expected regular permanent CI workflow", 0) end
-			Fs.remove(permanent)
+		local tracked = git({ "ls-files", "--", ".github/workflows" }, worktree)
+		for entry in tracked:gmatch("[^\r\n]+") do
+			local name = entry:match("^%.github/workflows/([^/]+%.ya?ml)$")
+			if name and not files[name] then
+				local permanent = `{worktree}/{entry}`
+				if Fs.type(permanent) ~= "file" then error("Expected regular permanent workflow", 0) end
+				Fs.remove(permanent)
+			end
 		end
 		for name, contents in files do
 			Fs.writeStringToFile(`{worktree}/.github/workflows/{name}`, contents)

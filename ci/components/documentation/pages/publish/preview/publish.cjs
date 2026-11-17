@@ -129,12 +129,13 @@ async function publishPreview(env = process.env) {
 }
 async function retireClosed(env = process.env) {
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'pull_request_target' ||
-      !env.GITHUB_EVENT_PATH || !env.CI_PREVIEW_CLOSED_NUMBER)
+      !env.GITHUB_EVENT_PATH)
     throw new Error('Retirement requires a trusted PR close event');
   const event = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
   const config = settings(undefined, env);
   const number = String(event.pull_request?.number || '');
-  if (event.action !== 'closed' || number !== env.CI_PREVIEW_CLOSED_NUMBER ||
+  if (event.action !== 'closed' || !Number.isSafeInteger(event.pull_request?.number) || event.pull_request.number < 1 ||
+      (env.CI_PREVIEW_CLOSED_NUMBER && number !== env.CI_PREVIEW_CLOSED_NUMBER) ||
       event.repository?.full_name !== config.repo ||
       event.pull_request?.base?.repo?.full_name !== config.repo)
     throw new Error('Invalid preview close event');

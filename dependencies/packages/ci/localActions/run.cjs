@@ -89,8 +89,7 @@ function prepareStagedWorkflow(file, runId, pinnedWorkflow) {
 			.replaceAll("actions/download-artifact@v8", "actions/download-artifact@v4");
 		const name = "_act-ci-engine.yml";
 		fs.writeFileSync(path.join(path.dirname(file), name), engine);
-		fs.writeFileSync(file, source.replace(match[0],
-			match[0].replace(match[0].trim(), "uses: ./.github/workflows/" + name)));
+		fs.writeFileSync(file, source.replaceAll(match[0].trim(), "uses: ./.github/workflows/" + name));
 		return true;
 	}
 	if (!/^  build:\r?\n    name: Build Project Components$/m.test(source)) {
@@ -171,7 +170,9 @@ async function main(args = process.argv.slice(2)) {
 		for (const [name, bytes] of snapshot) { const file = artifacts.target(worktree, name); if (bytes === null) fs.rmSync(file, { force: true }); else { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes); } }
 		fs.copyFileSync(path.join(worktree, ".vscode/config/act/actrc"), path.join(worktree, ".actrc"));
 		execFileSync("git", ["add", "-A"], { cwd: worktree, windowsHide: true, stdio: "pipe" });
-		const staged = prepareStagedWorkflow(path.join(worktree, ".github/workflows/ci.yml"), runId);
+		const event = stagedEventArguments(args, selected)[0];
+		const entry = event === "push" ? "push.yml" : event === "pull_request" ? "pull.yml" : "manual.yml";
+		const staged = prepareStagedWorkflow(path.join(worktree, ".github/workflows", entry), runId);
 		const { readConfig, resolve } = require(path.join(root, "ci/bootstrap/routes.cjs"));
 		const route = resolve(readConfig(), {
 			GITHUB_EVENT_NAME: selected.event, GITHUB_REF: "refs/heads/source", ACT: "true",
