@@ -1,4 +1,4 @@
--- ci/components/work/milestones/sync/init.luau
+-- .github/components/work/milestones/sync/init.luau
 --!strict
 
 local Fs = require("@std/fs")

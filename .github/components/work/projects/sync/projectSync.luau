@@ -1,4 +1,4 @@
--- ci/components/work/projects/sync/projectSync.luau
+-- .github/components/work/projects/sync/projectSync.luau
 --!strict
 
 local Publication = require("@ci/github/publication")
