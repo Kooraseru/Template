@@ -1,4 +1,4 @@
--- ci/components/source/build/hostBuilder.luau
+-- .github/components/source/build/hostBuilder.luau
 --!strict
 
 local Fs = require("@std/fs")

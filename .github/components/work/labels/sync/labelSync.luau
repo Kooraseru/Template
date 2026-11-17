@@ -1,4 +1,4 @@
--- ci/components/work/labels/sync/labelSync.luau
+-- .github/components/work/labels/sync/labelSync.luau
 --!strict
 
 local Json = require("@formats/json")

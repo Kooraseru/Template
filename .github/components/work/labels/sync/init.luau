@@ -1,4 +1,4 @@
--- ci/components/work/labels/sync/init.luau
+-- .github/components/work/labels/sync/init.luau
 --!strict
 
 local LabelCatalog = require("@self/labelCatalog")

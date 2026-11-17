@@ -1,4 +1,4 @@
--- ci/components/work/labels/sync/labelCatalog.luau
+-- .github/components/work/labels/sync/labelCatalog.luau
 --!strict
 
 local Fs = require("@std/fs")
@@ -7,7 +7,7 @@ local Yaml = require("@formats/yaml")
 local Glob = require("@ci/bootstrap/discovery/glob")
 local Publication = require("@ci/github/publication")
 
-const CONFIG_PATH = ".github/config/issues/labels.toml"
+const CONFIG_PATH = "config/issues/labels.toml"
 const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
 
 local LabelCatalog = {}

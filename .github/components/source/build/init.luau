@@ -1,4 +1,4 @@
--- ci/components/source/build/init.luau
+-- .github/components/source/build/init.luau
 --!strict
 
 local HostBuilder = require("@self/hostBuilder")
