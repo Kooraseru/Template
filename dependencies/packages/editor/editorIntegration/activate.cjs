@@ -296,7 +296,7 @@ function activate({ vscode, workspaceFolder, subscriptions, signal, asAbsolutePa
 		};
 		const openDocument = uri => vscode.workspace.textDocuments.find(document => document.uri.toString() === uri.toString());
 		const ruleSource = relative => relative.endsWith(".luau") &&
-			/^(source|ci|dependencies\/packages|rules\/luau)\//.test(relative) &&
+			/^(source|ci|\.github\/components|dependencies\/packages|rules\/luau)\//.test(relative) &&
 			!relative.split("/").some(part => ["node_modules", "generated", "vendor", "examples"].includes(part));
 		const fixtureRoot = relative => relative.match(/^(rules\/luau\/.*?\/tests)\//)?.[1];
 		// The bridge sends host objects as references. Use JSON for the request data.

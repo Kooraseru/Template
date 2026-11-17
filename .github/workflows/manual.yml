@@ -9,12 +9,12 @@ on:
         required: true
         default: validation
         options:
-          - validation
+          - build
+          - preview
+          - publish
           - readiness
           - rules-audit
-          - build
-          - publish
-          - preview
+          - validation
       publish:
         description: Confirm publication for publish or preview
         type: boolean
