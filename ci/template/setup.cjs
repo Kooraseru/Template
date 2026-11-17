@@ -9,6 +9,7 @@ const { configFromFile } = require("./version.cjs");
 
 const ROOT = path.resolve(__dirname, "../..");
 const REQUIRED = [
+  ".github/workflows/bootstrap.yml",
   ".github/workflows/push.yml",
   ".github/workflows/pull.yml",
   ".github/workflows/manual.yml",
@@ -71,14 +72,20 @@ function analyze(directory = ROOT, env = process.env) {
     if (!fs.existsSync(path.join(directory, required))) issues.push("Missing required file: " + required);
   }
   const project = identity(env, directory);
-  let version = null, operation = null, declaredTarget = null;
+  let version = null, operation = null, declaredTarget = null, pushOperation = null;
   try { version = configFromFile(path.join(directory, "config/template.json")); }
   catch (error) { issues.push("Template metadata: " + error.message); }
   try {
     operation = JSON.parse(fs.readFileSync(path.join(directory, "config/ci/operations.json"), "utf8"));
-    if (!operation.triggers || !operation.operations || !operation.operations[operation.triggers.pull_request])
-      issues.push("CI operation routing is missing the pull-request validation route");
-    if (!operation.operations?.[operation.triggers.push]) issues.push("CI push route is not defined");
+    const callers = ["pull", "push"];
+    const eventNames = { pull: "pull_request", push: "push" };
+    for (const caller of callers) {
+      const source = fs.readFileSync(path.join(directory, ".github/workflows", caller + ".yml"), "utf8");
+      const selected = [...new Set([...source.matchAll(/^      operation:\s*([a-z][a-z0-9-]*)\s*$/gm)]
+        .map(match => match[1]).filter(name => operation.operations?.[name]?.events?.includes(eventNames[caller])))];
+      if (selected.length !== 1) issues.push("CI entry point has no unique " + caller + " operation");
+      else if (caller === "push") pushOperation = selected[0];
+    }
   } catch (error) { issues.push("CI operations: " + error.message); }
   try {
     declaredTarget = targetRepository(fs.readFileSync(path.join(directory, "config/targets.toml"), "utf8"));
@@ -92,7 +99,7 @@ function analyze(directory = ROOT, env = process.env) {
   }
   if (!project.repository) notes.push("GitHub repository identity unavailable offline; it is resolved from GITHUB_REPOSITORY on GitHub.");
   if (!project.defaultBranch) notes.push("Default branch unknown locally; GitHub Actions resolves it from the repository event.");
-  const publishing = operation?.triggers?.push === "publish";
+  const publishing = operation?.operations?.[pushOperation]?.publication === true;
   if (publishing) notes.push("Automatic publication is enabled. Configure the ci-bootstrap environment and scoped credentials, or select an OIDC-enabled publisher before publishing.");
   else notes.push("Default pushes run read-only CI. Publishing is optional and must be explicitly enabled in operations.json.");
   if (project.defaultBranch === "main") notes.push("Generated branch 'main' already matches the default branch. The branch publisher will skip it rather than overwrite it.");
@@ -103,7 +110,7 @@ function analyze(directory = ROOT, env = process.env) {
     defaultBranch: project.defaultBranch,
     configuredRepository: declaredTarget,
     templateVersion: version?.installed || null,
-    pushOperation: operation?.triggers?.push || null,
+    pushOperation,
     generatedBranchConfigured: fs.existsSync(branchSource),
     publicationEnabled: publishing,
     issues, notes,

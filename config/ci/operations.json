@@ -1,72 +1,13 @@
 {
   "version": 1,
-  "triggers": {
-    "push": "validation",
-    "pull_request": "review",
-    "workflow_dispatch": "validation",
-    "default_push": "publish"
-  },
-  "bootstrap": {
-    "environment": "ci-bootstrap"
-  },
-  "checks": {
-    "workflows": {
-      "command": [
-        "bash",
-        "ci/bootstrap/check-workflows.sh"
-      ],
-      "timeoutSeconds": 90
-    },
-    "code-review": {
-      "command": [
-        "node",
-        "ci/code-review.cjs"
-      ],
-      "timeoutSeconds": 750
-    },
-    "build-tests": {
-      "command": [
-        "bash",
-        "ci/run.sh"
-      ],
-      "timeoutSeconds": 1200
-    },
-    "setup": {
-      "command": [
-        "node",
-        "dependencies/packages/core/dependencyLoader/index.ts"
-      ],
-      "timeoutSeconds": 300
-    },
-    "rules-audit": {
-      "group": "audit",
-      "command": [
-        "node",
-        "ci/rules-audit.cjs"
-      ],
-      "timeoutSeconds": 750
-    },
-    "template-updates": {
-      "command": [
-        "node",
-        "ci/template/version.cjs"
-      ],
-      "timeoutSeconds": 60
-    }
-  },
   "operations": {
     "review": {
       "mode": "readonly",
       "events": [
         "pull_request"
       ],
-      "checks": [
-        "setup",
-        "workflows",
-        "code-review",
-        "rules-audit",
-        "build-tests",
-        "template-updates"
+      "components": [
+        "quality/*"
       ]
     },
     "validation": {
@@ -75,26 +16,38 @@
         "push",
         "workflow_dispatch"
       ],
-      "checks": [
-        "setup",
-        "workflows",
-        "code-review",
-        "rules-audit",
-        "build-tests",
-        "template-updates"
-      ]
+      "components": [
+        "quality/*"
+      ],
+      "branch": "default",
+      "native": {
+        "command": [
+          "node",
+          "ci/github/workflows/launch.cjs"
+        ]
+      }
     },
     "readiness": {
       "mode": "readonly",
       "events": [
         "workflow_dispatch"
       ],
-      "checks": [
-        "setup",
-        "workflows",
-        "code-review",
-        "rules-audit",
-        "template-updates"
+      "components": [
+        "quality/setup",
+        "quality/workflows",
+        "quality/code-review",
+        "quality/rules-audit",
+        "quality/template-updates"
+      ]
+    },
+    "rules-audit": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/rules-audit"
       ]
     },
     "build": {
@@ -102,9 +55,25 @@
       "events": [
         "workflow_dispatch"
       ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
       "plan": "build",
       "publication": false,
-      "branchPrefix": "run/build-"
+      "branchPrefix": "run/build-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "luau.lute",
+          "run",
+          "ci/entry.luau"
+        ],
+        "profile": "source-ci"
+      }
     },
     "publish": {
       "mode": "generated",
@@ -112,27 +81,72 @@
         "push",
         "workflow_dispatch"
       ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
       "plan": "build",
       "publication": true,
-      "branchPrefix": "ci/run-"
-    },
-    "rules-audit": {
-      "mode": "readonly",
-      "events": [
-        "workflow_dispatch"
-      ],
-      "checks": [
-        "rules-audit"
-      ]
+      "branchPrefix": "ci/run-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "luau.lute",
+          "run",
+          "ci/entry.luau"
+        ],
+        "profile": "source-ci"
+      }
     },
     "preview": {
       "mode": "generated",
       "events": [
         "workflow_dispatch"
       ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
       "plan": "build",
       "publication": true,
-      "branchPrefix": "ci/run-preview-"
+      "branchPrefix": "ci/run-preview-",
+      "execution": {
+        "command": [
+          "node",
+          ".github/components/documentation/pages/publish/preview/launch.cjs"
+        ],
+        "profile": "source-ci"
+      }
+    },
+    "preview-retire": {
+      "mode": "protected",
+      "events": [
+        "pull_request_target"
+      ],
+      "actions": [
+        "closed"
+      ],
+      "environment": "ci-preview-cloudflare",
+      "components": [
+        "lifecycle/preview-retire"
+      ]
+    },
+    "remote-validation": {
+      "mode": "readonly",
+      "events": [
+        "repository_dispatch"
+      ],
+      "actions": [
+        "ci-validation"
+      ],
+      "components": [
+        "quality/*"
+      ]
     }
-  }
+  },
+  "componentRoot": ".github/components"
 }

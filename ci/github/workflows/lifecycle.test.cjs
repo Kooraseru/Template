@@ -17,7 +17,7 @@ test('PR review and privileged retirement share the pull workflow, not permissio
   assert.match(source, /types: \[closed\]/);
 });
 test('project declares retirement as a normal protected component operation', () => {
-  const config = JSON.parse(fs.readFileSync(path.join(root, 'config/ci/engine.json'), 'utf8'));
+  const config = JSON.parse(fs.readFileSync(path.join(root, 'config/ci/operations.json'), 'utf8'));
   const operation = config.operations['preview-retire'];
   assert.equal(operation.mode, 'protected');
   assert.deepEqual(operation.actions, ['closed']);
@@ -30,12 +30,11 @@ test('project declares retirement as a normal protected component operation', ()
 test('dropdown choices correspond to configured manual operations', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/manual.yml'), 'utf8');
   const config = JSON.parse(fs.readFileSync(path.join(root,
-    'config/ci/engine.json'), 'utf8'));
+    'config/ci/operations.json'), 'utf8'));
   const options = workflow.split('      operation:')[1].split('      publish:')[0];
-  for (const [name, operation] of Object.entries(config.operations)) {
-    if (operation.events.includes('workflow_dispatch'))
-      assert.match(options, new RegExp('^          - ' + name + '$', 'm'));
-  }
+  const configured = Object.entries(config.operations).filter(([, op]) => op.events.includes("workflow_dispatch")).map(([name]) => name).sort();
+  const choices = [...options.matchAll(/^          - ([a-z][a-z0-9-]*)$/gm)].map(m => m[1]).sort();
+  assert.deepEqual(choices, configured);
   assert.match(workflow, /      preview_kind:/);
   assert.match(workflow, /      preview_pr:/);
   assert.match(workflow, /      preview_branch:/);

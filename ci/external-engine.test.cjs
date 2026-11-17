@@ -7,21 +7,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const engine = JSON.parse(fs.readFileSync(path.join(root, "config/ci/engine.json"), "utf8"));
-const routing = JSON.parse(fs.readFileSync(path.join(root, "config/ci/operations.json"), "utf8"));
-
-test("external engine routes stay synchronized with canonical CI operations", () => {
+const engine = JSON.parse(fs.readFileSync(path.join(root, "config/ci/operations.json"), "utf8"));
+test("one canonical operation catalog owns component selection", () => {
   assert.equal(engine.version, 1);
-  for(const [event, operation] of Object.entries(routing.triggers)) {
-    assert.equal(engine.triggers[event], operation);
-    assert.equal(engine.operations[operation].mode, routing.operations[operation].mode);
-  }
-  for(const [name, operation] of Object.entries(routing.operations)) {
-    assert.deepEqual([...(engine.operations[name]?.events||[])].sort(), [...operation.events].sort(), name+" event mismatch");
-    assert.equal(engine.operations[name]?.mode,operation.mode,name+" mode mismatch");
-  }
+  assert.equal(engine.componentRoot, ".github/components");
+  assert.equal(fs.existsSync(path.join(root, "config/ci/engine.json")), false);
+  assert.equal(fs.existsSync(path.join(root, ".github/config")), false);
+  assert.equal(fs.existsSync(path.join(root, "ci/components")), false);
 });
-
 test("capability contracts declare an explicit setup prerequisite", () => {
   const rootPath=path.join(root,engine.componentRoot);
   const components=["setup","workflows","code-review","rules-audit","build-tests","template-updates"];
