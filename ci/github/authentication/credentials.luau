@@ -21,7 +21,7 @@ type Fields = {
 export type Credentials = setmetatable<Fields, typeof(Credentials)>
 
 -- This is the native workflow transport contract, not a secret-name registry.
--- Actual secret names are read exclusively from .github/config/credentials.json.
+-- Actual secret names are read exclusively from config/credentials.json.
 local SECRET_ROLES: { [string]: string } = {
 	app_id = "CI_GITHUB_APP_ID_SECRET",
 	app_private_key = "CI_GITHUB_APP_PRIVATE_KEY",

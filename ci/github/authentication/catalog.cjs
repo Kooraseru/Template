@@ -3,11 +3,11 @@ const path = require("node:path");
 const modules = path.resolve(__dirname, "../../../dependencies/managed/npm/node_modules");
 const { parseTree, getNodeValue, visit } = require(path.join(modules, "jsonc-parser"));
 const Ajv = require(path.join(modules, "ajv"));
-const schema = require("../../../.github/config/credentials.schema.json");
+const schema = require("../../../config/credentials.schema.json");
 
 const empty = { classic: [], repository: {}, organization: {} };
 
-function load(file = ".github/config/credentials.json") {
+function load(file = "config/credentials.json") {
 	const input = fs.readFileSync(file, "utf8");
 	const errors = [];
 	const tree = parseTree(input, errors);

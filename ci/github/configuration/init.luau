@@ -6,9 +6,9 @@ local Fs = require("@std/fs")
 local Json = require("@formats/json")
 local Toml = require("@formats/toml")
 
-const CONFIG_PATH = ".github/config/targets.toml"
+const CONFIG_PATH = "config/targets.toml"
 
-const CREDENTIAL_PATH = ".github/config/credentials.json"
+const CREDENTIAL_PATH = "config/credentials.json"
 
 export type Permissions = {
 	classic: { string },

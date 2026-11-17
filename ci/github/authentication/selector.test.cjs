@@ -111,7 +111,7 @@ test("validates comments, reference integrity, and duplicate keys", () => {
 	const directory = fs.mkdtempSync(path.join(os.tmpdir(), "template-credentials-"));
 	try {
 		const file = path.join(directory, "credentials.json");
-		const original = fs.readFileSync(".github/config/credentials.json", "utf8");
+		const original = fs.readFileSync("config/credentials.json", "utf8");
 		fs.writeFileSync(file, original);
 		assert.ok(load(file).roles.bootstrap_token);
 		fs.writeFileSync(file, original.replace('"actions"\n      ]', '"missing"\n      ]'));

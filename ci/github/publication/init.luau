@@ -153,7 +153,7 @@ function Publication.Begin(setting: string): string?
 	end
 	local configuration = Configuration.new()
 	if configuration.publication[setting:lower()] == false then
-		print(`Publication {setting}: disabled in .github/config/targets.toml`)
+		print(`Publication {setting}: disabled in config/targets.toml`)
 		return nil
 	end
 	local repository = configuration:ResolveRepository(configuration.repository)

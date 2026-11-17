@@ -15,7 +15,7 @@ const SUBJECTS = "build/github/attestations/subjects"
 local Attestations = {}
 
 function Attestations.Enabled(): boolean
-	local root = Publication.Record(Toml.decode(Fs.readFileToString(".github/config/publishing/attestations.toml")))
+	local root = Publication.Record(Toml.decode(Fs.readFileToString("config/publishing/attestations.toml")))
 	local settings = Publication.Record(root.attestations)
 
 	for field in settings do

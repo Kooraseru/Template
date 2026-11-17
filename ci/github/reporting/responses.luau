@@ -11,7 +11,7 @@ local Contract = require("@ci/bootstrap/contracts/contract")
 local Configuration = require("@ci/github/configuration")
 local Publication = require("@ci/github/publication")
 
-const ROOT = ".github/config/reports"
+const ROOT = "config/reports"
 local Artifacts = require("@ci/github/workflows/artifacts")
 const RECORDS = `{Artifacts.Stage()}/responses`
 
