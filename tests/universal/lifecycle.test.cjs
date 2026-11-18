@@ -31,3 +31,22 @@ test('dropdown choices correspond to configured manual operations', () => {
   assert.match(workflow, /      preview_pr:/);
   assert.match(workflow, /      preview_branch:/);
 });
+
+test('PR starter correlates its own independent run and waits for the terminal result', () => {
+  const pull=fs.readFileSync(path.join(root,'.github/workflows/pull.yml'),'utf8');
+  const engine=fs.readFileSync(path.join(root,'.github/workflows/bootstrap.yml'),'utf8');
+  assert.match(pull,/REQUEST_ID: \$\{\{ format\('\{0\}-\{1\}', github.run_id, github.run_attempt\) \}\}/);
+  assert.match(pull,/client_payload:\{id:\$id,/);
+  assert.match(engine,/github\.event\.client_payload\.id/);
+  assert.match(pull,/\.display_title == \$title/);
+  assert.match(pull,/actions\/workflows\/bootstrap\.yml\/runs\?event=repository_dispatch/);
+  assert.match(pull,/ci-observe" Resolve/);
+  assert.match(pull,/ci-observe" Authorize/);
+  assert.match(pull,/ci-observe" Execute/);
+  assert.match(pull,/ci-observe" Complete/);
+  assert.match(pull,/"\$state" == completed/);
+  assert.match(pull,/"\$conclusion" == success/);
+  assert.match(pull,/always\(\) && steps\.resolve\.outputs\.run_id != '' && !cancelled\(\)/);
+  assert.match(pull,/ci-starter-pr-/);
+  assert.doesNotMatch(pull,/checkout@/);
+});

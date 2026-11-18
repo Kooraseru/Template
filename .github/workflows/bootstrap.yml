@@ -3,7 +3,7 @@ name: CI Engine
 on:
   repository_dispatch:
     types: [ci-request]
-run-name: CI / ${{ github.event.client_payload.operation }} / ${{ github.event.client_payload.sha }}
+run-name: ${{ format('CI / {0} / {1}{2}', github.event.client_payload.operation, github.event.client_payload.sha, github.event.client_payload.id && format(' / request {0}', github.event.client_payload.id) || '') }}
 permissions: {}
 concurrency:
   group: ${{ github.event.client_payload.event == 'pull_request' && format('ci-pr-{0}', github.event.client_payload.pr) || format('ci-ref-{0}', github.event.client_payload.ref) }}

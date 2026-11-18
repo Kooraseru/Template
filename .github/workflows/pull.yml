@@ -10,12 +10,17 @@ jobs:
     name: Request CI
     if: github.event.pull_request.base.ref == github.event.repository.default_branch && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 110
+    concurrency:
+      group: ci-starter-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       contents: write
       pull-requests: read
+      actions: read
     steps:
       - name: Submit immutable request
+        id: request
         env:
           GH_TOKEN: ${{ github.token }}
           CI_OPERATION: review
@@ -23,7 +28,94 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REQUEST_REF: refs/heads/${{ github.event.pull_request.head.ref }}
           REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUEST_ID: ${{ format('{0}-{1}', github.run_id, github.run_attempt) }}
         run: |
           set -euo pipefail
           if [[ -z "${REQUEST_INPUTS:-}" ]]; then REQUEST_INPUTS='{}'; fi
-          jq -n --arg event 'pull_request' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -
+          echo "id=$REQUEST_ID" >> "$GITHUB_OUTPUT"
+          echo "sha=$REQUEST_SHA" >> "$GITHUB_OUTPUT"
+          jq -n --arg id "$REQUEST_ID" --arg event 'pull_request' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{id:$id,event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -
+
+      - name: Await Resolve
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          REQUEST_SHA: ${{ steps.request.outputs.sha }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ci-observe" <<'OBSERVER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          base="repos/$GITHUB_REPOSITORY/actions"
+          phase="$1"
+          run_id="$2"
+          deadline=$((SECONDS + 5400))
+          while (( SECONDS < deadline )); do
+            run=$(gh api "$base/runs/$run_id")
+            state=$(jq -r '.status' <<< "$run")
+            conclusion=$(jq -r '.conclusion // ""' <<< "$run")
+            if [[ "$phase" == Complete ]]; then
+              if [[ "$state" == completed ]]; then
+                echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+                echo "CI Engine finished: $conclusion"
+                [[ "$conclusion" == success ]]
+                exit
+              fi
+            else
+              job=$(gh api --paginate "$base/runs/$run_id/jobs?filter=latest&per_page=100" | jq -sc --arg phase "$phase" '[.[].jobs[] | select(.name | endswith(" / " + $phase))] | if length > 1 then error("Ambiguous CI phase") else .[0] // {} end')
+              if [[ $(jq -r '.status // ""' <<< "$job") == completed ]]; then
+                result=$(jq -r '.conclusion // ""' <<< "$job")
+                echo "conclusion=$result" >> "$GITHUB_OUTPUT"
+                echo "job_id=$(jq -r '.id' <<< "$job")" >> "$GITHUB_OUTPUT"
+                echo "CI Engine signal: $phase = $result"
+                [[ "$result" == success ]]
+                exit
+              fi
+              if [[ "$state" == completed ]]; then
+                echo "::error::CI Engine finished ($conclusion) before successful $phase"
+                exit 1
+              fi
+            fi
+            sleep 10
+          done
+          echo "::error::Timed out waiting for CI Engine $phase"
+          exit 1
+          OBSERVER
+          title="CI / review / $REQUEST_SHA / request $REQUEST_ID"
+          deadline=$((SECONDS + 300))
+          run_id=""
+          while (( SECONDS < deadline )); do
+            matches=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/bootstrap.yml/runs?event=repository_dispatch&per_page=100" | jq -sc --arg title "$title" '[.[].workflow_runs[] | select(.display_title == $title) | .id]')
+            count=$(jq 'length' <<< "$matches")
+            if [[ "$count" == 1 ]]; then run_id=$(jq -r '.[0]' <<< "$matches"); break; fi
+            if [[ "$count" != 0 ]]; then echo "::error::Ambiguous CI request"; exit 1; fi
+            sleep 5
+          done
+          if [[ ! "$run_id" =~ ^[1-9][0-9]*$ ]]; then echo "::error::CI Engine request was not scheduled"; exit 1; fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id" >> "$GITHUB_OUTPUT"
+          echo "[Independent CI run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
+          bash "$RUNNER_TEMP/ci-observe" Resolve "$run_id"
+
+      - name: Await Authorize
+        id: authorize
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENGINE_RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        run: bash "$RUNNER_TEMP/ci-observe" Authorize "$ENGINE_RUN_ID"
+
+      - name: Await Execute
+        id: execute
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENGINE_RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        run: bash "$RUNNER_TEMP/ci-observe" Execute "$ENGINE_RUN_ID"
+
+      - name: Await workflow result
+        if: ${{ always() && steps.resolve.outputs.run_id != '' && !cancelled() }}
+        id: result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENGINE_RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        run: bash "$RUNNER_TEMP/ci-observe" Complete "$ENGINE_RUN_ID"
