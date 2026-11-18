@@ -1,10 +1,10 @@
 'use strict';
 const fs = require('node:fs');
-const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
+const { settings, target, sourceContext, resolveTarget, previewHost } = require('./config.cjs');
 const { api } = require('./github.cjs');
 
 function previewUrl(config, candidate) {
-  return 'https://' + candidate.alias + '.' + config.cloudflare_project + '.pages.dev' + config.base;
+  return 'https://' + candidate.alias + '.' + previewHost(config) + config.base;
 }
 function plan(config, candidate, requested) {
   const job = {
@@ -23,7 +23,7 @@ function plan(config, candidate, requested) {
     artifact: 'build/ci-candidate/build/github/pages',
     destination: 'build/preview-candidate',
     prepare: { ref: candidate.sha, command: ['node', '.github/components/documentation/pages/build/starlight/build.cjs'],
-      env: { DOCS_BASE: config.base, DOCS_SITE: 'https://' + candidate.alias + '.' + config.cloudflare_project + '.pages.dev' } },
+      env: { DOCS_BASE: config.base, DOCS_SITE: 'https://' + candidate.alias + '.' + previewHost(config) } },
     jobs: [job]
   };
 }

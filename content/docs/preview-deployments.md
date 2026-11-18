@@ -16,6 +16,8 @@ pull_requests = true
 branches = true
 retention_days = 14
 cloudflare_project = "template"
+# Use the actual hostname shown in Cloudflare (may differ from the project name).
+cloudflare_domain = "template-2pq.pages.dev"
 ```
 
 Create a protected GitHub environment named `ci-preview-cloudflare` with the `CLOUDFLARE_API_TOKEN` secret (Pages Write permissions) and the `CLOUDFLARE_ACCOUNT_ID` variable. CI does not automatically provision the Cloudflare project or its credentials.
@@ -36,7 +38,7 @@ For a manual preview, from Actions → Manual → Run workflow, choose `source`.
 
 An open PR must originate from the same repository. Forks, closed PRs, `source`, and generated CI branches cannot be previewed. The selected SHA is checked again before publishing, and the build job never receives publishing credentials.
 
-The live address follows the leading-subdomain format `https://pr-50.template.pages.dev/Template/`. Production GitHub Pages keeps its own URL and does not store preview assets.
+The live address follows the leading-subdomain format `https://pr-50.template-2pq.pages.dev/Template/`. The publisher verifies the configured hostname against Cloudflare's project API before publishing. Production GitHub Pages keeps its own URL and does not store preview assets.
 
 After a successful PR preview deployment, CI automatically posts a comment in the pull request's **Conversation** tab linking to its actual Cloudflare Pages website and source commit. Subsequent previews edit the same bot comment instead of adding duplicate replies. Branch previews do not post to a PR. This requires the isolated publisher's `pull-requests: write` permission; no preview URL is announced before a successful deployment.
 

@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { settings, target, workflowTarget, sourceContext, resolveTarget } = require('./config.cjs');
 const { plan } = require('./plan.cjs');
-const { selected, copyStatic, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
+const { selected, copyStatic, prepareUpload, retireClosed, pruneRetired, verifyProjectHost } = require('./publish.cjs');
 const { marker, bodyFor, syncComment } = require('./comment.cjs');
 
 function temporary(t) {
@@ -267,4 +267,14 @@ test('preview publishing treats candidate artifacts as static data only', t => {
     fs.symlinkSync(path.join(src,'index.html'),path.join(src,'link'));
     assert.throws(()=>copyStatic(src,dest),/Linked/);
   }
+});
+
+test('Cloudflare project names and assigned public hostnames are distinct', async () => {
+  const c={...config(),cloudflare_domain:'template-2pq.pages.dev'};
+  const candidate={...target('pr:55',c),sha:'c'.repeat(40)};
+  assert.equal(plan(c,candidate,'pr:55').prepare.env.DOCS_SITE,'https://pr-55.template-2pq.pages.dev');
+  assert.match(bodyFor(c,candidate,false),/https:\/\/pr-55\.template-2pq\.pages\.dev\/Template\//);
+  const mock=async()=>({ok:true,json:async()=>({success:true,result:{subdomain:'template-2pq.pages.dev'}})});
+  assert.equal(await verifyProjectHost(c,{CLOUDFLARE_API_TOKEN:'test'},mock),'template-2pq.pages.dev');
+  await assert.rejects(verifyProjectHost(config(),{CLOUDFLARE_API_TOKEN:'test'},mock),/Set github.previews.cloudflare_domain/);
 });

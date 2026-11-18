@@ -27,6 +27,12 @@ function section(file, name) {
   return result;
 }
 
+function previewHost(config) {
+  const domain = config.cloudflare_domain || config.cloudflare_project + '.pages.dev';
+  if (!/^[a-z0-9][a-z0-9-]{0,62}\.pages\.dev$/.test(domain))
+    throw new Error('Invalid Cloudflare Pages public hostname');
+  return domain;
+}
 function settings(file = path.join(root, 'config/targets.toml'), env = process.env) {
   const config = section(file, 'github.previews');
   const defaults = { enabled: false, pull_requests: true,
@@ -38,11 +44,12 @@ function settings(file = path.join(root, 'config/targets.toml'), env = process.e
     throw new Error('Preview retention must be between 1 and 90 days');
   if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(all.cloudflare_project))
     throw new Error('Configure github.previews.cloudflare_project for Cloudflare Pages');
+  const cloudflare_domain = previewHost(all);
   const repo = env.GITHUB_REPOSITORY || '';
   if (!repositoryPattern.test(repo)) throw new Error('Missing valid GitHub repository');
   const [owner, name] = repo.split('/');
   const base = name.toLowerCase() === (owner + '.github.io').toLowerCase() ? '/' : '/' + name + '/';
-  return { ...all, repo, owner, name, base,
+  return { ...all, cloudflare_domain, repo, owner, name, base,
     accountId: env.CLOUDFLARE_ACCOUNT_ID || '', defaultBranch: env.CI_DEFAULT_BRANCH || '' };
 }
 
@@ -135,4 +142,4 @@ async function resolveTarget(candidate, config, api) {
   return { ...candidate, sha: branch.object.sha };
 }
 
-module.exports = { root, section, settings, target, workflowTarget, sourceContext, resolveTarget };
+module.exports = { root, section, settings, previewHost, target, workflowTarget, sourceContext, resolveTarget };
