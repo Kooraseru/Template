@@ -24,7 +24,7 @@ test("capability contracts declare an explicit setup prerequisite", () => {
     assert.equal(entry.boundary,"read",name);
     assert.deepEqual(entry.requires,name==="setup"?[]:["tools.workspace"],name);
     if (name === "workflows" || name === "build-tests") {
-      assert.deepEqual(entry.command, ["node", "dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", ...(name === "workflows" ? ["native-lint", "build", "publish"] : ["native-validate"])]);
+      assert.deepEqual(entry.command, ["node", "dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", ...(name === "workflows" ? ["native-lint"] : ["native-validate"])]);
     } else {
       assert.equal(entry.command.length, 2);
       assert.equal(entry.command[0], "node");
@@ -45,21 +45,21 @@ test("one independent engine; lightweight callers only submit requests", () => {
   }
   assert.doesNotMatch(fs.readFileSync(path.join(directory, "close.yml"), "utf8"), /uses: .*bootstrap\.yml|CI-Engine/);
 });
-test("generated operations retain trusted adapters without hardcoded jobs in Template CI", () => {
-  const ops = engine.operations;
-  for(const name of ["build","publish"]) {
-    const item=ops[name];
-    assert.equal(item.mode,"generated");
-    assert.equal(item.environment,"ci-bootstrap");
-    assert.equal(item.plan,"build");
-    assert.equal(item.branch,"default");
-    assert.equal(item.execution.command[0],"node");
+test("manual build is read-only; publication uses staged permission lanes", () => {
+  const ops=engine.operations;
+  assert.equal(ops.build.mode,"readonly");
+  assert.equal(ops.build.delivery,undefined);
+  assert.deepEqual(ops.build.hostTests,ops.validation.hostTests);
+  for(const name of ["publish","preview"]){
+    const op=ops[name];
+    assert.equal(op.mode,"staged");
+    assert.deepEqual(op.events,["workflow_dispatch"]);
+    assert.equal(op.publication,true);
+    assert.equal(op.delivery.command[0],"node");
+    assert.equal(op.execution,undefined);
+    assert.equal(op.branchPrefix,undefined);
   }
-  assert.equal(ops.build.publication,false);
-  assert.equal(ops.publish.publication,true);
-  assert.equal(ops.review.mode,"readonly");
 });
-
 test("source ruleset requires the actual external reusable workflow gate", () => {
   const source = JSON.parse(fs.readFileSync(path.join(root, "config/rulesets/source-gate.json"), "utf8"));
   const rule = source.rules.find(item => item.type === "required_status_checks");

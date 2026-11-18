@@ -16,11 +16,11 @@ A reusable development workspace and CI foundation for packages, editor extensio
 
 The push, pull, manual and remote event workflows submit independent CI Engine requests. PR close only retires an existing preview. `bootstrap.yml` pins the engine once. `config/ci/operations.json` declares the selected components and optional native test matrix.
 
-Generated `main` and Pages publication use generated component jobs from the CI Engine workflow and their toggles under `config/targets.toml`. Other publication adapters retain their own explicit operation and credential requirements. Review the publication records under `config/publishing/` and the role/environment bindings in `config/credentials.json`; configure declared credentials in repository settings, never in committed files.
+Generated `main` and Pages publication use scoped same-run component jobs and their toggles under `config/targets.toml`. Configure named credentials in the declared environments.
 
 The trusted bootstrap has `id-token: write` available for authenticated OIDC providers and supports scoped GitHub App/bootstrap credentials for native workflow generation. An OIDC JWT is not itself a registry credential: npm, extension marketplaces, or other services must independently support trusted publishing and recognize the repository/workflow identity. Unsupported publishing adapters are **not** automatically enabled. The current example GitHub Packages records are staging fixtures, not working npm/NuGet/RubyGems publisher adapters.
 
-Manual **Run workflow** supports `validation`, `readiness`, `build`, and `publish`; manual publication also requires explicit `publish` confirmation. Read-only pull requests receive no publishing credentials. The external engine owns the workflow lifecycle and its protected execution job; Template's repository-owned adapter implements generated native workflows, branch creation, publication, run verification and cleanup behind that gate.
+Manual **Run workflow** supports `validation`, `readiness`, `build`, and `publish`; manual publication also requires explicit `publish` confirmation. Read-only pull requests receive no publishing credentials. The external engine owns the workflow lifecycle, artifact transport and scoped publication jobs. No temporary execution branches are created.
 
 The authored documentation and locale records live under [`content/`](content/docs/index.md), with formatting rules in [`content/docs/authoring.md`](content/docs/authoring.md). MkDocs is intentionally not configured yet.
 
@@ -68,5 +68,5 @@ See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), 
 
 A push or PR dispatches one independent CI Engine execution. It cross-compiles the declared hosts, executes the universal regression suite, and uploads the resulting binaries within that same run. Host tests run on a matrix discovered from the tracked host contracts. The final gate requires both the build and every native test to pass. Validation creates no temporary workflow branches and requires no write credentials.
 
-Explicit publication and preview deployment remain separately authorized generated operations. They are not triggered by ordinary validation.
+Explicit publication and preview deployment use scoped jobs inside the same independent engine run. They are not triggered by ordinary validation.
 

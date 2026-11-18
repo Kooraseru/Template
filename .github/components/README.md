@@ -17,7 +17,7 @@ flowchart LR
     K --> V["validate"]
 ```
 
-Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. Optional host-test jobs run only when declared by the selected operation. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Read-only host tests run within the engine's own graph; explicitly generated publication and preview operations remain isolated.
+Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. Optional host-test jobs run only when declared by the selected operation. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Host tests and explicitly authorized publication use separate jobs within the engine's own graph.
 
 config/ci/operations.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/components/.
 
@@ -41,9 +41,9 @@ node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine 
 
 Run the normal unprivileged contributor path with `node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate`. It installs dependencies, executes the read-only Build component graph, then runs the repository test suites. Hosted review invokes these same checks and headless Preflight/Rules through the declared read-only route.
 
-On a trusted generated operation, the external engine invokes the project adapter that compiles the generated job graph rather than publishing inline. Component output archives remain integrity-checked, credential environments stay isolated by job, and the required CI status reflects the *completed* generated run. Local GitHub Actions uses an isolated checkout and adapts artifact actions to v4 within that checkout only.
+A trusted staged operation selects publication lanes from the component plan. Build and Tests must succeed before publication jobs receive narrowly scoped credentials.
 
-Local `act` read-only routes execute directly and do not require remote delegation; generated routes render an ephemeral Pipeline and execute it through the local artifact transport. Neither path changes the authored workflow files.
+Local `act` runs the same read-only engine graph, exporting verified native build bundles. Hosted Windows tests and all publication are omitted locally.
 
 ## Dependencies and local checks
 
@@ -138,9 +138,9 @@ Local `act` stages default to a 30-minute timeout, adjustable with `CI_LOCAL_TIM
 
 Manual dispatch defaults to read-only `validation`. Source-push validation cannot publish and never exposes deployment permissions to generated build jobs. Source pushes, feature pushes and pull requests remain read-only. Publication is explicitly requested. The generated graph builds and tests, then publishes enabled targets through components. The `main` publication target is currently disabled; when enabled it creates a rootless orphan branch, while production Starlight Pages remains enabled. Publication uses a trusted default-branch workflow and independent job permissions. Attestation signing remains disabled.
 
-The sample release and package conflict policies default to `skip`, not `replace`. To replace a tag, release, or package version, opt in explicitly after reviewing the generated outputs. Publication rehearsals route GitHub API requests and release-asset uploads to the local test server. The Pages site is built with Starlight from `content/docs/` and `content/images/` and deployed by its generated native Publish component when GitHub Pages is configured for GitHub Actions. Attestation signing remains unimplemented and disabled.
+The sample release and package conflict policies default to `skip`, not `replace`. To replace a tag, release, or package version, opt in explicitly after reviewing the generated outputs. Publication rehearsals route GitHub API requests and release-asset uploads to the local test server. The Pages site is built with Starlight from `content/docs/` and `content/images/` and deployed by its same-run native Publish component when GitHub Pages is configured for GitHub Actions. Attestation signing remains unimplemented and disabled.
 
-The default is `workflow_dispatch` with `operation=validation`. Explicit events, `--input operation=...`, dotenv input files, and event payloads are honored. Local Build automatically runs the generated controller and reusable Build workflow in an isolated checkout, then exports verified ordinary files. Publish is omitted locally. The launcher suppresses ambient GitHub-token discovery and default secret-file loading for local execution. Readiness needs explicit read authorization; no publication is performed as verification.
+The default is `workflow_dispatch` with `operation=validation`. Explicit events, `--input operation=...`, dotenv input files, and event payloads are honored. Local Build runs the same read-only controller and exports verified ordinary files. Publish is unavailable locally.
 
 Current compiled outputs live under `build/artifacts/`; generated products stay under `build/github/`. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.
 

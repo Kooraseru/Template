@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { settings, target, workflowTarget, sourceContext, resolveTarget } = require('./config.cjs');
-const { render } = require('./launch.cjs');
+const { plan } = require('./plan.cjs');
 const { selected, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
 const { marker, bodyFor, syncComment } = require('./comment.cjs');
 
@@ -43,11 +43,11 @@ test('preview targets are stable and reserved branches are rejected', () => {
 test('dispatch requires a trusted source revision and an explicit approval', t => {
   const event = path.join(temporary(t), 'event.json');
   fs.writeFileSync(event, JSON.stringify({ inputs: { preview_kind: 'pr', preview_pr: 50 } }));
-  const ctx = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_dispatch',
-    GITHUB_REF: 'refs/heads/source', CI_DEFAULT_BRANCH: 'source',
-    CI_ENGINE_OPERATION: 'preview', CI_PUBLICATION_ENABLED: 'true',
-    GITHUB_SHA: 'a'.repeat(40), GITHUB_RUN_ID: '123',
-    GITHUB_RUN_ATTEMPT: '1', GITHUB_EVENT_PATH: event };
+  const ctx = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'repository_dispatch',
+    GITHUB_REF: 'refs/heads/source', CI_ORIGIN_REF: 'refs/heads/source', CI_DEFAULT_BRANCH: 'source',
+    CI_DELIVERY_OPERATION: 'preview', CI_DELIVERY_CONFIRM: 'true', CI_ORIGIN_TRUSTED: 'true', CI_ORIGIN_EVENT: 'workflow_dispatch',
+    GITHUB_SHA: 'a'.repeat(40), CI_ORIGIN_SHA: 'a'.repeat(40), GITHUB_RUN_ID: '123',
+    GITHUB_RUN_ATTEMPT: '1', CI_ORIGIN_INPUTS: JSON.stringify({preview_kind:'pr',preview_pr:50}) };
   assert.equal(sourceContext(ctx).target, 'pr:50');
   assert.throws(() => sourceContext({ ...ctx, GITHUB_REF: 'refs/heads/topic' }), /trusted source/);
 });
@@ -78,27 +78,22 @@ test('only open same-repository PRs can be previewed', async () => {
     /originate from this repository/);
 });
 test('Cloudflare publishing is isolated from untrusted static compilation', () => {
-  const ctx = { sha: 'a'.repeat(40), target: 'pr:50',
-    branch: 'ci/run-preview-123-1-aaaaaaaaaa' };
   const candidate = { ...target('pr:50', config()), sha: 'b'.repeat(40) };
-  const graph = JSON.parse(render(ctx, candidate, config())['pipeline.yml']
-    .split('\n').slice(1).join('\n'));
-  assert.equal(graph.jobs.build.permissions.contents, 'read');
-  assert.equal(graph.jobs.build.steps[0].with.ref, candidate.sha);
-  assert.equal(graph.jobs.build.steps[2].env.DOCS_BASE, '/Template/');
-  assert.equal(graph.jobs.publish.steps[0].with.ref, ctx.sha);
-  assert.equal(graph.jobs.publish.permissions.contents, 'read');
-  assert.equal(graph.jobs.publish.permissions.actions, 'read');
-  assert.equal(graph.jobs.publish.permissions['pull-requests'], 'write');
-  assert.equal(graph.jobs.publish.environment.name, 'ci-preview-cloudflare');
-  assert.ok(!JSON.stringify(graph.jobs.build).includes('secrets.'));
-  assert.ok(!JSON.stringify(graph).includes('deploy-pages@'));
-  assert.ok(graph.jobs.publish.steps.some(x =>
-    x.run === 'node .github/components/documentation/pages/publish/preview/publish.cjs --preview'));
-  const closed = JSON.parse(render(ctx, { ...candidate, remove: true }, config())['pipeline.yml']
-    .split('\n').slice(1).join('\n'));
-  assert.equal(closed.jobs.build, undefined);
-  assert.ok(!closed.jobs.publish.steps.some(x => x.uses === 'actions/download-artifact@v8'));
+  const spec = plan(config(),candidate,'pr:50');
+  assert.equal(spec.prepare.ref,candidate.sha);
+  assert.deepEqual(spec.prepare.env,{DOCS_BASE:'/Template/',DOCS_SITE:'https://pr-50.template.pages.dev'});
+  assert.deepEqual(spec.prepare.command,['node','.github/components/documentation/pages/build/starlight/build.cjs']);
+  assert.equal(spec.artifact,'build/ci-candidate/build/github/pages');
+  assert.equal(spec.destination,'build/preview-candidate');
+  const publisher=spec.jobs[0];
+  assert.equal(publisher.lane,'external');
+  assert.equal(publisher.environment,'ci-preview-cloudflare');
+  assert.equal(publisher.command.at(-1),'--preview');
+  assert.equal(publisher.bindings[0].name,'CLOUDFLARE_API_TOKEN');
+  assert.ok(!JSON.stringify(spec.prepare).includes('CLOUDFLARE'));
+  const closed=plan(config(),{...candidate,sha:null,remove:true},'delete:pr:50');
+  assert.equal(closed.prepare,undefined);
+  assert.equal(closed.artifact,undefined);
 });
 test('a forged preview target alias is rejected', () => {
   assert.equal(selected({ CI_PREVIEW_TARGET: 'pr:50', CI_PREVIEW_ALIAS: 'pr-50',

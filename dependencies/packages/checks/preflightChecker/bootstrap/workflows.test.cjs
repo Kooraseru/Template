@@ -10,30 +10,52 @@ function execute(t, source, env = {}) {
 	const file = path.join(temporary, "test.luau"); fs.writeFileSync(file, source);
 	const result = spawnSync(lute, ["run", file], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true, env: { ...process.env, ...env } }); assert.ifError(result.error); assert.equal(result.status, 0, result.stdout + result.stderr); return JSON.parse(result.stdout);
 }
-test("generated hosted stages enforce Build before Publish and read-only Validation", t => {
-	const source = 'local B = require("@ci/bootstrap")\nlocal W = require("@ci/github/workflows/workflow")\nlocal J = require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(), string.rep("a",40), "ci-run-1-1", "push")))';
-	const files = execute(t, source, { ACT: "", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "true" }); const controller = JSON.parse(files["pipeline.yml"]);
-	assert.equal(controller.name, "Pipeline");
-	assert.deepEqual(controller.jobs.publish.needs, ["build", "tests"]); assert.deepEqual(controller.jobs.tests.needs, ["build"]); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
-	// A reusable workflow cannot elevate the caller's GitHub token scope.
-	// Validate all generated jobs so a new component cannot silently cause
-	// a zero-job GitHub Actions startup_failure.
-	const called = JSON.parse(files["publish.yml"].slice(files["publish.yml"].indexOf("{")));
-	const allowed = controller.jobs.publish.permissions;
-	for (const [name, job] of Object.entries(called.jobs)) {
-		for (const [permission, access] of Object.entries(job.permissions || {})) {
-			if (access === "write") assert.equal(allowed[permission], "write", name + ": " + permission);
-			else assert.ok(["read", "write"].includes(allowed[permission]), name + ": " + permission);
-		}
-	}
-	assert.equal(controller.jobs.publish.permissions.pages, "write");
-	for (const file of Object.values(files)) assert.ok(!file.includes('"inherit"'));
-	const build = JSON.parse(files["build.yml"].slice(files["build.yml"].indexOf("{"))); assert.ok(build.on.workflow_call);
-	for (const job of Object.values(build.jobs)) assert.equal(job.environment, undefined);
+function nativePlan(t) {
+  const directory=fs.mkdtempSync(path.join(root,"build/delivery-test-"));
+  t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
+  const file=path.join(directory,"plan.json");
+  const script=path.join(root,"dependencies/managed/packages/ci-engine/src/native/bootstrap/deliveryPlan.luau");
+  const result=spawnSync(lute,["run",script],{cwd:root,encoding:"utf8",timeout:30000,
+    env:{...process.env,CI_DELIVERY_PLAN_FILE:file}});
+  assert.ifError(result.error);assert.equal(result.status,0,result.stdout+result.stderr);
+  return JSON.parse(fs.readFileSync(file,"utf8"));
+}
+test("native delivery plan covers each real publication component with its own lane",t=>{
+  const plan=nativePlan(t);
+  const tasks=execute(t,'local B=require("@ci/bootstrap")\nlocal J=require("@formats/json")\nprint(J.encode(B.Plan("push")))');
+  assert.deepEqual(plan.jobs.map(job=>job.id).sort(),tasks.filter(task=>task.phase==="publish").map(task=>task.identity).sort());
+  const get=id=>plan.jobs.find(job=>job.id===id);
+  assert.equal(get("work/labels/sync").lane,"issues");
+  assert.equal(get("documentation/pages/publish").lane,"pages");
+  assert.equal(get("documentation/pages/publish").pages_path,"build/github/pages");
+  assert.equal(get("work/projects/sync").environment,"ci-projects");
+  assert.deepEqual(get("work/projects/sync").bindings,[{role:"CI_CREDENTIAL_PROJECTS_TOKEN",source:"secret",name:"CI_TOKEN"}]);
+  assert.equal(get("governance/rulesets/sync").environment,"ci-rulesets");
+  assert.equal(get("governance/rulesets/sync").lane,"credential");
+  assert.equal(plan.artifact,plan.destination);
+  assert.match(plan.artifact,/^build\/run\/[^/]+\/transport\/bundles$/);
+  const {normalize}=require("../../../../../dependencies/managed/packages/ci-engine/src/adapters/github/delivery.cjs");
+  assert.equal(normalize(plan).jobs.length,plan.jobs.length);
 });
-test("local Build omits Publish and every discovered Build component is rendered", t => {
-	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
-	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
+test("same-run delivery jobs cannot publish before Build and native Tests pass",()=>{
+  const file=fs.readFileSync(path.join(root,"dependencies/managed/packages/ci-engine/.github/workflows/bootstrap.yml"),"utf8");
+  for(const lane of ["contents","issues","credential","pages","external"]){
+    const start=file.indexOf("\n  publish_"+lane+":");
+    assert.ok(start>=0);
+    const part=file.slice(start).split(/\n  [a-z_]+:\n/)[0];
+    // Read the full job independently of matrix cardinality.
+    const section=file.slice(start+1).split(/\n  [a-z_]+:\n/)[0];
+    assert.match(section,/needs: \[resolve, plan, authorize, execute, test\]/);
+    assert.match(section,/needs\.resolve\.outputs\.trusted == 'true'/);
+    assert.match(section,/inputs\.publish/);
+    assert.match(section,/needs\.execute\.result == 'success'/);
+    assert.match(section,/needs\.test\.result == 'success'/);
+    assert.match(section,/name: ci-delivery-input/);
+    if(lane!=="pages")assert.doesNotMatch(section,/id-token: write|pages: write/);
+    if(lane!=="contents")assert.doesNotMatch(section,/contents: write/);
+    if(lane!=="issues")assert.doesNotMatch(section,/issues: write/);
+  }
+  assert.doesNotMatch(file,/Execute trusted generated adapter|CI_COMPONENT_CREDENTIALS|secrets: inherit/);
 });
 test("authored events dispatch independently from the pinned engine", () => {
   const directory=path.join(root,".github/workflows");
@@ -60,27 +82,12 @@ test("Build dependencies on Publish are rejected before rendering", t => {
 });
 
 
-test("direct generated Build cannot schedule Publish without explicit trusted publication intent", t => {
-	const result = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode({files=W.Bundle(B.new("workflow_dispatch"):BuildPlan(),string.rep("a",40),"ci-run-1-1","workflow_dispatch"),group=type(W.ComponentEnvironment)}))', { ACT: "", CI_OPERATION: "build" });
-	assert.equal(result.group, "function");
-	assert.equal(result.files["publish.yml"], undefined);
-	assert.equal(JSON.parse(result.files["pipeline.yml"]).jobs.publish, undefined);
-});
-
-
-test("generated graph binds credential environments and isolates publication", t => {
-	const code = 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"run/publish-1-1","push")))';
-	const enabled = execute(t, code, { ACT: "", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "true", CI_EXECUTION_PREFIX: "run/publish-" });
-	assert.ok(enabled["publish.yml"]);
-	const compiled = JSON.parse(enabled["publish.yml"].slice(enabled["publish.yml"].indexOf("{")));
-	assert.ok(compiled.on.workflow_call);
-	const jobs = Object.values(compiled.jobs);
-	assert.ok(jobs.some(job => job.environment?.name === "ci-projects"));
-	assert.ok(jobs.some(job => job.environment?.name === "ci-rulesets"));
-	assert.ok(jobs.some(job => job.permissions?.actions === "read"));
-	assert.ok(!enabled["publish.yml"].includes("actions/download-artifact@v8"));
-	const disabled = execute(t, code, { ACT: "", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "false", CI_EXECUTION_PREFIX: "run/build-" });
-	assert.equal(disabled["publish.yml"], undefined);
+test("explicit Build never declares a delivery planner",()=>{
+  const operations=JSON.parse(fs.readFileSync(path.join(root,"config/ci/operations.json"),"utf8")).operations;
+  assert.equal(operations.build.mode,"readonly");
+  assert.equal(operations.build.delivery,undefined);
+  assert.equal(operations.publish.mode,"staged");
+  assert.equal(operations.publish.publication,true);
 });
 test("example release and package policies never replace existing assets by default", () => {
 	const release = JSON.parse(fs.readFileSync(path.join(root, "config/publishing/releases/settings.json"), "utf8"));
@@ -89,27 +96,16 @@ test("example release and package policies never replace existing assets by defa
 	assert.match(packages, /^on_existing = "skip"$/m);
 });
 
-test("generated publication retains branch checks and rehearses release uploads", () => {
-	const publication = fs.readFileSync(path.join(root, "dependencies/managed/packages/ci-engine/src/native/github/publication/init.luau"), "utf8");
-	assert.match(publication, /Process\.env\.CI_GRAPH_RUN ~= "true"/);
-	assert.match(publication, /Process\.env\.CI_PHASE ~= "publish"/);
-	assert.doesNotMatch(publication, /CI_STAGE_MODE|fixedStage/);
-	assert.match(publication, /configuration\.branchPrefix/);
-	assert.match(publication, /local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
-	const runtime = fs.readFileSync(path.join(root, "dependencies/managed/packages/ci-engine/src/native/github/resources/branches/branchRun.luau"), "utf8");
-	assert.match(runtime, /pcall\(waitForPipeline, repository, branch, revision, true\)/);
-	assert.match(runtime, /record\("failed", tostring\(problem\)\)/);
-	assert.match(runtime, /Temporary CI branch moved after this run started/);
-	assert.match(runtime, /Fs\.remove\(permanent\)/);
-	assert.match(runtime, /pcall\(waitForPipeline, repository, branch, revision, true\)/);
-	assert.match(runtime, /pcall\(removeOwnedRun, configuration, repository, branch, revision, runId, attempt, fresh\.token\)/);
-	assert.match(runtime, /decoded\.object\.sha ~= revision/);
-	assert.match(runtime, /Generated CI succeeded but branch cleanup failed/);
-	assert.match(runtime, /git\/matching-refs\/heads\//);
-	assert.match(runtime, /parentRun\.status ~= "completed"/);
-	assert.match(runtime, /generated\.message ~= "CI execution graph for " \.\. originSha/);
-	assert.match(runtime, /original\.sha ~= originSha/);
-	assert.match(runtime, /gsub\("\(\[\^%w_\.\/~\-\]\)"/);
+test("publication requires admitted same-run trusted source and retains loopback uploads",()=>{
+  const publication=fs.readFileSync(path.join(root,"dependencies/managed/packages/ci-engine/src/native/github/publication/init.luau"),"utf8");
+  assert.match(publication,/Process\.env\.CI_GRAPH_RUN ~= "true"/);
+  assert.match(publication,/Process\.env\.CI_PHASE ~= "publish"/);
+  assert.match(publication,/Process\.env\.CI_ORIGIN_TRUSTED ~= "true"/);
+  assert.match(publication,/Process\.env\.CI_PUBLICATION_ENABLED ~= "true"/);
+  assert.match(publication,/source ~= Process\.env\.GITHUB_SHA/);
+  assert.doesNotMatch(publication,/CI_RUN_BRANCH|CI_STAGE_MODE|fixedStage/);
+  assert.match(publication,/local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
+  assert.equal(fs.existsSync(path.join(root,"dependencies/managed/packages/ci-engine/src/native/github/resources/branches/branchRun.luau")),false);
 });
 test("trusted Pages publication is enabled while attestation signing remains disabled", () => {
 	const targets = fs.readFileSync(path.join(root, "config/targets.toml"), "utf8");
