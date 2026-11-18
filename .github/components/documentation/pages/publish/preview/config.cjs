@@ -92,19 +92,17 @@ function workflowTarget(inputs) {
 }
 function sourceContext(env = process.env) {
   const defaults = env.CI_DEFAULT_BRANCH || '';
-  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_dispatch' ||
-      !defaults || env.GITHUB_REF !== 'refs/heads/' + defaults ||
-      env.CI_ENGINE_OPERATION !== 'preview' || env.CI_PUBLICATION_ENABLED !== 'true')
+  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'repository_dispatch' ||
+      env.CI_ORIGIN_EVENT !== 'workflow_dispatch' || env.CI_ORIGIN_TRUSTED !== 'true' ||
+      env.CI_DELIVERY_OPERATION !== 'preview' || env.CI_DELIVERY_CONFIRM !== 'true' ||
+      !defaults || env.GITHUB_REF !== 'refs/heads/' + defaults || env.CI_ORIGIN_REF !== env.GITHUB_REF)
     throw new Error('Previews require explicit trusted source-branch CI dispatch');
-  if (!shaPattern.test(env.GITHUB_SHA || '') ||
-      !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID || '') ||
-      !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
+  if (!shaPattern.test(env.GITHUB_SHA || '') || env.CI_ORIGIN_SHA !== env.GITHUB_SHA ||
+      !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID || '') || !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
     throw new Error('Invalid trusted dispatch identity');
-  const payload = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
-  const requested = workflowTarget(env.CI_ORIGIN_INPUTS ? JSON.parse(env.CI_ORIGIN_INPUTS) : payload?.inputs);
+  const requested = workflowTarget(JSON.parse(env.CI_ORIGIN_INPUTS || '{}'));
   return { sourceSha: env.GITHUB_SHA, sourceBranch: defaults,
-    runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT,
-    target: requested };
+    runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT, target: requested };
 }
 
 async function resolveTarget(candidate, config, api) {

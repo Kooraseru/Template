@@ -11,16 +11,16 @@ concurrency:
 jobs:
   engine:
     name: CI Engine / engine
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@e966d7879585ff969866b7edccfdcd77fe62d213
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@b539529d8f0fbfb5667031b25d3c2104c9f83d91
     permissions:
-      contents: read
+      contents: write
       actions: read
-      pull-requests: read
+      pull-requests: write
       checks: write
+      issues: write
+      pages: write
+      id-token: write
     with:
       request: ${{ toJSON(github.event.client_payload) }}
       operation: ${{ github.event.client_payload.operation }}
       publish: ${{ github.event.client_payload.publish == true }}
-    secrets:
-      app_private_key: ${{ github.event.client_payload.event != 'pull_request' && github.event.client_payload.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event.client_payload.sha == github.sha && secrets.CI_APP_PRIVATE_KEY || '' }}
-      bootstrap_token: ${{ github.event.client_payload.event != 'pull_request' && github.event.client_payload.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.event.client_payload.sha == github.sha && secrets.CI_TOKEN || '' }}

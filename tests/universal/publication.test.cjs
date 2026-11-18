@@ -10,15 +10,15 @@ const root = path.resolve(__dirname, "../..");
 const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
 const exec = promisify(execFile);
 
-test("real publication component reconciles synthetic labels only on a generated Publish branch", async t => {
+test("real publication component reconciles synthetic labels only in an authorized same-run Publish phase", async t => {
 	const repository = "rehearsal/fixture";
-	const route = JSON.parse(fs.readFileSync(path.join(root, "config/ci/operations.json"), "utf8")).operations.publish;
-	const branch = route.branchPrefix + "1-1";
+	const sha = "a".repeat(40);
 	const safe = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|TEMP|TMP|TMPDIR|HOME|USERPROFILE)$/i.test(key)));
 	const env = { ...safe, GITHUB_ACTIONS: "true", GITHUB_REPOSITORY: repository,
-		GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/" + branch,
-		CI_EVENT: "push", CI_PHASE: "publish", CI_GRAPH_RUN: "true", CI_RUN_BRANCH: branch,
-		CI_EXECUTION_PREFIX: route.branchPrefix, GH_TOKEN: "rehearsal-token", TEMPLATE_PUBLICATION_REHEARSAL: "1" };
+		GITHUB_EVENT_NAME: "repository_dispatch", GITHUB_REF: "refs/heads/source", GITHUB_SHA: sha,
+		CI_ORIGIN_TRUSTED: "true", CI_ORIGIN_EVENT: "workflow_dispatch", CI_DEFAULT_BRANCH: "source", CI_ORIGIN_REF: "refs/heads/source", CI_SOURCE_SHA: sha,
+		CI_EVENT: "push", CI_PHASE: "publish", CI_GRAPH_RUN: "true", CI_PUBLICATION_ENABLED: "true",
+		GH_TOKEN: "rehearsal-token", TEMPLATE_PUBLICATION_REHEARSAL: "1" };
 	fs.mkdirSync(path.join(root, "build"), { recursive: true });
 	const dir = fs.mkdtempSync(path.join(root, "build/publish-rehearsal-"));
 	t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -32,8 +32,8 @@ test("real publication component reconciles synthetic labels only on a generated
 	assert.ok(labels.length > 0);
 	const mock = await startMock({repository, labels}, "create");
 	try {
-		await assert.rejects(run(invoke, {CI_GRAPH_RUN:"false", GITHUB_REF:"refs/heads/source"}), /validated generated Publish run branch/);
-		await assert.rejects(run(invoke, {CI_PHASE:"build"}), /validated generated Publish run branch/);
+		await assert.rejects(run(invoke, {CI_GRAPH_RUN:"false", GITHUB_REF:"refs/heads/source"}), /confirmed same-run trusted default-branch delivery/);
+		await assert.rejects(run(invoke, {CI_PHASE:"build"}), /confirmed same-run trusted default-branch delivery/);
 		assert.deepEqual(mock.operations, []);
 		await run(invoke);
 		mock.assertLabels();

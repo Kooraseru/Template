@@ -17,8 +17,6 @@
     "dependencies/packages/core/dependencyLoader/index.ts",
     "--exec",
     "tools.ciEngine",
-    "native-lint",
-    "build",
-    "publish"
+    "native-lint"
   ]
 }

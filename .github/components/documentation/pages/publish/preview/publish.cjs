@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { root, settings, target, resolveTarget } = require('./config.cjs');
+const { root, settings, target, resolveTarget, sourceContext } = require('./config.cjs');
 const { api } = require('./github.cjs');
 const { syncComment, findOwned, bodyFor } = require('./comment.cjs');
 
@@ -108,8 +108,10 @@ async function cloudflareDeploy(config, candidate, env = process.env) {
   return url(config, candidate);
 }
 async function publishPreview(env = process.env) {
-  if (env.GITHUB_EVENT_NAME !== 'push' || env.CI_PREVIEW_TRUSTED_SOURCE !== 'true')
-    throw new Error('Only trusted generated preview publisher may execute');
+  const request = sourceContext(env);
+  if (env.CI_PHASE !== 'publish' || env.CI_PUBLICATION_ENABLED !== 'true' || request.target !== env.CI_PREVIEW_TARGET)
+    throw new Error('Only the authorized same-run publisher may execute');
+  env = { ...env, CLOUDFLARE_API_TOKEN: env.CI_EXTERNAL_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CI_EXTERNAL_ACCOUNT };
   const config = settings(undefined, env);
   if (!config.enabled) throw new Error('Previews disabled');
   const candidate = selected(env, config);

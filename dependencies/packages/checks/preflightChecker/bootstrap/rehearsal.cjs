@@ -71,8 +71,9 @@ async function main() {
 	const inputs = JSON.parse(loaded.stdout);
 	const env = {
 		...safeEnv, GITHUB_ACTIONS: "true", GITHUB_REPOSITORY: inputs.repository,
-		GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/ci/run-1-1", CI_RUN_BRANCH: "ci/run-1-1",
-		CI_EXECUTION_PREFIX: "ci/run-", CI_GRAPH_RUN: "true", CI_PHASE: "publish", CI_EVENT: "push", GH_TOKEN: "rehearsal-token",
+		GITHUB_EVENT_NAME: "repository_dispatch", GITHUB_REF: "refs/heads/source", GITHUB_SHA: "a".repeat(40), CI_SOURCE_SHA: "a".repeat(40),
+		CI_ORIGIN_TRUSTED: "true", CI_ORIGIN_EVENT: "workflow_dispatch", CI_ORIGIN_REF: "refs/heads/source", CI_DEFAULT_BRANCH: "source", CI_PUBLICATION_ENABLED: "true",
+		CI_GRAPH_RUN: "true", CI_PHASE: "publish", CI_EVENT: "push", GH_TOKEN: "rehearsal-token",
 		TEMPLATE_PUBLICATION_REHEARSAL: "1",
 	};
 	const mock = await startMock(inputs, target === labelTask ? scenario : "active");
