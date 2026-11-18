@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { workspacePath, diagnosticOutput, review, escapeCommand, summary } = require("./code-review.cjs");
+const { workspacePath, diagnosticOutput, review, escapeCommand, summary } = require("./review.cjs");
 
 test("compiler diagnostics retain source locations without accepting escaped paths", () => {
 	const root = "/tmp/review-fixture";

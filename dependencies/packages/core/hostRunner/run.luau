@@ -1,4 +1,4 @@
--- ci/run.luau
+-- dependencies/packages/core/hostRunner/run.luau
 --!strict
 
 local Fs = require("@std/fs")
@@ -8,7 +8,7 @@ local Toml = require("@formats/toml")
 local selector = Process.args[2]
 local selected = if selector == "--" then Process.args[3] else selector
 if not selected or not selected:match("^[%w_-]+$") then
-	error("usage: lute run ci/run.luau <host-name>", 0)
+	error("usage: lute run dependencies/packages/core/hostRunner/run.luau <host-name>", 0)
 end
 
 local contractPath = `source/hosts/{selected}/host.toml`
@@ -31,7 +31,7 @@ end
 for _, artifact in artifacts do
 	if not Fs.exists(artifact) or Fs.metadata(artifact).type ~= "file" then
 		error(
-			`missing {artifact}; build first with node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau`,
+			`missing {artifact}; build first with node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native`,
 			0
 		)
 	end

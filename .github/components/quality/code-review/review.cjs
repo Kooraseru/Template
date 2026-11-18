@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "../../../..");
 const maxAnnotations = 50;
 
 function workspacePath(file, workspace = root) {
@@ -20,11 +20,11 @@ function diagnosticOutput(output, workspace = root) {
 		if (line.startsWith("::rule-finding::")) {
 			let issue;
 			try { issue = JSON.parse(line.slice("::rule-finding::".length)); }
-			catch { found.push({ file: "ci/code-review.cjs", line: 1, column: 1, severity: "error", source: "Rules", message: "Malformed rule finding", infrastructure: true }); continue; }
+			catch { found.push({ file: ".github/components/quality/code-review/review.cjs", line: 1, column: 1, severity: "error", source: "Rules", message: "Malformed rule finding", infrastructure: true }); continue; }
 			const file = workspacePath(issue.file, workspace);
 			const severity = issue.fixtureFailure || issue.checkerFailure ? "error" : issue.severity;
 			if (!file || !Number.isInteger(issue.line) || issue.line < 1 || !["error", "warning", "information", "info", "off"].includes(severity)) {
-				found.push({ file: "ci/code-review.cjs", line: 1, column: 1, severity: "error", source: "Rules", message: "Invalid rule finding", infrastructure: true });
+				found.push({ file: ".github/components/quality/code-review/review.cjs", line: 1, column: 1, severity: "error", source: "Rules", message: "Invalid rule finding", infrastructure: true });
 				continue;
 			}
 			if (severity !== "off") found.push({
@@ -40,7 +40,7 @@ function diagnosticOutput(output, workspace = root) {
 		if (!match) continue;
 		const file = workspacePath(match[1], workspace);
 		found.push({
-			file: file || "ci/code-review.cjs", line: file ? Number(match[2]) : 1,
+			file: file || ".github/components/quality/code-review/review.cjs", line: file ? Number(match[2]) : 1,
 			column: file ? Number(match[3]) : 1, severity: match[4] === "info" ? "information" : match[4],
 			source: match[5], message: match[6], infrastructure: !file,
 		});
@@ -88,7 +88,7 @@ function execute(name, args, workspace = root, label = "Code review") {
 	const findings = diagnosticOutput(output, workspace);
 	if (result.error || (result.status !== 0 && !findings.some(item => item.severity === "error"))) {
 		findings.push({
-			file: "ci/code-review.cjs", line: 1, column: 1, severity: "error", source: name,
+			file: ".github/components/quality/code-review/review.cjs", line: 1, column: 1, severity: "error", source: name,
 			message: result.error?.message || "Checker failed: " + (output.trim().slice(-500) || "exit code " + result.status),
 			infrastructure: true,
 		});
@@ -126,7 +126,7 @@ function main() {
 	try { changed = changedFiles(process.env.GITHUB_BASE_REF); }
 	catch (error) { baseFailure = String(error.message || error); }
 	const findings = execute("Preflight", ["dependencies/packages/checks/preflightChecker/index.ts", "--ci"]);
-	if (baseFailure) findings.push({ file: "ci/code-review.cjs", line: 1, column: 1, severity: "error",
+	if (baseFailure) findings.push({ file: ".github/components/quality/code-review/review.cjs", line: 1, column: 1, severity: "error",
 		source: "Code review", message: baseFailure, infrastructure: true });
 	const result = review(findings, changed);
 	const text = summary(findings, result, process.env.GITHUB_BASE_REF);

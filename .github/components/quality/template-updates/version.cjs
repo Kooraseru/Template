@@ -5,7 +5,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ROOT = path.resolve(__dirname, "../..");
+const ROOT = path.resolve(__dirname, "../../../..");
 const CONFIG = path.join(ROOT, "config/template.json");
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/;
 const RELEASE_TAG = /^template\/v(.+)$/;
@@ -127,7 +127,7 @@ async function check({ file = CONFIG, fetcher = globalThis.fetch } = {}) {
 }
 
 async function main(args = process.argv.slice(2)) {
-  if (args.some(arg => arg !== "--json")) throw new Error("Usage: node ci/template/version.cjs [--json]");
+  if (args.some(arg => arg !== "--json")) throw new Error("Usage: node .github/components/quality/template-updates/version.cjs [--json]");
   const result = await check();
   const report = describe(result);
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, "\n" + report);

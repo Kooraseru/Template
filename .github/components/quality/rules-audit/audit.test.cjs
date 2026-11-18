@@ -1,8 +1,8 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { diagnosticOutput, review } = require("./code-review.cjs");
-const { summary } = require("./rules-audit.cjs");
+const { diagnosticOutput, review } = require("../code-review/review.cjs");
+const { summary } = require("./audit.cjs");
 
 test("Rules Audit retains warnings but only changed-file errors block the PR gate", () => {
 	const lines = [

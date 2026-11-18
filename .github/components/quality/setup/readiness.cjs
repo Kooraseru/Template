@@ -5,9 +5,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
-const { configFromFile } = require("./version.cjs");
+const { configFromFile } = require("../template-updates/version.cjs");
 
-const ROOT = path.resolve(__dirname, "../..");
+const ROOT = path.resolve(__dirname, "../../../..");
 const REQUIRED = [
   ".github/workflows/bootstrap.yml",
   ".github/workflows/push.yml",
@@ -133,7 +133,7 @@ function present(report) {
 
 function main(args = process.argv.slice(2)) {
   if (args.includes("--help")) {
-    process.stdout.write("Usage: node ci/template/setup.cjs [--json]\nRead-only setup audit; no secrets or repository settings are modified.\n");
+    process.stdout.write("Usage: node .github/components/quality/setup/readiness.cjs [--json]\nRead-only setup audit; no secrets or repository settings are modified.\n");
     return;
   }
   if (args.some(x => x !== "--json")) throw new Error("Unknown setup flag");

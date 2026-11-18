@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseRepositoryRemote, targetRepository, identity, analyze, present } = require("./setup.cjs");
+const { parseRepositoryRemote, targetRepository, identity, analyze, present } = require("./readiness.cjs");
 
 test("origin parser supports HTTPS and SSH without using a network connection", () => {
   assert.equal(parseRepositoryRemote("https://github.com/Example/Project.git"), "Example/Project");

@@ -3,7 +3,7 @@
 // contracts. No publishing jobs, protected environments or credentials.
 const fs = require("node:fs");
 const path = require("node:path");
-const ROOT = path.resolve(__dirname, "../../..");
+const ROOT = path.resolve(__dirname, "../../../..");
 const VALID = /^[a-z][a-z0-9-]*$/;
 
 function hosts(root = ROOT) {
@@ -142,26 +142,26 @@ function render(branch, sha, root=ROOT, event='pull_request') {
     "    steps:",
     ...common,
     "      - run: node dependencies/packages/core/dependencyLoader/index.ts",
-    "      - run: node ci/code-review.cjs",
+    "      - run: node .github/components/quality/code-review/review.cjs",
     "  rules:",
     "    name: Rules",
     "    runs-on: ubuntu-latest",
     "    steps:",
     ...common,
     "      - run: node dependencies/packages/core/dependencyLoader/index.ts",
-    "      - run: node ci/rules-audit.cjs",
+    "      - run: node .github/components/quality/rules-audit/audit.cjs",
     "  workflows:",
     "    name: Workflows",
     "    runs-on: ubuntu-latest",
     "    steps:",
     ...common,
-    "      - run: bash ci/bootstrap/check-workflows.sh",
+    "      - run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-lint",
     "  updates:",
     "    name: Updates",
     "    runs-on: ubuntu-latest",
     "    steps:",
     ...common,
-    "      - run: node ci/template/version.cjs",
+    "      - run: node .github/components/quality/template-updates/version.cjs",
   ].join("\n") + "\n";
   const nativeTests = targets.flatMap(target => [
     "          - target: " + target,
@@ -183,7 +183,7 @@ function render(branch, sha, root=ROOT, event='pull_request') {
     "    timeout-minutes: 35",
     "    steps:",
     ...common,
-    "      - run: bash ci/test.sh",
+    "      - run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-test",
     "  native:",
     "    name: " + e("matrix.label"),
     "    strategy:",
@@ -232,7 +232,7 @@ function render(branch, sha, root=ROOT, event='pull_request') {
     "          CI_EVENT: " + componentEvent,
     "          CI_GRAPH_RUN: 'true'",
     "          CI_OPERATION: validation",
-    "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
+    "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native --component " + component,
     "      - uses: actions/upload-artifact@v7",
     "        with:",
     "          name: " + id,
@@ -263,7 +263,7 @@ function render(branch, sha, root=ROOT, event='pull_request') {
     "          CI_GRAPH_RUN: 'true'",
     "          CI_OPERATION: validation",
     "          CI_HOST_TARGET: " + e("matrix.target"),
-    "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component source/build",
+    "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native --component source/build",
     "      - name: Upload executable",
     "        uses: actions/upload-artifact@v7",
     "        with:",
@@ -285,7 +285,7 @@ function render(branch, sha, root=ROOT, event='pull_request') {
       "      - name: Plan " + label,
       "        env:", "          CI_EVENT: " + componentEvent,
       "          CI_GRAPH_RUN: 'true'", "          CI_OPERATION: validation",
-      "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
+      "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native --component " + component,
       "      - uses: actions/upload-artifact@v7",
       "        with:", "          name: plan-" + id,
       "          path: " + artifact, "          if-no-files-found: error",
@@ -309,7 +309,7 @@ function render(branch, sha, root=ROOT, event='pull_request') {
       "        env:", "          CI_EVENT: " + componentEvent,
       "          CI_OPERATION: validation", "          CI_GRAPH_RUN: 'true'",
       "          CI_NATIVE_PREVIEW: 'true'",
-      "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute run ci/entry.luau --component " + component,
+      "        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native --component " + component,
       "      - uses: actions/upload-artifact@v7",
       "        with:", "          name: distribution-" + id,
       "          path: " + artifact,

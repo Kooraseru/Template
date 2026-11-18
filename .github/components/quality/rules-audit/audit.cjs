@@ -2,8 +2,8 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { execute, changedFiles, review, annotation } = require("./code-review.cjs");
-const root = path.resolve(__dirname, "..");
+const { execute, changedFiles, review, annotation } = require("../code-review/review.cjs");
+const root = path.resolve(__dirname, "../../../..");
 
 function summary(findings, checked, base) {
 	const active = findings.filter(item => !item.fixture);
@@ -36,7 +36,7 @@ function main() {
 	catch (error) { baseFailure = String(error.message || error); }
 	const findings = execute("Rules", ["dependencies/packages/checks/preflightChecker/index.ts", "--rules"], root, "Rules audit");
 	if (baseFailure) findings.push({
-		file: "ci/rules-audit.cjs", line: 1, column: 1, severity: "error",
+		file: ".github/components/quality/rules-audit/audit.cjs", line: 1, column: 1, severity: "error",
 		source: "Rules Audit", message: baseFailure, infrastructure: true,
 	});
 	const checked = review(findings, changed);
