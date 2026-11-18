@@ -90,11 +90,11 @@ test("example release and package policies never replace existing assets by defa
 });
 
 test("generated publication retains branch checks and rehearses release uploads", () => {
-	const publication = fs.readFileSync(path.join(root, "ci/github/publication/init.luau"), "utf8");
+	const publication = fs.readFileSync(path.join(root, "dependencies/managed/packages/ci-engine/src/native/github/publication/init.luau"), "utf8");
 	assert.match(publication, /if graphRun and not fixedStage then/);
 	assert.match(publication, /configuration\.branchPrefix/);
 	assert.match(publication, /local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
-	const runtime = fs.readFileSync(path.join(root, "ci/github/resources/branches/branchRun.luau"), "utf8");
+	const runtime = fs.readFileSync(path.join(root, "dependencies/managed/packages/ci-engine/src/native/github/resources/branches/branchRun.luau"), "utf8");
 	assert.match(runtime, /pcall\(waitForPipeline, repository, branch, revision, true\)/);
 	assert.match(runtime, /record\("failed", tostring\(problem\)\)/);
 	assert.match(runtime, /Temporary CI branch moved after this run started/);

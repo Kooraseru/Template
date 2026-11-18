@@ -5,9 +5,9 @@ A reusable development workspace and CI foundation for packages, editor extensio
 ## Create a repository (approximately ten-minute setup)
 
 1. Select **Use this template → Create a new repository** on [Kooraseru/Template](https://github.com/Kooraseru/Template). Choose the owner, repository name, and visibility. Use only the template's default branch unless you deliberately need its generated branch fixtures.
-2. Clone the new repository and run **`node ci/template/setup.cjs`** from its root. This offline check reports your repository identity, default-branch detection, Template version, branch-generation configuration, and missing settings. Node.js 24+ is recommended for the existing workspace dependency loader.
+2. Clone the new repository and run **`node .github/components/quality/setup/readiness.cjs`** from its root. This offline check reports your repository identity, default-branch detection, Template version, branch-generation configuration, and missing settings. Node.js 24+ is recommended for the existing workspace dependency loader.
 3. Edit **`dependencies/dependencies.json`** to declare your project's tools and packages, and **`config/targets.toml`** for optional publishing destinations. `github.repository = "current"` automatically uses the repository running CI; there's no need to hardcode an organization or account.
-4. Run **`node dependencies/packages/core/dependencyLoader/index.ts`**, then **`bash ci/run.sh`** for dependency setup and the full local validation path. When changing dependency declarations, run the loader once with `--update-lock` and commit both manifest and lock.
+4. Run **`node dependencies/packages/core/dependencyLoader/index.ts`**, then **`node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate`** for dependency setup and the full local validation path. When changing dependency declarations, run the loader once with `--update-lock` and commit both manifest and lock.
 5. Replace the sample files under `source/` with your project code. Edit repository rules under `rules/` and editor behavior in `.vscode/config/workflow.json` only if necessary.
 
 **No secrets are required for normal read-only CI.** GitHub Actions validates pull requests and source-branch pushes. Default-branch pushes select the trusted generated CI operation, which builds, tests, and publishes branches and Pages through components when enabled in `config/targets.toml`. Configure GitHub Pages with **Source: GitHub Actions** in repository settings. The CI controller does not need modification to add components.
@@ -24,7 +24,7 @@ Manual **Run workflow** supports `validation`, `readiness`, `build`, and `publis
 
 The authored documentation and locale records live under [`content/`](content/docs/index.md), with formatting rules in [`content/docs/authoring.md`](content/docs/authoring.md). MkDocs is intentionally not configured yet.
 
-For internals and the local `act` path, see [CI documentation](ci/README.md).
+For internals and the local `act` path, see [CI documentation](.github/components/README.md).
 
 ## Generated branches
 
@@ -39,8 +39,8 @@ Edit `main.toml` to control which source paths are copied to a generated `main` 
 Check for releases with:
 
 ```sh
-node ci/template/version.cjs
-node ci/template/version.cjs --json
+node .github/components/quality/template-updates/version.cjs
+node .github/components/quality/template-updates/version.cjs --json
 ```
 
 This compares the recorded installed version against releases tagged `template/vX.Y.Z` in `Kooraseru/Template`. It reports `current`, `update-available`, `ahead`, `unpublished`, or `unverifiable`, and also writes an advisory GitHub Actions job summary when run in CI. Network failures do not block project builds.
@@ -59,9 +59,9 @@ The existing dependency loader owns custom providers and pins in `dependencies/d
 
 Install the recommended [Workbench Bridge](https://github.com/Kooraseru/workbench-bridge) extension for status-bar dependency setup, Preflight, rules diagnostics, and editor integration. The `.vscode/config/workflow.json` configuration owns editor commands and watch paths. No editor installation is needed for headless CI.
 
-For a machine-readable onboarding report, use `node ci/template/setup.cjs --json`. For a local validation run, use `bash ci/run.sh`. For local GitHub Actions, use `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine`.
+For a machine-readable onboarding report, use `node .github/components/quality/setup/readiness.cjs --json`. For a local validation run, use `node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate`. For local GitHub Actions, use `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine`.
 
-See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), and [CI implementation](ci/README.md) for detailed contracts.
+See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), and [CI implementation](.github/components/README.md) for detailed contracts.
 
 
 ### Native builds without a pull request

@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const { settings, target, sourceContext, resolveTarget } = require('./config.cjs');
-const { api, writerToken, createBranch, observe } = require('../../../../../../ci/github/workflows/launch.cjs');
+const { api, writerToken, createBranch, observe } = require('../../../../../../dependencies/managed/packages/ci-engine/src/native/github/workflows/launch.cjs');
 const SHA = /^[0-9a-f]{40}$/;
 const expr = x => '$' + '{{ ' + x + ' }}';
 

@@ -59,7 +59,7 @@ for _, finding in findings do
 end
 assert(#Phases:Check({ path = "source/metrics.luau", source = explained }) == 0)
 
-local contract = "ci/bootstrap/contracts/contract.luau"
+local contract = "dependencies/managed/packages/ci-engine/src/native/bootstrap/contracts/contract.luau"
 local source = Fs.readFileToString(contract)
 assert(#layout:Check({ path = contract, source = source }) == 0)
 assert(#Documentation:Check({ path = contract, source = source }) == 0)

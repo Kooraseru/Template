@@ -1,12 +1,12 @@
 # CI architecture and operating rules
 
-GitHub configuration lives under `.github/`. CI implementation lives under root `ci/`. Authored workflows group event consumers and select operations through the pinned external CI Engine bootstrap.yml. Bootstrap owns planning and scheduling; consumer components own implementation.
+GitHub-required declarations and repository-owned components live under `.github/`. Repository configuration lives under `config/`. Generic CI implementation is owned by CI-Engine and installed as a managed dependency. Authored workflows group event consumers and select operations through the pinned external CI Engine bootstrap.yml. Bootstrap owns planning and scheduling; consumer components own implementation.
 
 ## Discovery and component contracts
 
 The Luau bootstrap recursively discovers components under `.github/components/`. A component is identified by its path relative to that directory and owns a `component.toml`, `init.luau`, and private implementation modules. Grouping folders do not impose order. Capability declarations determine dependencies; the planner sorts them, detects cycles, validates output ownership and event boundaries, then executes in isolated child processes. Preserve skip, failure, blocked-dependency, and report behavior.
 
-`.github/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
+`config/ci/components.toml` contains only explicit enablement overrides. Do not add central component inventories. Update identities and any identity references in skip policy, reports, generated job IDs, and workflows whenever a component moves.
 
 Host build implementations belong under `source/hosts/<host>/`. The source build component discovers `host.toml` files, loads the adjacent `init.luau`, and checks all declared artifact paths. Hosts own their toolchain, artifact list, and optional launch artifact. The CI launcher does not maintain host names or executable lookups and must work when a project has no launchable application.
 

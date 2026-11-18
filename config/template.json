@@ -6,9 +6,9 @@
   "channel": "stable",
   "managed": [
     ".github/**",
-    "ci/**",
     "dependencies/packages/**",
     "rules/**",
-    ".vscode/**"
+    ".vscode/**",
+    "config/**"
   ]
 }
