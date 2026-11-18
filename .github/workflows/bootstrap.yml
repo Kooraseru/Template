@@ -21,7 +21,7 @@ on:
         required: false
 jobs:
   engine:
-    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@789d75b3969bc84667255f2842a2be5b3c883607
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@6b03e0a3d6bddb153cc67b8f52e12a75ef31d753
     with:
       operation: ${{ inputs.operation }}
       publish: ${{ inputs.publish }}

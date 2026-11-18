@@ -119,6 +119,10 @@
       "execution": {
         "command": [
           "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "component-script",
           ".github/components/documentation/pages/publish/preview/launch.cjs"
         ],
         "profile": "source-ci"

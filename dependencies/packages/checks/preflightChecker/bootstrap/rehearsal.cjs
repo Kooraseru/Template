@@ -62,6 +62,8 @@ async function main() {
 	fs.mkdirSync("dependencies/managed", { recursive: true });
 	fs.symlinkSync("/tools/dependencies/managed/types", "dependencies/managed/types", "dir");
 	fs.symlinkSync("/tools/dependencies/managed/npm", "dependencies/managed/npm", "dir");
+	fs.mkdirSync("dependencies/managed/packages", { recursive: true });
+	fs.cpSync("/tools/dependencies/managed/packages/ci-engine", "dependencies/managed/packages/ci-engine", { recursive: true });
 	const { startMock } = require("./githubMock.cjs");
 
 	const loaded = run(["lute", "run", "dependencies/packages/checks/preflightChecker/bootstrap/inputs.luau"]);
