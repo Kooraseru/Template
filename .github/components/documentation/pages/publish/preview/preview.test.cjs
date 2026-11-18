@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { settings, target, workflowTarget, sourceContext, resolveTarget } = require('./config.cjs');
 const { plan } = require('./plan.cjs');
-const { selected, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
+const { selected, copyStatic, prepareUpload, retireClosed, pruneRetired } = require('./publish.cjs');
 const { marker, bodyFor, syncComment } = require('./comment.cjs');
 
 function temporary(t) {
@@ -242,4 +242,29 @@ test('PR comments cannot edit other authors or post closure-only notes', async (
   assert.equal(calls.at(-1).method, 'POST');
   assert.equal(await syncComment(c, { ...target('branch:demo/test', c),
     sha: 'a'.repeat(40) }, env, false, request), null);
+});
+
+test('automatic review preview requires an admitted PR and pins its head', () => {
+  const env={GITHUB_ACTIONS:'true',GITHUB_EVENT_NAME:'repository_dispatch',GITHUB_REF:'refs/heads/source',
+    CI_DEFAULT_BRANCH:'source',CI_DELIVERY_OPERATION:'review',CI_DELIVERY_CONFIRM:'false',
+    CI_ORIGIN_EVENT:'pull_request',CI_ORIGIN_TRUSTED:'false',CI_REVIEW_PR:'55',
+    GITHUB_SHA:'a'.repeat(40),CI_ORIGIN_SHA:'b'.repeat(40),GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'};
+  const ctx=sourceContext(env);
+  assert.equal(ctx.target,'pr:55');assert.equal(ctx.expectedSha,env.CI_ORIGIN_SHA);
+  for(const bad of [{CI_REVIEW_PR:''},{CI_DELIVERY_CONFIRM:'true'},{CI_ORIGIN_TRUSTED:'true'},{GITHUB_REF:'refs/heads/topic'}])
+    assert.throws(()=>sourceContext({...env,...bad}),/Invalid admitted/);
+});
+test('preview publishing treats candidate artifacts as static data only', t => {
+  const tmp=temporary(t),src=path.join(tmp,'src'),dest=path.join(tmp,'dest');
+  fs.mkdirSync(src);fs.writeFileSync(path.join(src,'index.html'),'html');
+  copyStatic(src,dest);assert.equal(fs.readFileSync(path.join(dest,'index.html'),'utf8'),'html');
+  for(const file of ['_worker.js','_routes.json','_headers','_redirects','wrangler.toml','functions']){
+    fs.writeFileSync(path.join(src,file),'bad');
+    assert.throws(()=>copyStatic(src,dest),/Forbidden/);
+    fs.rmSync(path.join(src,file));
+  }
+  if(process.platform!=='win32'){
+    fs.symlinkSync(path.join(src,'index.html'),path.join(src,'link'));
+    assert.throws(()=>copyStatic(src,dest),/Linked/);
+  }
 });

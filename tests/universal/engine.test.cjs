@@ -78,3 +78,11 @@ test("validation and review use native host tests without launching generated ru
   }
   assert.equal(fs.existsSync(path.join(root,".github/components/quality/workflows/graph.cjs")),false);
 });
+
+test("review delivery is opt-in on the trusted controller, without making review a publication operation",()=>{
+  const config=JSON.parse(fs.readFileSync(path.join(root,"config/ci/review-delivery.json"),"utf8"));
+  assert.equal(config.operation,"review");
+  assert.deepEqual(config.command,["node",".github/components/documentation/pages/publish/preview/plan.cjs"]);
+  assert.equal(engine.operations.review.mode,"readonly");
+  assert.equal(engine.operations.review.publication,undefined);
+});

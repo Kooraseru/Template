@@ -19,6 +19,21 @@ function selected(env, config) {
 function url(config, candidate) {
   return 'https://' + candidate.alias + '.' + config.cloudflare_project + '.pages.dev' + config.base;
 }
+// A PR artifact is data, never a Cloudflare Worker or a configuration source.
+function copyStatic(source, destination) {
+  const stat = fs.lstatSync(source);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Invalid static preview directory');
+  fs.mkdirSync(destination, { recursive: true });
+  for (const item of fs.readdirSync(source, { withFileTypes: true })) {
+    if (/^(?:_worker\.js|_routes\.json|_headers|_redirects|functions|\.wrangler|wrangler\.(?:toml|jsonc?))$/i.test(item.name))
+      throw new Error('Forbidden executable or control file in preview: ' + item.name);
+    const from = path.join(source, item.name), to = path.join(destination, item.name);
+    if (item.isSymbolicLink()) throw new Error('Linked preview asset');
+    if (item.isDirectory()) copyStatic(from, to);
+    else if (item.isFile()) fs.copyFileSync(from, to);
+    else throw new Error('Non-regular preview asset');
+  }
+}
 function prepareUpload(config, candidate) {
   if (fs.existsSync(uploadDir)) {
     if (fs.lstatSync(uploadDir).isSymbolicLink()) throw new Error('Linked upload directory');
@@ -40,7 +55,7 @@ function prepareUpload(config, candidate) {
       throw new Error('Missing static preview homepage');
     const dest = path.join(uploadDir, config.base.slice(1));
     fs.mkdirSync(dest, { recursive: true });
-    fs.cpSync(candidateDir, dest, { recursive: true });
+    copyStatic(candidateDir, dest);
   }
   return uploadDir;
 }
@@ -115,6 +130,8 @@ async function publishPreview(env = process.env) {
   const config = settings(undefined, env);
   if (!config.enabled) throw new Error('Previews disabled');
   const candidate = selected(env, config);
+  if (request.expectedSha && candidate.sha !== request.expectedSha)
+    throw new Error('Preview revision differs from admitted PR');
   if (!candidate.remove) {
     if (!env.GH_TOKEN) throw new Error('Missing GitHub read token');
     const verified = await resolveTarget(candidate, config,
@@ -154,7 +171,7 @@ async function retireClosed(env = process.env, request = api) {
   if (note) console.log('::notice::PR preview comment ' + note.action);
   return removed;
 }
-module.exports = { selected, prepareUpload, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
+module.exports = { selected, copyStatic, prepareUpload, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
 if (require.main === module) {
   const command = process.argv[2], handler = command === '--preview'
     ? publishPreview : command === '--retire' ? retireClosed : null;

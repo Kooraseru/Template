@@ -43,7 +43,7 @@ function settings(file = path.join(root, 'config/targets.toml'), env = process.e
   const [owner, name] = repo.split('/');
   const base = name.toLowerCase() === (owner + '.github.io').toLowerCase() ? '/' : '/' + name + '/';
   return { ...all, repo, owner, name, base,
-    accountId: env.CLOUDFLARE_ACCOUNT_ID || '' };
+    accountId: env.CLOUDFLARE_ACCOUNT_ID || '', defaultBranch: env.CI_DEFAULT_BRANCH || '' };
 }
 
 function target(input, config) {
@@ -92,6 +92,18 @@ function workflowTarget(inputs) {
 }
 function sourceContext(env = process.env) {
   const defaults = env.CI_DEFAULT_BRANCH || '';
+  if (env.CI_ORIGIN_EVENT === 'pull_request') {
+    if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'repository_dispatch' ||
+        env.CI_ORIGIN_TRUSTED !== 'false' || env.CI_DELIVERY_OPERATION !== 'review' ||
+        env.CI_DELIVERY_CONFIRM !== 'false' || !defaults ||
+        env.GITHUB_REF !== 'refs/heads/' + defaults ||
+        !shaPattern.test(env.GITHUB_SHA || '') || !shaPattern.test(env.CI_ORIGIN_SHA || '') ||
+        !/^[1-9][0-9]{0,8}$/.test(env.CI_REVIEW_PR || '') ||
+        !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID || '') || !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
+      throw new Error('Invalid admitted PR review delivery');
+    return { sourceSha: env.GITHUB_SHA, sourceBranch: defaults, expectedSha: env.CI_ORIGIN_SHA,
+      runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT, target: 'pr:' + env.CI_REVIEW_PR, review: true };
+  }
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'repository_dispatch' ||
       env.CI_ORIGIN_EVENT !== 'workflow_dispatch' || env.CI_ORIGIN_TRUSTED !== 'true' ||
       env.CI_DELIVERY_OPERATION !== 'preview' || env.CI_DELIVERY_CONFIRM !== 'true' ||
@@ -111,6 +123,7 @@ async function resolveTarget(candidate, config, api) {
     const pr = await api('GET', '/repos/' + config.repo + '/pulls/' + candidate.number);
     if (pr.state !== 'open' || pr.base?.repo?.full_name !== config.repo ||
         pr.head?.repo?.full_name !== config.repo ||
+        (config.defaultBranch && pr.base?.ref !== config.defaultBranch) ||
         !shaPattern.test(pr.head?.sha || ''))
       throw new Error('Preview PR must be open and originate from this repository');
     return { ...candidate, sha: pr.head.sha };

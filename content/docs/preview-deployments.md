@@ -3,7 +3,7 @@ title: Preview deployments
 description: Review temporary documentation websites using Cloudflare Pages.
 ---
 
-Documentation previews are hosted by Cloudflare Pages. The authored `source` branch remains independent of the hosted site. The engine creates temporary `ci/run-preview-*` branches to execute CI, deletes them after completion, and uploads the resulting static assets to Cloudflare. No Git branch stores website snapshots.
+Documentation previews are hosted by Cloudflare Pages. The authored `source` branch remains independent of the hosted site. CI builds and uploads the static website within the same review run. No temporary workflow or Git branch is required. No Git branch stores website snapshots.
 
 ## Setup
 
@@ -22,7 +22,9 @@ Create a protected GitHub environment named `ci-preview-cloudflare` with the `CL
 
 ## Publish a preview
 
-From Actions → CI → Run workflow, choose `source`. The operation and preview kind are dropdowns; enter a PR number or existing branch name only when relevant:
+Opening or updating a same-repository pull request automatically builds its documentation. Once validation and host tests pass, the trusted publisher uploads the credential-free static artifact and posts the preview link on the PR. Forks are validation-only.
+
+For a manual preview, from Actions → Manual → Run workflow, choose `source`. The operation and preview kind are dropdowns; enter a PR number or existing branch name only when relevant:
 
 | Input | Value |
 | --- | --- |
@@ -36,11 +38,11 @@ An open PR must originate from the same repository. Forks, closed PRs, `source`,
 
 The live address follows the leading-subdomain format `https://pr-50.template.pages.dev/Template/`. Production GitHub Pages keeps its own URL and does not store preview assets.
 
-After a successful PR preview deployment, CI automatically posts a comment in the pull request's **Conversation** tab linking to its actual Cloudflare Pages website and source commit. Subsequent previews edit the same bot comment instead of adding duplicate replies. Branch previews do not post to a PR. This requires the generated publisher's `pull-requests: write` permission; no preview URL is announced before a successful deployment.
+After a successful PR preview deployment, CI automatically posts a comment in the pull request's **Conversation** tab linking to its actual Cloudflare Pages website and source commit. Subsequent previews edit the same bot comment instead of adding duplicate replies. Branch previews do not post to a PR. This requires the isolated publisher's `pull-requests: write` permission; no preview URL is announced before a successful deployment.
 
 ## Closing a pull request
 
-After cleanup succeeds, the same bot comment is updated to indicate the preview is closed. The single authored workflow forwards `pull_request_target: closed` to CI Engine, which runs a protected lifecycle component against trusted default-branch code. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
+After cleanup succeeds, the same bot comment is updated to indicate the preview is closed. The lightweight close workflow runs the retirement component directly against trusted default-branch code. It does not check out the closed PR's code. The job replaces that PR's Cloudflare alias with an HTTP **410 Gone** Worker, so the ordinary preview URL stops serving the site after successful cleanup.
 
 Cloudflare cannot delete the latest deployment for a branch. Once the 410 deployment succeeds, cleanup lists previous deployments for that exact PR alias and deletes them using the Cloudflare Pages API. The latest 410 deployment stays in place because Cloudflare prohibits deleting a branch's latest deployment. Failed cleanup is reported as a failed job; it does not silently claim the historical URLs were removed.
 
