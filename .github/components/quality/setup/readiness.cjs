@@ -82,7 +82,7 @@ function analyze(directory = ROOT, env = process.env) {
     const eventNames = { pull: "pull_request", push: "push" };
     for (const caller of callers) {
       const source = fs.readFileSync(path.join(directory, ".github/workflows", caller + ".yml"), "utf8");
-      const selected = [...new Set([...source.matchAll(/^      operation:\s*([a-z][a-z0-9-]*)\s*$/gm)]
+      const selected = [...new Set([...source.matchAll(/^          CI_OPERATION:\s*([a-z][a-z0-9-]*)\s*$/gm)]
         .map(match => match[1]).filter(name => operation.operations?.[name]?.events?.includes(eventNames[caller])))];
       if (selected.length !== 1) issues.push("CI entry point has no unique " + caller + " operation");
       else if (caller === "push") pushOperation = selected[0];

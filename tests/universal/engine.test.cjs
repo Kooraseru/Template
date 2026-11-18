@@ -33,20 +33,17 @@ test("capability contracts declare an explicit setup prerequisite", () => {
   }
 });
 
-test("Grouped callers share one pinned engine dependency reference", () => {
+test("one independent engine; lightweight callers only submit requests", () => {
   const directory = path.join(root, ".github/workflows");
-  const names = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name) && !(process.env.ACT === "true" && name.startsWith("_act-"))).sort();
   const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
-  assert.match(bootstrap, /workflow_call:/);
-  assert.doesNotMatch(bootstrap, /workflow_dispatch:|runs-on:/);
+  assert.match(bootstrap, /repository_dispatch:\s*\n\s*types: \[ci-request\]/);
   assert.equal([...bootstrap.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/g)].length, 1);
-  for (const name of names.filter(name => name !== "bootstrap.yml")) {
-    const workflow = fs.readFileSync(path.join(directory, name), "utf8");
-    assert.equal([...workflow.matchAll(/uses: \.\/\.github\/workflows\/bootstrap\.yml/g)].length, 1, name);
-    assert.doesNotMatch(workflow, /Kooraseru-Hub\/CI-Engine|runs-on:|secrets: inherit|workflow_call:/);
+  for (const name of ["push", "pull", "manual", "remote"]) {
+    const workflow = fs.readFileSync(path.join(directory, name + ".yml"), "utf8");
+    assert.match(workflow, /gh api --method POST "repos\/\$GITHUB_REPOSITORY\/dispatches"/);
+    assert.doesNotMatch(workflow, /uses: .*bootstrap\.yml|CI-Engine|secrets:/);
   }
-  const lock = fs.readFileSync(path.join(directory, "actions.lock"), "utf8");
-  for (const name of names) assert.ok(lock.includes(".github/workflows/" + name));
+  assert.doesNotMatch(fs.readFileSync(path.join(directory, "close.yml"), "utf8"), /uses: .*bootstrap\.yml|CI-Engine/);
 });
 test("generated operations retain trusted adapters without hardcoded jobs in Template CI", () => {
   const ops = engine.operations;

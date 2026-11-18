@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { root, settings, target, resolveTarget } = require('./config.cjs');
-const { api } = require('../../../../../../dependencies/managed/packages/ci-engine/src/native/github/workflows/launch.cjs');
-const { syncComment } = require('./comment.cjs');
+const { api } = require('./github.cjs');
+const { syncComment, findOwned } = require('./comment.cjs');
 
 const candidateDir = path.join(root, 'build/preview-candidate');
 const uploadDir = path.join(root, 'build/preview-cloudflare');
@@ -127,7 +127,7 @@ async function publishPreview(env = process.env) {
   }
   return published;
 }
-async function retireClosed(env = process.env) {
+async function retireClosed(env = process.env, request = api) {
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'pull_request_target' ||
       !env.GITHUB_EVENT_PATH)
     throw new Error('Retirement requires a trusted PR close event');
@@ -142,8 +142,10 @@ async function retireClosed(env = process.env) {
   if (event.pull_request?.head?.repo?.full_name !== config.repo) return null;
   if (!config.enabled || !config.pull_requests) return null;
   const candidate = target('delete:pr:' + number, config);
+  const previous = await findOwned(config, candidate, env, request);
+  if (!previous) { console.log('No published PR preview to retire'); return null; }
   const removed = await cloudflareDeploy(config, candidate, env);
-  const note = await syncComment(config, candidate, env, true);
+  const note = await syncComment(config, candidate, env, true, request);
   if (note) console.log('::notice::PR preview comment ' + note.action);
   return removed;
 }

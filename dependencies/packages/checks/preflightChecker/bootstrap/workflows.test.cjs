@@ -35,15 +35,15 @@ test("local Build omits Publish and every discovered Build component is rendered
 	const files = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(),string.rep("a",40),"ci-run-1-1","push")))', { ACT: "true", CI_OPERATION: "build" });
 	assert.equal(files["publish.yml"], undefined); assert.equal(JSON.parse(files["pipeline.yml"]).jobs.publish, undefined);
 });
-test("authored event workflows delegate to one bootstrap reference", () => {
-  const directory = path.join(root, ".github/workflows");
-  const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
-  assert.match(bootstrap, /uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
-  const authored = fs.readdirSync(directory).filter(name => /\.ya?ml$/.test(name) && name !== "bootstrap.yml" && !(process.env.ACT === "true" && name.startsWith("_act-")));
-  for (const file of authored) {
-    const workflow = fs.readFileSync(path.join(directory, file), "utf8");
-    assert.match(workflow, /uses: \.\/\.github\/workflows\/bootstrap\.yml/);
-    assert.doesNotMatch(workflow, /runs-on:|secrets: inherit|workflow_call:/);
+test("authored events dispatch independently from the pinned engine", () => {
+  const directory=path.join(root,".github/workflows");
+  const bootstrap=fs.readFileSync(path.join(directory,"bootstrap.yml"),"utf8");
+  assert.match(bootstrap,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
+  assert.match(bootstrap,/repository_dispatch:/);
+  for(const file of ["push","pull","manual","remote"]){
+    const workflow=fs.readFileSync(path.join(directory,file+".yml"),"utf8");
+    assert.match(workflow,/ci-request/);
+    assert.doesNotMatch(workflow,/uses: .*bootstrap\.yml|secrets: inherit/);
   }
 });
 test("optional administration components use their current skip policies", t => {

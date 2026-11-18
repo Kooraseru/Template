@@ -1,0 +1,24 @@
+name: One-time Actions history cleanup
+on:
+  push:
+    branches: [source]
+    paths: [.github/workflows/maintenance.yml]
+permissions: {}
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+    steps:
+      - name: Remove completed pre-migration workflow history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?status=completed&per_page=100" --jq '.workflow_runs[] | select(.id <= 44351438681) | .id' > "$RUNNER_TEMP/old-runs"
+          while IFS= read -r id; do
+            [[ "$id" =~ ^[0-9]+$ ]] || exit 1
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$id"
+            echo "Deleted completed run $id"
+          done < "$RUNNER_TEMP/old-runs"

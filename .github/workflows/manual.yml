@@ -42,22 +42,26 @@ on:
         required: false
         default: ""
 
+
 permissions: {}
-
-concurrency:
-  group: ci-manual-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  ci:
-    name: CI Engine
-    uses: ./.github/workflows/bootstrap.yml
+  dispatch:
+    name: Request CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
-      contents: read
-      actions: read
-    with:
-      operation: ${{ inputs.operation }}
-      publish: ${{ inputs.publish }}
-    secrets:
-      app_private_key: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && contains(fromJSON('["validation","build","publish","preview"]'), inputs.operation) && secrets.CI_APP_PRIVATE_KEY || '' }}
-      bootstrap_token: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && contains(fromJSON('["validation","build","publish","preview"]'), inputs.operation) && secrets.CI_TOKEN || '' }}
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Submit immutable request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_OPERATION: ${{ inputs.operation }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REQUEST_PUBLISH: ${{ inputs.publish }}
+          REQUEST_INPUTS: ${{ toJSON(inputs) }}
+        run: |
+          set -euo pipefail
+          REQUEST_REF="$GITHUB_REF"
+          REQUEST_SHA="$GITHUB_SHA"
+          jq -n --arg event 'workflow_dispatch' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "${REQUEST_INPUTS:-\{\}}" '{event_type:"ci-request",client_payload:{event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -

@@ -101,7 +101,7 @@ function sourceContext(env = process.env) {
       !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
     throw new Error('Invalid trusted dispatch identity');
   const payload = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
-  const requested = workflowTarget(payload?.inputs);
+  const requested = workflowTarget(env.CI_ORIGIN_INPUTS ? JSON.parse(env.CI_ORIGIN_INPUTS) : payload?.inputs);
   return { sourceSha: env.GITHUB_SHA, sourceBranch: defaults,
     runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT,
     target: requested };

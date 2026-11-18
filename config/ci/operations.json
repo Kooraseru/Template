@@ -128,19 +128,6 @@
         "profile": "source-ci"
       }
     },
-    "preview-retire": {
-      "mode": "protected",
-      "events": [
-        "pull_request_target"
-      ],
-      "actions": [
-        "closed"
-      ],
-      "environment": "ci-preview-cloudflare",
-      "components": [
-        "lifecycle/preview-retire"
-      ]
-    },
     "remote-validation": {
       "mode": "readonly",
       "events": [
