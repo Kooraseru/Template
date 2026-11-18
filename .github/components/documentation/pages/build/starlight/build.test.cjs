@@ -28,29 +28,48 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.equal(signature, '89504e470d0a1a0a');
   assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
   const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
-  const palette = fs.readFileSync(path.join(site, 'src/styles/palette.css'), 'utf8');
   const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
-  assert.ok(astro.includes('./src/styles/palette.css'));
-  // Hardcoded fallback precedes a supported system-color override.
-  assert.ok(palette.includes('--sl-color-bg: #141821;'));
-  assert.ok(palette.includes('--sl-color-bg: #ffffff;'));
-  assert.ok(palette.includes('@supports (color: Canvas)'));
-  assert.ok(palette.includes('color-mix(in srgb'));
-  assert.ok(palette.includes('--sl-color-bg: Canvas;'));
-  assert.ok(palette.indexOf('--sl-color-bg: #ffffff;') < palette.indexOf('--sl-color-bg: Canvas;'));
-  assert.ok(palette.includes('@media (forced-colors: active)'));
-  assert.ok(palette.includes("root[data-theme='light']"));
   assert.ok(layout.includes('--sl-content-width: 52rem;'));
   assert.ok(layout.includes('--sl-sidebar-width: 17rem;'));
   assert.ok(!layout.includes('--sl-color-bg:'));
   assert.ok(!projectTheme.includes('--sl-color-accent:'));
-  assert.ok(palette.includes('--docs-accent: AccentColor;'));
-  assert.ok(palette.includes('--sl-color-accent: color-mix(in srgb, var(--docs-accent) 35%, CanvasText);'));
-  assert.ok(palette.split('@media (forced-colors: active)')[1].includes('--sl-color-accent: LinkText;'));
   assert.ok(!astro.includes('ThemeSelect.astro'));
   assert.ok(!astro.includes('localStorage'));
-  assert.ok(!palette.includes('--docs-user-accent'));
   assert.ok(!collection.includes('content/i18n'));
+});
+
+test('Theme stylesheets are ordered baseline, native, project and accessibility', () => {
+  const astro = fs.readFileSync(path.join(__dirname, 'astro.config.mjs'), 'utf8');
+  const entries = [...astro.matchAll(/['"](\.\/src\/styles\/[^'"]+\.css)['"]/g)].map(match => match[1]);
+  assert.deepEqual(entries, [
+    './src/styles/layout.css',
+    './src/styles/theme/fallback.css',
+    './src/styles/theme/native.css',
+    './src/styles/project.css',
+    './src/styles/theme/forced-colors.css',
+  ]);
+  const read = file => fs.readFileSync(path.join(__dirname, 'src/styles/theme', file), 'utf8');
+  const fallback = read('fallback.css');
+  const native = read('native.css');
+  const forced = read('forced-colors.css');
+  assert.match(fallback, /--sl-color-bg: #141821;/);
+  assert.match(fallback, /--sl-color-bg: #ffffff;/);
+  assert.match(fallback, /color-scheme: dark;/);
+  assert.match(fallback, /color-scheme: light;/);
+  assert.ok(fallback.includes("root[data-theme='light']"));
+  assert.doesNotMatch(fallback, /@supports|@media/);
+  assert.match(native, /@supports \(color: Canvas\)/);
+  assert.match(native, /--docs-accent: AccentColor;/);
+  assert.match(native, /--sl-color-bg: Canvas;/);
+  assert.match(native, /color-mix\(in srgb/);
+  assert.doesNotMatch(native, /#[0-9a-f]{3,8}\b|--docs-user-accent|@media/i);
+  assert.match(forced, /@media \(forced-colors: active\)/);
+  assert.match(forced, /--sl-color-accent: LinkText;/);
+  assert.match(forced, /--sl-color-bg-accent: Highlight;/);
+  assert.doesNotMatch(forced, /#[0-9a-f]{3,8}\b|color-mix\(/i);
+  const tokens = css => [...new Set([...css.matchAll(/(--sl-color-[a-z0-9-]+):/g)].map(match => match[1]))].sort();
+  assert.deepEqual(tokens(native), tokens(fallback));
+  assert.deepEqual(tokens(forced), tokens(fallback));
 });
 
 test('Static image copier preserves nested paths', t => {

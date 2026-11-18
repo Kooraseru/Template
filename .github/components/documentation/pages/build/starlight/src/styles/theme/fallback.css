@@ -1,0 +1,58 @@
+/* Baseline palette and color scheme. All literal fallback colors belong here.
+ * Loaded unconditionally before the native and project layers.
+ */
+:root {
+  color-scheme: dark;
+  --sl-color-white: #f5f6fa;
+  --sl-color-gray-1: #edf0f6;
+  --sl-color-gray-2: #d0d5df;
+  --sl-color-gray-3: #a0a8b7;
+  --sl-color-gray-4: #798293;
+  --sl-color-gray-5: #434b59;
+  --sl-color-gray-6: #282e39;
+  --sl-color-gray-7: #1c222b;
+  --sl-color-black: #141821;
+
+  --sl-color-accent-low: #203455;
+  --sl-color-accent: #a0bfff;
+  --sl-color-accent-high: #dae7ff;
+  --sl-color-text: #d0d5df;
+  --sl-color-text-accent: #dae7ff;
+  --sl-color-text-invert: #141821;
+  --sl-color-bg: #141821;
+  --sl-color-bg-nav: #1c222b;
+  --sl-color-bg-sidebar: #1c222b;
+  --sl-color-bg-inline-code: #282e39;
+  --sl-color-bg-accent: #dae7ff;
+  --sl-color-hairline-light: #434b59;
+  --sl-color-hairline: #282e39;
+  --sl-color-hairline-shade: #141821;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --sl-color-white: #202735;
+  --sl-color-gray-1: #28313f;
+  --sl-color-gray-2: #414c5d;
+  --sl-color-gray-3: #687487;
+  --sl-color-gray-4: #929bab;
+  --sl-color-gray-5: #c5cbd6;
+  --sl-color-gray-6: #e5e9f0;
+  --sl-color-gray-7: #f4f6fa;
+  --sl-color-black: #ffffff;
+
+  --sl-color-accent-low: #e5eeff;
+  --sl-color-accent: #2857aa;
+  --sl-color-accent-high: #193b7a;
+  --sl-color-text: #414c5d;
+  --sl-color-text-accent: #2857aa;
+  --sl-color-text-invert: #ffffff;
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: #f4f6fa;
+  --sl-color-bg-sidebar: #f4f6fa;
+  --sl-color-bg-inline-code: #e5e9f0;
+  --sl-color-bg-accent: #2857aa;
+  --sl-color-hairline-light: #e5e9f0;
+  --sl-color-hairline: #c5cbd6;
+  --sl-color-hairline-shade: #e5e9f0;
+}

@@ -20,7 +20,17 @@ Use `content/images/` for illustrations, referenced from the published site unde
 
 ## Custom themes
 
-The color priority is **browser/system colors first, hardcoded palettes second**. The renderer defines fallback dark and light palettes in `src/styles/palette.css`, then overrides them with CSS system colors (`Canvas`, `CanvasText`, `LinkText`, `AccentColor`) when the browser supports them and `color-mix()`. High-contrast mode uses the browser's native accessibility colors directly. Chromium intentionally returns its default blue accent in regular website tabs; actual OS accent exposure is restricted to eligible installed web apps on supported platforms. Other browsers can also substitute standardized colors. The site follows the web-exposed palette automatically, without a separate color picker or claiming access to the browser's chrome. Layout and typography stay fixed in `src/styles/layout.css` regardless of operating system. `content/theme.css` is optional for project-specific branding.
+The renderer loads independent stylesheets in cascade order:
+
+| Stylesheet | Responsibility |
+| --- | --- |
+| `src/styles/layout.css` | Layout and typography, independent of colors. |
+| `src/styles/theme/fallback.css` | Complete baseline light and dark palettes. All literal fallback colors live here. |
+| `src/styles/theme/native.css` | Progressive enhancement using CSS system colors and `color-mix()` when supported. |
+| `content/theme.css` (staged as `src/styles/project.css`) | Optional project-specific branding. |
+| `src/styles/theme/forced-colors.css` | Native accessibility colors when forced-colors mode is active. |
+
+Starlight's Auto, Light and Dark selector controls the color scheme. The fallback stylesheet supplies every shared palette token before native colors override it; there are no distributed literal color fallbacks. Chromium intentionally returns a generic accent in ordinary website tabs, so native colors are best-effort and do not represent the browser's actual toolbar theme. A CSS feature query detects support, not whether a browser returns personalized colors.
 
 A normal website cannot query Chrome's complete toolbar theme, Firefox extension themes, or KDE/GNOME theme files. Such details require a browser extension or a native bridge, neither of which is part of this template.
 

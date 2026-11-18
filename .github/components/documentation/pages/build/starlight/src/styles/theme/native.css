@@ -1,0 +1,34 @@
+/* Progressive enhancement: colors exposed to web content, not browser chrome.
+ * Chromium may substitute generic system colors for privacy. No reliable
+ * capability test can distinguish a substituted color from a real OS accent.
+ * Leave fallback.css in control when these CSS features are unavailable.
+ */
+@supports (color: Canvas) and (color: CanvasText) and (color: AccentColor) and (color: color-mix(in srgb, CanvasText 50%, Canvas)) {
+  :root,
+  :root[data-theme='light'] {
+    --docs-accent: AccentColor;
+    --sl-color-white: CanvasText;
+    --sl-color-gray-1: color-mix(in srgb, CanvasText 94%, Canvas);
+    --sl-color-gray-2: color-mix(in srgb, CanvasText 82%, Canvas);
+    --sl-color-gray-3: color-mix(in srgb, CanvasText 63%, Canvas);
+    --sl-color-gray-4: color-mix(in srgb, CanvasText 45%, Canvas);
+    --sl-color-gray-5: color-mix(in srgb, CanvasText 27%, Canvas);
+    --sl-color-gray-6: color-mix(in srgb, CanvasText 12%, Canvas);
+    --sl-color-gray-7: color-mix(in srgb, CanvasText 5%, Canvas);
+    --sl-color-black: Canvas;
+    --sl-color-accent-low: color-mix(in srgb, var(--docs-accent) 13%, Canvas);
+    --sl-color-accent: color-mix(in srgb, var(--docs-accent) 35%, CanvasText);
+    --sl-color-accent-high: color-mix(in srgb, var(--docs-accent) 25%, CanvasText);
+    --sl-color-text: CanvasText;
+    --sl-color-text-accent: var(--sl-color-accent);
+    --sl-color-text-invert: Canvas;
+    --sl-color-bg: Canvas;
+    --sl-color-bg-nav: color-mix(in srgb, Canvas 95%, CanvasText);
+    --sl-color-bg-sidebar: color-mix(in srgb, Canvas 96%, CanvasText);
+    --sl-color-bg-inline-code: color-mix(in srgb, Canvas 90%, CanvasText);
+    --sl-color-bg-accent: var(--sl-color-text-accent);
+    --sl-color-hairline-light: color-mix(in srgb, CanvasText 20%, Canvas);
+    --sl-color-hairline: color-mix(in srgb, CanvasText 14%, Canvas);
+    --sl-color-hairline-shade: color-mix(in srgb, CanvasText 10%, Canvas);
+  }
+}
