@@ -53,28 +53,7 @@ jobs:
           CI_OPERATION: review
           REQUEST_ID: ${{ steps.request.outputs.id }}
           REQUEST_SHA: ${{ steps.request.outputs.sha }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" Discover
-
-      - name: Await Resolve
-        id: resolve
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" Resolve "$ENGINE_RUN_ID"
-
-      - name: Await Authorize
-        id: authorize
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" Authorize "$ENGINE_RUN_ID"
-
-      - name: Await Execute
-        id: execute
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" Execute "$ENGINE_RUN_ID"
+        run: node "$RUNNER_TEMP/ci-observe.cjs" connect
 
       - name: Await workflow result
         if: ${{ always() && steps.engine.outputs.run_id != '' && !cancelled() }}
@@ -82,4 +61,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" Complete "$ENGINE_RUN_ID"
+        run: node "$RUNNER_TEMP/ci-observe.cjs" wait "$ENGINE_RUN_ID"

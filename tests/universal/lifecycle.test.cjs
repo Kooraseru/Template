@@ -39,11 +39,10 @@ test('PR starter correlates its own independent run and waits for the terminal r
   assert.match(pull,/client_payload:\{id:\$id,/);
   assert.match(engine,/github\.event\.client_payload\.id/);
   assert.match(pull,/contents\/\.github\/workflows\/bootstrap\.yml/);
-  assert.match(pull,/ci-observe\.cjs" Discover/);
-  assert.match(pull,/ci-observe\.cjs" Resolve/);
-  assert.match(pull,/ci-observe\.cjs" Authorize/);
-  assert.match(pull,/ci-observe\.cjs" Execute/);
-  assert.match(pull,/ci-observe\.cjs" Complete/);
+  assert.match(pull,/ci-observe\.cjs" connect/);
+  assert.match(pull,/ci-observe\.cjs" wait "\$ENGINE_RUN_ID"\s*$/m);
+  assert.equal((pull.match(/ci-observe\.cjs" wait /g)||[]).length,1);
+  assert.doesNotMatch(pull,/name: Await (Resolve|Authorize|Execute)/);
   assert.match(pull,/always\(\) && steps\.engine\.outputs\.run_id != '' && !cancelled\(\)/);
   assert.match(pull,/ci-starter-pr-/);
   assert.doesNotMatch(pull,/checkout@/);
