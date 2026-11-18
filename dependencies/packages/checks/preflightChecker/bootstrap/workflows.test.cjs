@@ -42,7 +42,6 @@ test("same-run delivery jobs cannot publish before Build and native Tests pass",
   for(const lane of ["contents","issues","credential","pages","external"]){
     const start=file.indexOf("\n  publish_"+lane+":");
     assert.ok(start>=0);
-    const part=file.slice(start).split(/\n  [a-z_]+:\n/)[0];
     // Read the full job independently of matrix cardinality.
     const section=file.slice(start+1).split(/\n  [a-z_]+:\n/)[0];
     assert.match(section,/needs: \[resolve, plan, authorize, execute, test\]/);
