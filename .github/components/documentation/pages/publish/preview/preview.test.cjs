@@ -18,12 +18,16 @@ const repo = 'Kooraseru/Template';
 function config() {
   return { enabled: true, cloudflare_project: 'template', retention_days: 14,
     pull_requests: true, branches: true, repo, owner: 'Kooraseru',
-    name: 'Template', base: '/Template/', accountId: '0'.repeat(32) };
+    name: 'Template', base: '/Kooraseru/Template/', accountId: '0'.repeat(32) };
 }
 test('Cloudflare is the only preview backend and requires a project', t => {
   const file = path.join(temporary(t), 'config.toml');
   fs.writeFileSync(file, '[github.previews]\nenabled = true\ncloudflare_project = "template"\n');
-  assert.equal(settings(file, { GITHUB_REPOSITORY: repo }).cloudflare_project, 'template');
+  const configured = settings(file, { GITHUB_REPOSITORY: repo });
+  assert.equal(configured.cloudflare_project, 'template');
+  assert.equal(configured.base, '/Kooraseru/Template/');
+  assert.equal(settings(file, { GITHUB_REPOSITORY: 'Example/example.github.io' }).base,
+    '/Example/example.github.io/');
   fs.writeFileSync(file, '[github.previews]\nenabled = true\ncloudflare_project = ""\n');
   assert.throws(() => settings(file, { GITHUB_REPOSITORY: repo }), /cloudflare_project/);
   const root = path.resolve(__dirname, '../../../../../..');
@@ -81,7 +85,7 @@ test('Cloudflare publishing is isolated from untrusted static compilation', () =
   const candidate = { ...target('pr:50', config()), sha: 'b'.repeat(40) };
   const spec = plan(config(),candidate,'pr:50');
   assert.equal(spec.prepare.ref,candidate.sha);
-  assert.deepEqual(spec.prepare.env,{DOCS_BASE:'/Template/',DOCS_SITE:'https://pr-50.template.pages.dev'});
+  assert.deepEqual(spec.prepare.env,{DOCS_BASE:'/Kooraseru/Template/',DOCS_SITE:'https://pr-50.template.pages.dev'});
   assert.deepEqual(spec.prepare.command,['node','.github/components/documentation/pages/build/starlight/build.cjs']);
   assert.equal(spec.artifact,'build/ci-candidate/build/github/pages');
   assert.equal(spec.destination,'build/preview-candidate');
@@ -182,7 +186,7 @@ test('a successful PR preview produces a live link, but closed notes contain non
   };
   const live = bodyFor(c, candidate, false);
   assert.ok(live.includes(marker));
-  assert.ok(live.includes('https://pr-52.template.pages.dev/Template/'));
+  assert.ok(live.includes('https://pr-52.template.pages.dev/Kooraseru/Template/'));
   assert.ok(live.includes('/commit/' + candidate.sha));
   const closed = bodyFor(c, { ...candidate, remove: true }, true);
   assert.ok(closed.includes('Closed'));
@@ -273,7 +277,7 @@ test('Cloudflare project names and assigned public hostnames are distinct', asyn
   const c={...config(),cloudflare_domain:'template-2pq.pages.dev'};
   const candidate={...target('pr:55',c),sha:'c'.repeat(40)};
   assert.equal(plan(c,candidate,'pr:55').prepare.env.DOCS_SITE,'https://pr-55.template-2pq.pages.dev');
-  assert.match(bodyFor(c,candidate,false),/https:\/\/pr-55\.template-2pq\.pages\.dev\/Template\//);
+  assert.match(bodyFor(c,candidate,false),/https:\/\/pr-55\.template-2pq\.pages\.dev\/Kooraseru\/Template\//);
   const mock=async()=>({ok:true,json:async()=>({success:true,result:{subdomain:'template-2pq.pages.dev'}})});
   assert.equal(await verifyProjectHost(c,{CLOUDFLARE_API_TOKEN:'test'},mock),'template-2pq.pages.dev');
   await assert.rejects(verifyProjectHost(config(),{CLOUDFLARE_API_TOKEN:'test'},mock),/Set github.previews.cloudflare_domain/);

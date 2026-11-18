@@ -1,5 +1,5 @@
 /* Stable layout/typography for all operating systems and browser themes.
- * Colors are resolved independently in palette.css.
+ * Colors are resolved independently in styles/theme/.
  */
 :root {
   --sl-content-width: 52rem;

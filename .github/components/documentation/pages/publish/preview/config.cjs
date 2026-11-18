@@ -48,7 +48,7 @@ function settings(file = path.join(root, 'config/targets.toml'), env = process.e
   const repo = env.GITHUB_REPOSITORY || '';
   if (!repositoryPattern.test(repo)) throw new Error('Missing valid GitHub repository');
   const [owner, name] = repo.split('/');
-  const base = name.toLowerCase() === (owner + '.github.io').toLowerCase() ? '/' : '/' + name + '/';
+  const base = '/' + repo + '/';
   return { ...all, cloudflare_domain, repo, owner, name, base,
     accountId: env.CLOUDFLARE_ACCOUNT_ID || '', defaultBranch: env.CI_DEFAULT_BRANCH || '' };
 }
