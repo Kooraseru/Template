@@ -23,7 +23,13 @@ test("capability contracts declare an explicit setup prerequisite", () => {
     const entry=JSON.parse(fs.readFileSync(filename,"utf8"));
     assert.equal(entry.boundary,"read",name);
     assert.deepEqual(entry.requires,name==="setup"?[]:["tools.workspace"],name);
-    assert.equal(entry.command.length,2);
+    if (name === "workflows" || name === "build-tests") {
+      assert.deepEqual(entry.command, ["node", "dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", name === "workflows" ? "native-lint" : "native-validate"]);
+    } else {
+      assert.equal(entry.command.length, 2);
+      assert.equal(entry.command[0], "node");
+      assert.ok(fs.existsSync(path.join(root, entry.command[1])), entry.command[1]);
+    }
   }
 });
 
