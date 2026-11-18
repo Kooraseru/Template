@@ -39,7 +39,7 @@ For a manual preview, from Actions → Manual → Run workflow, choose `source`.
 
 An open PR must originate from the same repository. Forks, closed PRs, `source`, and generated CI branches cannot be previewed. The selected SHA is checked again before publishing, and the build job never receives publishing credentials.
 
-The live address follows the leading-subdomain format `https://pr-50.template-2pq.pages.dev/Template/`. The publisher verifies the configured hostname against Cloudflare's project API before publishing. Production GitHub Pages keeps its own URL and does not store preview assets.
+The live address follows the leading-subdomain format `https://pr-50.template-2pq.pages.dev/Kooraseru/Template/`. The URL path uses the GitHub owner and repository name. The publisher verifies the configured hostname against Cloudflare's project API before publishing. Production GitHub Pages keeps its own URL and does not store preview assets.
 
 After a successful PR preview deployment, CI automatically posts a comment in the pull request's **Conversation** tab linking to its actual Cloudflare Pages website and source commit. Subsequent previews edit the same bot comment instead of adding duplicate replies. Branch previews do not post to a PR. This requires the isolated publisher's `pull-requests: write` permission; no preview URL is announced before a successful deployment.
 
