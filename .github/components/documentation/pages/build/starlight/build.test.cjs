@@ -44,6 +44,13 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(layout.includes('--sl-sidebar-width: 17rem;'));
   assert.ok(!layout.includes('--sl-color-bg:'));
   assert.ok(!projectTheme.includes('--sl-color-accent:'));
+  assert.ok(palette.includes('--docs-accent: var(--docs-user-accent, AccentColor);'));
+  assert.ok(palette.includes('--sl-color-accent: color-mix(in srgb, var(--docs-accent) 35%, CanvasText);'));
+  assert.ok(palette.split('@media (forced-colors: active)')[1].includes('--sl-color-accent: LinkText;'));
+  assert.ok(astro.includes("ThemeSelect: './src/components/ThemeSelect.astro'"));
+  const picker = fs.readFileSync(path.join(site, 'src/components/ThemeSelect.astro'), 'utf8');
+  assert.ok(picker.includes("localStorage.removeItem(key)"));
+  assert.ok(picker.includes('name="docs-accent"'));
   assert.ok(!collection.includes('content/i18n'));
 });
 

@@ -3,7 +3,8 @@
  * The shared renderer uses CSS system colors (Canvas, CanvasText, LinkText,
  * AccentColor, etc.) supplied by the visitor's browser. No site-defined
  * colors are needed. Starlight's built-in Auto / light / dark selector still
- * works, including when the user's system preference changes.
+ * works, including when the user's system preference changes. Visitors can
+ * select a personal accent next to the theme selector and reset to Auto.
  *
  * This file remains available for projects that explicitly want branding.
  * A web page cannot access arbitrary browser chrome/extension theme colors

@@ -3,8 +3,8 @@
  * 2. These dark/light hardcoded fallback palettes otherwise.
  * 3. Forced-colors mode always receives browser accessibility colors.
  *
- * A browser may return standardized colors, rather than the exact OS accent.
- * CSS has no reliable way to tell which it returned.
+ * Browsers may intentionally supply a generic accent instead of their chrome.
+ * A visitor can explicitly choose a color when that happens.
  */
 
 /* Reliable fallback for browsers lacking system colors or color-mix(). */
@@ -65,12 +65,13 @@
 }
 
 /* Native colors supersede the fallback, provided both system keywords and
- * interpolated shades are supported. Native LinkText is more appropriate for
- * content links than AccentColor, whose contrast against Canvas may be poor.
+ * interpolated shades are supported. Mix the accent with CanvasText for
+ * legibility instead of using the browser's unrelated default LinkText.
  */
 @supports (color: Canvas) and (color: CanvasText) and (color: LinkText) and (color: AccentColor) and (color: color-mix(in srgb, CanvasText 50%, Canvas)) {
   :root,
   :root[data-theme='light'] {
+    --docs-accent: var(--docs-user-accent, AccentColor);
     --sl-color-white: CanvasText;
     --sl-color-gray-1: color-mix(in srgb, CanvasText 94%, Canvas);
     --sl-color-gray-2: color-mix(in srgb, CanvasText 82%, Canvas);
@@ -80,17 +81,17 @@
     --sl-color-gray-6: color-mix(in srgb, CanvasText 12%, Canvas);
     --sl-color-gray-7: color-mix(in srgb, CanvasText 5%, Canvas);
     --sl-color-black: Canvas;
-    --sl-color-accent-low: color-mix(in srgb, AccentColor 13%, Canvas);
-    --sl-color-accent: LinkText;
-    --sl-color-accent-high: LinkText;
+    --sl-color-accent-low: color-mix(in srgb, var(--docs-accent) 13%, Canvas);
+    --sl-color-accent: color-mix(in srgb, var(--docs-accent) 35%, CanvasText);
+    --sl-color-accent-high: color-mix(in srgb, var(--docs-accent) 25%, CanvasText);
     --sl-color-text: CanvasText;
-    --sl-color-text-accent: LinkText;
-    --sl-color-text-invert: AccentColorText;
+    --sl-color-text-accent: var(--sl-color-accent);
+    --sl-color-text-invert: CanvasText;
     --sl-color-bg: Canvas;
-    --sl-color-bg-nav: color-mix(in srgb, Canvas 95%, CanvasText);
-    --sl-color-bg-sidebar: color-mix(in srgb, Canvas 96%, CanvasText);
+    --sl-color-bg-nav: color-mix(in srgb, var(--docs-accent) 10%, Canvas);
+    --sl-color-bg-sidebar: color-mix(in srgb, var(--docs-accent) 7%, Canvas);
     --sl-color-bg-inline-code: color-mix(in srgb, Canvas 90%, CanvasText);
-    --sl-color-bg-accent: AccentColor;
+    --sl-color-bg-accent: color-mix(in srgb, var(--docs-accent) 28%, Canvas);
     --sl-color-hairline-light: color-mix(in srgb, CanvasText 20%, Canvas);
     --sl-color-hairline: color-mix(in srgb, CanvasText 14%, Canvas);
     --sl-color-hairline-shade: color-mix(in srgb, CanvasText 10%, Canvas);

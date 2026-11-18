@@ -32,6 +32,8 @@ export default defineConfig({
     // Navigation stays filesystem-generated. Authored Markdown is staged into
     // src/content/docs before each build or local preview.
     customCss: ['./src/styles/layout.css', './src/styles/palette.css', './src/styles/project.css'],
+    components: { ThemeSelect: './src/components/ThemeSelect.astro' },
+    head: [{ tag: 'script', content: `try { const accent = localStorage.getItem('docs-accent'); if (/^#[0-9a-f]{6}$/i.test(accent || '')) document.documentElement.style.setProperty('--docs-user-accent', accent); } catch {}` }],
     social: repository ? [{ icon: 'github', label: 'GitHub', href: 'https://github.com/' + repository }] : [],
     // Omit sidebar: Starlight derives it from the staged Markdown tree.
     editLink: projectSite ? { baseUrl: 'https://github.com/' + repository + '/edit/source/content/docs/' } : undefined,
