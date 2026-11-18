@@ -14,6 +14,6 @@
   "boundary": "read",
   "command": [
     "node",
-    "ci/code-review.cjs"
+    ".github/components/quality/code-review/review.cjs"
   ]
 }

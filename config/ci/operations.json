@@ -23,7 +23,11 @@
       "native": {
         "command": [
           "node",
-          "ci/github/workflows/launch.cjs"
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "native-launch",
+          ".github/components/quality/workflows/graph.cjs"
         ]
       }
     },
@@ -68,9 +72,8 @@
           "node",
           "dependencies/packages/core/dependencyLoader/index.ts",
           "--exec",
-          "luau.lute",
-          "run",
-          "ci/entry.luau"
+          "tools.ciEngine",
+          "native"
         ],
         "profile": "source-ci"
       }
@@ -94,9 +97,8 @@
           "node",
           "dependencies/packages/core/dependencyLoader/index.ts",
           "--exec",
-          "luau.lute",
-          "run",
-          "ci/entry.luau"
+          "tools.ciEngine",
+          "native"
         ],
         "profile": "source-ci"
       }

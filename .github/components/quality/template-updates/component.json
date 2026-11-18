@@ -14,6 +14,6 @@
   "boundary": "read",
   "command": [
     "node",
-    "ci/template/version.cjs"
+    ".github/components/quality/template-updates/version.cjs"
   ]
 }

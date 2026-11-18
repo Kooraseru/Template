@@ -14,6 +14,6 @@
   "boundary": "read",
   "command": [
     "node",
-    "ci/rules-audit.cjs"
+    ".github/components/quality/rules-audit/audit.cjs"
   ]
 }

@@ -9,7 +9,7 @@
     "workspace": "../../..",
     "dependencies": "@workspace/dependencies",
 
-    "ci": "@workspace/ci",
+    "ci": "@dependencies/managed/packages/ci-engine/src/native",
     "components": "@workspace/.github/components",
     "tooling": "@workspace/tooling",
     "build": "@workspace/build/run",

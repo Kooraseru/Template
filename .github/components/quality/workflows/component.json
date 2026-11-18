@@ -13,7 +13,10 @@
   ],
   "boundary": "read",
   "command": [
-    "bash",
-    "ci/bootstrap/check-workflows.sh"
+    "node",
+    "dependencies/packages/core/dependencyLoader/index.ts",
+    "--exec",
+    "tools.ciEngine",
+    "native-lint"
   ]
 }
