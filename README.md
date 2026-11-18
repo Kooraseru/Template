@@ -10,11 +10,11 @@ A reusable development workspace and CI foundation for packages, editor extensio
 4. Run **`node dependencies/packages/core/dependencyLoader/index.ts`**, then **`node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate`** for dependency setup and the full local validation path. When changing dependency declarations, run the loader once with `--update-lock` and commit both manifest and lock.
 5. Replace the sample files under `source/` with your project code. Edit repository rules under `rules/` and editor behavior in `.vscode/config/workflow.json` only if necessary.
 
-**No secrets are required for normal read-only CI.** GitHub Actions validates pull requests and source-branch pushes. Default-branch pushes select the trusted generated CI operation, which builds, tests, and publishes branches and Pages through components when enabled in `config/targets.toml`. Configure GitHub Pages with **Source: GitHub Actions** in repository settings. The CI controller does not need modification to add components.
+**No secrets are required for normal read-only CI.** GitHub Actions validates pull requests and source-branch pushes. Default-branch pushes validate; publication requires an explicitly authorized operation. Configure GitHub Pages with **Source: GitHub Actions** in repository settings. The CI controller does not need modification to add components.
 
 ## CI and optional publishing
 
-The grouped event workflows under `.github/workflows/` (push, pull, close, manual and remote) each call the shared bootstrap.yml reference to the SHA-pinned external CI Engine. Pushes select `validation` (trusted default-branch pushes also launch native Build and Tests); PRs select `review`; manual and remote entry points select their explicitly permitted operations. `config/ci/operations.json` is the sole operation and execution-adapter catalog.
+The push, pull, manual and remote event workflows submit independent CI Engine requests. PR close only retires an existing preview. `bootstrap.yml` pins the engine once. `config/ci/operations.json` declares the selected components and optional native test matrix.
 
 Generated `main` and Pages publication use generated component jobs from the CI Engine workflow and their toggles under `config/targets.toml`. Other publication adapters retain their own explicit operation and credential requirements. Review the publication records under `config/publishing/` and the role/environment bindings in `config/credentials.json`; configure declared credentials in repository settings, never in committed files.
 
@@ -64,12 +64,9 @@ For a machine-readable onboarding report, use `node .github/components/quality/s
 See [workspace dependencies](dependencies/README.md), [rules](rules/README.md), and [CI implementation](.github/components/README.md) for detailed contracts.
 
 
-### Native builds without a pull request
+### Native validation
 
-A normal push to the repository's default branch (or manually running `validation` from that branch) runs the permanent CI Engine controller and, once its read-only checks pass, **automatically launches a separate native build-only GitHub Actions run**. The execution branch is named `ci/run-push-<run-id>-<attempt>-<source-sha>`, and the parent CI summary links to that run. The generated run includes Quality, Windows host builds, real host-specific executable tests, Pages/Branches, read-only Plans, Packages/Releases staging, and the final Collect gate.
+A push or PR dispatches one independent CI Engine execution. It cross-compiles the declared hosts, executes the universal regression suite, and uploads the resulting binaries within that same run. Host tests run on a matrix discovered from the tracked host contracts. The final gate requires both the build and every native test to pass. Validation creates no temporary workflow branches and requires no write credentials.
 
-Other feature-branch pushes still run the ordinary read-only controller without requiring a PR. Pull requests are build-only and never receive publication credentials. The engine-generated Publish stage updates `main` and deploys Pages after successful Build and Tests; packages, releases, and governance publication remain separately controlled.
+Explicit publication and preview deployment remain separately authorized generated operations. They are not triggered by ordinary validation.
 
-To create the temporary execution branch, configure **either** a GitHub App installed on this repository with Contents/Workflows write and Actions read, exposing `CI_APP_ID` and `CI_APP_PRIVATE_KEY`, **or** the scoped `CI_TOKEN` bootstrap secret with those permissions. The engine gates native creation behind the protected `ci-bootstrap` environment and only permits a default-branch `push` event. Using the ordinary `GITHUB_TOKEN` to create the branch does not trigger the generated push workflow. The run fails explicitly if a required bootstrap credential is missing.
-
-Windows AMD and Intel binaries are tested on Windows x64 runners; Windows ARM64 runs on a native Windows ARM64 runner. Source code is checked out at the immutable triggering commit, while the temporary branch contains only the generated workflow definitions.

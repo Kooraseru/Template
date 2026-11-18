@@ -17,7 +17,7 @@ flowchart LR
     K --> V["validate"]
 ```
 
-Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. All controller jobs run on successful operations with no mode-specific skipped jobs. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Generated native pipelines remain separate GitHub Actions runs with real component jobs and matrix expansions.
+Prepare, Discover, and Inspect can start concurrently. Authorize waits for both Plan and Inspect; Execute waits for Prepare and Authorize. Optional host-test jobs run only when declared by the selected operation. The chosen execution mode is handled **inside** Execute. Each job has its own GitHub runner: Prepare checks workspace readiness but does not install tools into Execute's runner; component-owned setup runs where its tools are needed. Read-only host tests run within the engine's own graph; explicitly generated publication and preview operations remain isolated.
 
 config/ci/operations.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/components/.
 
@@ -136,7 +136,7 @@ node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine 
 
 Local `act` stages default to a 30-minute timeout, adjustable with `CI_LOCAL_TIMEOUT_MINUTES` (1–240). The launcher allocates a run-specific artifact server path and port, so do not pin either in `.actrc`. Failed runs preserve their stage logs under `build/run/<id>/` and invocation records in `.workspace/ci/runs/`.
 
-Manual dispatch defaults to read-only `validation`. Source-push validation cannot publish and never exposes deployment permissions to generated build jobs. On source pushes, CI Engine selects the trusted generated `publish` operation, while feature pushes and pull requests retain read-only routes. The generated graph builds and tests, then publishes enabled targets through components. The `main` publication target is currently disabled; when enabled it creates a rootless orphan branch, while production Starlight Pages remains enabled. Publication uses a trusted default-branch workflow and independent job permissions. Attestation signing remains disabled.
+Manual dispatch defaults to read-only `validation`. Source-push validation cannot publish and never exposes deployment permissions to generated build jobs. Source pushes, feature pushes and pull requests remain read-only. Publication is explicitly requested. The generated graph builds and tests, then publishes enabled targets through components. The `main` publication target is currently disabled; when enabled it creates a rootless orphan branch, while production Starlight Pages remains enabled. Publication uses a trusted default-branch workflow and independent job permissions. Attestation signing remains disabled.
 
 The sample release and package conflict policies default to `skip`, not `replace`. To replace a tag, release, or package version, opt in explicitly after reviewing the generated outputs. Publication rehearsals route GitHub API requests and release-asset uploads to the local test server. The Pages site is built with Starlight from `content/docs/` and `content/images/` and deployed by its generated native Publish component when GitHub Pages is configured for GitHub Actions. Attestation signing remains unimplemented and disabled.
 
@@ -160,18 +160,7 @@ Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node .git
 The installed engine stages a temporary copy of its own workflows and action sources; the authored bootstrap pin is preserved, and compatibility-only artifacts remain in the disposable checkout.
 
 
-## Generated build-only execution
+## Native validation
 
-The native pipeline generator is `.github/components/quality/workflows/graph.cjs`. On default-branch pushes or manual `validation` dispatched from the default branch, `<managed CI-Engine>/src/native/github/workflows/launch.cjs` renders the dependency graph, commits six generated workflow files to a unique `ci/run-push-...` branch, waits for the resulting GitHub Actions run, checks its exact SHA and outcome, and fails the parent check if that run fails. A reusable-workflow group holds each category of native jobs, with three build hosts and three host-specific runtime tests in separate matrices. The build-stage generator never emits a publish job.
+The native test inventory is `.github/components/quality/workflows/hosts.cjs`, discovered from tracked host contracts. Build and universal tests execute once in the engine. A same-run native host matrix consumes the built executables. Collect and the required check wait for all host tests. Neither validation nor PR review creates a generated workflow branch.
 
-Quality includes Review, Rules, Workflows and Updates. Build includes three Windows targets, Pages and Branches. Plan contains Rulesets, Milestones and Projects. Tests contains Universal and native Windows host tests. Distribution stages Packages and Releases after the binary build artifacts exist. These components remain enabled/disabled by the project settings and dependency contracts. The test/build matrix runner labels are distinct from the Docker-based cross-compilers.
-
-The engine's readonly `validation.native.command` is invoked only after the normal read-only component checks **and** only on a trusted default-branch push or manual `validation` dispatch. On other branch pushes or on PRs, the existing read-only checks run with no write tokens. The native launcher uses a scoped App/PAT in the `ci-bootstrap` environment, never passes it into generated jobs, and reports the child execution URL in the parent summary. Application/publisher deployment remains strictly outside this build workflow.
-
-### Documentation preview publication
-
-The explicit `preview` CI Engine operation runs only on trusted source-branch workflow dispatch. It generates an isolated read-only Starlight build of the selected PR or branch, then publishes the verified static artifact in a separately permissioned job. Cloudflare Pages is the only preview destination, selected through `[github.previews]` in `config/targets.toml`; no Git branch stores preview assets. The single authored CI workflow delegates PR closure to CI Engine's protected lifecycle job, whose project-owned component retires the Cloudflare preview alias with HTTP 410. See [Preview deployments](../content/docs/preview-deployments.md). No additional workflow file is used.
-
-### Publication verification
-
-Manual `publish-check` runs the same Build and Publish compilation and tests as ordinary review. The labels integration exercises the real component against a loopback-only mock with synthetic credentials. This does not establish live service authorization, deployment protection or permission grants. Actual Publish is a separate trusted operation, restricted to a generated branch after Build and Tests succeed.

@@ -8,7 +8,14 @@
       ],
       "components": [
         "quality/*"
-      ]
+      ],
+      "hostTests": {
+        "command": [
+          "node",
+          ".github/components/quality/workflows/hosts.cjs"
+        ],
+        "artifactPath": "build/artifacts/application"
+      }
     },
     "validation": {
       "mode": "readonly",
@@ -19,16 +26,12 @@
       "components": [
         "quality/*"
       ],
-      "branch": "default",
-      "native": {
+      "hostTests": {
         "command": [
           "node",
-          "dependencies/packages/core/dependencyLoader/index.ts",
-          "--exec",
-          "tools.ciEngine",
-          "native-launch",
-          ".github/components/quality/workflows/graph.cjs"
-        ]
+          ".github/components/quality/workflows/hosts.cjs"
+        ],
+        "artifactPath": "build/artifacts/application"
       }
     },
     "readiness": {
@@ -138,7 +141,14 @@
       ],
       "components": [
         "quality/*"
-      ]
+      ],
+      "hostTests": {
+        "command": [
+          "node",
+          ".github/components/quality/workflows/hosts.cjs"
+        ],
+        "artifactPath": "build/artifacts/application"
+      }
     },
     "publish-check": {
       "mode": "readonly",

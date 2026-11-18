@@ -68,3 +68,13 @@ test("source ruleset requires the actual external reusable workflow gate", () =>
     { context: "CI Engine / engine / validate", integration_id: 15368 },
   ]);
 });
+
+test("validation and review use native host tests without launching generated runs",()=>{
+  for(const name of ["validation","review","remote-validation"]){
+    const op=engine.operations[name];
+    assert.equal(op.mode,"readonly");
+    assert.equal(op.native,undefined);
+    assert.deepEqual(op.hostTests,{command:["node",".github/components/quality/workflows/hosts.cjs"],artifactPath:"build/artifacts/application"});
+  }
+  assert.equal(fs.existsSync(path.join(root,".github/components/quality/workflows/graph.cjs")),false);
+});

@@ -3,7 +3,7 @@ title: Continuous integration
 description: Read-only validation, native execution, and publication boundaries.
 ---
 
-The grouped push, pull, manual and remote workflows delegate orchestration directly to CI Engine. Feature-branch pushes and pull requests run read-only checks. Trusted default-branch pushes additionally launch the generated Build and Tests graph. Publishing requires a separately authorized operation.
+Push, pull, manual and remote events request independent CI Engine execution. Source and feature pushes and PRs run read-only checks, with same-run native host tests. Publishing requires a separately authorized operation.
 
 The generated graph validates builds, documentation assets, generated branch contents, and distribution staging before entering privileged publication components. Temporary execution branches are removed after completion.
 
