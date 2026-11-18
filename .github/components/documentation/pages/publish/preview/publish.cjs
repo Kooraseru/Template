@@ -4,7 +4,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { root, settings, target, resolveTarget } = require('./config.cjs');
 const { api } = require('./github.cjs');
-const { syncComment, findOwned } = require('./comment.cjs');
+const { syncComment, findOwned, bodyFor } = require('./comment.cjs');
 
 const candidateDir = path.join(root, 'build/preview-candidate');
 const uploadDir = path.join(root, 'build/preview-cloudflare');
@@ -135,15 +135,18 @@ async function retireClosed(env = process.env, request = api) {
   const config = settings(undefined, env);
   const number = String(event.pull_request?.number || '');
   if (event.action !== 'closed' || !Number.isSafeInteger(event.pull_request?.number) || event.pull_request.number < 1 ||
-      (env.CI_PREVIEW_CLOSED_NUMBER && number !== env.CI_PREVIEW_CLOSED_NUMBER) ||
       event.repository?.full_name !== config.repo ||
-      event.pull_request?.base?.repo?.full_name !== config.repo)
+      event.pull_request?.base?.repo?.full_name !== config.repo ||
+      event.pull_request?.base?.ref !== event.repository?.default_branch)
     throw new Error('Invalid preview close event');
   if (event.pull_request?.head?.repo?.full_name !== config.repo) return null;
   if (!config.enabled || !config.pull_requests) return null;
   const candidate = target('delete:pr:' + number, config);
   const previous = await findOwned(config, candidate, env, request);
   if (!previous) { console.log('No published PR preview to retire'); return null; }
+  if (previous.body === bodyFor(config, candidate, true)) {
+    console.log('PR preview is already retired'); return null;
+  }
   const removed = await cloudflareDeploy(config, candidate, env);
   const note = await syncComment(config, candidate, env, true, request);
   if (note) console.log('::notice::PR preview comment ' + note.action);

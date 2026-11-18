@@ -47,3 +47,23 @@ test('PR starter correlates its own independent run and waits for the terminal r
   assert.match(pull,/ci-starter-pr-/);
   assert.doesNotMatch(pull,/checkout@/);
 });
+
+test('merge validation has a single event owner and no engine work on closure', () => {
+  const read = name => fs.readFileSync(path.join(root,'.github/workflows',name+'.yml'),'utf8');
+  const push=read('push'),pull=read('pull'),close=read('close');
+  assert.match(push,/\n  push:/);
+  assert.match(push,/if: github\.event\.deleted != true/);
+  assert.match(push,/current.*object\.sha/);
+  assert.match(push,/"\$current" != "\$REQUEST_SHA"/);
+  assert.match(push,/GITHUB_REF" != "refs\/heads\/\$DEFAULT_BRANCH"/);
+  assert.match(push,/state=open.*head=.*base=/);
+  assert.doesNotMatch(pull,/types: \[[^\]]*closed/);
+  assert.match(close,/types: \[closed\]/);
+  assert.doesNotMatch(close,/dispatches|ci-request|tools\.ciEngine|dependencyLoader/);
+  const dir=path.join(root,'.github/workflows');
+  const mergeDispatchers=fs.readdirSync(dir).filter(name=>name.endsWith('.yml')).filter(name=>{
+    const source=fs.readFileSync(path.join(dir,name),'utf8');
+    return /types:\s*\[[^\]]*\bclosed\b/.test(source) && /\/dispatches/.test(source);
+  });
+  assert.deepEqual(mergeDispatchers,[]);
+});

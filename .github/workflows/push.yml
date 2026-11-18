@@ -11,6 +11,10 @@ permissions: {}
 jobs:
   dispatch:
     name: Request CI
+    if: github.event.deleted != true
+    concurrency:
+      group: ci-starter-push-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -26,8 +30,12 @@ jobs:
           set -euo pipefail
           REQUEST_REF="$GITHUB_REF"
           REQUEST_SHA="$GITHUB_SHA"
+          # A merge into the default branch is handled here, exactly like a direct push.
+          branch="${GITHUB_REF#refs/heads/}"
+          encoded=$(jq -nr --arg ref "$branch" '$ref | split("/") | map(@uri) | join("/")')
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded" --jq .object.sha)
+          if [[ "$current" != "$REQUEST_SHA" ]]; then echo "A newer revision owns this branch"; exit 0; fi
           if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
-            branch="${GITHUB_REF#refs/heads/}"
             count=$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f head="${GITHUB_REPOSITORY%%/*}:$branch" -f base="$DEFAULT_BRANCH" --jq 'length')
             if [[ "$count" != 0 ]]; then echo "PR review owns this branch revision"; exit 0; fi
           fi

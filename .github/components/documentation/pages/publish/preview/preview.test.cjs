@@ -106,16 +106,40 @@ test('a forged preview target alias is rejected', () => {
   assert.throws(() => selected({ CI_PREVIEW_TARGET: 'pr:50', CI_PREVIEW_ALIAS: 'pr-51',
     CI_PREVIEW_SHA: 'b'.repeat(40) }, config()), /alias mismatch/);
 });
-test('close events must match the repository and PR number', async t => {
+test('close events must match the repository, default branch and PR number', async t => {
   const eventFile = path.join(temporary(t), 'event.json');
-  fs.writeFileSync(eventFile, JSON.stringify({ action: 'closed', repository: { full_name: repo },
-    pull_request: { number: 50, base: { repo: { full_name: repo } },
-      head: { repo: { full_name: repo } } } }));
-  await assert.rejects(retireClosed({
-    GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request_target',
-    GITHUB_EVENT_PATH: eventFile, GITHUB_REPOSITORY: repo,
-    CI_PREVIEW_CLOSED_NUMBER: '51'
-  }), /Invalid preview close event/);
+  const event = { action: 'closed', repository: { full_name: repo, default_branch: 'source' },
+    pull_request: { number: 50, base: { ref: 'source', repo: { full_name: repo } },
+      head: { repo: { full_name: repo } } } };
+  const env = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request_target',
+    GITHUB_EVENT_PATH: eventFile, GITHUB_REPOSITORY: repo, GH_TOKEN: 'test-token' };
+  const request = async () => { throw new Error('Invalid close must not contact an API'); };
+  for (const invalid of [
+    {...event, action:'opened'},
+    {...event, pull_request:{...event.pull_request, number:0}},
+    {...event, pull_request:{...event.pull_request, base:{...event.pull_request.base, ref:'other'}}},
+  ]) {
+    fs.writeFileSync(eventFile, JSON.stringify(invalid));
+    await assert.rejects(retireClosed(env, request), /Invalid preview close event/);
+  }
+});
+test('ordinary closure and repeated retirement never invoke Cloudflare', async t => {
+  const eventFile = path.join(temporary(t), 'event.json');
+  fs.writeFileSync(eventFile, JSON.stringify({ action:'closed',
+    repository:{full_name:repo, default_branch:'source'},
+    pull_request:{number:50,base:{ref:'source',repo:{full_name:repo}},head:{repo:{full_name:repo}}}
+  }));
+  const env={GITHUB_ACTIONS:'true',GITHUB_EVENT_NAME:'pull_request_target',
+    GITHUB_EVENT_PATH:eventFile,GITHUB_REPOSITORY:repo,GH_TOKEN:'test-token'};
+  const retired={id:42,user:{id:41898282},body:bodyFor(config(),target('delete:pr:50',config()),true)};
+  for(const comments of [[],[retired]]){
+    let calls=0;
+    assert.equal(await retireClosed(env,async(method,resource)=>{
+      assert.equal(method,'GET');assert.match(resource,/\/issues\/50\/comments/);calls++;
+      return comments;
+    }),null);
+    assert.equal(calls,1);
+  }
 });
 test('retirement replaces preview with HTTP 410 Worker', t => {
   const output = prepareUpload(config(), { alias: 'pr-50', remove: true });
