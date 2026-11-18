@@ -19,6 +19,16 @@ jobs:
       pull-requests: read
       actions: read
     steps:
+      - name: Load pinned observation client
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method GET "repos/$GITHUB_REPOSITORY/contents/.github/workflows/bootstrap.yml" -f ref="$GITHUB_SHA" --jq .content | base64 -d > "$RUNNER_TEMP/ci-bootstrap"
+          pin=$(sed -nE 's|^[[:space:]]*uses: ([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/\.github/workflows/bootstrap\.yml@([a-f0-9]{40})$|\1/\2|p' "$RUNNER_TEMP/ci-bootstrap")
+          [[ "$pin" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[a-f0-9]{40}$ ]]
+          curl --proto '=https' -fsSL --retry 3 "https://raw.githubusercontent.com/$pin/src/adapters/github/observe.cjs" -o "$RUNNER_TEMP/ci-observe.cjs"
+
       - name: Submit immutable request
         id: request
         env:
@@ -36,86 +46,40 @@ jobs:
           echo "sha=$REQUEST_SHA" >> "$GITHUB_OUTPUT"
           jq -n --arg id "$REQUEST_ID" --arg event 'pull_request' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{id:$id,event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -
 
+      - name: Find independent run
+        id: engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_OPERATION: review
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          REQUEST_SHA: ${{ steps.request.outputs.sha }}
+        run: node "$RUNNER_TEMP/ci-observe.cjs" Discover
+
       - name: Await Resolve
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUEST_ID: ${{ steps.request.outputs.id }}
-          REQUEST_SHA: ${{ steps.request.outputs.sha }}
-        run: |
-          set -euo pipefail
-          cat > "$RUNNER_TEMP/ci-observe" <<'OBSERVER'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          base="repos/$GITHUB_REPOSITORY/actions"
-          phase="$1"
-          run_id="$2"
-          deadline=$((SECONDS + 5400))
-          while (( SECONDS < deadline )); do
-            run=$(gh api "$base/runs/$run_id")
-            state=$(jq -r '.status' <<< "$run")
-            conclusion=$(jq -r '.conclusion // ""' <<< "$run")
-            if [[ "$phase" == Complete ]]; then
-              if [[ "$state" == completed ]]; then
-                echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
-                echo "CI Engine finished: $conclusion"
-                [[ "$conclusion" == success ]]
-                exit
-              fi
-            else
-              job=$(gh api --paginate "$base/runs/$run_id/jobs?filter=latest&per_page=100" | jq -sc --arg phase "$phase" '[.[].jobs[] | select(.name | endswith(" / " + $phase))] | if length > 1 then error("Ambiguous CI phase") else .[0] // {} end')
-              if [[ $(jq -r '.status // ""' <<< "$job") == completed ]]; then
-                result=$(jq -r '.conclusion // ""' <<< "$job")
-                echo "conclusion=$result" >> "$GITHUB_OUTPUT"
-                echo "job_id=$(jq -r '.id' <<< "$job")" >> "$GITHUB_OUTPUT"
-                echo "CI Engine signal: $phase = $result"
-                [[ "$result" == success ]]
-                exit
-              fi
-              if [[ "$state" == completed ]]; then
-                echo "::error::CI Engine finished ($conclusion) before successful $phase"
-                exit 1
-              fi
-            fi
-            sleep 10
-          done
-          echo "::error::Timed out waiting for CI Engine $phase"
-          exit 1
-          OBSERVER
-          title="CI / review / $REQUEST_SHA / request $REQUEST_ID"
-          deadline=$((SECONDS + 300))
-          run_id=""
-          while (( SECONDS < deadline )); do
-            matches=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/bootstrap.yml/runs?event=repository_dispatch&per_page=100" | jq -sc --arg title "$title" '[.[].workflow_runs[] | select(.display_title == $title) | .id]')
-            count=$(jq 'length' <<< "$matches")
-            if [[ "$count" == 1 ]]; then run_id=$(jq -r '.[0]' <<< "$matches"); break; fi
-            if [[ "$count" != 0 ]]; then echo "::error::Ambiguous CI request"; exit 1; fi
-            sleep 5
-          done
-          if [[ ! "$run_id" =~ ^[1-9][0-9]*$ ]]; then echo "::error::CI Engine request was not scheduled"; exit 1; fi
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "run_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id" >> "$GITHUB_OUTPUT"
-          echo "[Independent CI run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id)" >> "$GITHUB_STEP_SUMMARY"
-          bash "$RUNNER_TEMP/ci-observe" Resolve "$run_id"
+          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
+        run: node "$RUNNER_TEMP/ci-observe.cjs" Resolve "$ENGINE_RUN_ID"
 
       - name: Await Authorize
         id: authorize
         env:
           GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.resolve.outputs.run_id }}
-        run: bash "$RUNNER_TEMP/ci-observe" Authorize "$ENGINE_RUN_ID"
+          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
+        run: node "$RUNNER_TEMP/ci-observe.cjs" Authorize "$ENGINE_RUN_ID"
 
       - name: Await Execute
         id: execute
         env:
           GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.resolve.outputs.run_id }}
-        run: bash "$RUNNER_TEMP/ci-observe" Execute "$ENGINE_RUN_ID"
+          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
+        run: node "$RUNNER_TEMP/ci-observe.cjs" Execute "$ENGINE_RUN_ID"
 
       - name: Await workflow result
-        if: ${{ always() && steps.resolve.outputs.run_id != '' && !cancelled() }}
+        if: ${{ always() && steps.engine.outputs.run_id != '' && !cancelled() }}
         id: result
         env:
           GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.resolve.outputs.run_id }}
-        run: bash "$RUNNER_TEMP/ci-observe" Complete "$ENGINE_RUN_ID"
+          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
+        run: node "$RUNNER_TEMP/ci-observe.cjs" Complete "$ENGINE_RUN_ID"
