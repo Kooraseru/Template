@@ -16,9 +16,10 @@ pull_requests = true
 branches = true
 retention_days = 14
 cloudflare_project = "template"
-# Use the actual hostname shown in Cloudflare (may differ from the project name).
 cloudflare_domain = "template-2pq.pages.dev"
 ```
+
+The `cloudflare_domain` value is the actual public hostname shown in Cloudflare, which may differ from the project name.
 
 Create a protected GitHub environment named `ci-preview-cloudflare` with the `CLOUDFLARE_API_TOKEN` secret (Pages Write permissions) and the `CLOUDFLARE_ACCOUNT_ID` variable. CI does not automatically provision the Cloudflare project or its credentials.
 
