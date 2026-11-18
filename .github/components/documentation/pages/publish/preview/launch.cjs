@@ -17,6 +17,7 @@ function render(ctx, candidate, config) {
       { uses: 'actions/download-artifact@v8',
         with: { name: 'preview-site', path: 'build/preview-candidate' } },
     ]),
+    { name: 'Install the pinned CI Engine', run: 'node dependencies/packages/core/dependencyLoader/index.ts' },
     { name: 'Publish Cloudflare preview', env: {
       GH_TOKEN: expr('github.token'),
       CI_PREVIEW_TRUSTED_SOURCE: 'true',

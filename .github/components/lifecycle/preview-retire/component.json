@@ -2,7 +2,9 @@
   "provides": [
     "pages.preview.retired"
   ],
-  "requires": [],
+  "requires": [
+    "tools.workspace"
+  ],
   "events": [
     "pull_request_target"
   ],

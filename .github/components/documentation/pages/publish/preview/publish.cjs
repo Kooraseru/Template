@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { root, settings, target, resolveTarget } = require('./config.cjs');
-const { api } = require('../../../../../../ci/github/workflows/launch.cjs');
+const { api } = require('../../../../../../dependencies/managed/packages/ci-engine/src/native/github/workflows/launch.cjs');
 const { syncComment } = require('./comment.cjs');
 
 const candidateDir = path.join(root, 'build/preview-candidate');
