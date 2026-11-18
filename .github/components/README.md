@@ -171,3 +171,7 @@ The engine's readonly `validation.native.command` is invoked only after the norm
 ### Documentation preview publication
 
 The explicit `preview` CI Engine operation runs only on trusted source-branch workflow dispatch. It generates an isolated read-only Starlight build of the selected PR or branch, then publishes the verified static artifact in a separately permissioned job. Cloudflare Pages is the only preview destination, selected through `[github.previews]` in `config/targets.toml`; no Git branch stores preview assets. The single authored CI workflow delegates PR closure to CI Engine's protected lifecycle job, whose project-owned component retires the Cloudflare preview alias with HTTP 410. See [Preview deployments](../content/docs/preview-deployments.md). No additional workflow file is used.
+
+### Publication verification
+
+Manual `publish-check` runs the same Build and Publish compilation and tests as ordinary review. The labels integration exercises the real component against a loopback-only mock with synthetic credentials. This does not establish live service authorization, deployment protection or permission grants. Actual Publish is a separate trusted operation, restricted to a generated branch after Build and Tests succeed.

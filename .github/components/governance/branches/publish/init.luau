@@ -35,7 +35,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		return "skipped"
 	end
 	Process.env.CI_GIT_CREDENTIAL_HELPER =
-		`{Process.cwd()}/ci/github/authentication/git-credential.sh`
+		`{Process.cwd()}/dependencies/managed/packages/ci-engine/src/native/github/authentication/git-credential.sh`
 	local status, details = Publication.Request("GET", `repos/{repository}`)
 	Publication.RequireSuccess(status, "Read default branch", details)
 	local remote = if Process.env.TEMPLATE_PUBLICATION_REHEARSAL == "1"

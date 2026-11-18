@@ -14,7 +14,7 @@ A reusable development workspace and CI foundation for packages, editor extensio
 
 ## CI and optional publishing
 
-The grouped event workflows under `.github/workflows/` call the shared bootstrap.yml reference to the SHA-pinned external CI Engine. Pushes select `validation` (trusted default-branch pushes also launch native Build and Tests); PRs select `review`; manual and remote entry points select their explicitly permitted operations. `config/ci/operations.json` is the sole operation and execution-adapter catalog.
+The grouped event workflows under `.github/workflows/` (push, pull, close, manual and remote) each call the shared bootstrap.yml reference to the SHA-pinned external CI Engine. Pushes select `validation` (trusted default-branch pushes also launch native Build and Tests); PRs select `review`; manual and remote entry points select their explicitly permitted operations. `config/ci/operations.json` is the sole operation and execution-adapter catalog.
 
 Generated `main` and Pages publication use generated component jobs from the CI Engine workflow and their toggles under `config/targets.toml`. Other publication adapters retain their own explicit operation and credential requirements. Review the publication records under `config/publishing/` and the role/environment bindings in `config/credentials.json`; configure declared credentials in repository settings, never in committed files.
 
