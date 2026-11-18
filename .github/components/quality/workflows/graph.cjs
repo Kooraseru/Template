@@ -155,7 +155,7 @@ function render(branch, sha, root=ROOT, event='pull_request') {
     "    runs-on: ubuntu-latest",
     "    steps:",
     ...common,
-    "      - run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-lint",
+    "      - run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-lint build publish",
     "  updates:",
     "    name: Updates",
     "    runs-on: ubuntu-latest",

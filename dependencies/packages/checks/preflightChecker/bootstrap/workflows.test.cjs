@@ -12,7 +12,7 @@ function execute(t, source, env = {}) {
 }
 test("generated hosted stages enforce Build before Publish and read-only Validation", t => {
 	const source = 'local B = require("@ci/bootstrap")\nlocal W = require("@ci/github/workflows/workflow")\nlocal J = require("@formats/json")\nprint(J.encode(W.Bundle(B.new("push"):BuildPlan(), string.rep("a",40), "ci-run-1-1", "push")))';
-	const files = execute(t, source, { ACT: "", CI_OPERATION: "build" }); const controller = JSON.parse(files["pipeline.yml"]);
+	const files = execute(t, source, { ACT: "", CI_OPERATION: "build", CI_PUBLICATION_ENABLED: "true" }); const controller = JSON.parse(files["pipeline.yml"]);
 	assert.equal(controller.name, "Pipeline");
 	assert.deepEqual(controller.jobs.publish.needs, ["build", "tests"]); assert.deepEqual(controller.jobs.tests.needs, ["build"]); assert.equal(controller.jobs.build.permissions.contents, "read"); assert.equal(controller.jobs.publish.permissions.contents, "write");
 	// A reusable workflow cannot elevate the caller's GitHub token scope.
@@ -60,7 +60,7 @@ test("Build dependencies on Publish are rejected before rendering", t => {
 });
 
 
-test("legacy generated Build refuses to schedule Publish on manual dispatch", t => {
+test("direct generated Build cannot schedule Publish without explicit trusted publication intent", t => {
 	const result = execute(t, 'local B=require("@ci/bootstrap")\nlocal W=require("@ci/github/workflows/workflow")\nlocal J=require("@formats/json")\nprint(J.encode({files=W.Bundle(B.new("workflow_dispatch"):BuildPlan(),string.rep("a",40),"ci-run-1-1","workflow_dispatch"),group=type(W.ComponentEnvironment)}))', { ACT: "", CI_OPERATION: "build" });
 	assert.equal(result.group, "function");
 	assert.equal(result.files["publish.yml"], undefined);

@@ -12,6 +12,7 @@ const REQUIRED = [
   ".github/workflows/bootstrap.yml",
   ".github/workflows/push.yml",
   ".github/workflows/pull.yml",
+  ".github/workflows/close.yml",
   ".github/workflows/manual.yml",
   ".github/workflows/remote.yml",
   "config/ci/operations.json",

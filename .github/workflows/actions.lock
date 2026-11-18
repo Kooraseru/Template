@@ -4,6 +4,7 @@
 version: 'v0.0.3'
 workflows:
     '.github/workflows/bootstrap.yml': []
+    '.github/workflows/close.yml': []
     '.github/workflows/manual.yml': []
     '.github/workflows/pull.yml': []
     '.github/workflows/push.yml': []

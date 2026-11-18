@@ -152,6 +152,16 @@
       "components": [
         "quality/*"
       ]
+    },
+    "publish-check": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/workflows",
+        "quality/build-tests"
+      ]
     }
   },
   "componentRoot": ".github/components"

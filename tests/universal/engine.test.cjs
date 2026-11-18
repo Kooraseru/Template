@@ -24,7 +24,7 @@ test("capability contracts declare an explicit setup prerequisite", () => {
     assert.equal(entry.boundary,"read",name);
     assert.deepEqual(entry.requires,name==="setup"?[]:["tools.workspace"],name);
     if (name === "workflows" || name === "build-tests") {
-      assert.deepEqual(entry.command, ["node", "dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", name === "workflows" ? "native-lint" : "native-validate"]);
+      assert.deepEqual(entry.command, ["node", "dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", ...(name === "workflows" ? ["native-lint", "build", "publish"] : ["native-validate"])]);
     } else {
       assert.equal(entry.command.length, 2);
       assert.equal(entry.command[0], "node");
@@ -42,7 +42,7 @@ test("Grouped callers share one pinned engine dependency reference", () => {
   assert.equal([...bootstrap.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/g)].length, 1);
   for (const name of names.filter(name => name !== "bootstrap.yml")) {
     const workflow = fs.readFileSync(path.join(directory, name), "utf8");
-    assert.match(workflow, /uses: \.\/\.github\/workflows\/bootstrap\.yml/);
+    assert.equal([...workflow.matchAll(/uses: \.\/\.github\/workflows\/bootstrap\.yml/g)].length, 1, name);
     assert.doesNotMatch(workflow, /Kooraseru-Hub\/CI-Engine|runs-on:|secrets: inherit|workflow_call:/);
   }
   const lock = fs.readFileSync(path.join(directory, "actions.lock"), "utf8");
