@@ -1,7 +1,7 @@
 "use strict";
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const {context,signJWT,requiredAppPermissions,createBranch,observe,deleteBranch}=require("./launch.cjs");
+const {context,signJWT,requiredAppPermissions,createBranch,observe,deleteBranch}=require("../../dependencies/managed/packages/ci-engine/src/native/github/workflows/launch.cjs");
 const SHA="a".repeat(40);
 const trusted=()=>({
   GITHUB_ACTIONS:"true",GITHUB_EVENT_NAME:"push",
@@ -13,7 +13,7 @@ test("trusted push gets a deterministic, attempt-specific native branch",()=>{
   const x=context(trusted());
   assert.equal(x.branch,"ci/run-push-1234-2-"+SHA.slice(0,10));
   assert.equal(context({...trusted(),GITHUB_EVENT_NAME:"workflow_dispatch"}).branch,x.branch);
-  const {render}=require("./preview.cjs");
+  const {render}=require("../../.github/components/quality/workflows/graph.cjs");
   const files=render(x.branch,x.sha,undefined,"push");
   assert.deepEqual(Object.keys(files).sort(),[
     "build.yml","distribution.yml","pipeline.yml","plan.yml","quality.yml","tests.yml"
@@ -73,9 +73,10 @@ test("generated commit includes only read-only workflows and removes permanent l
     assert.equal(result,"e".repeat(40));
     const tree=calls.find(c=>c.path.endsWith("/git/trees")).body.tree;
     assert.deepEqual(tree.map(x=>x.path).sort(),[
-      ".github/workflows/bootstrap.yml",".github/workflows/manual.yml",".github/workflows/pipeline.yml",".github/workflows/pull.yml",".github/workflows/push.yml",".github/workflows/remote.yml",".github/workflows/tests.yml"
+      ".github/workflows/manual.yml",".github/workflows/pipeline.yml",".github/workflows/pull.yml",".github/workflows/push.yml",".github/workflows/remote.yml",".github/workflows/tests.yml"
     ]);
-    for(const name of ["bootstrap","manual","pull","push","remote"])assert.equal(tree.find(x=>x.path.endsWith("/"+name+".yml")).sha,null);
+    for(const name of ["manual","pull","push","remote"])assert.equal(tree.find(x=>x.path.endsWith("/"+name+".yml")).sha,null);
+    assert.ok(!tree.some(x=>x.path.endsWith("/bootstrap.yml")));
     assert.deepEqual(calls.find(c=>c.path.endsWith("/git/refs")).body,{
       ref:"refs/heads/"+ctx.branch,sha:"e".repeat(40)
     });

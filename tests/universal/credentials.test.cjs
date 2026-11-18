@@ -3,8 +3,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { load } = require("./catalog.cjs");
-const { select } = require("./selector.cjs");
+const { load } = require("../../dependencies/managed/packages/ci-engine/src/native/github/authentication/catalog.cjs");
+const { select } = require("../../dependencies/managed/packages/ci-engine/src/native/github/authentication/selector.cjs");
 
 const repo = "example/project";
 const requests = ["bootstrap_token", "projects_token", "rulesets_token"].map(role => ({

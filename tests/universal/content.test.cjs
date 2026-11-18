@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "../..");
 const documentation = path.join(root, "content/docs");
 const repositoryTemplates = path.join(documentation, "repository");
 

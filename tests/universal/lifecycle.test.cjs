@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const root = path.resolve(__dirname, '../../..');
+const root = path.resolve(__dirname, "../..");
 
 test('PR review and privileged retirement share the pull workflow, not permissions', () => {
   const source = fs.readFileSync(path.join(root, '.github/workflows/pull.yml'), 'utf8');

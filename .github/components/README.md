@@ -21,7 +21,7 @@ Prepare, Discover, and Inspect can start concurrently. Authorize waits for both 
 
 config/ci/operations.json defines event routes, discoverable component contracts and trusted execution adapters. Read-only checks (setup, code review, rules audit, workflow lint, Build/tests and Template version checks) run in the engine with read-only permissions and no publication secrets. Project-owned JSON component manifests live in .github/components/.
 
-Generated-workflow compilation and project-specific native adapter logic remain under ci/ during the migration. The canonical catalog is config/ci/operations.json.
+Generated-workflow compilation and project-specific native adapter logic are owned by the managed CI-Engine native adapter. The canonical catalog is config/ci/operations.json.
 
 The trusted engine job is confined to the repository's default branch and an explicitly configured protected GitHub environment. It has id-token: write and accepts two explicitly mapped bootstrap credentials, not the entire secret catalog. Untrusted pull requests cannot enter it; manual publication also requires publish=true. GitHub App tokens, registry trusted publishing and OIDC provider setup remain provider-specific and cannot be assumed configured by a checked-in YAML file.
 
@@ -36,10 +36,10 @@ Install the recommended [Workbench Bridge](https://marketplace.visualstudio.com/
 Run the complete contributor validation path with one command from the repository root:
 
 ```sh
-bash ci/run.sh
+node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate
 ```
 
-Run the normal unprivileged contributor path with `bash ci/run.sh`. It installs dependencies, executes the read-only Build component graph, then runs the repository test suites. Hosted review invokes these same checks and headless Preflight/Rules through the declared read-only route.
+Run the normal unprivileged contributor path with `node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate`. It installs dependencies, executes the read-only Build component graph, then runs the repository test suites. Hosted review invokes these same checks and headless Preflight/Rules through the declared read-only route.
 
 On a trusted generated operation, the external engine invokes the project adapter that compiles the generated job graph rather than publishing inline. Component output archives remain integrity-checked, credential environments stay isolated by job, and the required CI status reflects the *completed* generated run. Local GitHub Actions uses an isolated checkout and adapts artifact actions to v4 within that checkout only.
 
@@ -66,7 +66,7 @@ Run a command through the loader so its dependencies are available first:
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute --version
-node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check ci/entry.luau
+node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute check <managed CI-Engine>/src/native/entry.luau
 node dependencies/packages/core/dependencyLoader/index.ts --exec luau.lute lint ci
 ```
 
@@ -152,7 +152,7 @@ Pull requests into the default branch run the configured `review` operation thro
 
 The external engine's read-only job uploads Code Review diagnostics as `code-review-findings/diagnostics.json` plus `summary.md`; Rules Audit produces its own `rules-audit-findings` artifact. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures block the relevant check; pre-existing errors in unrelated files are reported without blocking an unrelated pull request. Rules Audit excludes expected invalid rule-fixture findings, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
 
-Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node ci/code-review.cjs` and `node ci/rules-audit.cjs` to audit both locally. The reports are written to `build/code-review/` and `build/rules-audit/`. Manual dispatch with `operation=rules-audit` executes only the rules job.
+Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node .github/components/quality/code-review/review.cjs` and `node .github/components/quality/rules-audit/audit.cjs` to audit both locally. The reports are written to `build/code-review/` and `build/rules-audit/`. Manual dispatch with `operation=rules-audit` executes only the rules job.
 
 
 ## Local act compatibility
@@ -162,7 +162,7 @@ The installed engine stages a temporary copy of its own workflows and action sou
 
 ## Generated build-only execution
 
-The native pipeline generator is `ci/github/workflows/preview.cjs`. On default-branch pushes or manual `validation` dispatched from the default branch, `ci/github/workflows/launch.cjs` renders the dependency graph, commits six generated workflow files to a unique `ci/run-push-...` branch, waits for the resulting GitHub Actions run, checks its exact SHA and outcome, and fails the parent check if that run fails. A reusable-workflow group holds each category of native jobs, with three build hosts and three host-specific runtime tests in separate matrices. The build-stage generator never emits a publish job.
+The native pipeline generator is `<managed CI-Engine>/src/native/github/workflows/preview.cjs`. On default-branch pushes or manual `validation` dispatched from the default branch, `<managed CI-Engine>/src/native/github/workflows/launch.cjs` renders the dependency graph, commits six generated workflow files to a unique `ci/run-push-...` branch, waits for the resulting GitHub Actions run, checks its exact SHA and outcome, and fails the parent check if that run fails. A reusable-workflow group holds each category of native jobs, with three build hosts and three host-specific runtime tests in separate matrices. The build-stage generator never emits a publish job.
 
 Quality includes Review, Rules, Workflows and Updates. Build includes three Windows targets, Pages and Branches. Plan contains Rulesets, Milestones and Projects. Tests contains Universal and native Windows host tests. Distribution stages Packages and Releases after the binary build artifacts exist. These components remain enabled/disabled by the project settings and dependency contracts. The test/build matrix runner labels are distinct from the Docker-based cross-compilers.
 
