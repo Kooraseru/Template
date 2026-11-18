@@ -29,9 +29,13 @@ function plan(config, candidate, requested) {
 }
 async function run(env=process.env, request=api) {
   const ctx=sourceContext(env), config=settings(undefined,env);
+  if(ctx.review&&(!config.enabled||!config.pull_requests)){
+    fs.writeFileSync(env.CI_DELIVERY_PLAN_FILE, JSON.stringify({jobs:[]}));return;
+  }
   if(!config.enabled)throw Error('Previews disabled');
   if(!env.GH_TOKEN)throw Error('Missing GitHub read token');
   const candidate=await resolveTarget(target(ctx.target,config),config,(method,resource)=>request(method,resource,env.GH_TOKEN));
+  if(ctx.expectedSha&&candidate.sha!==ctx.expectedSha)throw Error('Preview PR changed after admission');
   if(!env.CI_DELIVERY_PLAN_FILE)throw Error('Delivery plan destination is required');
   fs.writeFileSync(env.CI_DELIVERY_PLAN_FILE, JSON.stringify(plan(config,candidate,ctx.target)));
   console.log('Resolved preview target: '+previewUrl(config,candidate));
