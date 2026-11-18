@@ -62,6 +62,8 @@ async function main() {
 	fs.mkdirSync("dependencies/managed", { recursive: true });
 	fs.symlinkSync("/tools/dependencies/managed/types", "dependencies/managed/types", "dir");
 	fs.symlinkSync("/tools/dependencies/managed/npm", "dependencies/managed/npm", "dir");
+	fs.mkdirSync("dependencies/managed/packages", { recursive: true });
+	fs.cpSync("/tools/dependencies/managed/packages/ci-engine", "dependencies/managed/packages/ci-engine", { recursive: true });
 	const { startMock } = require("./githubMock.cjs");
 
 	const loaded = run(["lute", "run", "dependencies/packages/checks/preflightChecker/bootstrap/inputs.luau"]);
@@ -69,7 +71,8 @@ async function main() {
 	const inputs = JSON.parse(loaded.stdout);
 	const env = {
 		...safeEnv, GITHUB_ACTIONS: "true", GITHUB_REPOSITORY: inputs.repository,
-		GITHUB_REF: "refs/heads/source", CI_EVENT: "push", GH_TOKEN: "rehearsal-token",
+		GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/ci/run-1-1", CI_RUN_BRANCH: "ci/run-1-1",
+		CI_EXECUTION_PREFIX: "ci/run-", CI_GRAPH_RUN: "true", CI_PHASE: "publish", CI_EVENT: "push", GH_TOKEN: "rehearsal-token",
 		TEMPLATE_PUBLICATION_REHEARSAL: "1",
 	};
 	const mock = await startMock(inputs, target === labelTask ? scenario : "active");

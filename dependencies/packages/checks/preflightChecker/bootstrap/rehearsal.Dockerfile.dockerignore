@@ -6,3 +6,8 @@ dependencies/**/.env*
 dependencies/**/.npmrc
 dependencies/**/*.pem
 dependencies/**/*.key
+
+!.github/
+!.github/workflows/
+!.github/workflows/bootstrap.yml
+dependencies/managed/

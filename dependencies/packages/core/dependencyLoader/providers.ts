@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { args, contained, record, relativePath, type Installation, type Provider, type ProviderRequest } from "./contract.ts";
+import { githubWorkflow } from "./githubWorkflow.ts";
 import { githubRelease } from "./githubRelease.ts";
 import { workspaceNpm } from "./workspaceNpm.ts";
 
@@ -20,6 +21,7 @@ const local: Provider = {
 const builtins = new Map<string, Provider>([
 	["local", local],
 	["github-release", githubRelease],
+	["github-workflow", githubWorkflow],
 	["npm", workspaceNpm],
 ]);
 

@@ -8,6 +8,9 @@
     },
     "npm": {
       "builtin": "npm"
+    },
+    "github-workflow": {
+      "builtin": "github-workflow"
     }
   },
   "dependencies": {
@@ -74,10 +77,6 @@
       "options": {
         "path": "packages/checks/preflightChecker"
       }
-    },
-    "tools.localActions": {
-      "provider": "local",
-      "options": { "path": "packages/ci/localActions" }
     },
     "tools.editorIntegration": {
       "provider": "local",
@@ -177,6 +176,13 @@
             "yaml": "2.8.1"
           }
         }
+      }
+    },
+    "tools.ciEngine": {
+      "provider": "github-workflow",
+      "options": {
+        "source": ".github/workflows/bootstrap.yml",
+        "packagePath": "packages/ci-engine"
       }
     }
   }

@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "operations": {
+    "review": {
+      "mode": "readonly",
+      "events": [
+        "pull_request"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "validation": {
+      "mode": "readonly",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/*"
+      ],
+      "branch": "default",
+      "native": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "native-launch",
+          ".github/components/quality/workflows/graph.cjs"
+        ]
+      }
+    },
+    "readiness": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/workflows",
+        "quality/code-review",
+        "quality/rules-audit",
+        "quality/template-updates"
+      ]
+    },
+    "rules-audit": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/rules-audit"
+      ]
+    },
+    "build": {
+      "mode": "generated",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
+      "plan": "build",
+      "publication": false,
+      "branchPrefix": "run/build-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "native"
+        ],
+        "profile": "source-ci"
+      }
+    },
+    "publish": {
+      "mode": "generated",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
+      "plan": "build",
+      "publication": true,
+      "branchPrefix": "ci/run-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "native"
+        ],
+        "profile": "source-ci"
+      }
+    },
+    "preview": {
+      "mode": "generated",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "*"
+      ],
+      "branch": "default",
+      "environment": "ci-bootstrap",
+      "plan": "build",
+      "publication": true,
+      "branchPrefix": "ci/run-preview-",
+      "execution": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "component-script",
+          ".github/components/documentation/pages/publish/preview/launch.cjs"
+        ],
+        "profile": "source-ci"
+      }
+    },
+    "preview-retire": {
+      "mode": "protected",
+      "events": [
+        "pull_request_target"
+      ],
+      "actions": [
+        "closed"
+      ],
+      "environment": "ci-preview-cloudflare",
+      "components": [
+        "lifecycle/preview-retire"
+      ]
+    },
+    "remote-validation": {
+      "mode": "readonly",
+      "events": [
+        "repository_dispatch"
+      ],
+      "actions": [
+        "ci-validation"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "publish-check": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/workflows",
+        "quality/build-tests"
+      ]
+    }
+  },
+  "componentRoot": ".github/components"
+}

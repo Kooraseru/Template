@@ -20,6 +20,7 @@ export type ProviderRequest = {
 	resolution?: unknown;
 };
 export type Provider = {
+	delegatedLock?: boolean;
 	resolve(request: ProviderRequest): unknown | Promise<unknown>;
 	install(request: ProviderRequest): Installation | Promise<Installation>;
 };

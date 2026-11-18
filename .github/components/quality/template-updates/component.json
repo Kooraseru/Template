@@ -1,0 +1,19 @@
+{
+  "provides": [
+    "quality.template_updates"
+  ],
+  "requires": [
+    "tools.workspace"
+  ],
+  "events": [
+    "push",
+    "pull_request",
+    "workflow_dispatch",
+    "repository_dispatch"
+  ],
+  "boundary": "read",
+  "command": [
+    "node",
+    ".github/components/quality/template-updates/version.cjs"
+  ]
+}

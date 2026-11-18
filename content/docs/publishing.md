@@ -7,7 +7,7 @@ Publication runs as the Publish stage of the CI Engine-generated execution graph
 
 ## Generated main branch
 
-The branch generator stages `build/github/branches/main/` according to `.github/config/branches/main.toml`. The branch publication component updates the GitHub `main` branch from that directory. Edit the sources and repository-document templates in `source` rather than modifying `main` directly.
+The branch generator stages `build/github/branches/main/` according to `config/branches/main.toml`. The branch publication component updates the GitHub `main` branch from that directory. Edit the sources and repository-document templates in `source` rather than modifying `main` directly.
 
 ## GitHub Pages
 
@@ -15,4 +15,4 @@ The Pages builder reads Markdown from `content/docs/` and static assets from `co
 
 The Pages publication component uploads the Starlight build artifact and deploys it using GitHub Actions. In repository **Settings → Pages**, set the source to **GitHub Actions**; repository Pages availability and permissions are still controlled by GitHub.
 
-The `branches` and `pages` switches in `.github/config/targets.toml` control these publication targets. Starlight is configured under `ci/components/documentation/pages/build/starlight/`; this directory contains renderer configuration, not authored documentation.
+The `branches` and `pages` switches in `config/targets.toml` control these publication targets. Starlight is configured under `.github/components/documentation/pages/build/starlight/`; this directory contains renderer configuration, not authored documentation.

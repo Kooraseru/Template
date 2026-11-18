@@ -5,7 +5,7 @@
       "label": "CI: Run locally",
       "type": "process",
       "command": "node",
-      "args": ["${workspaceFolder}/dependencies/packages/ci/localActions/run.cjs"],
+      "args": ["${workspaceFolder}/dependencies/packages/core/dependencyLoader/index.ts", "--only", "tools.ciEngine", "--exec", "tools.ciEngine"],
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     }

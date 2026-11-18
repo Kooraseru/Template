@@ -1,0 +1,24 @@
+{
+  "provides": [
+    "quality.workflows"
+  ],
+  "requires": [
+    "tools.workspace"
+  ],
+  "events": [
+    "push",
+    "pull_request",
+    "workflow_dispatch",
+    "repository_dispatch"
+  ],
+  "boundary": "read",
+  "command": [
+    "node",
+    "dependencies/packages/core/dependencyLoader/index.ts",
+    "--exec",
+    "tools.ciEngine",
+    "native-lint",
+    "build",
+    "publish"
+  ]
+}

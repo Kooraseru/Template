@@ -219,7 +219,7 @@ test("automatic Rules refresh combines saves and disk events without prompting",
 });
 
 test("checker changes refresh Rules and edits in a nested build source are checked", async () => {
-	const file = "ci/components/governance/branches/build/branchBuilder.luau";
+	const file = ".github/components/governance/branches/build/branchBuilder.luau";
 	const document = { uri: fileUri("C:/repo/" + file), version: 1, isDirty: true, getText: () => "return true" };
 	const state = fixture("C:/repo", [document], true);
 	const actions = [];
@@ -239,7 +239,7 @@ test("checker changes refresh Rules and edits in a nested build source are check
 });
 
 test("a workspace Rules run refreshes dirty buffers after provider setup", async () => {
-	const file = "ci/components/governance/branches/build/branchBuilder.luau";
+	const file = ".github/components/governance/branches/build/branchBuilder.luau";
 	const document = { uri: fileUri("C:/repo/" + file), version: 1, isDirty: true, getText: () => "return true" };
 	const state = fixture("C:/repo", [document]);
 	const actions = [];

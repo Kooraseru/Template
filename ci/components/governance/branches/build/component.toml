@@ -1,7 +1,0 @@
-phase = "build"
-provides = ["branches.generated"]
-requires = []
-inputs = [".github/config/branches/**", "source/**", "content/docs/repository/**"]
-outputs = ["build/github/branches/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"
