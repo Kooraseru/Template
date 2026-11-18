@@ -30,9 +30,18 @@ test("published documentation has predictable Markdown metadata", () => {
     assert.ok(metadata, file + ": requires title/description YAML front matter");
     assert.ok(metadata[1].trim() && metadata[2].trim(), file + ": empty metadata");
     assert.equal((source.match(/^# /gm) || []).length, 0, file + ": Starlight renders the frontmatter title as H1");
-    for (const match of source.matchAll(/\]\(([^)]+\.md)\)/g)) {
-      const destination = path.resolve(path.dirname(file), match[1]);
-      assert.ok(fs.existsSync(destination), file + ": broken relative link " + match[1]);
+    // Starlight emits directory URLs, not raw Markdown source filenames.
+    const route = '/' + path.relative(documentation, file).replace(/\\/g, '/')
+      .replace(/(?:^|\/)index\.md$/, '/').replace(/\.md$/, '/').replace(/^\/+/, '');
+    for (const match of source.matchAll(/\]\(([^)\s]+)\)/g)) {
+      const link = match[1];
+      if (/^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(link)) continue;
+      assert.ok(!/\.md(?:$|[?#])/.test(link), file + ": raw Markdown URL " + link);
+      if (!link.startsWith('.')) continue;
+      const resolved = new URL(link, 'https://docs.example' + route);
+      const target = resolved.pathname.replace(/^\//, '').replace(/\/$/, '');
+      const candidates = [path.join(documentation, target + '.md'), path.join(documentation, target, 'index.md')];
+      assert.ok(candidates.some(candidate => pages.includes(candidate)), file + ": broken guide route " + link);
     }
   }
 });

@@ -9,7 +9,7 @@ The engine validates builds, documentation assets, generated branch contents and
 
 Publication is a separate CI phase after successful Build and Tests. Same-run component-specific permission lanes receive narrowly scoped GitHub permissions to update the generated `main` branch and deploy Pages. Pull requests and feature-branch builds never receive publication credentials.
 
-See [Publishing](publishing.md) for the destination paths and prerequisites.
+See [Publishing](../publishing/) for the destination paths and prerequisites.
 
 ## Publication rehearsal
 
