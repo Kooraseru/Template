@@ -48,7 +48,7 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		error("missing .github/components extension point", 0)
 	end
 	self:RejectLinkedEntries()
-	local settingsPath = ".github/components.toml"
+	local settingsPath = "config/ci/components.toml"
 	local decodedSettings = Toml.decode(Fs.readFileToString(settingsPath))
 	if type(decodedSettings) ~= "table" then
 		error(`{settingsPath}: expected boolean default and an [enabled] table`, 0)
@@ -113,6 +113,15 @@ function Discovery.Discover(self: Discovery): { Contract.Contract }
 		identities[folded] = path
 		local entry = `{path}/init.luau`
 		local contractFile = `{path}/component.toml`
+		local engineContract = `{path}/component.json`
+		-- JSON command components belong to the external engine, not the native Luau adapter.
+		if Fs.exists(engineContract) then
+			if Fs.metadata(engineContract).type ~= "file" or Fs.exists(entry) or Fs.exists(contractFile) then
+				error(`{path}: ambiguous or invalid component contract`, 0)
+			end
+			table.insert(packages, path)
+			continue
+		end
 		if not Fs.exists(entry) and not Fs.exists(contractFile) then
 			continue
 		end
