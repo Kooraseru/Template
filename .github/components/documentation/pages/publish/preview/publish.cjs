@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { root, settings, target, resolveTarget, sourceContext } = require('./config.cjs');
+const { root, settings, target, resolveTarget, sourceContext, previewHost } = require('./config.cjs');
 const { api } = require('./github.cjs');
 const { syncComment, findOwned, bodyFor } = require('./comment.cjs');
 
@@ -17,7 +17,7 @@ function selected(env, config) {
   return { ...candidate, sha: candidate.remove ? null : env.CI_PREVIEW_SHA };
 }
 function url(config, candidate) {
-  return 'https://' + candidate.alias + '.' + config.cloudflare_project + '.pages.dev' + config.base;
+  return 'https://' + candidate.alias + '.' + previewHost(config) + config.base;
 }
 // A PR artifact is data, never a Cloudflare Worker or a configuration source.
 function copyStatic(source, destination) {
@@ -98,9 +98,26 @@ async function pruneRetired(config, candidate, env, request = fetch) {
   return removed;
 }
 
+// Verify the configured public hostname against Cloudflare before deployment.
+async function verifyProjectHost(config, env, request = fetch) {
+  const endpoint = 'https://api.cloudflare.com/client/v4/accounts/' + config.accountId +
+    '/pages/projects/' + config.cloudflare_project;
+  const response = await request(endpoint, { headers: {
+    Authorization: 'Bearer ' + env.CLOUDFLARE_API_TOKEN, Accept: 'application/json',
+  }, signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error('Cloudflare project lookup HTTP ' + response.status);
+  const payload = await response.json();
+  if (payload.success !== true || typeof payload.result?.subdomain !== 'string')
+    throw new Error('Cloudflare did not return the project public hostname');
+  const actual = previewHost({ ...config, cloudflare_domain: payload.result.subdomain });
+  if (actual !== previewHost(config))
+    throw new Error('Set github.previews.cloudflare_domain to ' + actual + ' before publishing');
+  return actual;
+}
 async function cloudflareDeploy(config, candidate, env = process.env) {
   if (!env.CLOUDFLARE_API_TOKEN || !/^[0-9a-f]{32}$/i.test(config.accountId))
     throw new Error('Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in ci-preview-cloudflare');
+  await verifyProjectHost(config, env);
   const dest = prepareUpload(config, candidate);
   const program = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   const args = ['--yes', 'wrangler@4.47.0', 'pages', 'deploy', dest,
@@ -171,7 +188,7 @@ async function retireClosed(env = process.env, request = api) {
   if (note) console.log('::notice::PR preview comment ' + note.action);
   return removed;
 }
-module.exports = { selected, copyStatic, prepareUpload, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
+module.exports = { selected, copyStatic, prepareUpload, verifyProjectHost, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
 if (require.main === module) {
   const command = process.argv[2], handler = command === '--preview'
     ? publishPreview : command === '--retire' ? retireClosed : null;

@@ -3,6 +3,7 @@
 // Never post a preview link until Cloudflare returns successful deployment.
 // Never edit comments by other authors, even if they copy the marker.
 const { api } = require('./github.cjs');
+const { previewHost } = require('./config.cjs');
 
 const marker = '<!-- template-ci:documentation-preview:v1 -->';
 const botId = 41898282; // github-actions[bot]
@@ -31,7 +32,7 @@ function bodyFor(config, candidate, closed) {
   if (!shaPattern.test(candidate.sha || ''))
     throw new Error('Cannot announce a preview without its published revision');
   const address = 'https://' + candidate.alias + '.' +
-    config.cloudflare_project + '.pages.dev' + config.base;
+    previewHost(config) + config.base;
   return [
     marker,
     headline,

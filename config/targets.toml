@@ -31,3 +31,5 @@ branches = true
 retention_days = 14
 # Set this to your existing Cloudflare Pages Direct Upload project.
 cloudflare_project = "template"
+# Cloudflare may assign a different public hostname than the project name.
+cloudflare_domain = "template-2pq.pages.dev"
