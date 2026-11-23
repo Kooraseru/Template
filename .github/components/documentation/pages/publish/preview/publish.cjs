@@ -69,9 +69,18 @@ async function pruneRetired(config, candidate, env, request = fetch) {
     Accept: 'application/json' };
   async function call(url, method) {
     const response = await request(url, { method, headers, signal: AbortSignal.timeout(30000) });
-    if (!response.ok) throw new Error('Cloudflare cleanup HTTP ' + response.status);
-    const json = await response.json();
-    if (json.success !== true) throw new Error('Cloudflare cleanup API returned failure');
+    // Preserve the API's error code and bounded message so a failing cleanup can
+    // distinguish deployment listing from deletion without logging tokens or URLs.
+    const json = await response.json().catch(() => null);
+    if (!response.ok || json?.success !== true) {
+      const details = Array.isArray(json?.errors) ? json.errors.slice(0, 3).map(error => {
+        const code = Number.isSafeInteger(error?.code) ? error.code : 'unknown';
+        const message = String(error?.message || '').replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, 250);
+        return code + (message ? ': ' + message : '');
+      }).join('; ') : '';
+      throw new Error('Cloudflare cleanup ' + method + ' HTTP ' + response.status +
+        (details ? ' (' + details + ')' : ' (no API error details)'));
+    }
     return json;
   }
   const matching = [];
