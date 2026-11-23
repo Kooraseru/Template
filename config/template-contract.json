@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "protected": [
+    ".github/workflows/pull.yml",
+    ".github/components/quality/build-tests/component.json",
+    ".github/components/quality/code-review/component.json",
+    ".github/components/quality/code-review/diff.cjs",
+    ".github/components/quality/code-review/publish.cjs",
+    ".github/components/quality/code-review/publish.test.cjs",
+    ".github/components/quality/code-review/review.cjs",
+    ".github/components/quality/setup/component.json",
+    ".github/components/quality/template-conformance/check.cjs",
+    ".github/components/quality/template-conformance/component.json",
+    ".github/components/quality/template-updates/component.json",
+    ".github/components/quality/template-updates/version.cjs",
+    ".github/components/quality/workflows/component.json",
+    "config/template-contract.json",
+    "dependencies/packages/checks/testSuites/entry.test.cjs",
+    "dependencies/packages/checks/testSuites/run.cjs",
+    "tests/ci/template-conformance.test.cjs",
+    "tests/ci/review-publisher.test.cjs",
+    "tests/ci/test-discovery.test.cjs"
+  ]
+}

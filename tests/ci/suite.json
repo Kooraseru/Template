@@ -30,6 +30,16 @@
       "runtime": "node",
       "entry": "test-discovery.test.cjs",
       "timeoutSeconds": 120
+    },
+    "template-conformance": {
+      "runtime": "node",
+      "entry": "template-conformance.test.cjs",
+      "timeoutSeconds": 120
+    },
+    "review-publisher": {
+      "runtime": "node",
+      "entry": "review-publisher.test.cjs",
+      "timeoutSeconds": 120
     }
   }
 }

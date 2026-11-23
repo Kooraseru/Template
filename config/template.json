@@ -10,5 +10,8 @@
     "rules/**",
     ".vscode/**",
     "config/**"
-  ]
+  ],
+  "conformance": {
+    "mode": "source"
+  }
 }
