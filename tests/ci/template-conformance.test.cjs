@@ -73,3 +73,32 @@ test("exactly one CI-Engine pin",()=>{
  assert.equal(enginePin(b),PIN);
  assert.throws(()=>enginePin(Buffer.concat([b,b])),/Exactly one/);
 });
+
+
+test("Git transport verifies pinned parent objects without GitHub REST or credentials", async t => {
+  const { execFileSync } = require("node:child_process");
+  const { gitParent } = require("../../.github/components/quality/template-conformance/check.cjs");
+  const remote = fs.mkdtempSync(path.join(os.tmpdir(), "template-git-fixture-"));
+  t.after(() => fs.rmSync(remote, { recursive: true, force: true }));
+  const git = (...args) => execFileSync("git", args, { cwd: remote, encoding: "utf8" }).trim();
+  git("init", "-q", "-b", "source");
+  git("config", "user.email", "ci@example.invalid");
+  git("config", "user.name", "CI Test");
+  fs.mkdirSync(path.join(remote, "config"));
+  fs.writeFileSync(path.join(remote, "config/template-contract.json"), "test fixture\n");
+  git("add", ".");
+  git("commit", "-qm", "Create fixture");
+  const sha = git("rev-parse", "HEAD");
+  const client = gitParent("Example/Parent", sha, remote);
+  t.after(() => client.close());
+  const parent = await client.get("Example/Parent/git/trees/" + sha + "?recursive=1");
+  assert.equal(parent.tree.find(x => x.path === "config/template-contract.json").sha,
+    blobSha(Buffer.from("test fixture\n")));
+  const file = await client.get("Example/Parent/contents/config/template-contract.json?ref=" + sha);
+  assert.equal(Buffer.from(file.content, "base64").toString(), "test fixture\n");
+  assert.equal((await client.get("Example/Parent/branches/source")).commit.sha, sha);
+  await assert.rejects(client.get("Example/Parent/contents/config/missing.json?ref=" + sha),
+    /Missing regular parent file/);
+  await assert.rejects(client.get("Example/Parent/contents/config/template-contract.json?ref=" + "c".repeat(40)),
+    /pinned revision/);
+});
