@@ -188,7 +188,7 @@ test('Cloudflare cleanup exposes bounded API errors for listing and deletion', a
     ok: false, status: 400, json: async () => ({
       success: false, errors: [{ code: 80001, message: 'Invalid list parameter' }]
     })
-  })), /Cloudflare cleanup GET HTTP 400 \\(80001: Invalid list parameter\\)/);
+  })), /Cloudflare cleanup GET HTTP 400 \(80001: Invalid list parameter\)/);
 
   const newest = { id: '00000000-0000-0000-0000-000000000050',
     environment: 'preview', created_on: '2026-11-16T00:00:00Z',
@@ -203,7 +203,7 @@ test('Cloudflare cleanup exposes bounded API errors for listing and deletion', a
       : { ok: false, status: 400, json: async () => ({
           success: false, errors: [{ code: 80002, message: 'Deployment cannot be deleted' }]
         }) }
-  ), /Cloudflare cleanup DELETE HTTP 400 \\(80002: Deployment cannot be deleted\\)/);
+  ), /Cloudflare cleanup DELETE HTTP 400 \(80002: Deployment cannot be deleted\)/);
 });
 
 test('a successful PR preview produces a live link, but closed notes contain none', () => {
