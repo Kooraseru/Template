@@ -14,6 +14,8 @@ jobs:
     concurrency:
       group: ci-starter-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: true
+    outputs:
+      engine_run_id: ${{ steps.engine.outputs.run_id }}
     permissions:
       contents: write
       pull-requests: read
@@ -62,3 +64,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
         run: node "$RUNNER_TEMP/ci-observe.cjs" wait "$ENGINE_RUN_ID"
+
+  review-comments:
+    name: Post inline findings
+    needs: dispatch
+    if: ${{ always() && !cancelled() && needs.dispatch.outputs.engine_run_id != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Publish findings from the correlated review run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
+          ENGINE_RUN_ID: ${{ needs.dispatch.outputs.engine_run_id }}
+        run: |
+          set -euo pipefail
+          directory=$(mktemp -d)
+          for script in diff.cjs publish.cjs; do
+            gh api --method GET "repos/$GITHUB_REPOSITORY/contents/.github/components/quality/code-review/$script"               -f ref="$GITHUB_SHA" --jq .content | base64 -d > "$directory/$script"
+          done
+          node "$directory/publish.cjs"

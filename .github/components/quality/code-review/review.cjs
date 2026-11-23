@@ -48,6 +48,13 @@ function diagnosticOutput(output, workspace = root) {
 	return found;
 }
 
+function reviewBase(env = process.env) {
+	if (env.GITHUB_BASE_REF) return env.GITHUB_BASE_REF;
+	if (env.CI_ORIGIN_EVENT !== "pull_request") return null;
+	if (!env.CI_DEFAULT_BRANCH) throw new Error("Dispatched PR review is missing its default branch");
+	return env.CI_DEFAULT_BRANCH;
+}
+
 function changedFiles(base, workspace = root) {
 	if (!base) return null;
 	if (!/^[A-Za-z0-9][A-Za-z0-9_.\/-]*$/.test(base)) throw new Error("Invalid review base");
@@ -83,7 +90,8 @@ function annotation(item) {
 
 function execute(name, args, workspace = root, label = "Code review") {
 	process.stdout.write(label + ": running " + name + "\n");
-	const result = spawnSync(process.execPath, args, { cwd: workspace, encoding: "utf8", timeout: 150000, maxBuffer: 32 * 1024 * 1024 });
+	const timeout = process.env.ACT === "true" ? 300_000 : 150_000;
+	const result = spawnSync(process.execPath, args, { cwd: workspace, encoding: "utf8", timeout, maxBuffer: 32 * 1024 * 1024 });
 	const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
 	const findings = diagnosticOutput(output, workspace);
 	if (result.error || (result.status !== 0 && !findings.some(item => item.severity === "error"))) {
@@ -119,27 +127,46 @@ function summary(findings, checked, base) {
 	].join("\n");
 }
 
+function writeReport(category, details, markdown) {
+	const number = process.env.CI_REVIEW_PR || "";
+	const sha = process.env.CI_SOURCE_SHA || process.env.GITHUB_SHA || "";
+	const pullRequest = /^[1-9][0-9]*$/.test(number) && /^[a-f0-9]{40}$/.test(sha);
+	const directory = pullRequest
+		? path.join(root, "build/artifacts/pull-requests", number, sha, category)
+		: path.join(root, "build/artifacts/quality", category);
+	const files = {
+		"diagnostics.json": JSON.stringify(details, null, 2) + "\n",
+		"summary.md": markdown,
+	};
+	fs.mkdirSync(directory, { recursive: true });
+	for (const [file, content] of Object.entries(files)) fs.writeFileSync(path.join(directory, file), content);
+
+	// The pinned GitHub workflow still uploads the review reports from these paths.
+	if (process.env.GITHUB_ACTIONS === "true") {
+		const transport = path.join(root, "build", category);
+		fs.mkdirSync(transport, { recursive: true });
+		for (const file of Object.keys(files)) fs.copyFileSync(path.join(directory, file), path.join(transport, file));
+	}
+}
+
 function main() {
-	const dir = path.join(root, "build/code-review");
-	fs.mkdirSync(dir, { recursive: true });
-	let changed = null, baseFailure = null;
-	try { changed = changedFiles(process.env.GITHUB_BASE_REF); }
+	let changed = null, baseFailure = null, base = null;
+	try { base = reviewBase(); changed = changedFiles(base); }
 	catch (error) { baseFailure = String(error.message || error); }
 	const findings = execute("Preflight", ["dependencies/packages/checks/preflightChecker/index.ts", "--ci"]);
 	if (baseFailure) findings.push({ file: ".github/components/quality/code-review/review.cjs", line: 1, column: 1, severity: "error",
 		source: "Code review", message: baseFailure, infrastructure: true });
 	const result = review(findings, changed);
-	const text = summary(findings, result, process.env.GITHUB_BASE_REF);
-	fs.writeFileSync(path.join(dir, "diagnostics.json"), JSON.stringify({
-		version: 1, base: process.env.GITHUB_BASE_REF || null, changedFiles: changed ? [...changed].sort() : null,
+	const text = summary(findings, result, base);
+	writeReport("code-review", {
+		version: 1, base, changedFiles: changed ? [...changed].sort() : null,
 		diagnostics: findings, blocking: result.blocking.length,
-	}, null, 2) + "\n");
-	fs.writeFileSync(path.join(dir, "summary.md"), text);
+	}, text);
 	if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text);
 	for (const item of result.annotations) annotation(item);
 	console.log("Code review: " + findings.length + " findings, " + result.blocking.length + " blocking");
 	process.exitCode = result.blocking.length ? 1 : 0;
 }
 
-module.exports = { workspacePath, diagnosticOutput, changedFiles, review, escapeCommand, summary, execute, annotation, main };
+module.exports = { workspacePath, diagnosticOutput, reviewBase, changedFiles, review, escapeCommand, summary, execute, annotation, writeReport, main };
 if (require.main === module) main();
