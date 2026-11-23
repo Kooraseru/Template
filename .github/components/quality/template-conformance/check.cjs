@@ -127,16 +127,16 @@ async function check({root=ROOT,env=process.env,get=null}={}) {
     if(!r||r.encoding!=="base64"||typeof r.content!=="string")
       throw Error("Invalid parent content response: "+name);
     const bytes=Buffer.from(r.content.replace(/\s+/g,""),"base64");
-    if(blobSha(bytes)!==blobs.lookup(name))throw Error("Parent content differs from pinned Git tree: "+name);
+    if(blobSha(bytes)!==blobs.get(name))throw Error("Parent content differs from pinned Git tree: "+name);
     return bytes;
   }
   const parent=contract(JSON.parse((await parentFile(CONTRACT)).toString("utf8")));
   const mismatches=[];
-  if(blobSha(localBytes)!==blobs.lookup(CONTRACT))mismatches.push(CONTRACT);
+  if(blobSha(localBytes)!==blobs.get(CONTRACT))mismatches.push(CONTRACT);
   for(const name of parent.protected) {
     if(name===CONTRACT)continue;
-    if(!SHA.test(blobs.lookup(name)||""))throw Error("Parent missing protected file: "+name);
-    try {if(blobSha(read(root,name))!==blobs.lookup(name))mismatches.push(name);}
+    if(!SHA.test(blobs.get(name)||""))throw Error("Parent missing protected file: "+name);
+    try {if(blobSha(read(root,name))!==blobs.get(name))mismatches.push(name);}
     catch {mismatches.push(name);}
   }
   if(enginePin(read(root,BOOTSTRAP))!==enginePin(await parentFile(BOOTSTRAP)))
