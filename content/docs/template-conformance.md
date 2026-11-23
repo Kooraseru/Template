@@ -1,4 +1,7 @@
-# Template conformance
+---
+title: Template conformance
+description: Verify inherited infrastructure against a pinned parent revision.
+---
 
 The originating repository declares `conformance.mode: source` in `config/template.json`. Derived repositories declare `conformance.mode: consumer`, `upstream: owner/repository`, and a full 40-character immutable parent `revision`.
 
