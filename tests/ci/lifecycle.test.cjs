@@ -10,7 +10,13 @@ test('PR admission and retirement have isolated permissions', () => {
   const review=read('pull.yml'), close=read('close.yml');
   assert.match(review,/pull_request_target:/);
   assert.match(review,/CI_OPERATION: review/);
-  assert.doesNotMatch(review,/checkout@|pull-requests: write|secrets:/);
+  const [starter, reviewer] = review.split(/\n  review-comments:\n/);
+  assert.ok(reviewer, 'review findings must have a separate controller job');
+  assert.doesNotMatch(starter,/checkout@|pull-requests: write|secrets:/);
+  assert.match(reviewer,/needs: dispatch/);
+  assert.match(reviewer,/pull-requests: write/);
+  assert.match(reviewer,/ref="\$GITHUB_SHA"/);
+  assert.doesNotMatch(reviewer,/checkout@|secrets:/);
   assert.match(close,/pull-requests: write/);
   assert.match(close,/types: \[closed\]/);
   assert.match(close,/head.repo.full_name == github.repository/);
