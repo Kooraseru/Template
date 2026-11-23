@@ -180,6 +180,32 @@ test('Cloudflare cleanup deletes only prior deployments of the selected PR', asy
 });
 
 
+
+test('Cloudflare cleanup exposes bounded API errors for listing and deletion', async () => {
+  const candidate = target('delete:pr:50', config());
+  const env = { CLOUDFLARE_API_TOKEN: 'example' };
+  await assert.rejects(pruneRetired(config(), candidate, env, async () => ({
+    ok: false, status: 400, json: async () => ({
+      success: false, errors: [{ code: 80001, message: 'Invalid list parameter' }]
+    })
+  })), /Cloudflare cleanup GET HTTP 400 \\(80001: Invalid list parameter\\)/);
+
+  const newest = { id: '00000000-0000-0000-0000-000000000050',
+    environment: 'preview', created_on: '2026-11-16T00:00:00Z',
+    deployment_trigger: { metadata: { branch: 'pr-50' } } };
+  const older = { ...newest, id: '00000000-0000-0000-0000-000000000049',
+    created_on: '2026-11-15T00:00:00Z' };
+  await assert.rejects(pruneRetired(config(), candidate, env, async (url, init) =>
+    init.method === 'GET'
+      ? { ok: true, status: 200, json: async () => ({
+          success: true, result: [newest, older], result_info: { total_pages: 1 }
+        }) }
+      : { ok: false, status: 400, json: async () => ({
+          success: false, errors: [{ code: 80002, message: 'Deployment cannot be deleted' }]
+        }) }
+  ), /Cloudflare cleanup DELETE HTTP 400 \\(80002: Deployment cannot be deleted\\)/);
+});
+
 test('a successful PR preview produces a live link, but closed notes contain none', () => {
   const c = config(), candidate = {
     ...target('pr:52', c), sha: 'a'.repeat(40)
