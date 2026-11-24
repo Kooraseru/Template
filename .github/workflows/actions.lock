@@ -3,9 +3,6 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/lock-recovery-proof.yml':
-        - 'actions/checkout@v7'
-        - 'kooraseru-hub/ci-engine@d9ddb3a39097fd5c7789ebe101bb3363f73fa7a2'
     '.github/workflows/bootstrap.yml':
         - 'actions/checkout@v7'
         - 'actions/deploy-pages@v5'
