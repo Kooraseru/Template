@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { execute, changedFiles, review, annotation } = require("../code-review/review.cjs");
+const { execute, changedFiles, review, annotation, reviewBase, validationExitCode } = require("../code-review/review.cjs");
 const root = path.resolve(__dirname, "../../../..");
 
 function summary(findings, checked, base) {
@@ -31,8 +31,8 @@ function summary(findings, checked, base) {
 function main() {
 	const directory = path.join(root, "build/rules-audit");
 	fs.mkdirSync(directory, { recursive: true });
-	let changed = null, baseFailure = null;
-	try { changed = changedFiles(process.env.GITHUB_BASE_REF); }
+	let changed = null, baseFailure = null, base = null;
+	try { base = reviewBase(); changed = changedFiles(base); }
 	catch (error) { baseFailure = String(error.message || error); }
 	const findings = execute("Rules", ["dependencies/packages/checks/preflightChecker/index.ts", "--rules"], root, "Rules audit");
 	if (baseFailure) findings.push({
@@ -41,15 +41,15 @@ function main() {
 	});
 	const checked = review(findings, changed);
 	fs.writeFileSync(path.join(directory, "diagnostics.json"), JSON.stringify({
-		version: 1, audit: "rules", base: process.env.GITHUB_BASE_REF || null,
+		version: 1, audit: "rules", base: base,
 		changedFiles: changed ? [...changed].sort() : null, diagnostics: findings, blocking: checked.blocking.length,
 	}, null, 2) + "\n");
-	const report = summary(findings, checked, process.env.GITHUB_BASE_REF);
+	const report = summary(findings, checked, base);
 	fs.writeFileSync(path.join(directory, "summary.md"), report);
 	if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);
 	for (const item of checked.annotations) annotation(item);
 	console.log("Rules audit: " + findings.length + " findings, " + checked.blocking.length + " blocking");
-	process.exitCode = checked.blocking.length ? 1 : 0;
+	process.exitCode = validationExitCode(checked);
 }
 
 module.exports = { summary, main };

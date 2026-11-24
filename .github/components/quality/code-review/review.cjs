@@ -75,6 +75,11 @@ function review(findings, changed) {
 	return { blocking, annotations: scoped.slice(0, maxAnnotations), omitted: Math.max(0, scoped.length - maxAnnotations) };
 }
 
+// Completed source diagnostics block the terminal check, not independent work.
+function validationExitCode(result) {
+	return result.blocking.some(item => item.infrastructure) ? 1 : result.blocking.length ? 79 : 0;
+}
+
 function escapeCommand(value, property = false) {
 	let output = String(value).replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
 	if (property) output = output.replaceAll(",", "%2C").replaceAll(":", "%3A");
@@ -165,8 +170,8 @@ function main() {
 	if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text);
 	for (const item of result.annotations) annotation(item);
 	console.log("Code review: " + findings.length + " findings, " + result.blocking.length + " blocking");
-	process.exitCode = result.blocking.length ? 1 : 0;
+	process.exitCode = validationExitCode(result);
 }
 
-module.exports = { workspacePath, diagnosticOutput, reviewBase, changedFiles, review, escapeCommand, summary, execute, annotation, writeReport, main };
+module.exports = { validationExitCode, workspacePath, diagnosticOutput, reviewBase, changedFiles, review, escapeCommand, summary, execute, annotation, writeReport, main };
 if (require.main === module) main();

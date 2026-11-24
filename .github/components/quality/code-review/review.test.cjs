@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { workspacePath, diagnosticOutput, review, escapeCommand, summary } = require("./review.cjs");
+const { workspacePath, diagnosticOutput, review, escapeCommand, summary, validationExitCode } = require("./review.cjs");
 
 test("compiler diagnostics retain source locations without accepting escaped paths", () => {
 	const root = "/tmp/review-fixture";
@@ -37,4 +37,12 @@ test("pre-existing errors are in the full report but do not block unrelated PRs"
 test("annotation text escapes GitHub workflow commands safely", () => {
 	assert.equal(escapeCommand("a,b%c\n", true), "a%2Cb%25c%0A");
 	assert.equal(escapeCommand("a\nb"), "a%0Ab");
+});
+
+test("completed diagnostic failures defer the gate while infrastructure failures stay fatal", () => {
+	const finding = { file: "source/init.luau", line: 1, severity: "error", source: "Lute", message: "type error" };
+	assert.equal(validationExitCode(review([finding], null)), 79);
+	assert.equal(validationExitCode(review([{ ...finding, severity: "warning" }], null)), 0);
+	assert.equal(validationExitCode(review([finding], new Set())), 0);
+	assert.equal(validationExitCode(review([{ ...finding, infrastructure: true }], null)), 1);
 });
