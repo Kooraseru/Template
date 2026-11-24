@@ -42,6 +42,79 @@ function api(endpoint, paginated = false) {
   return paginated ? data.flat() : data;
 }
 
+// Only reconcile threads created by our own review publisher. Never resolve
+// a human discussion, even when the original bot finding has disappeared.
+function owned(thread) {
+  const first = thread.comments?.nodes?.[0];
+  return first && ["github-actions", "github-actions[bot]"].includes(first.author?.login) &&
+    /^<!-- template-review:[a-f0-9]{64} -->\n/.test(first.body || "");
+}
+
+function signature(file, line, body) {
+  return JSON.stringify([file, line, body.replace(/^<!-- template-review:[a-f0-9]{64} -->\n/, "")]);
+}
+
+function reconcile(desired, threads, complete, files) {
+  const remaining = new Map(desired);
+  const wanted = new Map([...desired].map(([key, item]) => [signature(item.path, item.line, item.body), key]));
+  const covered = new Set();
+  const resolve = [];
+  const unavailable = new Set(files.filter(file => typeof file.patch !== "string").map(file => file.filename));
+
+  // Prefer existing human discussions, then unresolved bot-only threads.
+  const ordered = [...threads].sort((a, b) =>
+    Number(b.comments.totalCount > 1) - Number(a.comments.totalCount > 1) ||
+    Number(a.isResolved) - Number(b.isResolved));
+  for (const thread of ordered) {
+    if (!owned(thread)) continue;
+    const root = thread.comments.nodes[0];
+    const key = !thread.isOutdated && Number.isInteger(thread.line) && thread.diffSide === "RIGHT"
+      ? wanted.get(signature(thread.path, thread.line, root.body)) : undefined;
+    if (key && !covered.has(key)) {
+      covered.add(key);
+      remaining.delete(key);
+      continue;
+    }
+    if (complete && !thread.isResolved && thread.comments.totalCount === 1 &&
+        (thread.isOutdated || !unavailable.has(thread.path))) resolve.push(thread.id);
+  }
+  return { comments: [...remaining.values()], resolve };
+}
+
+function graphql(query, variables) {
+  const result = JSON.parse(gh(["api", "graphql", "--input", "-"], JSON.stringify({ query, variables })));
+  if (result.errors?.length || !result.data) throw new Error("Review thread GraphQL request failed");
+  return result.data;
+}
+
+function reviewThreads(repository, pr) {
+  const [owner, name] = repository.split("/");
+  const query = `query($owner:String!, $name:String!, $number:Int!, $cursor:String) {
+    repository(owner:$owner,name:$name) { pullRequest(number:$number) {
+      reviewThreads(first:100,after:$cursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { id isResolved isOutdated path line diffSide
+          comments(first:1) { totalCount nodes { body author { login } } } }
+      }
+    } }
+  }`;
+  const threads = [];
+  let cursor = null;
+  for (let page = 0; page < 100; page++) {
+    const result = graphql(query, { owner, name, number: Number(pr), cursor }).repository?.pullRequest?.reviewThreads;
+    if (!result || !Array.isArray(result.nodes)) throw new Error("Missing review threads");
+    threads.push(...result.nodes);
+    if (!result.pageInfo.hasNextPage) return threads;
+    cursor = result.pageInfo.endCursor;
+    if (!cursor) throw new Error("Missing review thread cursor");
+  }
+  throw new Error("Review thread pagination exceeded limit");
+}
+
+function resolveThread(id) {
+  graphql("mutation($id:ID!) { resolveReviewThread(input:{threadId:$id}) { thread { id isResolved } } }", { id });
+}
+
 function main(env = process.env) {
   const { GITHUB_REPOSITORY: repository, PR_NUMBER: pr, REQUEST_SHA: sha, ENGINE_RUN_ID: run, RUNNER_TEMP: temp } = env;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository) || !/^[1-9]\d*$/.test(pr) ||
@@ -54,6 +127,7 @@ function main(env = process.env) {
   if (!isCurrent()) return;
   const artifacts = api("repos/" + repository + "/actions/runs/" + run + "/artifacts?per_page=100").artifacts;
   const findings = [];
+  let completeReports = 0;
   for (const name of reportNames) {
     if (!artifacts.some(item => item.name === name && !item.expired && item.size_in_bytes <= 4 * 1024 * 1024)) continue;
     const directory = fs.mkdtempSync(path.join(temp, "template-diagnostics-"));
@@ -63,20 +137,38 @@ function main(env = process.env) {
       const stat = fs.lstatSync(file, { throwIfNoEntry: false });
       if (!stat?.isFile() || stat.size > 8 * 1024 * 1024) continue;
       const report = JSON.parse(fs.readFileSync(file, "utf8"));
-      if (report.version === 1 && Array.isArray(report.diagnostics)) findings.push(...report.diagnostics);
+      if (report.version === 1 && Array.isArray(report.diagnostics)) {
+        findings.push(...report.diagnostics);
+        if (Array.isArray(report.changedFiles) && !report.diagnostics.some(item => !item || item.infrastructure))
+          completeReports++;
+      }
     } finally {
       fs.rmSync(directory, { recursive: true, force: true });
     }
   }
-  if (!findings.length) return; // The engine can fail before producing diagnostics.
-  const comments = commentsFor(findings, api(endpoint + "/files?per_page=100", true));
-  if (!comments.size) return;
-  for (const comment of api(endpoint + "/comments?per_page=100", true)) {
-    if (comment.user?.login !== "github-actions[bot]" || comment.original_commit_id !== sha) continue;
-    const key = /^<!-- template-review:([a-f0-9]{64}) -->/.exec(comment.body)?.[1];
-    if (key) comments.delete(key);
+  // An empty, complete report is meaningful: all previous findings may be fixed.
+  // Incomplete reports may add findings but cannot clear previous findings.
+  if (!findings.length && completeReports !== reportNames.length) return;
+  const files = api(endpoint + "/files?per_page=100", true);
+  const pull = api(endpoint);
+  if (pull.state !== "open" || pull.head.sha !== sha) return;
+  const complete = completeReports === reportNames.length && files.length === pull.changed_files;
+  const desired = commentsFor(findings, files);
+  const plan = reconcile(desired, reviewThreads(repository, pr), complete, files);
+  // Resolve before posting replacements. Recheck the head before every write.
+  // Query each candidate again so a newly added human reply is not closed.
+  for (const id of plan.resolve) {
+    if (!isCurrent()) return;
+    const current = graphql(`query($id:ID!) { node(id:$id) {
+      ... on PullRequestReviewThread { id isResolved
+        comments(first:1) { totalCount nodes { body author { login } } }
+      }
+    } }`, { id }).node;
+    if (!current || current.isResolved || current.comments.totalCount !== 1 || !owned(current)) continue;
+    if (!isCurrent()) return;
+    resolveThread(id);
   }
-  submitReviews([...comments.values()], isCurrent, comments => {
+  submitReviews(plan.comments, isCurrent, comments => {
     gh(["api", "--method", "POST", endpoint + "/reviews", "--input", "-"], JSON.stringify({
       commit_id: sha,
       event: "COMMENT",
@@ -93,7 +185,7 @@ function submitReviews(comments, isCurrent, submit) {
   }
 }
 
-module.exports = { commentsFor, submitReviews };
+module.exports = { commentsFor, submitReviews, reconcile };
 if (require.main === module) {
   try { main(); }
   catch { console.error("Registry could not publish inline review findings. See the engine run for diagnostics."); process.exitCode = 1; }
