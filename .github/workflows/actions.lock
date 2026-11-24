@@ -64,7 +64,7 @@ dependencies:
         owner_id: 216188
         repo_id: 738284564
     'kooraseru-hub/ci-engine@d9ddb3a39097fd5c7789ebe101bb3363f73fa7a2':
-        ref: 'd9ddb3a39097fd5c7789ebe101bb3363f73fa7a2'
+        ref: 'main'
         commit: 'sha1-d9ddb3a39097fd5c7789ebe101bb3363f73fa7a2'
         owner_id: 255195713
         repo_id: 1458028693
