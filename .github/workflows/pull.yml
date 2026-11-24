@@ -1,91 +1,15 @@
 name: Pull Request
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened, edited]
 
 permissions: {}
 jobs:
-  dispatch:
-    name: Request CI
-    if: github.event.pull_request.base.ref == github.event.repository.default_branch && (github.event.action != 'edited' || github.event.changes.base != null)
-    runs-on: ubuntu-latest
-    timeout-minutes: 110
-    concurrency:
-      group: ci-starter-pr-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
-    outputs:
-      engine_run_id: ${{ steps.engine.outputs.run_id }}
-    permissions:
-      contents: write
-      pull-requests: read
-      actions: read
-    steps:
-      - name: Load pinned observation client
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh api --method GET "repos/$GITHUB_REPOSITORY/contents/.github/workflows/bootstrap.yml" -f ref="$GITHUB_SHA" --jq .content | base64 -d > "$RUNNER_TEMP/ci-bootstrap"
-          pin=$(sed -nE 's|^[[:space:]]*uses: ([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/\.github/workflows/bootstrap\.yml@([a-f0-9]{40})$|\1/\2|p' "$RUNNER_TEMP/ci-bootstrap")
-          [[ "$pin" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/[a-f0-9]{40}$ ]]
-          curl --proto '=https' -fsSL --retry 3 "https://raw.githubusercontent.com/$pin/src/adapters/github/observe.cjs" -o "$RUNNER_TEMP/ci-observe.cjs"
-
-      - name: Submit immutable request
-        id: request
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_OPERATION: review
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REQUEST_REF: refs/heads/${{ github.event.pull_request.head.ref }}
-          REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
-          REQUEST_ID: ${{ format('{0}-{1}', github.run_id, github.run_attempt) }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${REQUEST_INPUTS:-}" ]]; then REQUEST_INPUTS='{}'; fi
-          echo "id=$REQUEST_ID" >> "$GITHUB_OUTPUT"
-          echo "sha=$REQUEST_SHA" >> "$GITHUB_OUTPUT"
-          jq -n --arg id "$REQUEST_ID" --arg event 'pull_request' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{id:$id,event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -
-
-      - name: Find independent run
-        id: engine
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_OPERATION: review
-          REQUEST_ID: ${{ steps.request.outputs.id }}
-          REQUEST_SHA: ${{ steps.request.outputs.sha }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" connect
-
-      - name: Await workflow result
-        if: ${{ always() && steps.engine.outputs.run_id != '' && !cancelled() }}
-        id: result
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ENGINE_RUN_ID: ${{ steps.engine.outputs.run_id }}
-        run: node "$RUNNER_TEMP/ci-observe.cjs" wait "$ENGINE_RUN_ID"
-
-  review-comments:
-    name: Post inline findings
-    needs: dispatch
-    if: ${{ always() && !cancelled() && needs.dispatch.outputs.engine_run_id != '' }}
+  intake:
+    name: Intake
+    if: github.event.pull_request.base.ref == github.event.repository.default_branch
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
     steps:
-      - name: Publish findings from the correlated review run
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
-          ENGINE_RUN_ID: ${{ needs.dispatch.outputs.engine_run_id }}
-        run: |
-          set -euo pipefail
-          directory=$(mktemp -d)
-          for script in diff.cjs publish.cjs; do
-            gh api --method GET "repos/$GITHUB_REPOSITORY/contents/.github/components/quality/code-review/$script"               -f ref="$GITHUB_SHA" --jq .content | base64 -d > "$directory/$script"
-          done
-          node "$directory/publish.cjs"
+      - run: echo "PR event received"

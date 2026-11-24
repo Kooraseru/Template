@@ -38,7 +38,7 @@ test("one independent engine; lightweight callers only submit requests", () => {
   const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
   assert.match(bootstrap, /repository_dispatch:\s*\n\s*types: \[ci-request\]/);
   assert.equal([...bootstrap.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/g)].length, 1);
-  for (const name of ["push", "pull", "manual", "remote"]) {
+  for (const name of ["push", "review", "manual", "remote"]) {
     const workflow = fs.readFileSync(path.join(directory, name + ".yml"), "utf8");
     assert.match(workflow, /gh api --method POST "repos\/\$GITHUB_REPOSITORY\/dispatches"/);
     assert.doesNotMatch(workflow, /uses: .*bootstrap\.yml|CI-Engine|secrets:/);

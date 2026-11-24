@@ -19,6 +19,9 @@
     "dependencies/packages/checks/testSuites/run.cjs",
     "tests/ci/template-conformance.test.cjs",
     "tests/ci/review-publisher.test.cjs",
-    "tests/ci/test-discovery.test.cjs"
+    "tests/ci/test-discovery.test.cjs",
+    ".github/workflows/review.yml",
+    ".github/components/quality/code-review/resolve.cjs",
+    "tests/ci/review-resolve.test.cjs"
   ]
 }

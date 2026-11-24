@@ -173,19 +173,20 @@ async function publishPreview(env = process.env) {
   return published;
 }
 async function retireClosed(env = process.env, request = api) {
-  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'pull_request_target' ||
-      !env.GITHUB_EVENT_PATH)
-    throw new Error('Retirement requires a trusted PR close event');
-  const event = JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH, 'utf8'));
+  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_run' ||
+      !/^[1-9][0-9]{0,8}$/.test(env.PR_NUMBER || '') ||
+      !/^[a-f0-9]{40}$/.test(env.REQUEST_SHA || '') || !env.CI_DEFAULT_BRANCH)
+    throw new Error('Retirement requires a trusted resolved PR closure');
   const config = settings(undefined, env);
-  const number = String(event.pull_request?.number || '');
-  if (event.action !== 'closed' || !Number.isSafeInteger(event.pull_request?.number) || event.pull_request.number < 1 ||
-      event.repository?.full_name !== config.repo ||
-      event.pull_request?.base?.repo?.full_name !== config.repo ||
-      event.pull_request?.base?.ref !== event.repository?.default_branch)
-    throw new Error('Invalid preview close event');
-  if (event.pull_request?.head?.repo?.full_name !== config.repo) return null;
   if (!config.enabled || !config.pull_requests) return null;
+  const number = env.PR_NUMBER;
+  const pr = await request('GET', '/repos/' + config.repo + '/pulls/' + number, env.GH_TOKEN);
+  if (pr.state !== 'closed' || String(pr.number) !== number ||
+      pr.base?.repo?.full_name !== config.repo || pr.base.ref !== env.CI_DEFAULT_BRANCH ||
+      pr.head?.repo?.full_name !== config.repo || pr.head.sha !== env.REQUEST_SHA) {
+    console.log('PR closure no longer matches; retirement skipped');
+    return null;
+  }
   const candidate = target('delete:pr:' + number, config);
   const previous = await findOwned(config, candidate, env, request);
   if (!previous) { console.log('No published PR preview to retire'); return null; }

@@ -105,39 +105,28 @@ test('a forged preview target alias is rejected', () => {
   assert.throws(() => selected({ CI_PREVIEW_TARGET: 'pr:50', CI_PREVIEW_ALIAS: 'pr-51',
     CI_PREVIEW_SHA: 'b'.repeat(40) }, config()), /alias mismatch/);
 });
-test('close events must match the repository, default branch and PR number', async t => {
-  const eventFile = path.join(temporary(t), 'event.json');
-  const event = { action: 'closed', repository: { full_name: repo, default_branch: 'source' },
-    pull_request: { number: 50, base: { ref: 'source', repo: { full_name: repo } },
-      head: { repo: { full_name: repo } } } };
-  const env = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request_target',
-    GITHUB_EVENT_PATH: eventFile, GITHUB_REPOSITORY: repo, GH_TOKEN: 'test-token' };
-  const request = async () => { throw new Error('Invalid close must not contact an API'); };
-  for (const invalid of [
-    {...event, action:'opened'},
-    {...event, pull_request:{...event.pull_request, number:0}},
-    {...event, pull_request:{...event.pull_request, base:{...event.pull_request.base, ref:'other'}}},
-  ]) {
-    fs.writeFileSync(eventFile, JSON.stringify(invalid));
-    await assert.rejects(retireClosed(env, request), /Invalid preview close event/);
+test('retirement requires a trusted resolved closure and verifies current PR state', async () => {
+  const sha = 'b'.repeat(40);
+  const env = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'workflow_run',
+    PR_NUMBER: '50', REQUEST_SHA: sha, CI_DEFAULT_BRANCH: 'source', GITHUB_REPOSITORY: repo, GH_TOKEN: 'test-token' };
+  const pr = { number: 50, state: 'closed', base: { ref: 'source', repo: { full_name: repo } },
+    head: { sha, repo: { full_name: repo } } };
+  await assert.rejects(retireClosed({...env, PR_NUMBER:'0'}, async () => { throw Error('Unexpected API'); }), /trusted resolved/);
+  for (const invalid of [{...pr,state:'open'}, {...pr,head:{...pr.head,sha:'c'.repeat(40)}},
+    {...pr,base:{...pr.base,ref:'other'}}]) {
+    assert.equal(await retireClosed(env, async (method,resource) => {
+      assert.equal(method,'GET'); assert.match(resource,/\/pulls\/50$/); return invalid;
+    }),null);
   }
-});
-test('ordinary closure and repeated retirement never invoke Cloudflare', async t => {
-  const eventFile = path.join(temporary(t), 'event.json');
-  fs.writeFileSync(eventFile, JSON.stringify({ action:'closed',
-    repository:{full_name:repo, default_branch:'source'},
-    pull_request:{number:50,base:{ref:'source',repo:{full_name:repo}},head:{repo:{full_name:repo}}}
-  }));
-  const env={GITHUB_ACTIONS:'true',GITHUB_EVENT_NAME:'pull_request_target',
-    GITHUB_EVENT_PATH:eventFile,GITHUB_REPOSITORY:repo,GH_TOKEN:'test-token'};
   const retired={id:42,user:{id:41898282},body:bodyFor(config(),target('delete:pr:50',config()),true)};
   for(const comments of [[],[retired]]){
     let calls=0;
     assert.equal(await retireClosed(env,async(method,resource)=>{
-      assert.equal(method,'GET');assert.match(resource,/\/issues\/50\/comments/);calls++;
-      return comments;
+      assert.equal(method,'GET'); calls++;
+      if(resource.endsWith('/pulls/50')) return pr;
+      assert.match(resource,/\/issues\/50\/comments/); return comments;
     }),null);
-    assert.equal(calls,1);
+    assert.equal(calls,2);
   }
 });
 test('retirement replaces preview with HTTP 410 Worker', t => {

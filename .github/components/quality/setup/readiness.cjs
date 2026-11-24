@@ -12,6 +12,8 @@ const REQUIRED = [
   ".github/workflows/bootstrap.yml",
   ".github/workflows/push.yml",
   ".github/workflows/pull.yml",
+  ".github/workflows/review.yml",
+  ".github/workflows/retire.yml",
   ".github/workflows/close.yml",
   ".github/workflows/manual.yml",
   ".github/workflows/remote.yml",
@@ -78,8 +80,8 @@ function analyze(directory = ROOT, env = process.env) {
   catch (error) { issues.push("Template metadata: " + error.message); }
   try {
     operation = JSON.parse(fs.readFileSync(path.join(directory, "config/ci/operations.json"), "utf8"));
-    const callers = ["pull", "push"];
-    const eventNames = { pull: "pull_request", push: "push" };
+    const callers = ["review", "push"];
+    const eventNames = { review: "pull_request", push: "push" };
     for (const caller of callers) {
       const source = fs.readFileSync(path.join(directory, ".github/workflows", caller + ".yml"), "utf8");
       const selected = [...new Set([...source.matchAll(/^          CI_OPERATION:\s*([a-z][a-z0-9-]*)\s*$/gm)]

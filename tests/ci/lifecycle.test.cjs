@@ -7,21 +7,26 @@ const root = path.resolve(__dirname, "../..");
 
 test('PR admission and retirement have isolated permissions', () => {
   const read = filename => fs.readFileSync(path.join(root, '.github/workflows', filename), 'utf8');
-  const review=read('pull.yml'), close=read('close.yml');
-  assert.match(review,/pull_request_target:/);
+  const intake=read('pull.yml'), review=read('review.yml'), close=read('close.yml'), retire=read('retire.yml');
+  assert.match(intake,/pull_request:/);
+  assert.doesNotMatch(intake,/pull_request_target:|checkout@|secrets:|: write/);
+  assert.match(review,/workflow_run:/);
+  assert.match(review,/workflows: \["Pull Request"\]/);
   assert.match(review,/CI_OPERATION: review/);
   const [starter, reviewer] = review.split(/\n  review-comments:\n/);
   assert.ok(reviewer, 'review findings must have a separate controller job');
   assert.doesNotMatch(starter,/checkout@|pull-requests: write|secrets:/);
-  assert.match(reviewer,/needs: dispatch/);
+  assert.match(reviewer,/needs: \[resolve, dispatch\]/);
   assert.match(reviewer,/pull-requests: write/);
   assert.match(reviewer,/ref="\$GITHUB_SHA"/);
   assert.doesNotMatch(reviewer,/checkout@|secrets:/);
-  assert.match(close,/pull-requests: write/);
   assert.match(close,/types: \[closed\]/);
-  assert.match(close,/head.repo.full_name == github.repository/);
-  assert.match(close,/publish\.cjs --retire/);
-  assert.doesNotMatch(close,/bootstrap\.yml|CI-Engine/);
+  assert.doesNotMatch(close,/: write|secrets:|checkout@/);
+  assert.match(retire,/workflow_run:/);
+  assert.match(retire,/pull-requests: write/);
+  assert.match(retire,/ci-pr-resolve\.cjs" closed/);
+  assert.match(retire,/publish\.cjs --retire/);
+  assert.doesNotMatch(retire,/bootstrap\.yml|CI-Engine/);
   const config=JSON.parse(fs.readFileSync(path.join(root,'config/ci/operations.json'),'utf8'));
   assert.equal(config.operations['preview-retire'],undefined);
 });
@@ -39,7 +44,7 @@ test('dropdown choices correspond to configured manual operations', () => {
 });
 
 test('PR starter correlates its own independent run and waits for the terminal result', () => {
-  const pull=fs.readFileSync(path.join(root,'.github/workflows/pull.yml'),'utf8');
+  const pull=fs.readFileSync(path.join(root,'.github/workflows/review.yml'),'utf8');
   const engine=fs.readFileSync(path.join(root,'.github/workflows/bootstrap.yml'),'utf8');
   assert.match(pull,/REQUEST_ID: \$\{\{ format\('\{0\}-\{1\}', github.run_id, github.run_attempt\) \}\}/);
   assert.match(pull,/client_payload:\{id:\$id,/);
