@@ -27,9 +27,6 @@ jobs:
         run: |
           set -euo pipefail
           gh extension install github/gh-actions-lock --pin v0.4.1
-          gh actions-lock
-          git diff --stat
-          echo '--- BEGIN GENERATED LOCK ---'
-          cat .github/workflows/actions.lock
-          echo '--- END GENERATED LOCK ---'
-          git diff --exit-code -- .github/workflows/bootstrap.yml
+          gh actions-lock --verify-local
+          gh actions-lock --verify --no-narrow
+          git diff --exit-code -- .github/workflows/bootstrap.yml .github/workflows/actions.lock
