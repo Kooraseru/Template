@@ -35,6 +35,7 @@ if #request.entries == 0 then
 	print("Repository rules: no validators discovered")
 end
 
+--- Emit a source-hashed finding with its fixture and checker provenance for the editor.
 local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixture: boolean, failure: ("fixture" | "checker")?)
 	print("::rule-finding::" .. Json.encode({
 		file = file, sourceHash = sourceHashes[file], source = if fixture then "Rule fixture" else rule.id,
@@ -46,6 +47,7 @@ local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixt
 	}))
 end
 
+--- Report an unexpected rule failure as an error attributed to the checker.
 local function checkerFailed(rule: Entry, failure: unknown)
 	emit(rule.entry, rule, {
 		line = 1, column = 1, endLine = 1, endColumn = 1, severity = "error",
@@ -53,6 +55,7 @@ local function checkerFailed(rule: Entry, failure: unknown)
 	}, false, "checker")
 end
 
+--- Report a rule configuration error with the optional failing settings index.
 local function settingsFailed(rule: Entry, failure: unknown, index: number?)
 	print("::rule-settings-error::" .. Json.encode({ rule = rule.id, message = tostring(failure), index = index }))
 end

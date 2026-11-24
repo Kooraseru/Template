@@ -6,6 +6,7 @@ local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
 local Syntax = require("@std/syntax")
 
+--- Validate the configured section-marker policy and build its lookup sets.
 local function loadMarkerPolicy(settings: unknown): ({ [string]: boolean }, { [string]: boolean })
 	if type(settings) ~= "table" then
 		error("File-system rule settings must be an object", 0)
@@ -47,6 +48,7 @@ end
 
 type Marker = { name: string, span: Syntax.Span }
 
+--- Construct the filesystem rule using the supplied marker policy.
 local function create(settings: unknown): Rule.Rule
 	local allowedMarkers, disallowedMarkers = loadMarkerPolicy(settings)
 

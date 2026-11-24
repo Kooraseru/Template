@@ -15,6 +15,7 @@ type SourceRange = {
 	read endColumn: number,
 }
 
+--- Recognize a named function wrapped in a single-member exported table.
 local function namedWrapper(block: Syntax.CstStatBlock, stem: string): SourceRange?
 	local binding, method, returned = block.statements[1], block.statements[2], block.statements[3]
 	if binding.tag ~= "local" and binding.tag ~= "const" then
@@ -50,11 +51,13 @@ local function namedWrapper(block: Syntax.CstStatBlock, stem: string): SourceRan
 	}
 end
 
+--- Check whether a quoted record key matches the module file stem.
 local function matchesQuotedName(key: Syntax.CstExpr, stem: string): boolean
 	return key.tag == "string" and (key.quoteStyle == "single" or key.quoteStyle == "double")
 		and key.value.text == stem
 end
 
+--- Detect an inline single-function wrapper returned by a module.
 local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Span?
 	if statement.tag ~= "return" or #statement.expressions ~= 1 then
 		return nil
@@ -72,6 +75,7 @@ local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Sp
 	return nil
 end
 
+--- Detect an exported single-function wrapper using a local function binding.
 local function boundWrapper(block: Syntax.CstStatBlock, stem: string): SourceRange?
 	local binding, returned = block.statements[1], block.statements[2]
 	if (binding.tag ~= "local" and binding.tag ~= "const") or #binding.variables ~= 1

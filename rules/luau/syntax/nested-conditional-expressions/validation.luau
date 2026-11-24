@@ -7,6 +7,7 @@ local Rule = require("@ruleLinter/rule")
 local Syntax = require("@std/syntax")
 local Visitor = require("@std/syntax/visitor")
 
+--- Identify conditional expressions through any enclosing parentheses.
 local function isConditional(expression: Syntax.CstExpr): boolean
 	while expression.tag == "group" do
 		expression = expression.expression

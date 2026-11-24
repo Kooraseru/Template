@@ -8,10 +8,12 @@ local Syntax = require("@std/syntax")
 local Query = require("@std/syntax/query")
 local Utils = require("@std/syntax/utils")
 
+--- Identify quoted string literals rather than interpolated or long strings.
 local function isQuotedLiteral(node: Syntax.CstExpr): boolean
 	return node.tag == "string" and (node.quoteStyle == "single" or node.quoteStyle == "double")
 end
 
+--- Detect assignments that replace the global tostring implementation.
 local function replacesTostring(block: Syntax.CstStatBlock): boolean
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
 		for _, target in assignment.variables do
@@ -29,6 +31,7 @@ local function replacesTostring(block: Syntax.CstStatBlock): boolean
 	return false
 end
 
+--- Identify a global tostring call whose quoted string argument needs no conversion.
 local function isRedundantTostring(expression: Syntax.CstExpr): boolean
 	if expression.tag ~= "call" or #expression.arguments ~= 1 then
 		return false

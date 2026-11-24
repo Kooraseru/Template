@@ -8,6 +8,7 @@ local LabelCatalog = require("@components/work/labels/sync/labelCatalog")
 
 local configuration = Configuration.new()
 local branches: { string } = {}
+
 for _, path in Glob.Find("config/branches/*.toml") do
 	local name = path:match("/([%w][%w_-]*)%.toml$")
 	if not name then
@@ -15,6 +16,7 @@ for _, path in Glob.Find("config/branches/*.toml") do
 	end
 	table.insert(branches, name)
 end
+
 print(Json.encode({
 	repository = configuration:ResolveRepository(configuration.repository),
 	labels = LabelCatalog.Read(),

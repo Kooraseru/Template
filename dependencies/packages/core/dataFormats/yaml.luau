@@ -2,6 +2,7 @@
 --!strict
 local Process = require("@lute/process")
 local Json = require("./json")
+--- Decode YAML using the shared parser and propagate malformed-input failures.
 local function decode(input: string): unknown
 	local result = Process.run({ "node", "dependencies/packages/core/dataFormats/parse.mjs", "yaml", input })
 	if not result.ok then error(`Unable to decode yaml: {result.stderr}`, 0) end

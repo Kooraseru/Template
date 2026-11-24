@@ -163,6 +163,7 @@ test('Cloudflare cleanup deletes only prior deployments of the selected PR', asy
   const removed = await pruneRetired(config(), target('delete:pr:50', config()),
     { CLOUDFLARE_API_TOKEN: 'example' }, mock);
   assert.equal(removed, 1);
+  assert.equal(new URL(calls[0].url).searchParams.get('per_page'), '25');
   assert.equal(calls.filter(x => x.method === 'DELETE').length, 1);
   assert.ok(!calls.some(x => x.url.includes(other)));
   assert.ok(!calls.some(x => x.url.includes(keep)));

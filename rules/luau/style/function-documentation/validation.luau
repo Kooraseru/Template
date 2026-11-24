@@ -9,20 +9,25 @@ local Query = require("@std/syntax/query")
 local Syntax = require("@std/syntax")
 local Utils = require("@std/syntax/utils")
 
+--- Validate the syntax and required content of recognized LuaCATS annotation tags.
 local function annotationIssue(text: string): string?
 	local tag, body = text:match("^%-%-%-?%s*@([%a]+)%s*(.*)$")
 	if not tag then
 		return nil
 	end
+
 	if tag ~= "param" and tag ~= "return" and tag ~= "generic" and tag ~= "class" and tag ~= "field" and tag ~= "type" and tag ~= "enum" then
 		return nil
 	end
+
 	if not text:match("^%-%-%-") then
 		return "Start a LuaCATS @" .. tag .. " annotation with three dashes."
 	end
+
 	if not body or body == "" or (tag == "param" and not body:match("^%S+%s+%S")) then
 		return "Complete the LuaCATS @" .. tag .. " annotation or remove it."
 	end
+
 	return nil
 end
 
@@ -130,11 +135,13 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 
 		local branches = 0
+
 		for _, statement in func.body.statements do
 			if statement.tag == "conditional" then
 				branches += 1 + #statement.elseifs
 			end
 		end
+
 		if not hasProse and (public or moduleHelper or branches >= 3 or #func.body.statements >= 20) then
 			local firstLine = lines[declarationLine]
 			reportRange(declarationLine, declaration.beginColumn, declarationLine, #firstLine:gsub("\r$", "") + 1,
@@ -163,12 +170,14 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatLocalFunction).nodes do
 		checkFunctionDocs(declaration.func, declaration.location, false, moduleHelpers[declaration.name])
 	end
+
 	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatFunction).nodes do
 		local name = declaration.name
 		local public = publicNames[name] == true and (name.tag == "indexname" or name.tag == "index")
 			and name.expression.tag == "local" and exported[name.expression["local"]] == true
 		checkFunctionDocs(declaration.func, declaration.location, public)
 	end
+
 	for _, statement in file.root.statements do
 		if (statement.tag == "local" or statement.tag == "const") and #statement.variables == 1 then
 			local value = statement.values[1]
@@ -176,10 +185,12 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				checkFunctionDocs(value, statement.location, false, true)
 			end
 		end
+
 		if statement.tag ~= "assign" or #statement.variables ~= 1 or #statement.values ~= 1 then
 			continue
 		end
 		local name, value = statement.variables[1], statement.values[1]
+
 		if (name.tag == "indexname" or name.tag == "index")
 			and name.expression.tag == "local" and exported[name.expression["local"] :: Syntax.CstLocal]
 			and value.tag == "function" then

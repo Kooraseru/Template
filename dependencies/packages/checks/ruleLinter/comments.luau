@@ -7,6 +7,7 @@ local Visitor = require("@std/syntax/visitor")
 
 type CommentCallback = (string, Syntax.Span, boolean) -> ()
 
+--- Visit each parsed comment once, preserving its source span and block-comment flag.
 local function visitComments(file: Syntax.CstParseResult, callback: CommentCallback)
 	local seen: { [string]: boolean } = {}
 
@@ -38,6 +39,7 @@ local function visitComments(file: Syntax.CstParseResult, callback: CommentCallb
 	visitToken(file.eof)
 end
 
+--- Parse source and forward only line comments; malformed source is left to the parser diagnostics.
 local function visitLineComments(source: string, callback: (string, Syntax.Span) -> ())
 	local parsed, file = pcall(Parser.parse, source)
 	if parsed then

@@ -1,0 +1,51 @@
+{
+  "layouts": {
+    "function-module": [
+      "Modules",
+      "Types",
+      "Constants",
+      "Helpers",
+      "Functions"
+    ],
+    "table-module": [
+      "Modules",
+      "Types",
+      "Constants",
+      "Variables",
+      "Helpers",
+      "Functions"
+    ],
+    "object": [
+      "Modules",
+      "Types",
+      "Constants",
+      "Helpers",
+      "Functions",
+      "Constructor",
+      "Methods"
+    ],
+    "entry-point": [
+      "Modules",
+      "Types",
+      "Constants",
+      "Helpers",
+      "Initialization"
+    ],
+    "ecs-component": [
+      "Types",
+      "Constants"
+    ],
+    "ecs-system": [
+      "Modules",
+      "Types",
+      "Constants",
+      "Helpers",
+      "Functions"
+    ]
+  },
+  "pathKinds": {
+    "entryPoints": "entry-point",
+    "ecsComponents": "ecs-component",
+    "ecsSystems": "ecs-system"
+  }
+}

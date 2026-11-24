@@ -85,7 +85,7 @@ async function pruneRetired(config, candidate, env, request = fetch) {
   }
   const matching = [];
   for (let page = 1; page <= 30; page++) {
-    const response = await call(base + '?env=preview&per_page=100&page=' + page, 'GET');
+    const response = await call(base + '?env=preview&per_page=25&page=' + page, 'GET');
     if (!Array.isArray(response.result)) throw new Error('Invalid Cloudflare deployment list');
     matching.push(...response.result.filter(record =>
       record.environment === 'preview' &&

@@ -5,6 +5,7 @@ local Json = require("@std/json")
 
 -- The standard JSON library marks objects internally. Keep that detail inside
 -- this module so configuration consumers see ordinary named fields.
+--- Normalize plain Luau values into the standard JSON library's typed representation.
 local function value(input: unknown): Json.Value
 	if input == nil or type(input) == "boolean" or type(input) == "string" or type(input) == "number" then
 		return input
@@ -36,10 +37,12 @@ local function value(input: unknown): Json.Value
 	return result
 end
 
+--- Serialize a plain Luau value, rejecting unsupported types and keys.
 local function encode(input: unknown): string
 	return Json.serialize(value(input))
 end
 
+--- Convert a decoded JSON value into plain Luau tables recursively.
 local function plain(input: Json.Value): unknown
 	if type(input) ~= "table" then
 		return input
@@ -63,10 +66,12 @@ local function plain(input: Json.Value): unknown
 	return result
 end
 
+--- Deserialize JSON and return ordinary Luau values.
 local function decode(input: string): unknown
 	return plain(Json.deserialize(input))
 end
 
+--- Validate an object and copy its string-keyed entries into a plain record.
 local function record(input: unknown): { [string]: unknown }
 	if type(input) ~= "table" then
 		error("Expected a data object", 0)
@@ -81,6 +86,7 @@ local function record(input: unknown): { [string]: unknown }
 	return result
 end
 
+--- Distinguish the JSON null sentinel from other decoded values.
 local function isNull(input: unknown): boolean
 	return input == Json.null
 end

@@ -26,12 +26,13 @@ type Candidate = {
 const RULE_NAME = "declarative_data"
 const MESSAGE = "This table contains static declarative data; move it to a data file or document the runtime constraint."
 
+--- Identify scalar values that can be represented as declarative data.
 local function isScalarLiteral(value: Syntax.CstExpr): boolean
 	return value.tag == "boolean" or value.tag == "string" or value.tag == "number"
 		or value.tag == "integer" or value.tag == "nil"
 end
 
--- Recognize serializable literal values, recursively, without relying on identifier spelling.
+--- Recognize serializable literal values recursively without relying on identifier spelling.
 local function isStatic(value: Syntax.CstExpr): boolean
 	if isScalarLiteral(value) then
 		return true
@@ -49,9 +50,11 @@ local function isStatic(value: Syntax.CstExpr): boolean
 	if value.tag == "unary" then
 		return value.operator.text == "-" and isStatic(value.operand)
 	end
+
 	if value.tag == "group" then
 		return isStatic(value.expression)
 	end
+
 	if value.tag ~= "table" then
 		return false
 	end
@@ -67,7 +70,7 @@ local function isStatic(value: Syntax.CstExpr): boolean
 	return true
 end
 
--- A CST local reference identifies its original binding, including shadowed names.
+--- Recover the original local binding even through member accesses and shadowing.
 local function bindingOf(expression: Syntax.CstExpr): Syntax.CstLocal?
 	if expression.tag == "local" then
 		return expression["local"]
@@ -78,7 +81,7 @@ local function bindingOf(expression: Syntax.CstExpr): Syntax.CstLocal?
 	return nil
 end
 
--- Follow local aliases only when the alias binding is never reassigned.
+--- Follow known aliases until a terminal binding or cycle is encountered.
 local function resolveAlias(binding: Syntax.CstLocal, aliases: { [Syntax.CstLocal]: Syntax.CstLocal }): Syntax.CstLocal
 	local current = binding
 	local visited: { [Syntax.CstLocal]: boolean } = {}
@@ -89,12 +92,14 @@ local function resolveAlias(binding: Syntax.CstLocal, aliases: { [Syntax.CstLoca
 	return current
 end
 
+--- Determine whether a source span lies entirely inside another span.
 local function isInside(outer: Syntax.Span, inner: Syntax.Span): boolean
 	local startsAfter = inner.beginLine > outer.beginLine or (inner.beginLine == outer.beginLine and inner.beginColumn >= outer.beginColumn)
 	local endsBefore = inner.endLine < outer.endLine or (inner.endLine == outer.endLine and inner.endColumn <= outer.endColumn)
 	return startsAfter and endsBefore
 end
 
+--- Determine whether a location belongs to a runtime function or loop scope.
 local function inRuntimeScope(location: Syntax.Span, scopes: { Syntax.Span }): boolean
 	for _, scope in scopes do
 		if isInside(scope, location) then
@@ -104,6 +109,7 @@ local function inRuntimeScope(location: Syntax.Span, scopes: { Syntax.Span }): b
 	return false
 end
 
+--- Recognize either kind of local binding declaration.
 local function findDeclaration(node: Syntax.CstNode): (Syntax.CstStatLocal | Syntax.CstStatConst)?
 	local declaration = Utils.isStatLocal(node)
 	if declaration then
@@ -112,6 +118,7 @@ local function findDeclaration(node: Syntax.CstNode): (Syntax.CstStatLocal | Syn
 	return Utils.isStatConst(node)
 end
 
+--- Recognize numeric, generic, while and repeat loop nodes.
 local function findLoop(node: Syntax.CstNode): (Syntax.CstStatFor | Syntax.CstStatForIn | Syntax.CstStatWhile | Syntax.CstStatRepeat)?
 	local numeric = Utils.isStatFor(node)
 	if numeric then
@@ -128,6 +135,7 @@ local function findLoop(node: Syntax.CstNode): (Syntax.CstStatFor | Syntax.CstSt
 	return Utils.isStatRepeat(node)
 end
 
+--- Find static table declarations and staged data while excluding runtime mutation and behavior.
 local function lint(ast: Syntax.CstStatBlock, sourcepath: string?, _: unknown): { LintViolation }
 	local candidates: { Candidate } = {}
 	local scopes: { Syntax.Span } = {}

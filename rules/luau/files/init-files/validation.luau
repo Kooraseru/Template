@@ -6,6 +6,7 @@ local Rule = require("@ruleLinter/rule")
 local Parser = require("@std/syntax/parser")
 local Syntax = require("@std/syntax")
 
+--- Recognize a require of a direct or nested child module without path traversal.
 local function isChildRequire(expression: Syntax.CstExpr): boolean
 	if expression.tag ~= "call" or #expression.arguments ~= 1 then
 		return false
@@ -23,16 +24,20 @@ local function isChildRequire(expression: Syntax.CstExpr): boolean
 	return child ~= nil and not child:find("\\", 1, true) and not ("/" .. child .. "/"):find("/../", 1, true)
 end
 
+--- Detect directory heads that only forward child modules or return placeholder tables.
 local function placeholderIssue(expression: Syntax.CstExpr, isForward: (Syntax.CstExpr) -> boolean, hasBindings: boolean): string?
 	if isForward(expression) then
 		return "This directory head only forwards a child module. Give it a contract or expose the child directly."
 	end
+
 	if expression.tag ~= "table" then
 		return nil
 	end
+
 	if #expression.entries == 0 then
 		return if hasBindings then nil else "This directory head returns an empty table. Give it a contract or remove the placeholder."
 	end
+
 	for _, entry in expression.entries do
 		if entry.kind ~= "record" or not isForward(entry.value) then
 			return nil

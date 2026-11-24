@@ -4,6 +4,7 @@
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
 
+--- Load a workspace-relative rule module, propagating load failures.
 local function loadRule(entry: string): unknown
 	local modulePath = "@workspace/" .. entry:gsub("/init%.luau$", ""):gsub("%.luau$", "")
 	local loaded, result = pcall(require, modulePath)
@@ -13,6 +14,7 @@ local function loadRule(entry: string): unknown
 	return result
 end
 
+--- Instantiate a configured rule or validate an already constructed rule.
 local function configure(module: unknown, settings: unknown): Rule.Rule
 	local result = module
 
@@ -29,6 +31,7 @@ local function configure(module: unknown, settings: unknown): Rule.Rule
 	return result :: Rule.Rule
 end
 
+--- Evaluate a configured validator against each source, attributing failures to its identity.
 local function check(validator: Rule.Rule, identity: string, sources: { Rule.Context }): { Diagnostic.Diagnostic }
 	local diagnostics: { Diagnostic.Diagnostic } = {}
 	for _, source in sources do
@@ -43,6 +46,7 @@ local function check(validator: Rule.Rule, identity: string, sources: { Rule.Con
 	return diagnostics
 end
 
+--- Load and evaluate the selected rules in order and aggregate their diagnostics.
 local function run(entries: { string }, sources: { Rule.Context }): { Diagnostic.Diagnostic }
 	local diagnostics: { Diagnostic.Diagnostic } = {}
 	for _, entry in entries do
