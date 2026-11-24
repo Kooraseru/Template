@@ -111,8 +111,18 @@ function reviewThreads(repository, pr) {
   throw new Error("Review thread pagination exceeded limit");
 }
 
-function resolveThread(id) {
-  graphql("mutation($id:ID!) { resolveReviewThread(input:{threadId:$id}) { thread { id isResolved } } }", { id });
+function resolveThread(id, mutate = graphql) {
+  try {
+    mutate("mutation($id:ID!) { resolveReviewThread(input:{threadId:$id}) { thread { id isResolved } } }", { id });
+    return true;
+  } catch (error) {
+    // GitHub may require contents:write even for the bot's own threads.
+    // Do not expand repository access just to reconcile an obsolete comment.
+    const details = String(error.stderr || "") + " " + String(error.message || "");
+    if (!/Resource not accessible by integration/i.test(details)) throw error;
+    console.log("Review thread resolution unavailable to the job token; obsolete thread remains for manual resolution.");
+    return false;
+  }
 }
 
 function main(env = process.env) {
@@ -160,12 +170,16 @@ function main(env = process.env) {
   for (const id of plan.resolve) {
     if (!isCurrent()) return;
     const current = graphql(`query($id:ID!) { node(id:$id) {
-      ... on PullRequestReviewThread { id isResolved
+      ... on PullRequestReviewThread { id isResolved viewerCanResolve
         comments(first:1) { totalCount nodes { body author { login } } }
       }
     } }`, { id }).node;
     if (!current || current.isResolved || current.comments.totalCount !== 1 || !owned(current)) continue;
     if (!isCurrent()) return;
+    if (current.viewerCanResolve === false) {
+      console.log("Obsolete bot thread requires manual resolution.");
+      continue;
+    }
     resolveThread(id);
   }
   submitReviews(plan.comments, isCurrent, comments => {
@@ -185,8 +199,8 @@ function submitReviews(comments, isCurrent, submit) {
   }
 }
 
-module.exports = { commentsFor, submitReviews, reconcile };
+module.exports = { commentsFor, submitReviews, reconcile, resolveThread };
 if (require.main === module) {
   try { main(); }
-  catch { console.error("Registry could not publish inline review findings. See the engine run for diagnostics."); process.exitCode = 1; }
+  catch (error) { console.error("Could not publish inline review findings:", error.message || error); process.exitCode = 1; }
 }

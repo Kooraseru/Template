@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { reviewBase } = require("./review.cjs");
-const { commentsFor, submitReviews, reconcile } = require("./publish.cjs");
+const { commentsFor, submitReviews, reconcile, resolveThread } = require("./publish.cjs");
 
 test("independent PR reviews scope findings to the admitted default branch", () => {
   assert.equal(reviewBase({ CI_ORIGIN_EVENT: "pull_request", CI_DEFAULT_BRANCH: "source" }), "source");
@@ -68,4 +68,10 @@ test("manually resolved current findings are not recreated on reruns", () => {
   const thread = {id:"closed",path:file,line:1,diffSide:"RIGHT",isResolved:true,isOutdated:false,
     comments:{totalCount:1,nodes:[{body:item.body,author:{login:"github-actions[bot]"}}]}};
   assert.deepEqual(reconcile(desired,[thread],true,files),{comments:[],resolve:[]});
+});
+
+test("only GitHub's known thread resolution permission refusal is nonfatal", () => {
+  assert.equal(resolveThread("test", () => ({})), true);
+  assert.equal(resolveThread("test", () => { throw Object.assign(new Error("GraphQL failed"), { stderr: "Resource not accessible by integration" }); }), false);
+  assert.throws(() => resolveThread("test", () => { throw new Error("HTTP 500"); }), /HTTP 500/);
 });

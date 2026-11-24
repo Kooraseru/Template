@@ -41,7 +41,7 @@ node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine 
 
 Run the normal unprivileged contributor path with `node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate`. It installs dependencies, executes the read-only Build component graph, then runs the repository test suites. Hosted review invokes these same checks and headless Preflight/Rules through the declared read-only route.
 
-A trusted staged operation selects publication lanes from the component plan. Build and Tests must succeed before publication jobs receive narrowly scoped credentials.
+A trusted staged operation selects publication lanes from the component plan. Build, Tests and the aggregate validation outcome must succeed before publication jobs receive narrowly scoped credentials. Code Review and Rules Audit return exit 79 for completed checks with blocking findings; independent components continue, dependent work remains blocked, and the final validate job rejects the run. Checker infrastructure failures remain fatal. Inline comment publication is a separate job.
 
 Local `act` runs the same read-only engine graph, exporting verified native build bundles. Hosted Windows tests and all publication are omitted locally.
 
