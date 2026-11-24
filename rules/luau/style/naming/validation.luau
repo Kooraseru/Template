@@ -8,6 +8,7 @@ local Syntax = require("@std/syntax")
 local Query = require("@std/syntax/query")
 local Utils = require("@std/syntax/utils")
 
+--- Recognize scalar literals, including parenthesized and negative numeric literals.
 local function isScalarLiteral(value: Syntax.CstExpr): boolean
 	while value.tag == "group" do
 		value = value.expression

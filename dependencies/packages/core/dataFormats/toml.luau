@@ -2,6 +2,7 @@
 --!strict
 local Process = require("@lute/process")
 local Json = require("./json")
+--- Decode TOML using the shared parser and propagate malformed-input failures.
 local function decode(input: string): unknown
 	local result = Process.run({ "node", "dependencies/packages/core/dataFormats/parse.mjs", "toml", input })
 	if not result.ok then error(`Unable to decode toml: {result.stderr}`, 0) end

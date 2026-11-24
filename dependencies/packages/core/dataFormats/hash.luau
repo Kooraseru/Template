@@ -1,6 +1,7 @@
 -- dependencies/packages/core/dataFormats/hash.luau
 --!strict
 local Crypto = require("@lute/crypto")
+--- Return the lowercase hexadecimal SHA-256 digest of the input bytes.
 local function sha256(input: string): string
 	local digest = Crypto.digest(Crypto.hash.sha256, input)
 	local parts: { string } = {}

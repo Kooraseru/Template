@@ -8,6 +8,7 @@ local Query = require("@std/syntax/query")
 local Syntax = require("@std/syntax")
 local Utils = require("@std/syntax/utils")
 
+--- Recognize expressions that are guaranteed to represent a boolean condition.
 local function isBooleanExpression(expression: Syntax.CstExpr): boolean
 	if expression.tag == "group" then
 		return isBooleanExpression(expression.expression)
@@ -26,6 +27,7 @@ local function isBooleanExpression(expression: Syntax.CstExpr): boolean
 		or operator == ">" or operator == ">="
 end
 
+--- Check whether a statement sequence can be moved out of a conditional safely.
 local function canUnnest(statements: { Syntax.CstStat }): boolean
 	for _, statement in statements do
 		if statement.tag == "assign" or statement.tag == "compoundassign" then
@@ -38,6 +40,7 @@ local function canUnnest(statements: { Syntax.CstStat }): boolean
 	return #statements > 0
 end
 
+--- Recognize calls to the global error function as explicit termination.
 local function isErrorCall(statement: Syntax.CstStat): boolean
 	if statement.tag ~= "expression" or statement.expression.tag ~= "call" then
 		return false
@@ -46,6 +49,7 @@ local function isErrorCall(statement: Syntax.CstStat): boolean
 	return callee.tag == "global" and callee.name.text == "error"
 end
 
+--- Translate a source line and column into a byte offset for an edit.
 local function offsetAt(source: string, line: number, column: number): number
 	local offset = 1
 	for _ = 1, line - 1 do

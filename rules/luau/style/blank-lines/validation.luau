@@ -8,10 +8,12 @@ local Rule = require("@ruleLinter/rule")
 local Syntax = require("@std/syntax")
 local Visitor = require("@std/syntax/visitor")
 
+--- Identify named function declarations for layout analysis.
 local function isNamedFunction(statement: Syntax.CstStat): boolean
 	return statement.tag == "function" or statement.tag == "localfunction"
 end
 
+--- Identify a simple conditional return guard that does not form a separate phase.
 local function isReturnGuard(statement: Syntax.CstStat): boolean
 	if statement.tag ~= "conditional" or #statement.elseifs > 0 or statement.elseBlock then
 		return false

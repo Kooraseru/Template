@@ -13,6 +13,7 @@ const MIN_STATEMENT_LINES = 12
 
 type Comment = { span: Syntax.Span, prose: boolean }
 
+--- Determine whether a comment contains explanatory prose rather than a marker or annotation.
 local function hasProse(text: string, block: boolean): boolean
 	local body = if block then text:gsub("^%-%-%[=*%[", ""):gsub("%]=*%]%s*$", "") else text:gsub("^%-+", "")
 	for _, line in body:split("\n") do
@@ -27,11 +28,13 @@ local function hasProse(text: string, block: boolean): boolean
 	return false
 end
 
+--- Distinguish executable statements from declarations used only for structure.
 local function isExecutable(statement: Syntax.CstStat): boolean
 	return statement.tag ~= "typealias" and statement.tag ~= "typefunction" and statement.tag ~= "block"
 		and statement.tag ~= "localfunction" and statement.tag ~= "function"
 end
 
+--- Determine whether a phase has enough executable source lines to require explanation.
 local function hasEnoughCode(body: Syntax.CstStatBlock): boolean
 	local seen: { [number]: boolean } = {}
 	local count = 0
@@ -51,6 +54,7 @@ local function hasEnoughCode(body: Syntax.CstStatBlock): boolean
 	return count >= MIN_STATEMENT_LINES
 end
 
+--- Check for adjacent explanatory comments aligned with the target statement.
 local function explained(comments: { [number]: Comment }, target: Syntax.Span): boolean
 	local line = target.beginLine - 1
 	while comments[line] do

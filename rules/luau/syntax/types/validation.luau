@@ -8,6 +8,7 @@ local Query = require("@std/syntax/query")
 local Syntax = require("@std/syntax")
 local Utils = require("@std/syntax/utils")
 
+--- Extract the exact source text covered by a type annotation span.
 local function sourceAt(lines: { string }, span: Syntax.Span): string
 	if span.beginLine == span.endLine then
 		return lines[span.beginLine]:sub(span.beginColumn, span.endColumn - 1)
@@ -20,6 +21,7 @@ local function sourceAt(lines: { string }, span: Syntax.Span): string
 	return table.concat(parts, "\n")
 end
 
+--- Compare two annotations conservatively using reference identity or their source text.
 local function sameAnnotation(lines: { string }, inner: Syntax.CstType, outer: Syntax.CstType): boolean
 	if inner.tag == "reference" and outer.tag == "reference" and not inner.openParameters and not outer.openParameters then
 		local innerPrefix = if inner.prefix then inner.prefix.text else nil

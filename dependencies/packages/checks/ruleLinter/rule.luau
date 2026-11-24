@@ -16,11 +16,13 @@ Rule.__index = Rule
 type RuleFields = { validate: Validation }
 export type Rule = setmetatable<RuleFields, typeof(Rule)>
 
+--- Construct a rule around the supplied validation callback.
 function Rule.new(validate: Validation): Rule
 	local fields: RuleFields = { validate = validate }
 	return setmetatable(fields, Rule)
 end
 
+--- Evaluate the rule against one source context and return its findings.
 function Rule.Check(self: Rule, context: Context): { Diagnostic.Finding }
 	return self.validate(context)
 end

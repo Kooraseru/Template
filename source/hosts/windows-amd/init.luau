@@ -10,6 +10,7 @@ const IMAGE = "template-windows-amd"
 const COMPILER = "x86_64-w64-mingw32-clang"
 const OUTPUT = "build/artifacts/application/windows-amd.exe"
 
+--- Execute Docker with inherited output and fail immediately if the command fails.
 local function runDocker(arguments: { string }): Process.ProcessResult
 	local result = Process.run({ "docker", table.unpack(arguments) }, DOCKER_OPTIONS)
 	if not result.ok then
@@ -20,6 +21,7 @@ end
 
 local Host = {}
 
+--- Compile the AMD-targeted Windows executable in its container and export it to the artifact directory.
 function Host.Build(): ()
 	Fs.createDirectory("build/artifacts/application", { makeParents = true })
 	runDocker({

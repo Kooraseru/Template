@@ -3,14 +3,17 @@
 
 local Syntax = require("@std/syntax")
 
+--- Determine whether the statement spans at least five source lines.
 local function spansFiveLines(statement: Syntax.CstStat): boolean
 	return statement.location.endLine - statement.location.beginLine >= 4
 end
 
+--- Identify control transfers that leave the current statement sequence.
 local function isExit(statement: Syntax.CstStat): boolean
 	return statement.tag == "return" or statement.tag == "break" or statement.tag == "continue"
 end
 
+--- Recognize substantial control-flow phases, excluding simple exit guards.
 local function isControlPhase(statement: Syntax.CstStat): boolean
 	if not spansFiveLines(statement) then
 		return false
@@ -23,11 +26,13 @@ local function isControlPhase(statement: Syntax.CstStat): boolean
 		or statement.tag == "repeat" or statement.tag == "do"
 end
 
+--- Recognize a multiline control phase or function declaration.
 local function isStructured(statement: Syntax.CstStat): boolean
 	return isControlPhase(statement) or (spansFiveLines(statement)
 		and (statement.tag == "function" or statement.tag == "localfunction"))
 end
 
+--- Identify an exit statement that fits on a single source line.
 local function isShortExit(statement: Syntax.CstStat): boolean
 	return isExit(statement) and statement.location.beginLine == statement.location.endLine
 end

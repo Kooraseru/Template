@@ -1,6 +1,8 @@
 -- rules/luau/design/script-layout/validation.luau
 --!strict
 
+local Fs = require("@std/fs")
+local Json = require("@formats/json")
 local Comments = require("@ruleLinter/comments")
 local Diagnostic = require("@ruleLinter/diagnostic")
 local Rule = require("@ruleLinter/rule")
@@ -12,14 +14,8 @@ type Member = { owner: Syntax.CstLocal, name: string?, func: Syntax.CstExprFunct
 type Declaration = { span: Syntax.Span, role: string?, member: Member?, binding: Syntax.CstLocal?, constructor: boolean? }
 type Marker = { name: string, span: Syntax.Span }
 
-local layouts: Roles = {
-	["function-module"] = { "Modules", "Types", "Constants", "Helpers", "Functions" },
-	["table-module"] = { "Modules", "Types", "Constants", "Variables", "Helpers", "Functions" },
-	object = { "Modules", "Types", "Constants", "Helpers", "Functions", "Constructor", "Methods" },
-	["entry-point"] = { "Modules", "Types", "Constants", "Helpers", "Initialization" },
-	["ecs-component"] = { "Types", "Constants" },
-	["ecs-system"] = { "Modules", "Types", "Constants", "Helpers", "Functions" },
-}
+local policy = Json.decode(Fs.readFileToString("rules/luau/design/script-layout/layouts.json")) :: { layouts: Roles, pathKinds: { [string]: string } }
+local layouts = policy.layouts
 
 --- Identifies a callable member through its local receiver binding, even if another scope uses the same name.
 local function memberOf(target: Syntax.CstExpr, func: Syntax.CstExprFunction): Member?
@@ -87,7 +83,9 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 					callables[binding] = true
 				end
 			end
+
 			local value = statement.values[1]
+
 			if #statement.variables == 1 and value then
 				if value.tag == "call" and value.func.tag == "global" and value.func.name.text == "require" then
 					declaration.role = "Modules"
@@ -128,6 +126,7 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 		end
 
 		local member = declaration.member
+
 		if member then
 			members[member.owner] = true
 			declaration.constructor = constructsInstance(member)
@@ -135,6 +134,7 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 				constructors[member.owner] = true
 			end
 		end
+
 		table.insert(declarations, declaration)
 	end
 
@@ -174,8 +174,7 @@ end
 local function create(settings: unknown): Rule.Rule
 	local declared: { [string]: string } = {}
 	if type(settings) == "table" then
-		local pathKinds: { [string]: string } = { entryPoints = "entry-point", ecsComponents = "ecs-component", ecsSystems = "ecs-system" }
-		for field, shape in pathKinds do
+		for field, shape in policy.pathKinds do
 			local paths = (settings :: { [string]: unknown })[field]
 			if type(paths) == "table" then
 				for _, path in paths do
@@ -245,6 +244,7 @@ local function create(settings: unknown): Rule.Rule
 		local cursor = 1
 		for index, marker in topLevelMarkers do
 			local position = order[marker.name]
+
 			if not position then
 				report(marker.span, `Section {marker.name} does not belong in a {shape}.`)
 			elseif seen[marker.name] then
@@ -252,9 +252,11 @@ local function create(settings: unknown): Rule.Rule
 			elseif position < latest then
 				report(marker.span, `Section {marker.name} is out of order for a {shape}.`)
 			end
+
 			seen[marker.name] = true
 			latest = math.max(latest, position or 0)
 			local nextMarker = topLevelMarkers[index + 1]
+
 			while cursor <= #declarations do
 				local declaration = declarations[cursor]
 				if nextMarker and declaration.span.beginLine >= nextMarker.span.beginLine then

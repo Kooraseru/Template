@@ -8,6 +8,7 @@ local Syntax = require("@std/syntax")
 local Rule = require("@ruleLinter/rule")
 local Utils = require("@std/syntax/utils")
 
+--- Find an unambiguous explicit __index entry in a record-only table.
 local function explicitIndex(entries: { Syntax.CstTableExprItem }): Syntax.CstTableExprItem?
 	local selected: Syntax.CstTableExprItem? = nil
 	for _, entry in entries do
