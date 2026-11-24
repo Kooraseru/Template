@@ -10,7 +10,7 @@ workflows:
         - 'actions/setup-node@v7.1.0'
         - 'actions/upload-artifact@v7'
         - 'actions/upload-pages-artifact@v5'
-        - 'kooraseru-hub/ci-engine@dca70a1275527adcf365e91a05ddc5e212a85f65'
+        - 'kooraseru-hub/ci-engine@d49da35458faa4dab5af29a797043e90c3be98e5'
     '.github/workflows/close.yml': []
     '.github/workflows/manual.yml': []
     '.github/workflows/pull.yml': []
@@ -63,9 +63,9 @@ dependencies:
         commit: 'sha1-924e7c586e33d7d4bae9c14e26c5d22e2beb6e78'
         owner_id: 216188
         repo_id: 738284564
-    'kooraseru-hub/ci-engine@dca70a1275527adcf365e91a05ddc5e212a85f65':
-        ref: 'dca70a1275527adcf365e91a05ddc5e212a85f65'
-        commit: 'sha1-dca70a1275527adcf365e91a05ddc5e212a85f65'
+    'kooraseru-hub/ci-engine@d49da35458faa4dab5af29a797043e90c3be98e5':
+        ref: 'main'
+        commit: 'sha1-d49da35458faa4dab5af29a797043e90c3be98e5'
         owner_id: 255195713
         repo_id: 1458028693
         uses:

@@ -90,3 +90,11 @@ test("review delivery is opt-in on the trusted controller, without making review
   assert.equal(engine.operations.review.mode,"readonly");
   assert.equal(engine.operations.review.publication,undefined);
 });
+
+test("immutable engine pin retains named upstream lockfile provenance", () => {
+  const {enginePin} = require("../../.github/components/quality/template-conformance/check.cjs");
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/bootstrap.yml"));
+  const sha = enginePin(workflow);
+  const lock = fs.readFileSync(path.join(root, ".github/workflows/actions.lock"), "utf8");
+  assert.ok(lock.includes("'kooraseru-hub/ci-engine@" + sha + "':\n        ref: 'main'\n        commit: 'sha1-" + sha + "'"));
+});
