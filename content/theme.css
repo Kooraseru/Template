@@ -1,11 +1,4 @@
-/* Optional project-specific Starlight overrides.
- *
- * Theme stylesheets are owned by the shared renderer:
- *   theme/fallback.css      - baseline colors
- *   theme/native.css        - web-exposed system colors when supported
- *   project.css             - staged from this file
- *   theme/forced-colors.css - accessibility overrides
- *
- * Leave this file empty to use the shared palette. Add branding here,
- * not in the renderer's fallback or native stylesheets.
+/* Optional project branding. The renderer supplies a fixed dark palette,
+ * independent layout, GitHub code highlighting and forced-colors support.
+ * Override shared --docs-* tokens here, not in the component styles.
  */

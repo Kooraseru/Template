@@ -1,0 +1,11 @@
+/* One bordered group, compact rows; no independent marketing-style cards. */
+.sl-markdown-content .api-summary { border: 1px solid var(--docs-border); border-radius: 4px; overflow: hidden; padding: 0; margin: 12px 0 24px; list-style: none; }
+.sl-markdown-content .api-summary > li { margin: 0; padding: 0; }
+.api-summary > li + li { border-top: 1px solid var(--docs-border); }
+.api-summary a { display: flex; align-items: start; gap: 8px; padding: 8px 12px 8px 8px; color: var(--docs-link); text-decoration: none; }
+.api-summary a:hover { background: var(--docs-hover); }
+.api-summary a:focus-visible { outline: 2px solid var(--docs-link); outline-offset: -2px; }
+.api-summary svg { flex: 0 0 21px; width: 21px; height: 21px; color: var(--docs-function-icon); }
+.api-summary [data-kind='type'] svg { color: var(--docs-type-icon); }
+.api-summary .api-signature { font-family: var(--sl-font-mono); font-size: 14px; line-height: 21px; overflow-wrap: anywhere; }
+.api-summary .api-description { display: block; font-size: 14px; line-height: 21px; color: var(--docs-muted); margin-top: 4px; }

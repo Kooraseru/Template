@@ -1,0 +1,75 @@
+---
+title: API reference example
+description: Demonstrates the reusable documentation renderer using an illustrative Luau API.
+sidebar:
+  order: 100
+---
+
+import ApiSummary from '../../components/ApiSummary.astro';
+
+This page is a rendering example for library authors, not an API provided by Template.
+
+## Summary
+
+### Functions
+
+<ApiSummary members={[
+  { kind: 'function', signature: 'Register(entries: Entries): Registry<Resolvable<Entries>>', href: '#register', description: 'Creates a typed collection of registered values.' },
+  { kind: 'function', signature: 'Get(path: Path): (unknown, boolean)', href: '#get', description: 'Returns a registered value and a success flag.' },
+]} />
+
+### Types
+
+<ApiSummary members={[
+  { kind: 'type', signature: 'Registry<Path>', href: '#registry', description: 'The typed lookup interface.' },
+  { kind: 'type', signature: 'Resolvable<Entries>', href: '#resolvable', description: 'The set of accepted entry keys.' },
+]} />
+
+## Usage
+
+```luau
+--!strict
+export type Resolvable<Entries> = keyof<Entries>
+
+export type Registry<Path> = {
+    read Get: (self: Registry<Path>, path: Path) -> (unknown, boolean),
+}
+
+local function register<Entries>(entries: Entries): Registry<Resolvable<Entries>>
+    const values = entries :: unknown :: { [string]: unknown }
+
+    local function get(_, path: Resolvable<Entries>): (unknown, boolean)
+        const value = values[path :: unknown :: string]
+        if value == nil then
+            return `Unknown path: {path}`, false
+        end
+        return value, true
+    end
+
+    return { Get = get }
+end
+```
+
+## Functions
+
+### Register
+
+Creates a registry from named values.
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| entries | Entries | The registration table. |
+
+### Get
+
+Reads a value from the registry and returns its success status.
+
+## Types
+
+### Registry
+
+The interface returned by registration.
+
+### Resolvable
+
+The inferred set of entry keys.

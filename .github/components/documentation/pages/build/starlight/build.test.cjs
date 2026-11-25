@@ -29,47 +29,45 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
   const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
   const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
-  assert.ok(layout.includes('--sl-content-width: 52rem;'));
-  assert.ok(layout.includes('--sl-sidebar-width: 17rem;'));
+  assert.ok(layout.includes('--docs-article-width: 883px;'));
+  assert.ok(layout.includes('--sl-sidebar-width: 18rem;'));
   assert.ok(!layout.includes('--sl-color-bg:'));
   assert.ok(!projectTheme.includes('--sl-color-accent:'));
-  assert.ok(!astro.includes('ThemeSelect.astro'));
+  assert.ok(astro.includes('ThemeSelect.astro'));
+  assert.ok(astro.includes('ThemeProvider.astro'));
+  assert.ok(astro.includes("themes: ['github-dark']"));
+  assert.ok(astro.includes('useStarlightDarkModeSwitch: false'));
   assert.ok(!astro.includes('localStorage'));
   assert.ok(!collection.includes('content/i18n'));
 });
 
-test('Theme stylesheets are ordered baseline, native, project and accessibility', () => {
+test('Measured dark palette, independent presentation layers and forced colors', () => {
   const astro = fs.readFileSync(path.join(__dirname, 'astro.config.mjs'), 'utf8');
   const entries = [...astro.matchAll(/['"](\.\/src\/styles\/[^'"]+\.css)['"]/g)].map(match => match[1]);
   assert.deepEqual(entries, [
-    './src/styles/layout.css',
     './src/styles/theme/fallback.css',
-    './src/styles/theme/native.css',
+    './src/styles/layout.css',
+    './src/styles/typography.css',
+    './src/styles/navigation.css',
+    './src/styles/reference.css',
     './src/styles/project.css',
     './src/styles/theme/forced-colors.css',
   ]);
-  const read = file => fs.readFileSync(path.join(__dirname, 'src/styles/theme', file), 'utf8');
-  const fallback = read('fallback.css');
-  const native = read('native.css');
-  const forced = read('forced-colors.css');
-  assert.match(fallback, /--sl-color-bg: #141821;/);
-  assert.match(fallback, /--sl-color-bg: #ffffff;/);
+  const fallback = fs.readFileSync(path.join(__dirname, 'src/styles/theme/fallback.css'), 'utf8');
+  const forced = fs.readFileSync(path.join(__dirname, 'src/styles/theme/forced-colors.css'), 'utf8');
+  assert.match(fallback, /--docs-surface: #121215;/);
+  assert.match(fallback, /--docs-link: #528bff;/);
   assert.match(fallback, /color-scheme: dark;/);
-  assert.match(fallback, /color-scheme: light;/);
-  assert.ok(fallback.includes("root[data-theme='light']"));
-  assert.doesNotMatch(fallback, /@supports|@media/);
-  assert.match(native, /@supports \(color: Canvas\)/);
-  assert.match(native, /--docs-accent: AccentColor;/);
-  assert.match(native, /--sl-color-bg: Canvas;/);
-  assert.match(native, /color-mix\(in srgb/);
-  assert.doesNotMatch(native, /#[0-9a-f]{3,8}\b|--docs-user-accent|@media/i);
+  assert.doesNotMatch(fallback, /data-theme=['"]light|color-scheme: light/);
   assert.match(forced, /@media \(forced-colors: active\)/);
-  assert.match(forced, /--sl-color-accent: LinkText;/);
-  assert.match(forced, /--sl-color-bg-accent: Highlight;/);
-  assert.doesNotMatch(forced, /#[0-9a-f]{3,8}\b|color-mix\(/i);
-  const tokens = css => [...new Set([...css.matchAll(/(--sl-color-[a-z0-9-]+):/g)].map(match => match[1]))].sort();
-  assert.deepEqual(tokens(native), tokens(fallback));
+  assert.match(forced, /--docs-selected: Highlight;/);
+  const tokens = css => [...new Set([...css.matchAll(/(--(?:docs|sl-color)-[a-z0-9-]+):/g)].map(match => match[1]))].sort();
   assert.deepEqual(tokens(forced), tokens(fallback));
+  const provider = fs.readFileSync(path.join(__dirname, 'src/components/ThemeProvider.astro'), 'utf8');
+  assert.match(provider, /dataset.theme = 'dark'/);
+  const example = fs.readFileSync(path.join(root, 'content/docs/reference-example.mdx'), 'utf8');
+  assert.match(example, /<ApiSummary members=/);
+  assert.match(example, /\x60\x60\x60luau/);
 });
 
 test('Static image copier preserves nested paths', t => {

@@ -1,0 +1,12 @@
+.site-title { color: var(--docs-heading); font-size: 20px; font-weight: 700; }
+.sidebar-content :is(a,summary) { font-size: 14px; line-height: 21px; }
+.sidebar-content a { padding: 4px 8px; border-radius: 8px; color: var(--docs-text); }
+.sidebar-content summary { padding: 4px 8px; }
+.sidebar-content .group-label { font-size: 14px; font-weight: 700; }
+.sidebar-content a:hover { background: var(--docs-hover); color: var(--docs-heading); }
+.sidebar-content a[aria-current='page'] { background: var(--docs-selected); color: var(--docs-heading); font-weight: 600; }
+.sidebar-content ul ul { margin-inline-start: 12px; padding-inline-start: 0; border-inline-start: 0; }
+.right-sidebar-panel { padding: 16px 16px 24px 24px; }
+.right-sidebar-panel h2 { font-size: 16px; font-weight: 700; }
+starlight-toc a { font-size: 14px; line-height: 21px; padding-block: 4px; }
+starlight-toc a[aria-current='true'] { color: var(--docs-link); }

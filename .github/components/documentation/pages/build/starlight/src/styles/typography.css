@@ -1,0 +1,23 @@
+:root {
+  --sl-font: 'Builder Sans', Helvetica, Arial, sans-serif;
+  --sl-font-mono: 'Builder Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+  --sl-text-h1: 28px;
+  --sl-text-h2: 24px;
+  --sl-text-h3: 20px;
+  --sl-text-h4: 16px;
+  --sl-text-body: 16px;
+  --sl-text-code: 14px;
+  --sl-line-height: 1.4;
+  --sl-line-height-headings: 1.35;
+}
+h1#_top { font-size: 28px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
+.sl-markdown-content { font-size: 16px; line-height: 1.6; }
+.sl-markdown-content :is(h2,h3,h4) { font-weight: 700; scroll-margin-top: calc(var(--sl-nav-height) + 16px); }
+.sl-markdown-content :is(h2,h3,h4):not(:first-child) { margin-top: 40px; margin-bottom: 16px; }
+.sl-markdown-content h2 { font-size: 24px; line-height: 1.35; }
+.sl-markdown-content h3 { font-size: 20px; line-height: 1.4; }
+.sl-markdown-content h4 { font-size: 16px; line-height: 1.4; }
+.sl-markdown-content :not(pre) > code { border-radius: 4px; padding: 2px 4px; }
+.sl-markdown-content a { text-underline-offset: 3px; }
+.sl-markdown-content table { font-size: 14px; }
+.sl-markdown-content :is(th,td) { padding: 8px 12px; }
