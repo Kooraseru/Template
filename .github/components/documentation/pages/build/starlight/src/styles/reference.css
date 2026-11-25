@@ -25,8 +25,9 @@
 .api-type-card::before { content:''; position:absolute; left:var(--arrow-x); transform:translateX(-50%); border:8px solid transparent; }
 .api-type-card[data-side='below']::before { bottom:100%; border-bottom-color:var(--docs-tooltip-bg); }
 .api-type-card[data-side='above']::before { top:100%; border-top-color:var(--docs-tooltip-bg); }
-.api-member { margin-block:32px; border-top:2px solid var(--docs-border); padding-top:24px; }
-.sl-markdown-content .api-member-heading { display:flex; align-items:center; gap:12px; margin:0 0 24px; font-size:20px; }
+.api-member { margin-block:0 32px; }
+.sl-markdown-content h3.api-member-heading { border-top:2px solid var(--docs-border); padding-top:24px; margin-top:32px; }
+.sl-markdown-content .api-member-heading { display:flex; align-items:center; gap:12px; margin-bottom:24px; font-size:20px; }
 .api-member-heading a { color:var(--docs-heading); text-decoration:none; }
 .api-member-heading a:hover { text-decoration:underline; }
 .api-member p { margin-block:16px 24px; }
@@ -37,3 +38,5 @@
 .api-parameter-list > div + div { border-top:1px solid var(--docs-border); }
 .api-parameter-list dt { font-weight:400; }
 .api-parameter-list dd { margin:4px 0 0; color:var(--docs-text); font-size:16px; }
+
+.api-member-icon-template[hidden] { display:none; }

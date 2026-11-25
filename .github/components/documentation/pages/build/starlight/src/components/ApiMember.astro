@@ -6,8 +6,8 @@ interface Entry { name: string; type: string; description: string }
 interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; parameters?: Entry[]; returns?: Entry[] }
 const { id, name, kind, signature, description, parameters = [], returns = [] } = Astro.props;
 ---
-<section class="api-member" data-api-member={id} data-kind={kind}>
-  <h3 id={id} class="api-member-heading">{kind !== 'constructor' && <ApiIcon kind={kind}/>}<a href={'#'+id}>{name}</a></h3>
+<section class="api-member" data-api-member={id} data-kind={kind} data-member-name={name}>
+  <span class="api-member-icon-template" hidden>{kind !== 'constructor' && <ApiIcon kind={kind}/>}</span>
   <p>{description}</p>
   <div class="api-signature-panel"><ApiSignature signature={signature}/></div>
   {[

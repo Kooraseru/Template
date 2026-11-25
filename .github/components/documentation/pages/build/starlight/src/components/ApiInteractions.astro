@@ -52,20 +52,19 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
   document.addEventListener('pointerdown',e=>{if(active && !active.contains(e.target as Node)&&!card.contains(e.target as Node))hide();});
   addEventListener('resize',position);addEventListener('scroll',hide,{passive:true});
-  // Starlight retains ordinary headings; API reference members supply their own labels and icons.
-  const members = [...document.querySelectorAll<HTMLElement>('[data-api-member]')];
-  if(members.length){
-    for(const toc of document.querySelectorAll<HTMLElement>('starlight-toc, mobile-starlight-toc')){
-      for(const member of members){
-        const heading=member.querySelector<HTMLElement>('h3[id]');
-        if(!heading)continue;
-        const link=[...toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')].find(a=>decodeURIComponent(a.hash.slice(1))===heading.id);
-        if(!link)continue;
-        link.classList.add('api-toc-member');
-        const icon=heading.querySelector('svg');
-        const label=heading.querySelector('a')?.textContent||heading.textContent||'';
-        link.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label));
-      }
+  // Markdown headings are registered at build time by Starlight. Decorate both
+  // desktop and mobile navigation from the same member metadata.
+  for(const member of document.querySelectorAll<HTMLElement>('[data-api-member]')){
+    const heading=document.getElementById(member.dataset.apiMember||'');
+    if(!heading)continue;
+    const icon=member.querySelector('.api-member-icon-template svg');
+    const label=member.dataset.memberName||heading.textContent||'';
+    heading.classList.add('api-member-heading');
+    heading.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label));
+    for(const link of document.querySelectorAll<HTMLAnchorElement>('starlight-toc a[href^="#"], mobile-starlight-toc a[href^="#"]')){
+      if(decodeURIComponent(link.hash.slice(1))!==heading.id)continue;
+      link.classList.add('api-toc-member');
+      link.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label));
     }
   }
 </script>
