@@ -103,6 +103,7 @@ jobs:
       group: ci-pr-${{ needs.resolve.outputs.pr }}
       cancel-in-progress: false
     permissions:
+      actions: read
       contents: read
       pull-requests: write
     steps:
@@ -116,4 +117,6 @@ jobs:
           REQUEST_SHA: ${{ needs.resolve.outputs.sha }}
           CI_STATUS: ${{ github.event.workflow_run.conclusion }}
           CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          REVIEW_RESULT: ${{ needs.review.result }}
+          PREVIEW_RESULT: ${{ needs.preview.result }}
         run: node .github/components/quality/code-review/summary.cjs

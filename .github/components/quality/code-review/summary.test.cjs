@@ -6,6 +6,7 @@ function fixture(){
  const comments=[],writes=[];
  const request=async(method,url,body)=>{
   if(method==="GET"&&url.includes("/pulls/"))return {state:"open",head:{sha},base:{repo:{full_name:repository}}};
+  if(method==="GET"&&url.includes("/actions/runs/"))return [{jobs:[{name:"documentation",conclusion:"failure"},{name:"validate",conclusion:"success"}]}];
   if(method==="GET")return comments;
   writes.push(method);
   if(method==="POST")comments.push({id:2,user:{id:41898282},body:body.body});
@@ -31,4 +32,5 @@ test("never reuse stale preview or change human comment",async()=>{
  assert.equal(f.comments[0].body,marker);
  assert.doesNotMatch(f.comments[1].body,/pages\.dev/);
  assert.match(f.comments[1].body,/Address failed checks/);
+ assert.match(f.comments[1].body,/Failed jobs: `documentation`/);
 });
