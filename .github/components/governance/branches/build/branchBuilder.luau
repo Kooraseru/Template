@@ -54,11 +54,13 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 
 		for _, source in Glob.Find(pattern) do
 			local metadata = (if Fs.exists(source) then Fs.type(source) else nil)
+
 			if metadata == "dir" then
 				continue
 			elseif metadata ~= "file" then
 				error(`unsupported repository source entry: {source}`, 0)
 			end
+
 			matched = true
 			if source == ".gitkeep" or source:match("/%.gitkeep$") or seen[source] then
 				continue
@@ -79,7 +81,7 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 	return copied
 end
 
--- Repository documents use explicit English placeholders, independent of site i18n.
+--- Substitute the supported repository placeholders and reject unknown or malformed placeholders.
 local function renderTemplate(content: string, source: string, branchName: string): string
 	local repository = Process.env.GITHUB_REPOSITORY or ""
 	local projectName = repository:match("^[%w_.-]+/([%w_.-]+)$") or "Project"
@@ -140,12 +142,13 @@ function BranchBuilder.new(): BranchBuilder
 end
 
 --- Stage each configured branch using its declared source globs and authored documents.
-function BranchBuilder.Run(_self: BranchBuilder): ()
+function BranchBuilder.Run(_: BranchBuilder): ()
 	if not (Fs.exists(CONTENT_ROOT) and Fs.type(CONTENT_ROOT) == "dir") then
 		error(`missing repository content directory: {CONTENT_ROOT}`, 0)
 	end
 
 	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+
 	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
 	elseif outputMetadata == "dir" then
@@ -153,6 +156,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
+
 	ensureDirectory("build")
 	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
@@ -160,6 +164,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	local branchCount = 0
 	local records = Glob.Find(`{CONFIG_ROOT}/*.toml`)
 	table.sort(records)
+
 	for _, path in records do
 		if (if Fs.exists(path) then Fs.type(path) else nil) ~= "file" then
 			error(`{path}: branch record must be a regular file`, 0)
@@ -192,6 +197,7 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 		branchCount += 1
 		print(`Built repository branch {name} with {copied} files`)
 	end
+
 	if branchCount == 0 then
 		print(`No repository branches are configured under {CONFIG_ROOT}`)
 	end

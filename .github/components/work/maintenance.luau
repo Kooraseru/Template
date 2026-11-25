@@ -19,11 +19,13 @@ end
 local repo = Process.env.GITHUB_REPOSITORY
 local branch = Process.env.CI_DEFAULT_BRANCH
 local token = Process.env.GH_TOKEN
+
 if Process.env.GITHUB_ACTIONS ~= "true" or Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch"
 	or Process.env.ACT == "true" or not repo or not branch or not token
 	or Process.env.GITHUB_REF ~= `refs/heads/{branch}` then
 	error("Maintenance writes require explicit default-branch GitHub Actions execution", 0)
 end
+
 if mode == "labels" then
 	LabelSync.Sync(repo, labels, Publication.Request)
 elseif mode == "milestones" then

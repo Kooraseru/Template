@@ -99,12 +99,14 @@ local function validVersion(versionType: string, version: string, options: { [st
 
 	local core = version
 	local build = core:find("+", 1, true)
+
 	if build then
 		if options.allow_build_metadata ~= true or build == #core then
 			return false
 		end
 		core = core:sub(1, build - 1)
 	end
+
 	local major, minor, patch = core:match("^(%d+)%.(%d+)%.(%d+)$")
 	local preMajor, preMinor, prePatch, identifier, preNumber = core:match("^(%d+)%.(%d+)%.(%d+)%-([%w%-]+)%.(%d+)$")
 	if not (major and minor and patch) and not (preMajor and preMinor and prePatch and identifier and preNumber) then
@@ -115,11 +117,13 @@ local function validVersion(versionType: string, version: string, options: { [st
 			and patch
 		then { major, minor, patch }
 		else { preMajor, preMinor, prePatch, preNumber }
+
 	for _, part in parts do
 		if part and #part > 1 and part:sub(1, 1) == "0" then
 			return false
 		end
 	end
+
 	if identifier and options.prerelease_identifier and identifier ~= options.prerelease_identifier then
 		return false
 	end
@@ -158,6 +162,7 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	local versions: { [string]: boolean } = {}
 	local sequences: { [number]: boolean } = {}
 	local entries: { ReleaseInput } = {}
+
 	for _, directory in Glob.Find(`{RECORD_ROOT}/*`) do
 		local metadata = (if Fs.exists(directory) then Fs.type(directory) else nil)
 		if metadata == "link" then
@@ -188,9 +193,11 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		sequences[sequence] = true
 		table.insert(entries, { path = path, directory = identity, sequence = sequence, value = value })
 	end
+
 	table.sort(entries, function(a: ReleaseInput, b: ReleaseInput)
 		return a.sequence < b.sequence
 	end)
+
 	for _, entry in entries do
 		local value = entry.value
 		local recordPath = entry.path
@@ -214,13 +221,14 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		if versions[version] then
 			error(`{CONFIG_PATH}: duplicate release version {version}`, 0)
 		end
-		local resolvedCommit = if commit == nil
-			then resolveReference(sharedSource, `release {version} source`)
-			else if type(commit) == "string"
-				then resolveReference(commit, `release {version} source`)
-				else error(`{CONFIG_PATH}: release {version} source must be a Git reference`, 0)
+		if commit ~= nil and type(commit) ~= "string" then
+			error(`{CONFIG_PATH}: release {version} source must be a Git reference`, 0)
+		end
+
+		local resolvedCommit = resolveReference(commit or sharedSource, `release {version} source`)
 		local notesStart = value.previous_tag
 		local previousTag: string? = nil
+
 		if notesStart == "previous" then
 			previousTag = if #records > 0 then records[#records].tag else nil
 			if not previousTag then
@@ -238,12 +246,14 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 			end
 			previousTag = notesStart
 		end
+
 		if
 			type(value.notes) ~= "string"
 			or not string.match(value.notes, "^[%w_.-]+%.md$")
 		then
 			error(`{recordPath}: release record requires a notes filename`, 0)
 		end
+
 		local notes = `{entry.directory}/{value.notes}`
 		safeNotesPath(notes)
 		versions[version] = true
@@ -278,11 +288,13 @@ safeNotesPath = function(notes: string): string
 	if notes == "" or notes:find("\\", 1, true) or notes:sub(1, 1) == "/" then
 		error(`{CONFIG_PATH}: unsafe release notes path {notes}`, 0)
 	end
+
 	for segment in notes:gmatch("[^/]+") do
 		if segment == "." or segment == ".." then
 			error(`{CONFIG_PATH}: unsafe release notes path {notes}`, 0)
 		end
 	end
+
 	local source = `{RECORD_ROOT}/{notes}`
 	if not (Fs.exists(source) and Fs.type(source) == "file") or (if Fs.exists(source) then Fs.type(source) else nil) == "link" then
 		error(`{CONFIG_PATH}: release notes do not exist as a regular file: {source}`, 0)
@@ -296,9 +308,10 @@ function ReleaseBuilder.new(): ReleaseBuilder
 end
 
 --- Stage validated release records, notes and checksummed assets into the release output.
-function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
+function ReleaseBuilder.Run(_: ReleaseBuilder): string?
 	local records, policy = decodeRecords()
 	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+
 	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
 	elseif outputMetadata == "dir" then
@@ -306,6 +319,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
+
 		ensureDirectory("build")
 	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
@@ -315,6 +329,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 		local releaseDirectory = `{OUTPUT_ROOT}/{release.version}`
 		ensureDirectory(releaseDirectory)
 		local notesOutput: string? = nil
+
 		if release.notes then
 			local source = safeNotesPath(release.notes)
 			local notesName = release.notes:match("([^/]+)$")
@@ -324,6 +339,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 			Fs.copy(source, `{releaseDirectory}/{notesName}`)
 			notesOutput = `{release.version}/{notesName}`
 		end
+
 		local entry = {
 			assets = ReleaseAssets.Stage(release.assetPatterns, `{releaseDirectory}/assets`, release.commit),
 			version = release.version,
