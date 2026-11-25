@@ -72,4 +72,4 @@ Dolor sit amet, consectetur adipiscing elit.
 
 </details>
 
-![Lorem ipsum](../images/favicon.png)
+<img src="../images/favicon.png" alt="Lorem ipsum" width="64" height="64" />
