@@ -22,6 +22,7 @@ export type Entry = {
 }
 export type Records = { entries: { Entry }, onExisting: ConflictPolicy.Policy }
 
+--- Require a configuration table containing named fields.
 local function record(value: unknown, label: string): { [string]: unknown }
 	if type(value) ~= "table" then
 		error(`{label}: expected a table`, 0)
@@ -36,6 +37,7 @@ local function record(value: unknown, label: string): { [string]: unknown }
 	return result
 end
 
+--- Validate optional nonempty metadata without accepting control characters.
 local function optionalText(value: unknown, label: string): string?
 	if value == nil then
 		return nil
@@ -46,6 +48,7 @@ local function optionalText(value: unknown, label: string): string?
 	return value
 end
 
+--- Require a regular package file with a safe relative path.
 local function regularFile(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == nil or metadata ~= "file" then
@@ -59,6 +62,7 @@ local function regularFile(path: string): ()
 	end
 end
 
+--- Read package definitions and validate every declared input before staging.
 function PackageRecords.Read(): Records
 	local root = record(Toml.decode(Fs.readFileToString(`{ROOT}/settings.toml`)), ROOT)
 	local settings = record(root.packages, "packages")

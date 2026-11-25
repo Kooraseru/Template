@@ -1,5 +1,7 @@
--- Validate configured labels and milestones; only explicit trusted runs may write.
+-- .github/components/work/maintenance.luau
 --!strict
+
+-- Validate configured records before any authorized write.
 local Process = require("@lute/process")
 local Publication = require("@formats/github")
 local Labels = require("./labels/sync/labelCatalog")

@@ -208,7 +208,7 @@ if (await dependenciesReady()) {
 			const relative = file.split(path.sep).join("/");
 			const directories = relative.split("/").slice(0, -1);
 			const activeValidatorSource = relative.startsWith("rules/luau/") && !directories.includes("tests");
-			return (activeValidatorSource || ["source/", "ci/", "dependencies/packages/"].some(prefix => relative.startsWith(prefix)))
+			return (activeValidatorSource || ["source/", ".github/components/", "dependencies/packages/"].some(prefix => relative.startsWith(prefix)))
 				&& !directories.some(segment => ["generated", "vendor", "examples"].includes(segment));
 		});
 		checkRepositoryRules(ruleSources, scoped);

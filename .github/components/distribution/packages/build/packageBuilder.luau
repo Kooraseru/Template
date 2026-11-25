@@ -11,6 +11,7 @@ local PackageBuilder = {}
 PackageBuilder.__index = PackageBuilder
 export type PackageBuilder = setmetatable<{}, typeof(PackageBuilder)>
 
+--- Create a regular output directory without following symbolic links.
 local function ensureDirectory(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == "link" then
@@ -23,10 +24,12 @@ local function ensureDirectory(path: string): ()
 	end
 end
 
+--- Construct an independent package staging operation.
 function PackageBuilder.new(): PackageBuilder
 	return setmetatable({}, PackageBuilder)
 end
 
+--- Validate package records and stage their declared files under the build output.
 function PackageBuilder.Run(_self: PackageBuilder): string?
 	local records = PackageRecords.Read()
 	local metadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)

@@ -46,6 +46,7 @@ export type ReleaseBuilder = setmetatable<{}, typeof(ReleaseBuilder)>
 local requireCommit: (string, string) -> ()
 local safeNotesPath: (string) -> string
 
+--- Create a safe output directory without following symbolic links.
 local function ensureDirectory(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == "link" then
@@ -58,6 +59,7 @@ local function ensureDirectory(path: string): ()
 	end
 end
 
+--- Check the release version against its selected versioning format.
 local function validVersion(versionType: string, version: string, options: { [string]: unknown }): boolean
 	if versionType == "marketing" then
 		return version ~= "" and not version:find("[/\\\\:]", 1) and not version:find("..", 1, true)
@@ -124,6 +126,7 @@ local function validVersion(versionType: string, version: string, options: { [st
 	return true
 end
 
+--- Resolve a Git reference to a commit present in the checkout.
 local function resolveReference(reference: string, label: string): string
 	local result = Process.run({ "git",  "rev-parse", "--verify", reference .. "^{commit}" })
 	if not result.ok then
@@ -134,6 +137,7 @@ local function resolveReference(reference: string, label: string): string
 	return reference
 end
 
+--- Validate and sequence release records before any output is staged.
 local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	local configuration = Json.record(Json.decode(Fs.readFileToString(CONFIG_PATH)))
 	if type(configuration) ~= "table" or type(configuration.release) ~= "table" then
@@ -258,6 +262,7 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	return records, ConflictPolicy.Parse(shared.on_existing, CONFIG_PATH)
 end
 
+--- Require a full commit SHA present in the checked-out Git history.
 requireCommit = function(commit: string, label: string): ()
 	if #commit ~= 40 or not commit:match("^%x+$") then
 		error(`{CONFIG_PATH}: {label} must be a full 40-character commit SHA`, 0)
@@ -268,6 +273,7 @@ requireCommit = function(commit: string, label: string): ()
 	end
 end
 
+--- Resolve a release notes path without allowing traversal or symbolic links.
 safeNotesPath = function(notes: string): string
 	if notes == "" or notes:find("\\", 1, true) or notes:sub(1, 1) == "/" then
 		error(`{CONFIG_PATH}: unsafe release notes path {notes}`, 0)
@@ -284,10 +290,12 @@ safeNotesPath = function(notes: string): string
 	return source
 end
 
+--- Construct an independent release staging operation.
 function ReleaseBuilder.new(): ReleaseBuilder
 	return setmetatable({}, ReleaseBuilder)
 end
 
+--- Stage validated release records, notes and checksummed assets into the release output.
 function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 	local records, policy = decodeRecords()
 	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)

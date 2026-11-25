@@ -7,6 +7,7 @@ local LabelCatalog = require("./labelCatalog")
 
 local LabelSync = {}
 
+--- Reconcile the complete label catalog, upserting before deleting undeclared labels.
 function LabelSync.Sync(
 	repository: string,
 	labels: { LabelCatalog.Label },

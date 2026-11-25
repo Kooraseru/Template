@@ -1,4 +1,4 @@
--- dependencies/managed/packages/ci-engine/src/native/github/resources/milestones/milestoneSync.luau
+-- .github/components/work/milestones/milestoneSync.luau
 --!strict
 
 local Net = require("@lute/net/client")
@@ -9,6 +9,7 @@ local Catalog = require("./milestoneCatalog")
 local MilestoneSync = {}
 export type Receipt = { version: string, id: number, state: string }
 
+--- Send an authenticated milestone API request and reject non-success statuses.
 local function request(token: string, method: string, path: string, body: unknown?): (number, unknown)
 	local response = Net.request(`https://api.github.com/{path}`, {
 		method = method,
@@ -30,6 +31,7 @@ local function request(token: string, method: string, path: string, body: unknow
 	return response.status, if response.body ~= "" then Json.decode(response.body) else {}
 end
 
+--- Convert a milestone record into its desired GitHub fields.
 local function body(milestone: Catalog.Milestone): { [string]: unknown }
 	local result: { [string]: unknown } = {
 		title = milestone.version,
@@ -44,6 +46,7 @@ local function body(milestone: Catalog.Milestone): { [string]: unknown }
 	return result
 end
 
+--- Reconcile milestones by exact title without deleting undeclared remote milestones.
 function MilestoneSync.Sync(
 	repository: string,
 	token: string,

@@ -1,4 +1,4 @@
--- dependencies/managed/packages/ci-engine/src/native/github/resources/milestones/milestoneCatalog.luau
+-- .github/components/work/milestones/milestoneCatalog.luau
 --!strict
 
 local Fs = require("@std/fs")
@@ -17,10 +17,12 @@ export type Milestone = {
 	description: string?,
 }
 
+--- Check the configured UTC timestamp format.
 local function validDueDate(value: string): boolean
 	return value:match("^%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d:%d%dZ$") ~= nil
 end
 
+--- Validate all milestone records, including unique versions and declared lifecycle states.
 function MilestoneCatalog.Read(): { Milestone }
 	local result: { Milestone } = {}
 	local versions: { [string]: boolean } = {}

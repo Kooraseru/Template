@@ -9,6 +9,7 @@ local Glob = require("@formats/glob")
 local ReleaseAssets = {}
 export type Asset = { name: string, path: string, digest: string }
 
+--- Copy and hash matching build artifacts only when they originate from the release commit.
 function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: string): { Asset }
 	local assets: { Asset } = {}
 	if patterns == nil then

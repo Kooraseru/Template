@@ -11,11 +11,13 @@ HostBuilder.__index = HostBuilder
 
 export type HostBuilder = setmetatable<{}, typeof(HostBuilder)>
 
+--- Construct an independent host build operation.
 function HostBuilder.new(): HostBuilder
 	local fields = {}
 	return setmetatable(fields, HostBuilder)
 end
 
+--- Validate the host contracts, build the selected host or all hosts, and check declared artifacts.
 function HostBuilder.Run(_self: HostBuilder): ()
 	if not (Fs.exists("build") and Fs.type("build") == "dir") then
 		Fs.createDirectory("build", { makeParents = true })

@@ -15,6 +15,7 @@ BranchBuilder.__index = BranchBuilder
 
 export type BranchBuilder = setmetatable<{}, typeof(BranchBuilder)>
 
+--- Create a regular output directory without following symbolic links.
 local function ensureDirectory(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == "link" then
@@ -27,12 +28,14 @@ local function ensureDirectory(path: string): ()
 	end
 end
 
+--- Reject branch identities that cannot safely name generated output.
 local function validateBranch(name: string, path: string): ()
 	if not name:match("^[%w][%w_-]*$") then
 		error(`{path}: invalid branch name {name}`, 0)
 	end
 end
 
+--- Copy matching regular source files once, preserving their relative paths.
 local function copySource(patterns: { string }, branchRoot: string, recordPath: string): number
 	local copied = 0
 	local seen: { [string]: boolean } = {}
@@ -94,6 +97,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 	return rendered
 end
 
+--- Render Markdown placeholders or copy other authored files unchanged.
 local function copyAuthoredFile(source: string, destination: string, branchName: string): ()
 	local parent = destination:match("^(.*)/[^/]+$")
 	if parent then ensureDirectory(parent) end
@@ -104,6 +108,7 @@ local function copyAuthoredFile(source: string, destination: string, branchName:
 	end
 end
 
+--- Overlay the authored repository document tree onto the generated branch.
 local function overlayTemplates(
 	sourceRoot: string,
 	destinationRoot: string,
@@ -129,10 +134,12 @@ local function overlayTemplates(
 	return copied
 end
 
+--- Construct an independent generated-branch builder.
 function BranchBuilder.new(): BranchBuilder
 	return setmetatable({}, BranchBuilder)
 end
 
+--- Stage each configured branch using its declared source globs and authored documents.
 function BranchBuilder.Run(_self: BranchBuilder): ()
 	if not (Fs.exists(CONTENT_ROOT) and Fs.type(CONTENT_ROOT) == "dir") then
 		error(`missing repository content directory: {CONTENT_ROOT}`, 0)
