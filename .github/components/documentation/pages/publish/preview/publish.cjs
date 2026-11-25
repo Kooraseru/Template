@@ -172,6 +172,25 @@ async function publishPreview(env = process.env) {
   }
   return published;
 }
+async function publishNative(env = process.env, deploy = cloudflareDeploy, request = api, comment = syncComment) {
+  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_run' ||
+      !/^[1-9][0-9]{0,8}$/.test(env.PR_NUMBER || '') ||
+      !/^[a-f0-9]{40}$/.test(env.REQUEST_SHA || '') || !env.CI_DEFAULT_BRANCH)
+    throw new Error('Preview requires a trusted completed CI run');
+  const config = settings(undefined, env);
+  if (!config.enabled || !config.pull_requests) return null;
+  const pr = await request('GET', '/repos/' + config.repo + '/pulls/' + env.PR_NUMBER, env.GH_TOKEN);
+  if (pr.state !== 'open' || String(pr.number) !== env.PR_NUMBER ||
+      pr.base?.repo?.full_name !== config.repo || pr.base.ref !== config.defaultBranch ||
+      pr.head?.repo?.full_name !== config.repo || pr.head.sha !== env.REQUEST_SHA) {
+    console.log('PR no longer matches; preview skipped');
+    return null;
+  }
+  const candidate = { ...target('pr:' + env.PR_NUMBER, config), sha: env.REQUEST_SHA };
+  const result = await deploy(config, candidate, env);
+  await comment(config, candidate, env, false, request);
+  return result;
+}
 async function retireClosed(env = process.env, request = api) {
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_run' ||
       !/^[1-9][0-9]{0,8}$/.test(env.PR_NUMBER || '') ||
@@ -198,10 +217,10 @@ async function retireClosed(env = process.env, request = api) {
   if (note) console.log('::notice::PR preview comment ' + note.action);
   return removed;
 }
-module.exports = { selected, copyStatic, prepareUpload, verifyProjectHost, cloudflareDeploy, pruneRetired, publishPreview, retireClosed };
+module.exports = { selected, copyStatic, prepareUpload, verifyProjectHost, cloudflareDeploy, pruneRetired, publishPreview, publishNative, retireClosed };
 if (require.main === module) {
   const command = process.argv[2], handler = command === '--preview'
-    ? publishPreview : command === '--retire' ? retireClosed : null;
+    ? publishPreview : command === '--retire' ? retireClosed : command === '--native' ? publishNative : null;
   if (!handler) { console.error('Expected --preview or --retire'); process.exitCode = 2; }
   else Promise.resolve().then(() => handler()).catch(e => {
     console.error('::error::' + e.message); process.exitCode = 1;

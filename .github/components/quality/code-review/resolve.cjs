@@ -20,7 +20,7 @@ function resolve(event, mode, get = api, repository = process.env.GITHUB_REPOSIT
     throw new Error("Invalid review resolver context");
   const signal = event.workflow_run;
   const base = "repos/" + repository;
-  const file = mode === "open" ? "pull.yml" : "close.yml";
+  const file = mode === "open" ? "ci.yml" : "close.yml";
   if (event.action !== "completed" || event.repository?.full_name !== repository ||
       !id(event.repository?.id) || !id(signal?.id) || !id(signal?.run_attempt))
     throw new Error("Invalid workflow completion event");
@@ -30,7 +30,7 @@ function resolve(event, mode, get = api, repository = process.env.GITHUB_REPOSIT
   if (run.id !== signal.id || run.run_attempt !== signal.run_attempt ||
       run.workflow_id !== workflow.id || workflow.path !== ".github/workflows/" + file ||
       run.repository?.id !== event.repository.id || run.event !== "pull_request" ||
-      run.status !== "completed" || run.conclusion !== "success" ||
+      run.status !== "completed" || (mode === "closed" ? run.conclusion !== "success" : !["success", "failure"].includes(run.conclusion)) ||
       !SHA.test(run.head_sha || "") || !id(run.head_repository?.id))
     throw new Error("Unexpected intake workflow identity");
 

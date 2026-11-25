@@ -126,7 +126,7 @@ function resolveThread(id, mutate = graphql) {
 }
 
 function main(env = process.env) {
-  const { GITHUB_REPOSITORY: repository, PR_NUMBER: pr, REQUEST_SHA: sha, ENGINE_RUN_ID: run, RUNNER_TEMP: temp } = env;
+  const { GITHUB_REPOSITORY: repository, PR_NUMBER: pr, REQUEST_SHA: sha, CI_RUN_ID: run, RUNNER_TEMP: temp } = env;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository) || !/^[1-9]\d*$/.test(pr) ||
     !/^[1-9]\d*$/.test(run) || !/^[a-f0-9]{40}$/.test(sha)) throw new Error("Invalid review identifiers");
   const endpoint = "repos/" + repository + "/pulls/" + pr;

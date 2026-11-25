@@ -122,7 +122,7 @@ function summary(findings, checked, base) {
 		"| " + source.replaceAll("|", "\\|") + " | " + counts.error + " | " + counts.warning + " | " + counts.information + " |");
 	return [
 		"## Code review", "",
-		"Checked TypeScript, Luau, and CI plans without VS Code. Repository Rules have a separate audit.",
+		"Checked TypeScript and Luau without VS Code. Repository Rules have a separate audit.",
 		"Scope for blocking findings: " + (base ? "changed files in this PR" : "whole repository"),
 		"Full repository: " + count("error") + " errors, " + count("warning") + " warnings, " + count("information") + " informational.",
 		"Blocking errors: " + checked.blocking.length + ". Inline annotations: " + checked.annotations.length +

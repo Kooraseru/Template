@@ -26,7 +26,7 @@ jobs:
           node --test dependencies/packages/editor/editorIntegration/*.test.cjs dependencies/packages/editor/mcpServer/*.test.cjs
           node --test dependencies/packages/checks/ruleLinter/policy.test.cjs
           node --test .github/components/quality/rules-audit/audit.test.cjs .github/components/quality/code-review/review.test.cjs .github/components/quality/workflows/hosts.test.cjs
-          node --test tests/ci/content.test.cjs tests/ci/test-discovery.test.cjs
+          node --test tests/ci/content.test.cjs tests/ci/test-discovery.test.cjs tests/ci/review-resolve.test.cjs tests/ci/review-publisher.test.cjs
       - name: Code review
         run: node .github/components/quality/code-review/review.cjs
       - name: Rules audit
@@ -110,6 +110,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
