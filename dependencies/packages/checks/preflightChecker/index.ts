@@ -69,29 +69,6 @@ function check(program: string, args: string[], source: string): void {
 	}
 }
 
-function checkCiPlans(): void {
-	const cli = path.join(root, "dependencies/managed/npm/node_modules/preflight/bin/preflight.js");
-	const provider = "dependencies/packages/checks/preflightChecker/bootstrap/provider.cjs";
-	for (const entry of ["pull_request", "push", "workflow_dispatch"]) {
-		const source = "Bootstrap plan (" + entry + ")";
-		console.log("::preflight-stage::" + source);
-		const result = spawnSync(process.execPath, [cli, "plan", "--provider", provider, "--entry", entry, "--json"], {
-			cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000,
-		});
-		let report;
-		try { report = JSON.parse(result.stdout || ""); } catch { /* Report process failures below. */ }
-		const diagnostics: Array<{ path?: string; line?: number; column?: number; severity: string; message: string }> = report?.diagnostics || [];
-		for (const item of diagnostics) {
-			finding(item.path && fs.existsSync(path.resolve(root, item.path)) ? item.path : provider,
-				item.line || 1, item.column || 1, item.severity, source, item.message);
-		}
-		if ((result.error || result.status !== 0 || report?.status !== "passed") && !diagnostics.some(item => item.severity === "error")) {
-			finding(provider, 1, 1, "error", source,
-				(result.error?.message || result.stderr?.trim() || "Preflight did not return a passing plan.").replace(/\s+/g, " "));
-		}
-	}
-}
-
 function editorLuauChecks(): void {
 	const analyzer = process.env.TEMPLATE_LUAU_ANALYZER;
 	const toolConfig = ".vscode/settings.json";
@@ -238,7 +215,6 @@ if (await dependenciesReady()) {
 	} else {
 		check(process.execPath, [typescript, "--project", configuration, "--pretty", "false"], "TypeScript");
 		if (sources.length) check(lute, ["check", ...sources], "Lute");
-		if (process.argv.includes("--ci")) checkCiPlans();
 		editorLuauChecks();
 	}
 } else {

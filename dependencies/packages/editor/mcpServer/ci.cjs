@@ -7,7 +7,6 @@ const { createRequire } = require("node:module");
 function getStatus({ root, limit = 5 }) {
 	if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error("ci_get_status: limit must be 1..20");
 	let revision, workspaceDigest;
-	try { workspaceDigest = require(path.join(root, "dependencies/managed/packages/ci-engine/src/adapters/local/artifacts.cjs")).snapshot(root).digest; } catch {}
 	try { revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true, timeout: 2000, stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch {}
 	const workflows = [];
 	const issues = [];

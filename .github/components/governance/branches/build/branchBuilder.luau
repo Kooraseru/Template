@@ -3,7 +3,7 @@
 
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
-local Glob = require("@ci/bootstrap/discovery/glob")
+local Glob = require("@formats/glob")
 local Process = require("@lute/process")
 
 local CONFIG_ROOT = "config/branches"

@@ -9,7 +9,7 @@ local ConflictPolicy = require("./conflictPolicy")
 local ReleaseAssets = require("./releaseAssets")
 
 local CONFIG_PATH = "config/publishing/releases/settings.json"
-local RECORD_ROOT = "config/publishing/releases"
+local RECORD_ROOT = "releases"
 local OUTPUT_ROOT = "build/github/releases"
 
 type ReleaseRecord = {

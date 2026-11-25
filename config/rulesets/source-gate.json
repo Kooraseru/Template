@@ -38,7 +38,7 @@
         "strict_required_status_checks_policy": false,
         "required_status_checks": [
           {
-            "context": "CI Engine / engine / validate",
+            "context": "CI Required",
             "integration_id": 15368
           }
         ]
