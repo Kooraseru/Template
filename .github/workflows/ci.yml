@@ -173,10 +173,10 @@ jobs:
           name: packages
           path: build/github/packages
           if-no-files-found: error
-      - uses: Kooraseru-Hub/CI-Engine/packages/releases/verify@a31c440b80bc97464c48514a1002fe81b36c0e7a
+      - uses: Kooraseru-Hub/CI-Engine/packages/releases/verify@260afbf21ca1054f4cf6f3461175bb72b204d6a8
         with:
           index: build/github/releases/index.json
-      - uses: Kooraseru-Hub/CI-Engine/packages/releases/publish@a31c440b80bc97464c48514a1002fe81b36c0e7a
+      - uses: Kooraseru-Hub/CI-Engine/packages/releases/publish@260afbf21ca1054f4cf6f3461175bb72b204d6a8
         with:
           index: build/github/releases/index.json
           repository: ${{ github.repository }}
@@ -197,7 +197,7 @@ jobs:
           node-version: '24'
       - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
       - run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/build/run.luau
-      - uses: Kooraseru-Hub/CI-Engine/packages/repository/branches@a31c440b80bc97464c48514a1002fe81b36c0e7a
+      - uses: Kooraseru-Hub/CI-Engine/packages/repository/branches@260afbf21ca1054f4cf6f3461175bb72b204d6a8
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}

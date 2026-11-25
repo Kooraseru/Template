@@ -32,7 +32,7 @@ jobs:
         with:
           name: releases
           path: build/github/releases
-      - uses: Kooraseru-Hub/CI-Engine/packages/releases/publish@a31c440b80bc97464c48514a1002fe81b36c0e7a
+      - uses: Kooraseru-Hub/CI-Engine/packages/releases/publish@260afbf21ca1054f4cf6f3461175bb72b204d6a8
         with:
           index: build/github/releases/index.json
           repository: ${{ github.repository }}
@@ -54,7 +54,7 @@ jobs:
         with:
           name: generated-branches
           path: build/github/branches
-      - uses: Kooraseru-Hub/CI-Engine/packages/repository/branches@a31c440b80bc97464c48514a1002fe81b36c0e7a
+      - uses: Kooraseru-Hub/CI-Engine/packages/repository/branches@260afbf21ca1054f4cf6f3461175bb72b204d6a8
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}

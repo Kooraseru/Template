@@ -1,13 +1,13 @@
--- Standalone GitHub HTTP helpers for repository maintenance.
+-- dependencies/packages/core/dataFormats/github.luau
 --!strict
 
-local Fs = require("@std/fs")
 local Json = require("@formats/json")
 local Net = require("@lute/net/client")
 local Process = require("@lute/process")
 
 local Publication = {}
 
+--- Percent-encode a GitHub REST path segment.
 function Publication.Encode(value: string): string
 	return (
 		value:gsub("([^%w%-_%.~])", function(character: string): string
@@ -16,15 +16,7 @@ function Publication.Encode(value: string): string
 	)
 end
 
-function Publication.Output(name: string, value: string): ()
-	local path = Process.env.GITHUB_OUTPUT
-	if path then
-		local current = if Fs.exists(path) and Fs.type(path) == "file" then Fs.readFileToString(path) else ""
-		local separator = if current ~= "" and current:sub(-1) ~= "\n" then "\n" else ""
-		Fs.writeStringToFile(path, `{current}{separator}{name}={value}\n`)
-	end
-end
-
+--- Normalize a decoded response to its named fields.
 function Publication.Record(value: unknown): { [string]: unknown }
 	if type(value) ~= "table" then
 		error("Expected a publication data object", 0)
@@ -38,6 +30,7 @@ function Publication.Record(value: unknown): { [string]: unknown }
 	return result
 end
 
+--- Require a nonempty string from a GitHub response.
 function Publication.Text(value: unknown): string
 	if type(value) ~= "string" or value == "" then
 		error("Expected a nonempty publication string", 0)
@@ -45,14 +38,13 @@ function Publication.Text(value: unknown): string
 	return value
 end
 
+--- Send an authenticated GitHub REST request with the job-scoped token.
 local function response(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", path: string, body: unknown?)
 	local token = Process.env.GH_TOKEN
 	if not token or token == "" then
 		error("Publication requires the run-provided GITHUB_TOKEN with the declared write permissions", 0)
 	end
-	local origin = if Process.env.TEMPLATE_PUBLICATION_REHEARSAL == "1"
-		then "http://127.0.0.1:47831" else "https://api.github.com"
-	local response = Net.request(`{origin}/{path}`, {
+	local response = Net.request(`https://api.github.com/{path}`, {
 		method = method,
 		headers = {
 			Authorization = `Bearer {token}`,
@@ -66,15 +58,17 @@ local function response(method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE", pat
 	return response
 end
 
+--- Bound and redact error details before exposing them in logs.
 local function responseMessage(body: string): string
 	local token = Process.env.GH_TOKEN
 	local safe = body:gsub("[%c]", " ")
 	if token and token ~= "" then
-		safe = safe:gsub(token, "[redacted]")
+		safe = safe:gsub(token:gsub("([^%w])", "%%%1"), "[redacted]")
 	end
 	return safe:sub(1, 240)
 end
 
+--- Return the HTTP status and decoded response object, retaining API errors.
 function Publication.Request(
 	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
 	path: string,
@@ -98,6 +92,7 @@ function Publication.Request(
 	)
 end
 
+--- Read a GitHub list and reject invalid HTTP statuses or response shapes.
 function Publication.List(path: string): { unknown }
 	local result = response("GET", path, nil)
 	Publication.RequireSuccess(result.status, "Read GitHub list", { message = responseMessage(result.body) })
@@ -112,25 +107,13 @@ function Publication.List(path: string): { unknown }
 	return items
 end
 
+--- Reject non-success HTTP statuses with bounded API context.
 function Publication.RequireSuccess(status: number, operation: string, details: { [string]: unknown }?): ()
 	if status < 200 or status >= 300 then
 		local message = if details then details.message else nil
 		local suffix = if type(message) == "string" and message ~= "" then `: {message}` else ""
 		error(`{operation}: GitHub returned HTTP {status}{suffix}; check run permissions and repository policies`, 0)
 	end
-end
-
-function Publication.ReadIndex(path: string, field: string): { unknown }
-	local index = Publication.Record(Json.decode(Fs.readFileToString(path)))
-	local entries = index[field]
-	if type(entries) ~= "table" then
-		error(`{path}: missing {field} array`, 0)
-	end
-	local result: { unknown } = {}
-	for _, entry in entries do
-		table.insert(result, entry)
-	end
-	return result
 end
 
 return Publication

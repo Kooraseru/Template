@@ -5,6 +5,7 @@ const Fs = require("@std/fs")
 
 local Glob = {}
 
+--- Split a repository-relative path into individual segments.
 local function split(path: string): { string }
 	local parts: { string } = {}
 	for part in path:gmatch("[^/]+") do
@@ -19,6 +20,7 @@ the same Lua expression for every matching file or directory.
 ]]
 const expressions: { [string]: string } = {}
 
+--- Match a single segment using a cached wildcard expression.
 local function matchSegment(name: string, pattern: string): boolean
 	local expression = expressions[pattern]
 	if not expression then
@@ -66,10 +68,12 @@ local function matches(path: { string }, pattern: { string }, position: number, 
 	return matches(path, pattern, position + 1, index + 1)
 end
 
+--- Test a repository-relative path against the given wildcard pattern.
 function Glob.Match(path: string, pattern: string): boolean
 	return matches(split(path), split(pattern), 1, 1)
 end
 
+--- Return sorted matches beneath the root, rejecting unsafe segments and symbolic links.
 function Glob.Find(pattern: string, root: string?): { string }
 	local parts = split(pattern)
 	if pattern:sub(1, 1) == "/" or pattern:find("\\", 1, true) or #parts == 0 then
