@@ -62,3 +62,14 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
   "ipsum": ["dolor", "sit", "amet"]
 }
 ```
+
+## Disclosures
+
+<details>
+<summary>Lorem ipsum</summary>
+
+Dolor sit amet, consectetur adipiscing elit.
+
+</details>
+
+![Lorem ipsum](../images/favicon.png)

@@ -43,16 +43,16 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 
 ```luau
 --!strict
-export type Resolvable<Entries> = keyof<Entries>
+export type Ipsum<Entries> = keyof<Entries>
 
-export type Registry<Path> = {
-    read Get: (self: Registry<Path>, path: Path) -> (unknown, boolean),
+export type Lorem<Path> = {
+    read Get: (self: Lorem<Path>, path: Path) -> (unknown, boolean),
 }
 
-local function register<Entries>(entries: Entries): Registry<Resolvable<Entries>>
+local function create<Entries>(entries: Entries): Lorem<Ipsum<Entries>>
     const values = entries :: unknown :: { [string]: unknown }
 
-    local function get(_, path: Resolvable<Entries>): (unknown, boolean)
+    local function get(_, path: Ipsum<Entries>): (unknown, boolean)
         const value = values[path :: unknown :: string]
         if value == nil then
             return `Unknown path: {path}`, false
