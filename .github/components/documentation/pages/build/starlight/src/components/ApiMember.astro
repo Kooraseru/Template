@@ -1,20 +1,21 @@
 ---
 import ApiIcon from './ApiIcon.astro';
 import ApiSignature from './ApiSignature.astro';
+import type { TypeReferences } from './ApiSignature.astro';
 import type { Props as IconProps } from './ApiIcon.astro';
 interface Entry { name: string; type: string; description: string }
-interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; parameters?: Entry[]; returns?: Entry[] }
-const { id, name, kind, signature, description, parameters = [], returns = [] } = Astro.props;
+interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; types?: TypeReferences; parameters?: Entry[]; returns?: Entry[] }
+const { id, name, kind, signature, description, types, parameters = [], returns = [] } = Astro.props;
 ---
 <section class="api-member" data-api-member={id} data-kind={kind} data-member-name={name}>
   <span class="api-member-icon-template" hidden>{kind !== 'constructor' && <ApiIcon kind={kind}/>}</span>
   <p>{description}</p>
-  <div class="api-signature-panel"><ApiSignature signature={signature}/></div>
+  <div class="api-signature-panel"><ApiSignature signature={signature} types={types} memberName/></div>
   {[
     { title: 'Parameters', values: parameters },
     { title: 'Returns', values: returns },
   ].filter(group => group.values.length).map(group => <>
     <h4>{group.title}</h4>
-    <dl class="api-parameter-list">{group.values.map(item => <div><dt><ApiSignature signature={item.name ? item.name+' : '+item.type : item.type}/></dt><dd>{item.description}</dd></div>)}</dl>
+    <dl class="api-parameter-list">{group.values.map(item => <div><dt><ApiSignature signature={item.name ? item.name+' : '+item.type : item.type} types={types} memberName={Boolean(item.name)}/></dt><dd>{item.description}</dd></div>)}</dl>
   </>)}
 </section>

@@ -1,0 +1,30 @@
+{
+  "number": {
+    "category": "Luau",
+    "description": "A double-precision floating-point number.",
+    "href": "https://create.roblox.com/docs/luau/numbers"
+  },
+  "string": {
+    "category": "Luau",
+    "description": "A sequence of bytes.",
+    "href": "https://create.roblox.com/docs/luau/strings"
+  },
+  "boolean": {
+    "category": "Luau",
+    "description": "A value that is either true or false.",
+    "href": "https://create.roblox.com/docs/luau/booleans"
+  },
+  "unknown": {
+    "category": "Luau",
+    "description": "A value whose type must be narrowed before use."
+  },
+  "nil": {
+    "category": "Luau",
+    "description": "The absence of a value."
+  },
+  "RBXScriptSignal": {
+    "category": "Roblox",
+    "description": "An engine event to which functions can be connected.",
+    "href": "https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal"
+  }
+}

@@ -7,6 +7,7 @@
     --docs-surface-interactive: Field;
     --docs-text: CanvasText;
     --docs-heading: CanvasText;
+    --docs-title: CanvasText;
     --docs-muted: GrayText;
     --docs-link: LinkText;
     --docs-border: ButtonBorder;

@@ -66,7 +66,7 @@ test('Measured dark palette, independent presentation layers and forced colors',
   const provider = fs.readFileSync(path.join(__dirname, 'src/components/ThemeProvider.astro'), 'utf8');
   assert.match(provider, /dataset.theme = 'dark'/);
   const example = fs.readFileSync(path.join(root, 'content/docs/reference-example.mdx'), 'utf8');
-  assert.match(example, /<ApiSummary members=/);
+  assert.match(example, /<ApiSummary .*members=/);
   assert.match(example, /\x60\x60\x60luau/);
 });
 
@@ -111,4 +111,18 @@ test('favicon is staged from authored assets and can be replaced per repository'
   assert.deepEqual(fs.readFileSync(destination), fs.readFileSync(source));
   assert.throws(() => stageFavicon(path.join(temp, 'missing.png'), destination),
     /Missing or invalid authored favicon/);
+});
+
+ test('API reference components use project type metadata and registered member anchors', () => {
+  const example = fs.readFileSync(path.join(root,'content/docs/reference-example.mdx'),'utf8');
+  const ids = [...example.matchAll(/<ApiMember [^>]*id="([^"]+)"/g)].map(m=>m[1]);
+  const summary = [...example.matchAll(/"href":"#([^"]+)"/g)].map(m=>m[1]);
+  assert.equal(ids.length,12);
+  assert.deepEqual(summary.sort(),ids.sort());
+  for(const id of ids) assert.ok(example.includes('### '+id+'\n'));
+  const signature=fs.readFileSync(path.join(__dirname,'src/components/ApiSignature.astro'),'utf8');
+  assert.match(signature,/import builtins/);
+  assert.doesNotMatch(signature,/Lorem ipsum/);
+  assert.match(signature,/<a class="api-type"/);
+  assert.match(signature,/<button type="button" class="api-type"/);
 });

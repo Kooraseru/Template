@@ -19,7 +19,7 @@
     const w = card.offsetWidth, h = card.offsetHeight;
     card.style.left = Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+'px';
     const above = r.bottom+h+12 > innerHeight && r.top > h+12;
-    card.style.top = (above ? r.top-h-10 : r.bottom+10)+'px';
+    card.style.top = Math.max(8,Math.min(innerHeight-h-8,above ? r.top-h-10 : r.bottom+10))+'px';
     card.dataset.side = above ? 'above' : 'below';
     card.style.setProperty('--arrow-x',Math.max(12,Math.min(w-12,r.left+r.width/2-parseFloat(card.style.left)))+'px');
   }
@@ -32,9 +32,6 @@
     const category=document.createElement('div'); category.className='api-type-category'; category.textContent=el.dataset.category||'';
     const desc=document.createElement('div'); desc.textContent=el.dataset.description||'';
     card.replaceChildren(title,category,desc);
-    if(el.dataset.href){
-      const link=document.createElement('a'); link.href=el.dataset.href; link.textContent='Read reference'; card.append(link);
-    }
     card.hidden=false; position();
   }
   function delayHide(){clearTimeout(timeout);timeout=setTimeout(hide,160);}
@@ -43,24 +40,26 @@
     el.addEventListener('pointerleave',delayHide);
     el.addEventListener('focus',()=>show(el));
     el.addEventListener('blur',delayHide);
-    el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();show(el);});
+    if(el instanceof HTMLButtonElement)el.addEventListener('click',()=>show(el));
   }
   card.addEventListener('pointerenter',()=>clearTimeout(timeout));
   card.addEventListener('pointerleave',delayHide);
-  card.addEventListener('focusin',()=>clearTimeout(timeout));
-  card.addEventListener('focusout',delayHide);
   document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
   document.addEventListener('pointerdown',e=>{if(active && !active.contains(e.target as Node)&&!card.contains(e.target as Node))hide();});
   addEventListener('resize',position);addEventListener('scroll',hide,{passive:true});
   // Markdown headings are registered at build time by Starlight. Decorate both
   // desktop and mobile navigation from the same member metadata.
-  for(const member of document.querySelectorAll<HTMLElement>('[data-api-member]')){
+  const members = [...document.querySelectorAll<HTMLElement>('[data-api-member]')];
+  if(members.length)document.documentElement.classList.add('api-reference-page');
+  for(const member of members){
     const heading=document.getElementById(member.dataset.apiMember||'');
     if(!heading)continue;
     const icon=member.querySelector('.api-member-icon-template svg');
     const label=member.dataset.memberName||heading.textContent||'';
     heading.classList.add('api-member-heading');
-    heading.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label));
+    // Keep Starlight's existing heading-anchor element when changing the label.
+    const anchor=heading.querySelector('a');
+    heading.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label.replace(/\(\)$/,'')),...(anchor?[anchor]:[]));
     for(const link of document.querySelectorAll<HTMLAnchorElement>('starlight-toc a[href^="#"], mobile-starlight-toc a[href^="#"]')){
       if(decodeURIComponent(link.hash.slice(1))!==heading.id)continue;
       link.classList.add('api-toc-member');

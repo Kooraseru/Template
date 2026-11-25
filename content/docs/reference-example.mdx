@@ -9,37 +9,43 @@ import ApiSummary from '../../components/ApiSummary.astro';
 import ApiMember from '../../components/ApiMember.astro';
 import ApiInteractions from '../../components/ApiInteractions.astro';
 
+export const types = {
+  Lorem: { category: 'Template', description: 'Lorem ipsum dolor sit amet.', href: '#lorem' },
+  Ipsum: { category: 'Template', description: 'Lorem ipsum dolor sit amet.', href: '#ipsum' },
+  Signal: { category: 'Template', description: 'Lorem ipsum dolor sit amet.' },
+};
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
 ## Summary
 
 ### Constructors
 
-<ApiSummary members={[{"kind":"constructor","signature":"Lorem.new(value: string): Lorem","href":"#new","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"constructor","signature":"Lorem.new(value: string): Lorem","href":"#new","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Properties
 
-<ApiSummary members={[{"kind":"property","signature":"Value: string","href":"#value","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"constant","signature":"Default: number","href":"#default","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"property","signature":"Value: string","href":"#value","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"constant","signature":"Default: number","href":"#default","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Functions
 
-<ApiSummary members={[{"kind":"function","signature":"Create<T>(value: T): Lorem<T>","href":"#create","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"function","signature":"Create<T>(value: T): Lorem<T>","href":"#create","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Methods
 
-<ApiSummary members={[{"kind":"method","signature":"Get(key: string): (unknown, boolean)","href":"#get","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"method","signature":"Get(key: string): (unknown, boolean)","href":"#get","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Signals and events
 
-<ApiSummary members={[{"kind":"signal","signature":"Changed: Signal<string>","href":"#changed","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"event","signature":"Completed: RBXScriptSignal","href":"#completed","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"signal","signature":"Changed: Signal<string>","href":"#changed","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"event","signature":"Completed: RBXScriptSignal","href":"#completed","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Callbacks
 
-<ApiSummary members={[{"kind":"callback","signature":"OnInvoke: (value: string) -> boolean","href":"#oninvoke","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"callback","signature":"OnInvoke: (value: string) -> boolean","href":"#oninvoke","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Types
 
-<ApiSummary members={[{"kind":"class","signature":"Lorem<T>","href":"#lorem","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"type","signature":"Ipsum<T>","href":"#ipsum","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"enum","signature":"Dolor","href":"#dolor","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"operator","signature":"__add(other: Lorem): Lorem","href":"#add","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"class","signature":"Lorem<T>","href":"#lorem","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"type","signature":"Ipsum<T>","href":"#ipsum","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"enum","signature":"Dolor","href":"#dolor","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"operator","signature":"__add(other: Lorem): Lorem","href":"#add","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ## Usage
 
@@ -70,63 +76,63 @@ end
 
 ### new
 
-<ApiMember id="new" name="new()" kind="constructor" signature={"Lorem.new(value: string): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
+<ApiMember types={types} id="new" name="new()" kind="constructor" signature={"Lorem.new(value: string): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Properties reference
 
 ### value
 
-<ApiMember id="value" name="Value" kind="property" signature={"Value: string"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="value" name="Value" kind="property" signature={"Value: string"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ### default
 
-<ApiMember id="default" name="Default" kind="constant" signature={"Default: number"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="default" name="Default" kind="constant" signature={"Default: number"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ## Functions reference
 
 ### create
 
-<ApiMember id="create" name="Create()" kind="function" signature={"Create<T>(value: T): Lorem<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"T","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
+<ApiMember types={types} id="create" name="Create()" kind="function" signature={"Create<T>(value: T): Lorem<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"T","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Methods reference
 
 ### get
 
-<ApiMember id="get" name="Get()" kind="method" signature={"Get(key: string): (unknown, boolean)"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"key","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"unknown, boolean","description":"Lorem ipsum dolor sit amet."}]} />
+<ApiMember types={types} id="get" name="Get()" kind="method" signature={"Get(key: string): (unknown, boolean)"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"key","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"unknown, boolean","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Signals and events reference
 
 ### changed
 
-<ApiMember id="changed" name="Changed" kind="signal" signature={"Changed: Signal<string>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="changed" name="Changed" kind="signal" signature={"Changed: Signal<string>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ### completed
 
-<ApiMember id="completed" name="Completed" kind="event" signature={"Completed: RBXScriptSignal"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="completed" name="Completed" kind="event" signature={"Completed: RBXScriptSignal"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ## Callbacks reference
 
 ### oninvoke
 
-<ApiMember id="oninvoke" name="OnInvoke" kind="callback" signature={"OnInvoke: (value: string) -> boolean"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"boolean","description":"Lorem ipsum dolor sit amet."}]} />
+<ApiMember types={types} id="oninvoke" name="OnInvoke" kind="callback" signature={"OnInvoke: (value: string) -> boolean"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"boolean","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Types reference
 
 ### lorem
 
-<ApiMember id="lorem" name="Lorem" kind="class" signature={"Lorem<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="lorem" name="Lorem" kind="class" signature={"Lorem<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ### ipsum
 
-<ApiMember id="ipsum" name="Ipsum" kind="type" signature={"Ipsum<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="ipsum" name="Ipsum" kind="type" signature={"Ipsum<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ### dolor
 
-<ApiMember id="dolor" name="Dolor" kind="enum" signature={"Dolor"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="dolor" name="Dolor" kind="enum" signature={"Dolor"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ### add
 
-<ApiMember id="add" name="__add()" kind="operator" signature={"__add(other: Lorem): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"other","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
+<ApiMember types={types} id="add" name="__add()" kind="operator" signature={"__add(other: Lorem): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"other","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
 
 <ApiInteractions />

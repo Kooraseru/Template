@@ -8,10 +8,9 @@
 .sidebar-content ul ul { margin-inline-start: 12px; padding-inline-start: 0; border-inline-start: 0; }
 .right-sidebar-panel { padding: 16px 16px 24px 24px; }
 .right-sidebar-panel h2 { font-size: 16px; font-weight: 700; }
-starlight-toc a { font-size: 14px; line-height: 21px; padding-block: 4px; }
-starlight-toc a[aria-current='true'] { color: var(--docs-link); }
-
-starlight-toc a { color:var(--docs-text); padding:8px 12px; border-radius:4px; }
+starlight-toc a { color:var(--docs-text); font-size:14px; font-weight:400; line-height:21px; padding:4px 12px; border-radius:4px; }
+starlight-toc li { margin-block:4px; }
 starlight-toc a:hover, starlight-toc a[aria-current='true'] { color:var(--docs-text); background:var(--docs-hover); }
 .api-toc-member { display:flex !important; align-items:center; gap:8px; }
 .api-toc-member .api-icon { flex-shrink:0; }
+.api-reference-page starlight-toc ul ul { padding-inline-start:0; }
