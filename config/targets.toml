@@ -11,18 +11,6 @@ repository = "current"
 # shared_tools = "example-org/shared-tools"
 # organization = "example-org"
 
-[github.bootstrap]
-enabled = true
-branch_prefix = "ci/run-"
-
-[github.publication]
-# Omitted switches default to enabled on eligible pushes.
-releases = false
-packages = false
-branches = false # Keep generated main disabled unless explicitly re-enabled.
-pages = true # Pages deployments run only after a successful trusted source CI push.
-milestones = false
-
 # Cloudflare Pages is the only preview host; ci/run-preview-* refs are temporary.
 [github.previews]
 enabled = true

@@ -1,7 +1,0 @@
-phase = "publish"
-provides = ["github.labels.synced"]
-requires = []
-inputs = ["config/issues/labels.toml", ".github/ISSUE_TEMPLATE/*.yml"]
-outputs = []
-events = ["push"]
-boundary = "privileged"

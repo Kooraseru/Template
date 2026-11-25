@@ -4,11 +4,12 @@
 local Fs = require("@std/fs")
 local Process = require("@lute/process")
 local Hash = require("@formats/hash")
-local Glob = require("@ci/bootstrap/discovery/glob")
+local Glob = require("@formats/glob")
 
 local ReleaseAssets = {}
 export type Asset = { name: string, path: string, digest: string }
 
+--- Copy and hash matching build artifacts only when they originate from the release commit.
 function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: string): { Asset }
 	local assets: { Asset } = {}
 	if patterns == nil then
@@ -21,14 +22,17 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 		return assets
 	end
 	local head = Process.run({ "git",  "rev-parse", "HEAD" })
+
 	if not head.ok or head.stdout:gsub("%s+$", "") ~= commit then
 		error(
 			"Release assets must come from the checked-out release source commit; refusing to attach another commit's binaries",
 			0
 		)
 	end
+
 	local sources: { [string]: boolean } = {}
 	local names: { [string]: boolean } = {}
+
 	for index, pattern in patterns do
 		if
 			type(index) ~= "number"
@@ -39,15 +43,18 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 		then
 			error("release.assets must contain safe globs under build/", 0)
 		end
+
 		for segment in pattern:gmatch("[^/]+") do
 			if segment == "." or segment == ".." then
 				error("Unsafe release asset glob", 0)
 			end
 		end
+
 		if Glob.Overlaps(pattern, "build/github/**") then
 			error("Release assets must select build deliverables outside generated repository content", 0)
 		end
 		local count = 0
+
 		for _, path in Glob.Find(pattern) do
 			local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 			if metadata == "dir" then
@@ -76,10 +83,12 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 			}
 			table.insert(assets, asset)
 		end
+
 		if count == 0 then
 			error(`Release asset glob matches no files: {pattern}`, 0)
 		end
 	end
+
 	table.sort(assets, function(left: Asset, right: Asset): boolean
 		return left.name < right.name
 	end)

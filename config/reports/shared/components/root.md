@@ -1,3 +1,0 @@
-## Components
-
-{{component_tree}}

@@ -1,7 +1,0 @@
-phase = "build"
-provides = ["releases.generated"]
-requires = ["build.completed"]
-inputs = ["config/publishing/releases/settings.json", "config/publishing/releases/*/release.json", "config/publishing/releases/*/notes.md"]
-outputs = ["build/github/releases/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"

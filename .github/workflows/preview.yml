@@ -1,0 +1,108 @@
+name: Preview
+on:
+  workflow_dispatch:
+    inputs:
+      preview_kind:
+        type: choice
+        description: Preview or retire a target
+        options: [pr, branch, delete-pr, delete-branch]
+        default: pr
+      preview_pr:
+        type: number
+        description: PR number (for PR targets)
+        default: 0
+      preview_branch:
+        type: string
+        description: Branch name (for branch targets)
+        default: ''
+permissions: {}
+jobs:
+  resolve:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      requested: ${{ steps.target.outputs.requested }}
+      sha: ${{ steps.target.outputs.sha }}
+      alias: ${{ steps.target.outputs.alias }}
+      remove: ${{ steps.target.outputs.remove }}
+      base: ${{ steps.target.outputs.base }}
+      site: ${{ steps.target.outputs.site }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
+        id: target
+        with:
+          mode: manual-resolve
+          config: config/targets.toml
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PREVIEW_INPUTS: ${{ toJSON(inputs) }}
+  build:
+    needs: resolve
+    if: needs.resolve.outputs.remove == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - env:
+          DOCS_BASE: ${{ needs.resolve.outputs.base }}
+          DOCS_SITE: ${{ needs.resolve.outputs.site }}
+        run: node .github/components/documentation/pages/build/starlight/build.cjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: documentation-preview
+          path: build/github/pages
+          if-no-files-found: error
+  publish:
+    needs: [resolve, build]
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && (needs.build.result == 'success' || (needs.build.result == 'skipped' && needs.resolve.outputs.remove == 'true')) }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ci-preview-cloudflare
+      deployment: false
+    concurrency:
+      group: ci-${{ needs.resolve.outputs.alias }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: needs.resolve.outputs.remove == 'false'
+        with:
+          name: documentation-preview
+          path: build/preview-candidate
+      - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          mode: manual
+          config: config/targets.toml
+          directory: build/preview-candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PREVIEW_INPUTS: ${{ toJSON(inputs) }}
+          PREVIEW_TARGET: ${{ needs.resolve.outputs.requested }}
+          PREVIEW_ALIAS: ${{ needs.resolve.outputs.alias }}
+          REQUEST_SHA: ${{ needs.resolve.outputs.sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

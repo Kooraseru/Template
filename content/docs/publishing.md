@@ -1,18 +1,20 @@
 ---
 title: Publishing
-description: Generated main branch and GitHub Pages publication paths.
+description: Publish generated branches, release artifacts and GitHub Pages.
 ---
 
-Publication runs as the Publish stage of the CI Engine-generated execution graph on the default `source` branch. Feature branch pushes and pull requests use read-only validation.
+From the default branch, open Actions → Publish → Run workflow and choose a target. The default `rehearse` validates artifacts without external writes. Use protected environments restricted to your default branch.
 
-## Generated main branch
+## Releases
 
-The branch generator stages `build/github/branches/main/` according to `config/branches/main.toml`. The branch publication component updates the GitHub `main` branch from that directory. Edit the sources and repository-document templates in `source` rather than modifying `main` directly.
+Add a version directory under `releases/` with a release record and notes. Shared settings live in `config/publishing/releases/settings.json`. CI stages and verifies assets and the historical source commit. Choose `releases` to publish using the job-scoped GitHub token. Existing releases follow the configured conflict policy.
+
+## Generated branches
+
+The branch builder stages `build/github/branches/` from `config/branches/`. Choose `branches` to publish. Initial branch creation is orphaned; updates preserve history, and the default branch is never overwritten.
 
 ## GitHub Pages
 
-The Pages builder reads Markdown from `content/docs/` and static assets from `content/images/`, producing `build/github/pages/`. Files in `content/docs/repository/` are reserved for generated repository documents and are not published as site pages.
+The Starlight builder stages the site in `build/github/pages/`. Select GitHub Actions as the Pages source in repository settings and choose `pages` from Publish. The native Pages action receives only the necessary Pages and OIDC permissions.
 
-The Pages publication component uploads the Starlight build artifact and deploys it using GitHub Actions. In repository **Settings → Pages**, set the source to **GitHub Actions**; repository Pages availability and permissions are still controlled by GitHub.
-
-The `branches` and `pages` switches in `config/targets.toml` control these publication targets. Starlight is configured under `.github/components/documentation/pages/build/starlight/`; this directory contains renderer configuration, not authored documentation.
+For labels and milestone reconciliation, use Maintenance with its explicit target dropdown. Registry-specific GitHub Packages adapters are not included; the example records are staged as fixtures.

@@ -3,40 +3,54 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/bootstrap.yml':
-        - 'actions/checkout@v7'
-        - 'actions/deploy-pages@v5'
-        - 'actions/download-artifact@v8'
-        - 'actions/setup-node@v7.1.0'
-        - 'actions/upload-artifact@v7'
-        - 'actions/upload-pages-artifact@v5'
-        - 'kooraseru-hub/ci-engine@d49da35458faa4dab5af29a797043e90c3be98e5'
+    '.github/workflows/ci.yml':
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
+        - 'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f'
     '.github/workflows/close.yml': []
-    '.github/workflows/manual.yml': []
-    '.github/workflows/pull.yml': []
-    '.github/workflows/push.yml': []
-    '.github/workflows/remote.yml': []
+    '.github/workflows/maintenance.yml':
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+    '.github/workflows/preview.yml':
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
+        - 'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f'
+    '.github/workflows/publish.yml':
+        - 'actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346'
+        - 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9'
+        - 'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f'
     '.github/workflows/retire.yml':
-        - 'actions/checkout@v7'
-        - 'actions/setup-node@v7.1.0'
-    '.github/workflows/review.yml': []
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f'
+    '.github/workflows/review.yml':
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f'
 dependencies:
-    'actions/checkout@v7':
-        ref: 'v7'
+    'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1':
+        ref: 'v7.0.1'
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
-    'actions/deploy-pages@v5':
-        ref: 'v5'
+    'actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346':
+        ref: 'v5.0.1'
         commit: 'sha1-368f82528645a54fb793d4d04e342629a3f51346'
         owner_id: 44036562
         repo_id: 438112499
-    'actions/download-artifact@v8':
-        ref: 'v8'
+    'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333':
+        ref: 'v8.0.2'
         commit: 'sha1-9000827ccba6bdab643e8b6fd33ac0654aef8333'
         owner_id: 44036562
         repo_id: 192626254
-    'actions/setup-node@v7.1.0':
+    'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1':
         ref: 'v7.1.0'
         commit: 'sha1-949feb2413d6458794dcd2491c4babbbce0c15c1'
         owner_id: 44036562
@@ -46,27 +60,20 @@ dependencies:
         commit: 'sha1-bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
         owner_id: 44036562
         repo_id: 192625955
-    'actions/upload-artifact@v7':
-        ref: 'v7'
+    'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9':
+        ref: 'v7.0.2'
         commit: 'sha1-cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         owner_id: 44036562
         repo_id: 192625955
-    'actions/upload-pages-artifact@v5':
-        ref: 'v5'
+    'actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9':
+        ref: 'v5.0.0'
         commit: 'sha1-fc324d3547104276b827a68afc52ff2a11cc49c9'
         owner_id: 44036562
         repo_id: 496012378
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
-    'jdx/mise-action@v5':
-        ref: 'v5'
-        commit: 'sha1-924e7c586e33d7d4bae9c14e26c5d22e2beb6e78'
-        owner_id: 216188
-        repo_id: 738284564
-    'kooraseru-hub/ci-engine@d49da35458faa4dab5af29a797043e90c3be98e5':
+    'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f':
         ref: 'main'
-        commit: 'sha1-d49da35458faa4dab5af29a797043e90c3be98e5'
+        commit: 'sha1-1339cccda7451615ea5309a55995611068b9364f'
         owner_id: 255195713
         repo_id: 1458028693
-        uses:
-            - 'jdx/mise-action@v5'

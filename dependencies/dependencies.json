@@ -177,13 +177,6 @@
           }
         }
       }
-    },
-    "tools.ciEngine": {
-      "provider": "github-workflow",
-      "options": {
-        "source": ".github/workflows/bootstrap.yml",
-        "packagePath": "packages/ci-engine"
-      }
     }
   }
 }

@@ -13,7 +13,7 @@ function fixture({ fork = false, closed = false, stale = false, wrongWorkflow = 
     workflow_run: { id: 100, run_attempt: 1 } };
   const mode = closed ? "closed" : "open";
   const get = p => {
-    if (p.includes("/actions/workflows/")) return { id: 10, path: ".github/workflows/" + (closed ? "close.yml" : "pull.yml") };
+    if (p.includes("/actions/workflows/")) return { id: 10, path: ".github/workflows/" + (closed ? "close.yml" : "ci.yml") };
     if (p.endsWith("/actions/runs/100")) return { id: 100, run_attempt: 1, workflow_id: wrongWorkflow ? 99 : 10,
       event: "pull_request", status: "completed", conclusion: "success", repository: { id: 1 },
       head_repository: head, head_branch: merged ? "source" : "feature/test", head_sha: merged ? pr.merge_commit_sha : sha,

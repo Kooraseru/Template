@@ -1,7 +1,0 @@
-phase = "publish"
-provides = ["releases.published"]
-requires = ["releases.generated"]
-inputs = ["build/github/releases/**"]
-outputs = []
-events = ["push"]
-boundary = "privileged"

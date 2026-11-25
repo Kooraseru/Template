@@ -1,17 +1,18 @@
 ---
 title: Configuration
-description: Where repository, CI, branch, and publishing settings live.
+description: Where project configuration and authored material live.
 ---
-
-The authoritative repository configuration lives under `config/`.
 
 | Path | Purpose |
 | --- | --- |
-| `targets.toml` | Repository target aliases, publication switches, and bootstrap settings |
-| `branches/main.toml` | Source globs included in the generated `main` branch |
-| `ci/engine.json` | External CI engine operations and event routing |
-| `ci/operations.json` | Native and local adapter operation catalog |
-| `.github/components/` | Enabled quality components |
-| `publishing/` | Package, release, and attestation configuration |
+| `.github/workflows/ci.yml` | Native build, test and validation jobs |
+| `.github/workflows/publish.yml` | Explicit publication |
+| `config/targets.toml` | Repository identity and preview settings |
+| `config/branches/` | Optional generated branch definitions |
+| `config/publishing/releases/settings.json` | Shared release settings |
+| `releases/` | Release records and notes |
+| `config/issues/` | Label and milestone definitions |
+| `dependencies/` | Workspace dependency manifest and lock |
+| `content/` | This project's authored documentation and images |
 
-Change settings in `source`, not in generated branches. The published `main` branch is built from `branches/main.toml` and the authored repository documents in `content/docs/repository/`.
+These are the example project's paths, not universal conformance requirements. Adapt the scripts and workflows to your own project.

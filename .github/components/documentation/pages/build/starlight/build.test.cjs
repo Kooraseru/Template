@@ -19,7 +19,7 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(astro.includes('starlight({'));
   assert.ok(!astro.includes('sidebar: ['));
   assert.ok(collection.includes('docsLoader()'));
-  assert.ok(!collection.includes('glob('));
+  assert.doesNotMatch(collection.replace(/^\s*\/\/.*$/gm, ''), /\bglob\s*\(/);
   assert.ok(astro.includes('./src/styles/project.css'));
   assert.ok(astro.includes("favicon: '/images/favicon.png'"));
   const authoredFavicon = path.join(root, 'content/images/favicon.png');

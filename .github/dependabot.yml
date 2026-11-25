@@ -8,11 +8,11 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
-      ci-engine:
+      ci-packages:
         patterns:
-          - "Kooraseru-Hub/CI-Engine*"
+          - "Kooraseru-Hub/CI-Packages*"
       actions:
         patterns:
           - "*"
         exclude-patterns:
-          - "Kooraseru-Hub/CI-Engine*"
+          - "Kooraseru-Hub/CI-Packages*"

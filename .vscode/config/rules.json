@@ -8,7 +8,16 @@
       "severity": "info"
     },
     "luau/script-layout": {
-      "settings": { "entryPoints": ["dependencies/managed/packages/ci-engine/src/native/entry.luau", "dependencies/packages/core/hostRunner/run.luau"] }
+      "settings": {
+        "entryPoints": [
+          "dependencies/packages/core/hostRunner/run.luau",
+          ".github/components/distribution/packages/build/run.luau",
+          ".github/components/governance/branches/build/run.luau",
+          ".github/components/work/maintenance.luau",
+          ".github/components/source/build/run.luau",
+          ".github/components/distribution/releases/build/run.luau"
+        ]
+      }
     },
     "luau/module-roots": {
       "severity": "info"

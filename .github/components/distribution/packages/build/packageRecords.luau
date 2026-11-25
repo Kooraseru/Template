@@ -4,8 +4,8 @@
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Process = require("@lute/process")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+local Glob = require("@formats/glob")
+local ConflictPolicy = require("../../releases/build/conflictPolicy")
 
 local ROOT = "config/publishing/packages"
 local RECORD_ROOT = "config/publishing/packages"
@@ -22,6 +22,7 @@ export type Entry = {
 }
 export type Records = { entries: { Entry }, onExisting: ConflictPolicy.Policy }
 
+--- Require a configuration table containing named fields.
 local function record(value: unknown, label: string): { [string]: unknown }
 	if type(value) ~= "table" then
 		error(`{label}: expected a table`, 0)
@@ -36,6 +37,7 @@ local function record(value: unknown, label: string): { [string]: unknown }
 	return result
 end
 
+--- Validate optional nonempty metadata without accepting control characters.
 local function optionalText(value: unknown, label: string): string?
 	if value == nil then
 		return nil
@@ -46,6 +48,7 @@ local function optionalText(value: unknown, label: string): string?
 	return value
 end
 
+--- Require a regular package file with a safe relative path.
 local function regularFile(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == nil or metadata ~= "file" then
@@ -59,14 +62,17 @@ local function regularFile(path: string): ()
 	end
 end
 
+--- Read package definitions and validate every declared input before staging.
 function PackageRecords.Read(): Records
 	local root = record(Toml.decode(Fs.readFileToString(`{ROOT}/settings.toml`)), ROOT)
 	local settings = record(root.packages, "packages")
+
 	for field in settings do
 		if field ~= "on_existing" then
 			error(`{ROOT}/settings.toml: unknown shared setting {field}`, 0)
 		end
 	end
+
 	local policy = ConflictPolicy.Parse(settings.on_existing, `{ROOT}/settings.toml`)
 	if not Fs.exists(RECORD_ROOT) then
 		return { entries = {}, onExisting = policy }
@@ -78,13 +84,16 @@ function PackageRecords.Read(): Records
 	if not tracked.ok then
 		error("Unable to inspect package record file types", 0)
 	end
+
 	for line in tracked.stdout:gmatch("[^\r\n]+") do
 		if line:match("^120000%s") or line:match("^160000%s") then
 			error("Package records cannot contain tracked symlinks or gitlinks", 0)
 		end
 	end
+
 	local identities: { [string]: boolean } = {}
 	local entries: { Entry } = {}
+
 	for _, directory in Glob.Find(`{RECORD_ROOT}/*`) do
 		-- Root policy and documentation are not package records; only directories are discovered.
 		if not (Fs.exists(directory) and Fs.type(directory) == "dir") then
@@ -106,17 +115,20 @@ function PackageRecords.Read(): Records
 			error(`{description}: package description is empty`, 0)
 		end
 		local entry = record(Toml.decode(Fs.readFileToString(path)), path)
+
 		for field in entry do
 			if field ~= "files" and field ~= "format" and field ~= "repository" and field ~= "version" then
 				error(`{path}: unknown package field {field}`, 0)
 			end
 		end
+
 		local files = entry.files
 		if type(files) ~= "table" or #files == 0 then
 			error(`{path}: files must be a nonempty array`, 0)
 		end
 		local checked: { string } = {}
 		local names: { [string]: boolean } = {}
+
 		for index, file in files do
 			if type(index) ~= "number" or type(file) ~= "string" or not file:match("^build/[%w_./%-]+$") then
 				error(`{path}: files must contain safe paths under build/`, 0)
@@ -129,6 +141,7 @@ function PackageRecords.Read(): Records
 			names[basename] = true
 			table.insert(checked, file)
 		end
+
 		local format = optionalText(entry.format, `{path}: format`)
 		if format and not format:match("^[%a][%w_-]*$") then
 			error(`{path}: invalid format`, 0)

@@ -6,39 +6,19 @@
       "entry": "content.test.cjs",
       "timeoutSeconds": 120
     },
-    "credentials": {
-      "runtime": "node",
-      "entry": "credentials.test.cjs",
-      "timeoutSeconds": 120
-    },
-    "engine": {
-      "runtime": "node",
-      "entry": "engine.test.cjs",
-      "timeoutSeconds": 120
-    },
-    "lifecycle": {
-      "runtime": "node",
-      "entry": "lifecycle.test.cjs",
-      "timeoutSeconds": 120
-    },
-    "publication": {
-      "runtime": "node",
-      "entry": "publication.test.cjs",
-      "timeoutSeconds": 120
-    },
     "test-discovery": {
       "runtime": "node",
       "entry": "test-discovery.test.cjs",
       "timeoutSeconds": 120
     },
-    "template-conformance": {
-      "runtime": "node",
-      "entry": "template-conformance.test.cjs",
-      "timeoutSeconds": 120
-    },
     "review-publisher": {
       "runtime": "node",
       "entry": "review-publisher.test.cjs",
+      "timeoutSeconds": 120
+    },
+    "review-resolver": {
+      "runtime": "node",
+      "entry": "review-resolve.test.cjs",
       "timeoutSeconds": 120
     }
   }

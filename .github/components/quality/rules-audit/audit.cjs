@@ -48,6 +48,8 @@ function main() {
 	fs.writeFileSync(path.join(directory, "summary.md"), report);
 	if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);
 	for (const item of checked.annotations) annotation(item);
+	for (const item of findings.filter(item => !item.fixture && item.severity !== "information"))
+		console.log(JSON.stringify({ file: item.file, line: item.line, rule: item.source, severity: item.severity, message: item.message }));
 	console.log("Rules audit: " + findings.length + " findings, " + checked.blocking.length + " blocking");
 	process.exitCode = validationExitCode(checked);
 }

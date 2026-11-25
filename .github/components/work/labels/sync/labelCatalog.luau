@@ -4,8 +4,8 @@
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Yaml = require("@formats/yaml")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local Publication = require("@ci/github/publication")
+local Glob = require("@formats/glob")
+local Publication = require("@formats/github")
 
 const CONFIG_PATH = "config/issues/labels.toml"
 const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
@@ -13,6 +13,7 @@ const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
 local LabelCatalog = {}
 export type Label = { name: string, color: string, description: string }
 
+--- Validate the label catalog and normalize colors and ordering.
 function LabelCatalog.Parse(source: string): { Label }
 	local root = Publication.Record(Toml.decode(source))
 
@@ -77,6 +78,7 @@ function LabelCatalog.Parse(source: string): { Label }
 	return result
 end
 
+--- Ensure issue forms reference only declared labels.
 function LabelCatalog.ValidateForms(labels: { Label }): ()
 	local declared: { [string]: boolean } = {}
 	for _, label in labels do
@@ -116,6 +118,7 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 	end
 end
 
+--- Read the configured label catalog and validate its issue form references.
 function LabelCatalog.Read(): { Label }
 	local labels = LabelCatalog.Parse(Fs.readFileToString(CONFIG_PATH))
 	LabelCatalog.ValidateForms(labels)

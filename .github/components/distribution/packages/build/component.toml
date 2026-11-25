@@ -1,7 +1,0 @@
-phase = "build"
-provides = ["packages.generated"]
-requires = ["build.completed"]
-inputs = ["config/publishing/packages/settings.toml", "config/publishing/packages/*/package.toml", "config/publishing/packages/*/description.md"]
-outputs = ["build/github/packages/**"]
-events = ["push", "pull_request", "workflow_dispatch"]
-boundary = "read"

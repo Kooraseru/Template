@@ -1,0 +1,250 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: ['**', '!ci/**', '!run/**']
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Verify workflow dependency lock
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.actionsLock --verify-local
+      - name: Independent tooling tests
+        run: |
+          node --test dependencies/packages/core/dependencyLoader/*.test.ts
+          node --test dependencies/packages/editor/editorIntegration/*.test.cjs dependencies/packages/editor/mcpServer/*.test.cjs
+          node --test dependencies/packages/checks/ruleLinter/policy.test.cjs
+          node --test .github/components/quality/rules-audit/audit.test.cjs .github/components/quality/code-review/review.test.cjs .github/components/quality/workflows/hosts.test.cjs
+          node dependencies/packages/checks/testSuites/run.cjs
+          node --test .github/components/quality/setup/readiness.test.cjs .github/components/quality/template-updates/version.test.cjs
+      - name: Repository configuration
+        run: |
+          node .github/components/quality/setup/readiness.cjs
+          dependencies/managed/bin/lute/lute run .github/components/work/maintenance.luau
+      - name: Code review
+        run: node .github/components/quality/code-review/review.cjs
+      - name: Rules audit
+        if: ${{ !cancelled() }}
+        run: node .github/components/quality/rules-audit/audit.cjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: code-review-findings
+          path: build/code-review
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: rules-audit-findings
+          path: build/rules-audit
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      hosts: ${{ steps.hosts.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - id: hosts
+        run: echo "matrix=$(node .github/components/quality/workflows/hosts.cjs)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.matrix.outputs.hosts) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - name: Build host
+        env:
+          CI_HOST_TARGET: ${{ matrix.host.id }}
+        run: dependencies/managed/bin/lute/lute run .github/components/source/build/run.luau
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: application-${{ matrix.host.id }}
+          path: build/artifacts/application/${{ matrix.host.file }}
+          if-no-files-found: error
+  test:
+    needs: [matrix, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.matrix.outputs.hosts) }}
+    runs-on: ${{ matrix.host.runner }}
+    timeout-minutes: 10
+    steps:
+      # Artifact uploads can take a few seconds to become visible to another runner.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        id: download
+        continue-on-error: true
+        with:
+          name: application-${{ matrix.host.id }}
+      - name: Wait for artifact availability
+        if: steps.download.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 10
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        id: retry
+        if: steps.download.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: application-${{ matrix.host.id }}
+      - name: Wait for artifact availability (final attempt)
+        if: steps.retry.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 20
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: steps.retry.outcome == 'failure'
+        with:
+          name: application-${{ matrix.host.id }}
+      - name: Run native executable
+        shell: pwsh
+        env:
+          HOST_FILE: ${{ matrix.host.file }}
+          EXPECTED: ${{ toJSON(matrix.host.expected) }}
+        run: |
+          $actual = @(& (Join-Path $PWD $env:HOST_FILE))
+          if ($LASTEXITCODE -ne 0) { throw "Executable failed" }
+          $expected = @($env:EXPECTED | ConvertFrom-Json)
+          if (($actual -join "`n") -cne ($expected -join "`n")) { throw "Unexpected output: $actual" }
+  documentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs
+      - run: node .github/components/documentation/pages/build/starlight/build.cjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: documentation
+          path: build/github/pages
+          if-no-files-found: error
+      - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
+        id: preview
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          mode: build-settings
+          config: config/targets.toml
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+      - name: Build PR preview
+        if: steps.preview.outputs.enabled == 'true'
+        env:
+          DOCS_BASE: ${{ steps.preview.outputs.base }}
+          DOCS_SITE: ${{ steps.preview.outputs.site }}
+        run: |
+          node .github/components/documentation/pages/build/starlight/build.cjs
+          mv build/github/pages build/github/preview
+      - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
+        if: steps.preview.outputs.enabled == 'true'
+        with:
+          config: config/targets.toml
+          directory: build/github/preview
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: steps.preview.outputs.enabled == 'true'
+        with:
+          name: documentation-preview
+          path: build/github/preview
+          if-no-files-found: error
+  releases:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: application-*
+          merge-multiple: true
+          path: build/artifacts/application
+      - name: Stage package records
+        run: dependencies/managed/bin/lute/lute run .github/components/distribution/packages/build/run.luau
+      - name: Stage release records
+        run: dependencies/managed/bin/lute/lute run .github/components/distribution/releases/build/run.luau
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: packages
+          path: build/github/packages
+          if-no-files-found: error
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/verify@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          index: build/github/releases/index.json
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          index: build/github/releases/index.json
+          repository: ${{ github.repository }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: releases
+          path: build/github/releases
+          if-no-files-found: error
+  branches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/build/run.luau
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          directory: build/github/branches
+          repository: ${{ github.repository }}
+          default-branch: ${{ github.event.repository.default_branch }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: generated-branches
+          path: build/github/branches
+          if-no-files-found: error
+  required:
+    name: CI Required
+    if: ${{ always() }}
+    needs: [validate, matrix, build, test, documentation, releases, branches]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: jq -e 'all(.[]; .result == "success")' <<< "$RESULTS"
