@@ -4,8 +4,8 @@
 local Fs = require("@std/fs")
 local Process = require("@lute/process")
 local Json = require("@formats/json")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+local Glob = require("@formats/glob")
+local ConflictPolicy = require("./conflictPolicy")
 local ReleaseAssets = require("./releaseAssets")
 
 local CONFIG_PATH = "config/publishing/releases/settings.json"

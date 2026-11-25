@@ -4,9 +4,15 @@
     {
       "label": "CI: Run locally",
       "type": "process",
-      "command": "node",
-      "args": ["${workspaceFolder}/dependencies/packages/core/dependencyLoader/index.ts", "--only", "tools.ciEngine", "--exec", "tools.ciEngine"],
-      "options": { "cwd": "${workspaceFolder}" },
+      "command": "act",
+      "args": [
+        "-W",
+        ".github/workflows/ci.yml",
+        "push"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "problemMatcher": []
     }
   ]

@@ -2,7 +2,7 @@
 --!strict
 
 local Fs = require("@std/fs")
-local Glob = require("@ci/bootstrap/discovery/glob")
+local Glob = require("@formats/glob")
 local Toml = require("@formats/toml")
 local Process = require("@lute/process")
 

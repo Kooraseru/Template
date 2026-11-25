@@ -4,7 +4,7 @@
 local Fs = require("@std/fs")
 local Process = require("@lute/process")
 local Hash = require("@formats/hash")
-local Glob = require("@ci/bootstrap/discovery/glob")
+local Glob = require("@formats/glob")
 
 local ReleaseAssets = {}
 export type Asset = { name: string, path: string, digest: string }

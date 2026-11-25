@@ -1,0 +1,139 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: ['**', '!ci/**', '!run/**', '!main']
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Independent tooling tests
+        run: |
+          node --test dependencies/packages/core/dependencyLoader/*.test.ts
+          node --test dependencies/packages/editor/editorIntegration/*.test.cjs dependencies/packages/editor/mcpServer/*.test.cjs
+          node --test dependencies/packages/checks/ruleLinter/policy.test.cjs
+          node --test .github/components/quality/rules-audit/audit.test.cjs .github/components/quality/code-review/review.test.cjs .github/components/quality/workflows/hosts.test.cjs
+          node --test tests/ci/content.test.cjs tests/ci/test-discovery.test.cjs
+      - name: Rules audit
+        run: node .github/components/quality/rules-audit/audit.cjs
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      hosts: ${{ steps.hosts.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - id: hosts
+        run: echo "matrix=$(node .github/components/quality/workflows/hosts.cjs)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.matrix.outputs.hosts) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - name: Build host
+        env:
+          CI_HOST_TARGET: ${{ matrix.host.id }}
+        run: dependencies/managed/bin/lute/lute run .github/components/source/build/run.luau
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: application-${{ matrix.host.id }}
+          path: build/artifacts/application/${{ matrix.host.file }}
+          if-no-files-found: error
+  test:
+    needs: [matrix, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJSON(needs.matrix.outputs.hosts) }}
+    runs-on: ${{ matrix.host.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: application-${{ matrix.host.id }}
+      - name: Run native executable
+        shell: pwsh
+        env:
+          HOST_FILE: ${{ matrix.host.file }}
+          EXPECTED: ${{ toJSON(matrix.host.expected) }}
+        run: |
+          $actual = @(& (Join-Path $PWD $env:HOST_FILE))
+          if ($LASTEXITCODE -ne 0) { throw "Executable failed" }
+          $expected = @($env:EXPECTED | ConvertFrom-Json)
+          if (($actual -join "`n") -cne ($expected -join "`n")) { throw "Unexpected output: $actual" }
+  documentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs .github/components/documentation/pages/publish/preview/preview.test.cjs
+      - run: node .github/components/documentation/pages/build/starlight/build.cjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: documentation
+          path: build/github/pages
+          if-no-files-found: error
+  releases:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: application-*
+          merge-multiple: true
+          path: build/artifacts/application
+      - name: Stage release records
+        run: dependencies/managed/bin/lute/lute run .github/components/distribution/releases/build/run.luau
+      - uses: Kooraseru-Hub/CI-Engine/packages/releases/verify@e133bca69ebb1e645a8d5be55cc8be2af0bce3bc
+        with:
+          index: build/github/releases/index.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: releases
+          path: build/github/releases
+          if-no-files-found: error
