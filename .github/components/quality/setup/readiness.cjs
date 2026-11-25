@@ -9,20 +9,8 @@ const { configFromFile } = require("../template-updates/version.cjs");
 
 const ROOT = path.resolve(__dirname, "../../../..");
 const REQUIRED = [
-  ".github/workflows/bootstrap.yml",
-  ".github/workflows/push.yml",
-  ".github/workflows/pull.yml",
-  ".github/workflows/review.yml",
-  ".github/workflows/retire.yml",
-  ".github/workflows/close.yml",
-  ".github/workflows/manual.yml",
-  ".github/workflows/remote.yml",
-  "config/ci/operations.json",
-  "config/targets.toml",
-  "config/template.json",
-  "config/branches/main.toml",
-  ".github/components/governance/branches/build/init.luau",
-  ".github/components/governance/branches/publish/init.luau",
+  ".github/workflows/ci.yml",
+  ".github/workflows/publish.yml",
   "dependencies/dependencies.json",
   "dependencies/dependencies.lock",
 ];
@@ -75,21 +63,10 @@ function analyze(directory = ROOT, env = process.env) {
     if (!fs.existsSync(path.join(directory, required))) issues.push("Missing required file: " + required);
   }
   const project = identity(env, directory);
-  let version = null, operation = null, declaredTarget = null, pushOperation = null;
+  let version = null, declaredTarget = null;
+  const pushOperation = "native CI";
   try { version = configFromFile(path.join(directory, "config/template.json")); }
   catch (error) { issues.push("Template metadata: " + error.message); }
-  try {
-    operation = JSON.parse(fs.readFileSync(path.join(directory, "config/ci/operations.json"), "utf8"));
-    const callers = ["review", "push"];
-    const eventNames = { review: "pull_request", push: "push" };
-    for (const caller of callers) {
-      const source = fs.readFileSync(path.join(directory, ".github/workflows", caller + ".yml"), "utf8");
-      const selected = [...new Set([...source.matchAll(/^          CI_OPERATION:\s*([a-z][a-z0-9-]*)\s*$/gm)]
-        .map(match => match[1]).filter(name => operation.operations?.[name]?.events?.includes(eventNames[caller])))];
-      if (selected.length !== 1) issues.push("CI entry point has no unique " + caller + " operation");
-      else if (caller === "push") pushOperation = selected[0];
-    }
-  } catch (error) { issues.push("CI operations: " + error.message); }
   try {
     declaredTarget = targetRepository(fs.readFileSync(path.join(directory, "config/targets.toml"), "utf8"));
     if (!declaredTarget) issues.push("GitHub repository target is missing");
@@ -102,9 +79,8 @@ function analyze(directory = ROOT, env = process.env) {
   }
   if (!project.repository) notes.push("GitHub repository identity unavailable offline; it is resolved from GITHUB_REPOSITORY on GitHub.");
   if (!project.defaultBranch) notes.push("Default branch unknown locally; GitHub Actions resolves it from the repository event.");
-  const publishing = operation?.operations?.[pushOperation]?.publication === true;
-  if (publishing) notes.push("Automatic publication is enabled. Configure the ci-bootstrap environment and scoped credentials, or select an OIDC-enabled publisher before publishing.");
-  else notes.push("Default pushes run read-only CI. Publishing is optional and must be explicitly enabled in operations.json.");
+  const publishing = false;
+  notes.push("Default pushes run read-only CI. Use Publish on the default branch for optional publication.");
   if (project.defaultBranch === "main") notes.push("Generated branch 'main' already matches the default branch. The branch publisher will skip it rather than overwrite it.");
   notes.push("A successful readiness check does not prove marketplace trust registration or GitHub environment secret availability.");
   return {

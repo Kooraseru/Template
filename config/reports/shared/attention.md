@@ -1,3 +1,0 @@
-## What needs attention
-
-{{attention}}

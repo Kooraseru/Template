@@ -1,8 +1,0 @@
-phase = "publish"
-provides = ["github.projects.synced"]
-requires = ["github.projects.planned"]
-inputs = ["config/projects/**", "config/targets.toml", "config/credentials.json", "config/reports/**", "build/github/project-plans/**", ".github/components/work/projects/sync/query.graphql"]
-outputs = ["build/github/project-sync/**"]
-events = ["push"]
-boundary = "privileged"
-credentials = ["projects_token"]

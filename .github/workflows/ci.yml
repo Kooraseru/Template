@@ -26,7 +26,12 @@ jobs:
           node --test dependencies/packages/editor/editorIntegration/*.test.cjs dependencies/packages/editor/mcpServer/*.test.cjs
           node --test dependencies/packages/checks/ruleLinter/policy.test.cjs
           node --test .github/components/quality/rules-audit/audit.test.cjs .github/components/quality/code-review/review.test.cjs .github/components/quality/workflows/hosts.test.cjs
-          node --test tests/ci/content.test.cjs tests/ci/test-discovery.test.cjs tests/ci/review-resolve.test.cjs tests/ci/review-publisher.test.cjs
+          node dependencies/packages/checks/testSuites/run.cjs
+          node --test .github/components/quality/setup/readiness.test.cjs .github/components/quality/template-updates/version.test.cjs
+      - name: Repository configuration
+        run: |
+          node .github/components/quality/setup/readiness.cjs
+          dependencies/managed/bin/lute/lute run .github/components/work/maintenance.luau
       - name: Code review
         run: node .github/components/quality/code-review/review.cjs
       - name: Rules audit
@@ -141,8 +146,15 @@ jobs:
           pattern: application-*
           merge-multiple: true
           path: build/artifacts/application
+      - name: Stage package records
+        run: dependencies/managed/bin/lute/lute run .github/components/distribution/packages/build/run.luau
       - name: Stage release records
         run: dependencies/managed/bin/lute/lute run .github/components/distribution/releases/build/run.luau
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: packages
+          path: build/github/packages
+          if-no-files-found: error
       - uses: Kooraseru-Hub/CI-Engine/packages/releases/verify@a31c440b80bc97464c48514a1002fe81b36c0e7a
         with:
           index: build/github/releases/index.json

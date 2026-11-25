@@ -1,7 +1,0 @@
-{
-  "operation": "review",
-  "command": [
-    "node",
-    ".github/components/documentation/pages/publish/preview/plan.cjs"
-  ]
-}

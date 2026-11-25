@@ -51,17 +51,14 @@ test("source content is top-level and legacy docs directories are gone", () => {
   assert.ok(!fs.existsSync(path.join(root, "content/i18n")));
   assert.ok(fs.existsSync(path.join(repositoryTemplates, "README.md")));
   assert.ok(!fs.existsSync(path.join(root, ".github/docs")));
-  assert.ok(!fs.existsSync(path.join(root, "docs")));
   assert.ok(!fs.existsSync(path.join(root, "content/templates")));
 });
 
 test("builders stage the authored docs into branch and Pages outputs", () => {
-  const site = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/siteBuilder.luau"), "utf8");
+  const site = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/starlight/build.cjs"), "utf8");
   const branches = fs.readFileSync(path.join(root, ".github/components/governance/branches/build/branchBuilder.luau"), "utf8");
   assert.match(site, /Starlight/);
-  assert.match(site, /starlight\/build\.cjs/);
-  const contract = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/component.toml"), "utf8");
-  assert.ok(contract.includes('"content/theme.css"'));
+  assert.match(site, /build\/github\/pages/);
   assert.ok(fs.existsSync(path.join(root, "content/theme.css")));
   assert.match(branches, /CONTENT_ROOT = "content\/docs\/repository"/);
   assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);

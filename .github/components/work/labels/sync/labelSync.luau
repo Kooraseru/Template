@@ -2,7 +2,7 @@
 --!strict
 
 local Json = require("@formats/json")
-local Publication = require("@ci/github/publication")
+local Publication = require("@formats/github")
 local LabelCatalog = require("./labelCatalog")
 
 local LabelSync = {}

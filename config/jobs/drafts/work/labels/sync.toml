@@ -1,5 +1,0 @@
-# Native job permission bindings; all label logic stays in Luau.
-steps = []
-[permissions]
-contents = "read"
-issues = "write"

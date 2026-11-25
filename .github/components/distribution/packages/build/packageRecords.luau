@@ -4,8 +4,8 @@
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Process = require("@lute/process")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+local Glob = require("@formats/glob")
+local ConflictPolicy = require("../../releases/build/conflictPolicy")
 
 local ROOT = "config/publishing/packages"
 local RECORD_ROOT = "config/publishing/packages"

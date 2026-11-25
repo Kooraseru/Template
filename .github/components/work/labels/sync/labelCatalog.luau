@@ -4,8 +4,8 @@
 local Fs = require("@std/fs")
 local Toml = require("@formats/toml")
 local Yaml = require("@formats/yaml")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local Publication = require("@ci/github/publication")
+local Glob = require("@formats/glob")
+local Publication = require("@formats/github")
 
 const CONFIG_PATH = "config/issues/labels.toml"
 const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
