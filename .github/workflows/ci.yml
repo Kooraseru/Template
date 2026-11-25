@@ -121,31 +121,40 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
-      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs .github/components/documentation/pages/publish/preview/preview.test.cjs
+      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs
       - run: node .github/components/documentation/pages/build/starlight/build.cjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: documentation
           path: build/github/pages
           if-no-files-found: error
-      - name: Build PR preview
+      - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
+        id: preview
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          mode: build-settings
+          config: config/targets.toml
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+      - name: Build PR preview
+        if: steps.preview.outputs.enabled == 'true'
+        env:
+          DOCS_BASE: ${{ steps.preview.outputs.base }}
+          DOCS_SITE: ${{ steps.preview.outputs.site }}
         run: |
-          node -e 'const {settings,previewHost}=require("./.github/components/documentation/pages/publish/preview/config.cjs"); const c=settings(); if(!c.enabled||!c.pull_requests)process.exit(0); console.log("DOCS_BASE="+c.base); console.log("DOCS_SITE=https://pr-"+process.env.PR_NUMBER+"."+previewHost(c));' > "$RUNNER_TEMP/preview.env"
-          if [ -s "$RUNNER_TEMP/preview.env" ]; then
-            set -a
-            source "$RUNNER_TEMP/preview.env"
-            set +a
-            node .github/components/documentation/pages/build/starlight/build.cjs
-            mv build/github/pages build/github/preview
-          fi
+          node .github/components/documentation/pages/build/starlight/build.cjs
+          mv build/github/pages build/github/preview
+      - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
+        if: steps.preview.outputs.enabled == 'true'
+        with:
+          config: config/targets.toml
+          directory: build/github/preview
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.preview.outputs.enabled == 'true'
         with:
           name: documentation-preview
           path: build/github/preview
+          if-no-files-found: error
   releases:
     needs: [build, test]
     runs-on: ubuntu-latest
@@ -173,10 +182,10 @@ jobs:
           name: packages
           path: build/github/packages
           if-no-files-found: error
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/verify@95b47994768f570518270bf9d93fb42f252dc302
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/verify@1339cccda7451615ea5309a55995611068b9364f
         with:
           index: build/github/releases/index.json
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@95b47994768f570518270bf9d93fb42f252dc302
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@1339cccda7451615ea5309a55995611068b9364f
         with:
           index: build/github/releases/index.json
           repository: ${{ github.repository }}
@@ -197,7 +206,7 @@ jobs:
           node-version: '24'
       - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
       - run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/build/run.luau
-      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@95b47994768f570518270bf9d93fb42f252dc302
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@1339cccda7451615ea5309a55995611068b9364f
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}

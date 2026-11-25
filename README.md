@@ -30,7 +30,7 @@ The example Windows builds use Docker. For local host builds, run `node dependen
 - **Maintenance:** validate or reconcile labels and planned milestones.
 - **PR Results:** trusted review comments and Cloudflare preview publication from completed CI artifacts. Closing a PR retires its preview.
 
-Reusable publishing actions are pinned directly to reviewed commits of [CI-Packages](https://github.com/Kooraseru-Hub/CI-Packages). They are independent packages, not a scheduler.
+Reusable release, branch and documentation preview actions are pinned directly to reviewed commits of [CI-Packages](https://github.com/Kooraseru-Hub/CI-Packages). They are independent packages, not a scheduler.
 
 For real publication, configure a protected `ci-publication` environment restricted to the authored default branch. Pages uses the `github-pages` environment and **Settings → Pages → Source: GitHub Actions**. Cloudflare previews use the separate `ci-preview-cloudflare` environment. Ordinary CI requires no publishing secrets.
 

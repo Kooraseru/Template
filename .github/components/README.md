@@ -4,7 +4,7 @@ The native workflows under `.github/workflows/` are the entry points. This direc
 
 CI builds each declared host independently, transfers binaries with GitHub artifacts, tests them on the declared native runners, and stages release/package output. The documentation and generated branch builders run independently. The final `CI Required` job fails when any prerequisite fails.
 
-Publication runs only after successful CI in the Publish workflow, with explicit target selection and job-scoped credentials. PR Results runs trusted default-branch code and reads untrusted PR artifacts as data. The packages repository contains standalone release verification, release publication, and generated branch publication actions; their commit pins are visible in the workflows.
+Publication runs only after successful CI in the Publish workflow, with explicit target selection and job-scoped credentials. PR Results runs trusted default-branch code and reads untrusted PR artifacts as data. The packages repository contains standalone release verification, release publication, generated branch publication, and documentation preview actions; their commit pins are visible in the workflows.
 
 Run the dependency loader before local checks. Run `node dependencies/packages/checks/testSuites/run.cjs` for the project regression suite. For individual commands, read the corresponding workflow steps. The local Actions task calls `act` directly; it is optional and does not replace native Windows runners.
 
