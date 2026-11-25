@@ -6,6 +6,8 @@ sidebar:
 ---
 
 import ApiSummary from '../../components/ApiSummary.astro';
+import ApiMember from '../../components/ApiMember.astro';
+import ApiInteractions from '../../components/ApiInteractions.astro';
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
@@ -66,111 +68,41 @@ end
 
 ## Constructors reference
 
-<h3 id="lorem-new">Lorem.new(value: string): Lorem</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="lorem-new" name="new()" kind="constructor" signature={"Lorem.new(value: string): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Properties reference
 
-<h3 id="value">Value: string</h3>
+<ApiMember id="value" name="Value" kind="property" signature={"Value: string"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
-
-<h3 id="default">Default: number</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="default" name="Default" kind="constant" signature={"Default: number"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ## Functions reference
 
-<h3 id="create">Create&lt;T&gt;(value: T): Lorem&lt;T&gt;</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="create" name="Create()" kind="function" signature={"Create<T>(value: T): Lorem<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"T","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Methods reference
 
-<h3 id="get">Get(key: string): (unknown, boolean)</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="get" name="Get()" kind="method" signature={"Get(key: string): (unknown, boolean)"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"key","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"unknown, boolean","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Signals and events reference
 
-<h3 id="changed">Changed: Signal&lt;string&gt;</h3>
+<ApiMember id="changed" name="Changed" kind="signal" signature={"Changed: Signal<string>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
-
-<h3 id="completed">Completed: RBXScriptSignal</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="completed" name="Completed" kind="event" signature={"Completed: RBXScriptSignal"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ## Callbacks reference
 
-<h3 id="oninvoke">OnInvoke: (value: string) -&gt; boolean</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="oninvoke" name="OnInvoke" kind="callback" signature={"OnInvoke: (value: string) -> boolean"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"boolean","description":"Lorem ipsum dolor sit amet."}]} />
 
 ## Types reference
 
-<h3 id="lorem">Lorem&lt;T&gt;</h3>
+<ApiMember id="lorem" name="Lorem" kind="class" signature={"Lorem<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+<ApiMember id="ipsum" name="Ipsum" kind="type" signature={"Ipsum<T>"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
+<ApiMember id="dolor" name="Dolor" kind="enum" signature={"Dolor"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
-<h3 id="ipsum">Ipsum&lt;T&gt;</h3>
+<ApiMember id="add" name="__add()" kind="operator" signature={"__add(other: Lorem): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"other","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
-
-<h3 id="dolor">Dolor</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
-
-<h3 id="add">__add(other: Lorem): Lorem</h3>
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-| Lorem | Ipsum | Dolor |
-| --- | --- | --- |
-| value | `string` | Lorem ipsum dolor sit amet. |
-
+<ApiInteractions />

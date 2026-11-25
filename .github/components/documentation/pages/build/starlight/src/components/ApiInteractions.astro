@@ -1,0 +1,71 @@
+<script>
+  // One viewport-positioned card avoids clipping inside summary rows and code signatures.
+  const card = document.createElement('div');
+  card.className = 'api-type-card';
+  card.setAttribute('role','tooltip');
+  card.id = 'api-type-card';
+  card.hidden = true;
+  document.body.append(card);
+  let active: HTMLElement | null = null;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  function hide() {
+    active?.removeAttribute('aria-describedby');
+    active = null;
+    card.hidden = true;
+  }
+  function position() {
+    if (!active || card.hidden) return;
+    const r = active.getBoundingClientRect();
+    const w = card.offsetWidth, h = card.offsetHeight;
+    card.style.left = Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+'px';
+    const above = r.bottom+h+12 > innerHeight && r.top > h+12;
+    card.style.top = (above ? r.top-h-10 : r.bottom+10)+'px';
+    card.dataset.side = above ? 'above' : 'below';
+    card.style.setProperty('--arrow-x',Math.max(12,Math.min(w-12,r.left+r.width/2-parseFloat(card.style.left)))+'px');
+  }
+  function show(el: HTMLElement) {
+    clearTimeout(timeout);
+    active?.removeAttribute('aria-describedby');
+    active=el;
+    el.setAttribute('aria-describedby',card.id);
+    const title=document.createElement('strong'); title.textContent=el.dataset.apiType||'';
+    const category=document.createElement('div'); category.className='api-type-category'; category.textContent=el.dataset.category||'';
+    const desc=document.createElement('div'); desc.textContent=el.dataset.description||'';
+    card.replaceChildren(title,category,desc);
+    if(el.dataset.href){
+      const link=document.createElement('a'); link.href=el.dataset.href; link.textContent='Read reference'; card.append(link);
+    }
+    card.hidden=false; position();
+  }
+  function delayHide(){clearTimeout(timeout);timeout=setTimeout(hide,160);}
+  for(const el of document.querySelectorAll<HTMLElement>('[data-api-type]')){
+    el.addEventListener('pointerenter',()=>show(el));
+    el.addEventListener('pointerleave',delayHide);
+    el.addEventListener('focus',()=>show(el));
+    el.addEventListener('blur',delayHide);
+    el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();show(el);});
+  }
+  card.addEventListener('pointerenter',()=>clearTimeout(timeout));
+  card.addEventListener('pointerleave',delayHide);
+  card.addEventListener('focusin',()=>clearTimeout(timeout));
+  card.addEventListener('focusout',delayHide);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+  document.addEventListener('pointerdown',e=>{if(active && !active.contains(e.target as Node)&&!card.contains(e.target as Node))hide();});
+  addEventListener('resize',position);addEventListener('scroll',hide,{passive:true});
+  // Starlight retains ordinary headings; API reference members supply their own labels and icons.
+  const members = [...document.querySelectorAll<HTMLElement>('[data-api-member]')];
+  if(members.length){
+    for(const toc of document.querySelectorAll<HTMLElement>('starlight-toc, mobile-starlight-toc')){
+      for(const member of members){
+        const heading=member.querySelector<HTMLElement>('h3[id]');
+        if(!heading)continue;
+        const link=[...toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')].find(a=>decodeURIComponent(a.hash.slice(1))===heading.id);
+        if(!link)continue;
+        link.classList.add('api-toc-member');
+        const icon=heading.querySelector('svg');
+        const label=heading.querySelector('a')?.textContent||heading.textContent||'';
+        link.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label));
+      }
+    }
+  }
+</script>

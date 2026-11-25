@@ -1,0 +1,21 @@
+---
+interface Props { signature: string }
+const { signature } = Astro.props;
+const types: Record<string, { category: string; description: string; href?: string }> = {
+  number: { category: 'Luau', description: 'A double-precision floating-point number.' },
+  string: { category: 'Luau', description: 'A sequence of bytes.' },
+  boolean: { category: 'Luau', description: 'A value that is either true or false.' },
+  unknown: { category: 'Luau', description: 'A value whose type must be narrowed before use.' },
+  nil: { category: 'Luau', description: 'The absence of a value.' },
+  RBXScriptSignal: { category: 'Roblox', description: 'An engine event to which functions can be connected.', href: 'https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal' },
+  Lorem: { category: 'Template', description: 'Lorem ipsum dolor sit amet.', href: '#lorem' },
+  Ipsum: { category: 'Template', description: 'Lorem ipsum dolor sit amet.', href: '#ipsum' },
+  Signal: { category: 'Template', description: 'Lorem ipsum dolor sit amet.' },
+  T: { category: 'Luau', description: 'A generic type parameter.' },
+};
+const tokens = signature.split(/\b([A-Za-z_][A-Za-z_0-9]*)\b/g);
+---
+<span class="api-signature">{tokens.map((token,index) => {
+  const info = index % 2 && Object.hasOwn(types,token) && tokens[index+1]?.trimStart()[0] !== '(' ? types[token] : undefined;
+  return info ? <span class="api-type" tabindex="0" data-api-type={token} data-category={info.category} data-description={info.description} data-href={info.href}>{token}</span> : token;
+})}</span>

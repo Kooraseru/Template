@@ -1,0 +1,20 @@
+---
+import ApiIcon from './ApiIcon.astro';
+import ApiSignature from './ApiSignature.astro';
+import type { Props as IconProps } from './ApiIcon.astro';
+interface Entry { name: string; type: string; description: string }
+interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; parameters?: Entry[]; returns?: Entry[] }
+const { id, name, kind, signature, description, parameters = [], returns = [] } = Astro.props;
+---
+<section class="api-member" data-api-member={id} data-kind={kind}>
+  <h3 id={id} class="api-member-heading">{kind !== 'constructor' && <ApiIcon kind={kind}/>}<a href={'#'+id}>{name}</a></h3>
+  <p>{description}</p>
+  <div class="api-signature-panel"><ApiSignature signature={signature}/></div>
+  {[
+    { title: 'Parameters', values: parameters },
+    { title: 'Returns', values: returns },
+  ].filter(group => group.values.length).map(group => <>
+    <h4>{group.title}</h4>
+    <dl class="api-parameter-list">{group.values.map(item => <div><dt><ApiSignature signature={item.name ? item.name+' : '+item.type : item.type}/></dt><dd>{item.description}</dd></div>)}</dl>
+  </>)}
+</section>
