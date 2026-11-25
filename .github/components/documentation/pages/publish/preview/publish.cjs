@@ -2,20 +2,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { root, settings, target, resolveTarget, sourceContext, previewHost } = require('./config.cjs');
+const { root, settings, target, resolveTarget, workflowTarget, previewHost } = require('./config.cjs');
 const { api } = require('./github.cjs');
 const { syncComment, findOwned, bodyFor } = require('./comment.cjs');
 
 const candidateDir = path.join(root, 'build/preview-candidate');
 const uploadDir = path.join(root, 'build/preview-cloudflare');
 
-function selected(env, config) {
-  const candidate = target(env.CI_PREVIEW_TARGET || '', config);
-  if (candidate.alias !== env.CI_PREVIEW_ALIAS) throw new Error('Preview alias mismatch');
-  if (!candidate.remove && !/^[0-9a-f]{40}$/.test(env.CI_PREVIEW_SHA || ''))
-    throw new Error('Invalid preview SHA');
-  return { ...candidate, sha: candidate.remove ? null : env.CI_PREVIEW_SHA };
-}
 function url(config, candidate) {
   return 'https://' + candidate.alias + '.' + previewHost(config) + config.base;
 }
@@ -148,30 +141,6 @@ async function cloudflareDeploy(config, candidate, env = process.env) {
     fs.appendFileSync(env.GITHUB_STEP_SUMMARY, '\n' + label + url(config, candidate) + '\n');
   return url(config, candidate);
 }
-async function publishPreview(env = process.env) {
-  const request = sourceContext(env);
-  if (env.CI_PHASE !== 'publish' || env.CI_PUBLICATION_ENABLED !== 'true' || request.target !== env.CI_PREVIEW_TARGET)
-    throw new Error('Only the authorized same-run publisher may execute');
-  env = { ...env, CLOUDFLARE_API_TOKEN: env.CI_EXTERNAL_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CI_EXTERNAL_ACCOUNT };
-  const config = settings(undefined, env);
-  if (!config.enabled) throw new Error('Previews disabled');
-  const candidate = selected(env, config);
-  if (request.expectedSha && candidate.sha !== request.expectedSha)
-    throw new Error('Preview revision differs from admitted PR');
-  if (!candidate.remove) {
-    if (!env.GH_TOKEN) throw new Error('Missing GitHub read token');
-    const verified = await resolveTarget(candidate, config,
-      (method, endpoint) => api(method, endpoint, env.GH_TOKEN, undefined, env));
-    if (verified.sha !== candidate.sha)
-      throw new Error('Preview changed while building; retry dispatch');
-  }
-  const published = await cloudflareDeploy(config, candidate, env);
-  if (candidate.type === 'pr') {
-    const note = await syncComment(config, candidate, env, candidate.remove);
-    if (note) console.log('::notice::PR preview comment ' + note.action);
-  }
-  return published;
-}
 async function publishNative(env = process.env, deploy = cloudflareDeploy, request = api, comment = syncComment) {
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_run' ||
       !/^[1-9][0-9]{0,8}$/.test(env.PR_NUMBER || '') ||
@@ -189,6 +158,31 @@ async function publishNative(env = process.env, deploy = cloudflareDeploy, reque
   const candidate = { ...target('pr:' + env.PR_NUMBER, config), sha: env.REQUEST_SHA };
   const result = await deploy(config, candidate, env);
   await comment(config, candidate, env, false, request);
+  return result;
+}
+function manualContext(env) {
+  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'workflow_dispatch' ||
+      !env.CI_DEFAULT_BRANCH || env.GITHUB_REF !== 'refs/heads/' + env.CI_DEFAULT_BRANCH ||
+      env.ACT === 'true') throw new Error('Manual previews require the trusted default branch');
+  const config = settings(undefined, env);
+  if (!config.enabled) throw new Error('Previews disabled');
+  const requested = workflowTarget(JSON.parse(env.PREVIEW_INPUTS || '{}'));
+  return { config, requested, candidate: target(requested, config) };
+}
+async function resolveManual(env = process.env, request = api) {
+  const { config, requested, candidate } = manualContext(env);
+  const resolved = await resolveTarget(candidate, config, (method, resource) => request(method, resource, env.GH_TOKEN));
+  return { requested, sha: resolved.sha || '', remove: String(resolved.remove), alias: resolved.alias,
+    base: config.base, site: 'https://' + resolved.alias + '.' + previewHost(config) };
+}
+async function publishManual(env = process.env, deploy = cloudflareDeploy, request = api, comment = syncComment) {
+  const { config, requested, candidate } = manualContext(env);
+  if (requested !== env.PREVIEW_TARGET || candidate.alias !== env.PREVIEW_ALIAS)
+    throw new Error('Resolved preview target mismatch');
+  const verified = await resolveTarget(candidate, config, (method, resource) => request(method, resource, env.GH_TOKEN));
+  if ((verified.sha || '') !== (env.REQUEST_SHA || '')) throw new Error('Preview revision changed while building');
+  const result = await deploy(config, verified, env);
+  if (candidate.type === 'pr') await comment(config, verified, env, candidate.remove, request);
   return result;
 }
 async function retireClosed(env = process.env, request = api) {
@@ -217,11 +211,12 @@ async function retireClosed(env = process.env, request = api) {
   if (note) console.log('::notice::PR preview comment ' + note.action);
   return removed;
 }
-module.exports = { selected, copyStatic, prepareUpload, verifyProjectHost, cloudflareDeploy, pruneRetired, publishPreview, publishNative, retireClosed };
+module.exports = { copyStatic, prepareUpload, verifyProjectHost, cloudflareDeploy, pruneRetired, publishNative, resolveManual, publishManual, retireClosed };
 if (require.main === module) {
-  const command = process.argv[2], handler = command === '--preview'
-    ? publishPreview : command === '--retire' ? retireClosed : command === '--native' ? publishNative : null;
-  if (!handler) { console.error('Expected --preview or --retire'); process.exitCode = 2; }
+  const command = process.argv[2], handler = command === '--manual-resolve'
+    ? async () => { for (const [key, value] of Object.entries(await resolveManual())) fs.appendFileSync(process.env.GITHUB_OUTPUT, key + '=' + value + '\n'); }
+    : command === '--manual' ? publishManual : command === '--retire' ? retireClosed : command === '--native' ? publishNative : null;
+  if (!handler) { console.error('Expected --native, --manual-resolve, --manual or --retire'); process.exitCode = 2; }
   else Promise.resolve().then(() => handler()).catch(e => {
     console.error('::error::' + e.message); process.exitCode = 1;
   });

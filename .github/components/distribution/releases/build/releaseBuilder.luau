@@ -8,8 +8,8 @@ local Glob = require("@formats/glob")
 local ConflictPolicy = require("./conflictPolicy")
 local ReleaseAssets = require("./releaseAssets")
 
-local CONFIG_PATH = "config/publishing/releases/settings.json"
-local RECORD_ROOT = "releases"
+local CONFIG_PATH = Process.env.RELEASE_SETTINGS or "config/publishing/releases/settings.json"
+local RECORD_ROOT = Process.env.RELEASE_RECORDS or "releases"
 local OUTPUT_ROOT = "build/github/releases"
 
 type ReleaseRecord = {
@@ -298,11 +298,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
-	if #records == 0 then
-		print("Releases skipped: no release records")
-		return "skipped"
-	end
-	ensureDirectory("build")
+		ensureDirectory("build")
 	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
@@ -331,11 +327,13 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 			previousTag = release.previousTag,
 			notes = notesOutput,
 		}
-		Fs.writeStringToFile(`{releaseDirectory}/release.json`, Json.encode(entry))
+		Fs.writeStringToFile(`{releaseDirectory}/release.json`, (Json.encode(entry):gsub('"assets":{}', '"assets":[]')))
 		table.insert(index, entry)
 	end
 
-	Fs.writeStringToFile(`{OUTPUT_ROOT}/index.json`, Json.encode({ onExisting = policy, releases = index }))
+	local serialized = Json.encode({ onExisting = policy, releases = index })
+	serialized = serialized:gsub('"assets":{}', '"assets":[]'):gsub('"releases":{}', '"releases":[]')
+	Fs.writeStringToFile(`{OUTPUT_ROOT}/index.json`, serialized)
 	print(`Staged {#records} release records into {OUTPUT_ROOT}`)
 	return nil
 end

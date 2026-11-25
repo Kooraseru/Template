@@ -67,7 +67,7 @@ function target(input, config) {
   if (input.startsWith('branch:')) {
     const name = input.slice(7);
     if (!safeBranch.test(name) || name.endsWith('/') || name.endsWith('.') ||
-        name.includes('/.') || name.startsWith('ci/') || name === 'source')
+        name.includes('/.') || name.startsWith('ci/') || name === (config.defaultBranch || 'source'))
       throw new Error('Invalid or reserved preview branch');
     if (!config.branches) throw new Error('Branch preview targets are disabled');
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0,30);
@@ -97,33 +97,6 @@ function workflowTarget(inputs) {
     throw new Error('Enter an existing preview_branch name');
   return (remove ? 'delete:' : '') + 'branch:' + inputs.preview_branch;
 }
-function sourceContext(env = process.env) {
-  const defaults = env.CI_DEFAULT_BRANCH || '';
-  if (env.CI_ORIGIN_EVENT === 'pull_request') {
-    if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'repository_dispatch' ||
-        env.CI_ORIGIN_TRUSTED !== 'false' || env.CI_DELIVERY_OPERATION !== 'review' ||
-        env.CI_DELIVERY_CONFIRM !== 'false' || !defaults ||
-        env.GITHUB_REF !== 'refs/heads/' + defaults ||
-        !shaPattern.test(env.GITHUB_SHA || '') || !shaPattern.test(env.CI_ORIGIN_SHA || '') ||
-        !/^[1-9][0-9]{0,8}$/.test(env.CI_REVIEW_PR || '') ||
-        !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID || '') || !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
-      throw new Error('Invalid admitted PR review delivery');
-    return { sourceSha: env.GITHUB_SHA, sourceBranch: defaults, expectedSha: env.CI_ORIGIN_SHA,
-      runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT, target: 'pr:' + env.CI_REVIEW_PR, review: true };
-  }
-  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_EVENT_NAME !== 'repository_dispatch' ||
-      env.CI_ORIGIN_EVENT !== 'workflow_dispatch' || env.CI_ORIGIN_TRUSTED !== 'true' ||
-      env.CI_DELIVERY_OPERATION !== 'preview' || env.CI_DELIVERY_CONFIRM !== 'true' ||
-      !defaults || env.GITHUB_REF !== 'refs/heads/' + defaults || env.CI_ORIGIN_REF !== env.GITHUB_REF)
-    throw new Error('Previews require explicit trusted source-branch CI dispatch');
-  if (!shaPattern.test(env.GITHUB_SHA || '') || env.CI_ORIGIN_SHA !== env.GITHUB_SHA ||
-      !/^[1-9]\d*$/.test(env.GITHUB_RUN_ID || '') || !/^[1-9]\d*$/.test(env.GITHUB_RUN_ATTEMPT || ''))
-    throw new Error('Invalid trusted dispatch identity');
-  const requested = workflowTarget(JSON.parse(env.CI_ORIGIN_INPUTS || '{}'));
-  return { sourceSha: env.GITHUB_SHA, sourceBranch: defaults,
-    runId: env.GITHUB_RUN_ID, attempt: env.GITHUB_RUN_ATTEMPT, target: requested };
-}
-
 async function resolveTarget(candidate, config, api) {
   if (candidate.remove) return { ...candidate, sha: null };
   if (candidate.type === 'pr') {
@@ -142,4 +115,4 @@ async function resolveTarget(candidate, config, api) {
   return { ...candidate, sha: branch.object.sha };
 }
 
-module.exports = { root, section, settings, previewHost, target, workflowTarget, sourceContext, resolveTarget };
+module.exports = { root, section, settings, previewHost, target, workflowTarget, resolveTarget };

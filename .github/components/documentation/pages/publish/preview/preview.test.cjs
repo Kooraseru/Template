@@ -4,9 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { settings, target, workflowTarget, sourceContext, resolveTarget } = require('./config.cjs');
-const { plan } = require('./plan.cjs');
-const { selected, copyStatic, prepareUpload, retireClosed, pruneRetired, verifyProjectHost } = require('./publish.cjs');
+const { settings, target, workflowTarget, resolveTarget } = require('./config.cjs');
+const { publishNative, resolveManual, publishManual, copyStatic, prepareUpload, retireClosed, pruneRetired, verifyProjectHost } = require('./publish.cjs');
 const { marker, bodyFor, syncComment } = require('./comment.cjs');
 
 function temporary(t) {
@@ -33,7 +32,7 @@ test('Cloudflare is the only preview backend and requires a project', t => {
   const root = path.resolve(__dirname, '../../../../../..');
   const targets = fs.readFileSync(path.join(root, 'config/targets.toml'), 'utf8');
   assert.ok(!targets.includes('pages-state'));
-  assert.ok(targets.includes('branches = false'));
+  assert.ok(!targets.includes('[github.publication]'));
 });
 test('preview targets are stable and reserved branches are rejected', () => {
   const c = config();
@@ -43,17 +42,6 @@ test('preview targets are stable and reserved branches are rejected', () => {
   for (const x of ['pr:0','pr:abc','branch:source','branch:ci/test',
     'branch:../bad','nonsense'])
     assert.throws(() => target(x, c), /Invalid|reserved|must begin/);
-});
-test('dispatch requires a trusted source revision and an explicit approval', t => {
-  const event = path.join(temporary(t), 'event.json');
-  fs.writeFileSync(event, JSON.stringify({ inputs: { preview_kind: 'pr', preview_pr: 50 } }));
-  const ctx = { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'repository_dispatch',
-    GITHUB_REF: 'refs/heads/source', CI_ORIGIN_REF: 'refs/heads/source', CI_DEFAULT_BRANCH: 'source',
-    CI_DELIVERY_OPERATION: 'preview', CI_DELIVERY_CONFIRM: 'true', CI_ORIGIN_TRUSTED: 'true', CI_ORIGIN_EVENT: 'workflow_dispatch',
-    GITHUB_SHA: 'a'.repeat(40), CI_ORIGIN_SHA: 'a'.repeat(40), GITHUB_RUN_ID: '123',
-    GITHUB_RUN_ATTEMPT: '1', CI_ORIGIN_INPUTS: JSON.stringify({preview_kind:'pr',preview_pr:50}) };
-  assert.equal(sourceContext(ctx).target, 'pr:50');
-  assert.throws(() => sourceContext({ ...ctx, GITHUB_REF: 'refs/heads/topic' }), /trusted source/);
 });
 test('typed workflow choices build valid preview targets without manual prefixes', () => {
   assert.equal(workflowTarget({ preview_kind: 'pr', preview_pr: 52 }), 'pr:52');
@@ -80,30 +68,6 @@ test('only open same-repository PRs can be previewed', async () => {
   await assert.rejects(resolveTarget(target('pr:50', config()), config(),
     async () => ({ ...good, head: { repo: { full_name: 'someone/fork' }, sha } })),
     /originate from this repository/);
-});
-test('Cloudflare publishing is isolated from untrusted static compilation', () => {
-  const candidate = { ...target('pr:50', config()), sha: 'b'.repeat(40) };
-  const spec = plan(config(),candidate,'pr:50');
-  assert.equal(spec.prepare.ref,candidate.sha);
-  assert.deepEqual(spec.prepare.env,{DOCS_BASE:'/Kooraseru/Template/',DOCS_SITE:'https://pr-50.template.pages.dev'});
-  assert.deepEqual(spec.prepare.command,['node','.github/components/documentation/pages/build/starlight/build.cjs']);
-  assert.equal(spec.artifact,'build/ci-candidate/build/github/pages');
-  assert.equal(spec.destination,'build/preview-candidate');
-  const publisher=spec.jobs[0];
-  assert.equal(publisher.lane,'external');
-  assert.equal(publisher.environment,'ci-preview-cloudflare');
-  assert.equal(publisher.command.at(-1),'--preview');
-  assert.equal(publisher.bindings[0].name,'CLOUDFLARE_API_TOKEN');
-  assert.ok(!JSON.stringify(spec.prepare).includes('CLOUDFLARE'));
-  const closed=plan(config(),{...candidate,sha:null,remove:true},'delete:pr:50');
-  assert.equal(closed.prepare,undefined);
-  assert.equal(closed.artifact,undefined);
-});
-test('a forged preview target alias is rejected', () => {
-  assert.equal(selected({ CI_PREVIEW_TARGET: 'pr:50', CI_PREVIEW_ALIAS: 'pr-50',
-    CI_PREVIEW_SHA: 'b'.repeat(40) }, config()).alias, 'pr-50');
-  assert.throws(() => selected({ CI_PREVIEW_TARGET: 'pr:50', CI_PREVIEW_ALIAS: 'pr-51',
-    CI_PREVIEW_SHA: 'b'.repeat(40) }, config()), /alias mismatch/);
 });
 test('retirement requires a trusted resolved closure and verifies current PR state', async () => {
   const sha = 'b'.repeat(40);
@@ -264,16 +228,6 @@ test('PR comments cannot edit other authors or post closure-only notes', async (
     sha: 'a'.repeat(40) }, env, false, request), null);
 });
 
-test('automatic review preview requires an admitted PR and pins its head', () => {
-  const env={GITHUB_ACTIONS:'true',GITHUB_EVENT_NAME:'repository_dispatch',GITHUB_REF:'refs/heads/source',
-    CI_DEFAULT_BRANCH:'source',CI_DELIVERY_OPERATION:'review',CI_DELIVERY_CONFIRM:'false',
-    CI_ORIGIN_EVENT:'pull_request',CI_ORIGIN_TRUSTED:'false',CI_REVIEW_PR:'55',
-    GITHUB_SHA:'a'.repeat(40),CI_ORIGIN_SHA:'b'.repeat(40),GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'};
-  const ctx=sourceContext(env);
-  assert.equal(ctx.target,'pr:55');assert.equal(ctx.expectedSha,env.CI_ORIGIN_SHA);
-  for(const bad of [{CI_REVIEW_PR:''},{CI_DELIVERY_CONFIRM:'true'},{CI_ORIGIN_TRUSTED:'true'},{GITHUB_REF:'refs/heads/topic'}])
-    assert.throws(()=>sourceContext({...env,...bad}),/Invalid admitted/);
-});
 test('preview publishing treats candidate artifacts as static data only', t => {
   const tmp=temporary(t),src=path.join(tmp,'src'),dest=path.join(tmp,'dest');
   fs.mkdirSync(src);fs.writeFileSync(path.join(src,'index.html'),'html');
@@ -292,9 +246,40 @@ test('preview publishing treats candidate artifacts as static data only', t => {
 test('Cloudflare project names and assigned public hostnames are distinct', async () => {
   const c={...config(),cloudflare_domain:'template-2pq.pages.dev'};
   const candidate={...target('pr:55',c),sha:'c'.repeat(40)};
-  assert.equal(plan(c,candidate,'pr:55').prepare.env.DOCS_SITE,'https://pr-55.template-2pq.pages.dev');
   assert.match(bodyFor(c,candidate,false),/https:\/\/pr-55\.template-2pq\.pages\.dev\/Kooraseru\/Template\//);
   const mock=async()=>({ok:true,json:async()=>({success:true,result:{subdomain:'template-2pq.pages.dev'}})});
   assert.equal(await verifyProjectHost(c,{CLOUDFLARE_API_TOKEN:'test'},mock),'template-2pq.pages.dev');
   await assert.rejects(verifyProjectHost(config(),{CLOUDFLARE_API_TOKEN:'test'},mock),/Set github.previews.cloudflare_domain/);
+});
+
+test('native preview verifies current same-repository PR before deployment or comment', async () => {
+  const sha = 'b'.repeat(40);
+  const env = { GITHUB_ACTIONS:'true', GITHUB_EVENT_NAME:'workflow_run', PR_NUMBER:'50',
+    REQUEST_SHA:sha, CI_DEFAULT_BRANCH:'source', GITHUB_REPOSITORY:repo };
+  const pr = { number:50, state:'open', base:{ref:'source',repo:{full_name:repo}},head:{sha,repo:{full_name:repo}} };
+  const calls = [];
+  const deploy = async (c, v) => { calls.push('deploy'); assert.equal(v.sha,sha); return 'deployed'; };
+  const comment = async () => { calls.push('comment'); };
+  assert.equal(await publishNative(env,deploy,async()=>({...pr,state:'closed'}),comment),null);
+  assert.deepEqual(calls,[]);
+  assert.equal(await publishNative(env,deploy,async()=>pr,comment),'deployed');
+  assert.deepEqual(calls,['deploy','comment']);
+  await assert.rejects(publishNative({...env,GITHUB_EVENT_NAME:'pull_request'},deploy,async()=>pr,comment),/trusted completed/);
+});
+test('manual preview rejects stale or forged resolved targets and non-default dispatch', async () => {
+  const sha = 'b'.repeat(40);
+  const env = { GITHUB_ACTIONS:'true',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/source',
+    CI_DEFAULT_BRANCH:'source',GITHUB_REPOSITORY:repo,PREVIEW_INPUTS:JSON.stringify({preview_kind:'branch',preview_branch:'demo/site'}) };
+  const request=async()=>({object:{sha}});
+  const selected=await resolveManual(env,request);
+  assert.equal(selected.sha,sha);
+  assert.equal(selected.base,'/Kooraseru/Template/');
+  let count=0;
+  const deploy=async()=>{count++;return 'deployed'};
+  const resolved={...env,PREVIEW_TARGET:selected.requested,PREVIEW_ALIAS:selected.alias,REQUEST_SHA:sha};
+  await assert.rejects(publishManual({...resolved,PREVIEW_ALIAS:'wrong'},deploy,request),/target mismatch/);
+  await assert.rejects(publishManual({...resolved,REQUEST_SHA:'a'.repeat(40)},deploy,request),/changed while building/);
+  await assert.rejects(resolveManual({...env,GITHUB_REF:'refs/heads/other'},request),/trusted default/);
+  assert.equal(await publishManual(resolved,deploy,request),'deployed');
+  assert.equal(count,1);
 });

@@ -128,6 +128,24 @@ jobs:
           name: documentation
           path: build/github/pages
           if-no-files-found: error
+      - name: Build PR preview
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          node -e 'const {settings,previewHost}=require("./.github/components/documentation/pages/publish/preview/config.cjs"); const c=settings(); if(!c.enabled||!c.pull_requests)process.exit(0); console.log("DOCS_BASE="+c.base); console.log("DOCS_SITE=https://pr-"+process.env.PR_NUMBER+"."+previewHost(c));' > "$RUNNER_TEMP/preview.env"
+          if [ -s "$RUNNER_TEMP/preview.env" ]; then
+            set -a
+            source "$RUNNER_TEMP/preview.env"
+            set +a
+            node .github/components/documentation/pages/build/starlight/build.cjs
+            mv build/github/pages build/github/preview
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          name: documentation-preview
+          path: build/github/preview
   releases:
     needs: [build, test]
     runs-on: ubuntu-latest

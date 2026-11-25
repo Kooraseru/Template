@@ -70,7 +70,7 @@ jobs:
           node-version: '24'
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: documentation
+          name: documentation-preview
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
           path: build/preview-candidate
