@@ -98,7 +98,28 @@ jobs:
     runs-on: ${{ matrix.host.runner }}
     timeout-minutes: 10
     steps:
+      # Artifact uploads can take a few seconds to become visible to another runner.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        id: download
+        continue-on-error: true
+        with:
+          name: application-${{ matrix.host.id }}
+      - name: Wait for artifact availability
+        if: steps.download.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 10
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        id: retry
+        if: steps.download.outcome == 'failure'
+        continue-on-error: true
+        with:
+          name: application-${{ matrix.host.id }}
+      - name: Wait for artifact availability (final attempt)
+        if: steps.retry.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 20
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: steps.retry.outcome == 'failure'
         with:
           name: application-${{ matrix.host.id }}
       - name: Run native executable

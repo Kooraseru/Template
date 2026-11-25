@@ -73,7 +73,7 @@ dependencies:
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
     'kooraseru-hub/ci-packages@1339cccda7451615ea5309a55995611068b9364f':
-        ref: 'refactor/standalone-packages'
+        ref: 'main'
         commit: 'sha1-1339cccda7451615ea5309a55995611068b9364f'
         owner_id: 255195713
         repo_id: 1458028693
