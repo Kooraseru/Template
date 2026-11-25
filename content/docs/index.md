@@ -1,17 +1,15 @@
 ---
 title: Template documentation
-description: Start here to configure, develop, validate, and publish from the repository template.
+description: Configure, develop, validate and publish your project.
 ---
 
-This documentation is the authored source for the Template repository. The default development branch is `source`; the generated `main` branch and GitHub Pages are publication outputs.
+The Template repository is a starting point for your own development workspace. Native GitHub Actions workflows run the validation and publication commands directly.
 
-## Guides
+- [Getting started](./getting-started/)
+- [Configuration](./configuration/)
+- [Continuous integration](./continuous-integration/)
+- [Publishing](./publishing/)
+- [Writing documentation](./authoring/)
+- [Preview deployments](./preview-deployments/)
 
-- [Getting started](./getting-started/) – create a repository from the template and set up a workspace.
-- [Configuration](./configuration/) – change repository and component settings.
-- [Continuous integration](./continuous-integration/) – understand validation, generated builds, and permissions.
-- [Publishing](./publishing/) – understand the generated branch and site deployment.
-- [Writing documentation](./authoring/) – follow the Markdown format used here.
-- [Preview deployments](./preview-deployments/) – publish temporary PR and branch documentation sites.
-
-The site is rendered with Astro Starlight from this Markdown directory. Navigation and search are provided by Starlight automatically.
+The site uses Astro Starlight with this project's authored Markdown and assets.

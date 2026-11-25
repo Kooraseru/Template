@@ -19,4 +19,4 @@ Use `node` for JavaScript or TypeScript checks and `bash` for shell entry points
 
 Run `node dependencies/packages/checks/testSuites/run.cjs` for all default checks. Append a suite name, then a case name if you want just one case. Add `--benchmark` to select the benchmark cases. Set `TEST_SUITE_BASH` to the Bash executable if your shell is installed outside PATH.
 
-CI calls the same runner for default checks. Tests beside shared tooling continue to run through the CI Engine's existing package test discovery.
+CI calls the same runner for default checks. Tests beside shared tooling run explicitly in the native CI workflow.

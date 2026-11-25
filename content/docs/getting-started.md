@@ -1,12 +1,12 @@
 ---
 title: Getting started
-description: Create a project from the template and work from the source branch.
+description: Create a project from the template and configure your workspace.
 ---
 
-1. Select **Use this template** on GitHub to create a new repository.
-2. Work on the `source` branch, which remains the default development branch.
-3. Review the settings under `config/`, particularly `targets.toml`, `ci/engine.json`, and `branches/main.toml`.
-4. Edit project sources under `source/` and author documentation under `content/docs/`.
-5. Push to `source` to run CI. A successful source push makes generated validation results available before publication.
+1. Select **Use this template** on GitHub, then clone the new repository.
+2. Install Node.js 24 and Git. Run `node dependencies/packages/core/dependencyLoader/index.ts`.
+3. Replace the example project under `source/`. Update the native workflow under `.github/workflows/ci.yml` and dependency manifest for your project.
+4. Run `node dependencies/packages/checks/preflightChecker/index.ts` for local compiler checks; append `--rules` for the rule audit.
+5. Open a PR. CI runs without publishing credentials.
 
-The `main` branch is generated output. Do not make authoring changes there; update `source` and let publication regenerate it.
+See [Configuration](../configuration/) for the existing project paths.

@@ -1,6 +1,6 @@
 # Release publication policy
 
-`settings.json` owns shared release settings and policy. Each direct release directory contains a `release.json` record and its notes. Records are discovered without a central list:
+`settings.json` owns shared release settings and policy. Each direct directory in `releases/` contains a `release.json` record and its notes. Records are discovered without a central list:
 
 ```json
 {
@@ -27,9 +27,9 @@ GitHub Packages has its own records and policy in `../packages/`.
 
 ## Planned release milestones
 
-Planned milestones live in `.github/config/issues/milestones/records/`; they are
+Planned milestones live in `config/issues/milestones/records/`; they are
 synchronized independently and are never staged as releases. Each publishable
-release has its own directory, for example `0.1.0/release.json`:
+release has its own directory, for example `releases/0.1.0/release.json`:
 
 ```json
 {
@@ -49,7 +49,7 @@ Milestones match by exact version title. Synchronization creates missing
 milestones and updates only the declared fields (`status` controls open/closed
 state). `released` closes a matching existing milestone and does not create one
 if it is missing. Removing an entry never deletes or modifies its GitHub milestone.
-Milestone synchronization runs on source pushes and requires the workflow's
+Milestone synchronization runs via the Maintenance workflow and requires the workflow's
 `issues: write` permission; local runs validate the plan but skip remote writes.
 
 ## Compiled downloads
