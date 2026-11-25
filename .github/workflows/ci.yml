@@ -20,6 +20,15 @@ jobs:
         with:
           node-version: '24'
       - run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Regenerate workflow lock for migration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node dependencies/packages/core/dependencyLoader/index.ts --exec tools.actionsLock
+          printf '\n=== ACTIONS LOCK BEGIN ===\n'
+          cat .github/workflows/actions.lock
+          printf '\n=== ACTIONS LOCK END ===\n'
+          git diff -- .github/workflows
       - name: Independent tooling tests
         run: |
           node --test dependencies/packages/core/dependencyLoader/*.test.ts
