@@ -1,15 +1,24 @@
 ---
-title: Template documentation
-description: Configure, develop, validate and publish your project.
+title: Overview
+description: Lorem ipsum dolor sit amet.
 ---
 
-The Template repository is a starting point for your own development workspace. Native GitHub Actions workflows run the validation and publication commands directly.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-- [Getting started](./getting-started/)
-- [Configuration](./configuration/)
-- [Continuous integration](./continuous-integration/)
-- [Publishing](./publishing/)
-- [Writing documentation](./authoring/)
-- [Preview deployments](./preview-deployments/)
+## Lorem ipsum
 
-The site uses Astro Starlight with this project's authored Markdown and assets.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+## Dolor sit amet
+
+- Lorem ipsum dolor sit amet.
+- **Consectetur adipiscing elit.**
+- Sed do eiusmod tempor incididunt.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+## Consectetur
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+- [API reference specimen](./reference-example/)

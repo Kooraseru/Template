@@ -1,12 +1,22 @@
 ---
 title: Getting started
-description: Create a project from the template and configure your workspace.
+description: Lorem ipsum dolor sit amet.
 ---
 
-1. Select **Use this template** on GitHub, then clone the new repository.
-2. Install Node.js 24 and Git. Run `node dependencies/packages/core/dependencyLoader/index.ts`.
-3. Replace the example project under `source/`. Update the native workflow under `.github/workflows/ci.yml` and dependency manifest for your project.
-4. Run `node dependencies/packages/checks/preflightChecker/index.ts` for local compiler checks; append `--rules` for the rule audit.
-5. Open a PR. CI runs without publishing credentials.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-See [Configuration](../configuration/) for the existing project paths.
+## Lorem ipsum
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+## Dolor sit amet
+
+- Lorem ipsum dolor sit amet.
+- **Consectetur adipiscing elit.**
+- Sed do eiusmod tempor incididunt.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+## Consectetur
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.

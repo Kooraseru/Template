@@ -14,6 +14,9 @@
     --docs-selected: Highlight;
     --docs-function-icon: LinkText;
     --docs-type-icon: LinkText;
+    --docs-event-icon: LinkText;
+    --docs-property-icon: LinkText;
+    --docs-callback-icon: LinkText;
     --sl-color-white: CanvasText;
     --sl-color-black: Canvas;
     --sl-color-accent: LinkText;

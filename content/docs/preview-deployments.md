@@ -1,14 +1,22 @@
 ---
-title: Preview deployments
-description: Review temporary documentation websites using Cloudflare Pages.
+title: Resources
+description: Lorem ipsum dolor sit amet.
 ---
 
-Create a Cloudflare Pages Direct Upload project and configure its name and actual public hostname in the `github.previews` section of `config/targets.toml`.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-Set the `CLOUDFLARE_API_TOKEN` secret and `CLOUDFLARE_ACCOUNT_ID` variable in the protected `ci-preview-cloudflare` GitHub environment.
+## Lorem ipsum
 
-A successful same-repository PR CI run produces a static documentation artifact. The shared CI-Packages documentation action in the separate PR Results workflow checks the current PR head against GitHub, downloads only the static artifact, publishes it to Cloudflare Pages, and updates one PR comment with its URL. Forks are validation-only. No PR code runs with publishing credentials.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-Closing a PR runs the retirement workflow against trusted default-branch code. It replaces the alias with an HTTP 410 response and removes earlier deployments for that alias. No temporary Git branch is required.
+## Dolor sit amet
 
-For manual previews, use Actions → Preview and select the PR or branch target (or its retirement option). The renderer stays project-owned; the shared action accepts the configuration and built static directory as explicit inputs.
+- Lorem ipsum dolor sit amet.
+- **Consectetur adipiscing elit.**
+- Sed do eiusmod tempor incididunt.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+## Consectetur
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.

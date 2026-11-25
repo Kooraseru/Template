@@ -16,6 +16,9 @@
   --docs-selected: rgba(208, 217, 251, 0.16);
   --docs-function-icon: #df6af7;
   --docs-type-icon: #39bdd8;
+  --docs-event-icon: #f5c64e;
+  --docs-property-icon: #77aaff;
+  --docs-callback-icon: #f5a56b;
   --sl-color-white: var(--docs-heading);
   --sl-color-gray-1: #e6e7ea;
   --sl-color-gray-2: var(--docs-text);

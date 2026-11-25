@@ -1,29 +1,43 @@
 ---
 title: API reference example
-description: Demonstrates the reusable documentation renderer using an illustrative Luau API.
+description: Lorem ipsum dolor sit amet.
 sidebar:
   order: 100
 ---
 
 import ApiSummary from '../../components/ApiSummary.astro';
 
-This page is a rendering example for library authors, not an API provided by Template.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
 ## Summary
 
+### Constructors
+
+<ApiSummary members={[{"kind":"constructor","signature":"Lorem.new(value: string): Lorem","href":"#lorem-new","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+
+### Properties
+
+<ApiSummary members={[{"kind":"property","signature":"Value: string","href":"#value","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"constant","signature":"Default: number","href":"#default","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+
 ### Functions
 
-<ApiSummary members={[
-  { kind: 'function', signature: 'Register(entries: Entries): Registry<Resolvable<Entries>>', href: '#register', description: 'Creates a typed collection of registered values.' },
-  { kind: 'function', signature: 'Get(path: Path): (unknown, boolean)', href: '#get', description: 'Returns a registered value and a success flag.' },
-]} />
+<ApiSummary members={[{"kind":"function","signature":"Create<T>(value: T): Lorem<T>","href":"#create","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+
+### Methods
+
+<ApiSummary members={[{"kind":"method","signature":"Get(key: string): (unknown, boolean)","href":"#get","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+
+### Signals and events
+
+<ApiSummary members={[{"kind":"signal","signature":"Changed: Signal<string>","href":"#changed","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"event","signature":"Completed: RBXScriptSignal","href":"#completed","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+
+### Callbacks
+
+<ApiSummary members={[{"kind":"callback","signature":"OnInvoke: (value: string) -> boolean","href":"#oninvoke","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ### Types
 
-<ApiSummary members={[
-  { kind: 'type', signature: 'Registry<Path>', href: '#registry', description: 'The typed lookup interface.' },
-  { kind: 'type', signature: 'Resolvable<Entries>', href: '#resolvable', description: 'The set of accepted entry keys.' },
-]} />
+<ApiSummary members={[{"kind":"class","signature":"Lorem<T>","href":"#lorem","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"type","signature":"Ipsum<T>","href":"#ipsum","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"enum","signature":"Dolor","href":"#dolor","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"operator","signature":"__add(other: Lorem): Lorem","href":"#add","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
 ## Usage
 
@@ -50,26 +64,113 @@ local function register<Entries>(entries: Entries): Registry<Resolvable<Entries>
 end
 ```
 
-## Functions
+## Constructors reference
 
-### Register
+<h3 id="lorem-new">Lorem.new(value: string): Lorem</h3>
 
-Creates a registry from named values.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-| Parameter | Type | Description |
+| Lorem | Ipsum | Dolor |
 | --- | --- | --- |
-| entries | Entries | The registration table. |
+| value | `string` | Lorem ipsum dolor sit amet. |
 
-### Get
+## Properties reference
 
-Reads a value from the registry and returns its success status.
+<h3 id="value">Value: string</h3>
 
-## Types
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-### Registry
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
 
-The interface returned by registration.
+<h3 id="default">Default: number</h3>
 
-### Resolvable
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-The inferred set of entry keys.
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+## Functions reference
+
+<h3 id="create">Create&lt;T&gt;(value: T): Lorem&lt;T&gt;</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+## Methods reference
+
+<h3 id="get">Get(key: string): (unknown, boolean)</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+## Signals and events reference
+
+<h3 id="changed">Changed: Signal&lt;string&gt;</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+<h3 id="completed">Completed: RBXScriptSignal</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+## Callbacks reference
+
+<h3 id="oninvoke">OnInvoke: (value: string) -&gt; boolean</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+## Types reference
+
+<h3 id="lorem">Lorem&lt;T&gt;</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+<h3 id="ipsum">Ipsum&lt;T&gt;</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+<h3 id="dolor">Dolor</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+
+<h3 id="add">__add(other: Lorem): Lorem</h3>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+| Lorem | Ipsum | Dolor |
+| --- | --- | --- |
+| value | `string` | Lorem ipsum dolor sit amet. |
+

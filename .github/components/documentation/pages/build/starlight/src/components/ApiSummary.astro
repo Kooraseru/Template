@@ -1,6 +1,8 @@
 ---
+import ApiIcon from './ApiIcon.astro';
+import type { Props as IconProps } from './ApiIcon.astro';
 interface Member {
-  kind: 'function' | 'type';
+  kind: IconProps['kind'];
   signature: string;
   href: string;
   description?: string;
@@ -12,11 +14,7 @@ const { members } = Astro.props;
   {members.map(member => (
     <li data-kind={member.kind}>
       <a href={member.href}>
-        {member.kind === 'type' ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 9 8-4.5M12 12 4 7.5M12 12v9"/></svg>
-        ) : (
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Zm-8 6 7.25 4.1v8L4 17V9Zm8.75 4.1L20 9v8l-7.25 4.1v-8Z"/></svg>
-        )}
+        <ApiIcon kind={member.kind} />
         <span><span class="api-signature">{member.signature}</span>{member.description && <span class="api-description">{member.description}</span>}</span>
       </a>
     </li>

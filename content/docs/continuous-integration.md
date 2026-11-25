@@ -1,12 +1,22 @@
 ---
-title: Continuous integration
-description: Native GitHub Actions validation and publication boundaries.
+title: Examples
+description: Lorem ipsum dolor sit amet.
 ---
 
-The CI workflow runs on pushes and pull requests. Its jobs perform independent local tooling checks, discover host contracts, build binaries, run native tests, build documentation and stage publication artifacts. The final `CI Required` job requires every prerequisite to pass.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-CI has read-only credentials. GitHub Actions handles dependencies between jobs and artifact transport directly.
+## Lorem ipsum
 
-Open Actions → Publish → Run workflow and select `rehearse` to exercise the publication preparation without modifying GitHub releases, generated branches, or Pages. Select a real target only on the default branch.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-See [Publishing](../publishing/) for the destination paths and prerequisites.
+## Dolor sit amet
+
+- Lorem ipsum dolor sit amet.
+- **Consectetur adipiscing elit.**
+- Sed do eiusmod tempor incididunt.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+## Consectetur
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
