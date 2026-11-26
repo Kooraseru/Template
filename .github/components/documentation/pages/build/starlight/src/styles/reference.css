@@ -137,6 +137,8 @@ a.api-type { cursor:pointer; }
   z-index: 100;
   max-inline-size: calc(100vw - 32px);
   padding: 10px 16px;
+  background: var(--docs-surface-secondary);
+  color: var(--docs-heading);
   border: 1px solid var(--docs-border);
   border-radius: 8px;
   box-shadow: 0 4px 14px #0004;
@@ -150,22 +152,28 @@ a.api-type { cursor:pointer; }
 }
 .sl-markdown-content .expressive-code .copy .feedback::after { display: none; }
 
-.docs-code-sample .expressive-code[data-collapsed] pre {
+.sl-markdown-content .expressive-code[data-collapsed] pre {
   max-block-size: 25rem;
   overflow: auto;
 }
-.docs-code-sample .docs-code-toggle {
+.sl-markdown-content .docs-code-toggle {
   position: absolute;
   inset-block-start: 7px;
   inset-inline-end: 48px;
   z-index: 1;
-  padding: 3px 8px;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
   border: 1px solid var(--docs-border);
   border-radius: 4px;
-  background: var(--docs-surface-secondary);
+  background: transparent;
   color: var(--docs-heading);
   font: inherit;
   cursor: pointer;
 }
 
-.docs-code-sample .expressive-code { position: relative; }
+.sl-markdown-content .expressive-code:has(> .docs-code-toggle) { position: relative; }
+
+.sl-markdown-content .docs-code-toggle:hover {
+  background: var(--docs-hover);
+}
