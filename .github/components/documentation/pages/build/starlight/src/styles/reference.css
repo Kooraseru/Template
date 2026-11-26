@@ -32,7 +32,7 @@ a.api-type { cursor:pointer; }
 .api-member-heading a { color:var(--docs-heading); text-decoration:none; }
 .api-member-heading a:hover { text-decoration:underline; }
 .api-member p { margin:0 0 16px; line-height:1.4; }
-.api-signature-panel { border:1px solid var(--docs-border); border-radius:4px; background:var(--docs-surface-secondary); padding:12px; }
+.Typography-body1-Typography-root-signatureContainer { border:1px solid var(--docs-border); border-radius:4px; background:var(--docs-surface-secondary); padding:12px; }
 .sl-markdown-content .api-member h4 { margin:24px 0 16px; font-size:16px; }
 .api-parameter-list { border:1px solid var(--docs-border); border-radius:4px; margin:0; padding:0; }
 .api-parameter-list > div { padding:12px; margin:0; }
@@ -55,10 +55,10 @@ a.api-type { cursor:pointer; }
   overflow-wrap: anywhere;
 }
 .api-member-heading .api-icon { width:24px; height:24px; }
-.api-signature-panel { overflow-x:auto; }
-.api-signature-panel .api-signature { display:block; }
-.api-signature-panel .api-signature-line { display:block; }
-.api-signature-panel .api-signature-indent { padding-inline-start:24px; }
+.Typography-body1-Typography-root-signatureContainer { overflow-x:auto; }
+.Typography-body1-Typography-root-signatureContainer .api-signature { display:block; }
+.Typography-body1-Typography-root-signatureContainer .multilineSignature { display:block; }
+.Typography-body1-Typography-root-signatureContainer .parametersContainer { padding-inline-start:24px; }
 .sl-markdown-content .api-member h4 { font-weight:700; line-height:1.4; }
 .api-summary-row .api-signature { line-height:1.4; }
 .api-enum-scroll {
@@ -82,9 +82,10 @@ a.api-type { cursor:pointer; }
 /* The generic Markdown rhythm must not add paragraph margins within API rows. */
 .sl-markdown-content .api-summary > li > .api-summary-row { margin:0; }
 .sl-markdown-content .api-summary-row > * { margin:0; }
-.api-signature-panel { font-size:14px; line-height:1.4; }
+.Typography-body1-Typography-root-signatureContainer { font-family:'Builder Mono', monospace; color:var(--docs-heading); font-size:14px; line-height:1.4; }
+.Typography-body1-Typography-root-signatureContainer .api-signature { font-family:inherit; color:inherit; }
 .api-summary-row { font-size:14px; line-height:1.4; }
-.api-member .api-signature-panel { margin-top:0; }
+.api-member .Typography-body1-Typography-root-signatureContainer { margin-top:0; }
 .api-parameter-list dt,.api-parameter-list dd { margin-top:0; margin-bottom:0; }
 .api-parameter-list dd { margin-top:4px; }
 

@@ -162,3 +162,13 @@ test('scroll padding is the only anchor offset', () => {
   assert.match(css,/scroll-padding-top:var\(--docs-anchor-offset\)/);
   assert.doesNotMatch(css,/scroll-margin-top:\s*var\(--docs-anchor-offset/);
 });
+
+test('reference title and member panels use the captured component structure',()=>{
+  const title=fs.readFileSync(path.join(__dirname,'src/components/PageTitle.astro'),'utf8');
+  const member=fs.readFileSync(path.join(__dirname,'src/components/ApiMember.astro'),'utf8');
+  assert.match(title,/<div class="titleRow">\s*<div class="titleContainer">\s*<span class="MuiTypography-root Typography-h1-Typography-root-title MuiTypography-inherit"/);
+  assert.match(title,/role="heading" aria-level="1"/);
+  assert.match(member,/class="MuiTypography-root Typography-body1-Typography-root-signatureContainer MuiTypography-inherit"/);
+  assert.match(member,/<div class="multilineSignature">[\s\S]*?<div class="parametersContainer">/);
+  assert.doesNotMatch(member,/class="api-signature-panel"/);
+});

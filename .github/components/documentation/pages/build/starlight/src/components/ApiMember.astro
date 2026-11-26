@@ -40,11 +40,11 @@ const multiline = ['function','method','constructor','operator'].includes(kind) 
     </div>
   )}
   {description && <p>{description}</p>}
-  <div class="api-signature-panel">{multiline ? <>
-    <span class="api-signature-line"><ApiSignature signature={multiline.before} types={types} memberName/></span>
-    <span class="api-signature-line api-signature-indent"><ApiSignature signature={multiline.args} types={types}/></span>
-    <span class="api-signature-line"><ApiSignature signature={multiline.after} types={types}/></span>
-  </> : <ApiSignature signature={signature} types={types} memberName/>}</div>
+  <div class="MuiTypography-root Typography-body1-Typography-root-signatureContainer MuiTypography-inherit">{multiline ? <div class="multilineSignature">
+    <div><ApiSignature signature={multiline.before} types={types} memberName/></div>
+    <div class="parametersContainer"><ApiSignature signature={multiline.args} types={types}/></div>
+    <div><ApiSignature signature={multiline.after} types={types}/></div>
+  </div> : <ApiSignature signature={signature} types={types} memberName/>}</div>
   <slot name="body" />
   <slot name="description" />
   {(deprecation || Astro.slots.has('deprecation') || metadata.length > 0) && (

@@ -127,7 +127,7 @@
         labelLink(link,label,icon);
       }
     }
-    const title=document.querySelector('h1#_top')?.textContent?.trim();
+    const title=document.getElementById('_top')?.textContent?.trim();
     if(title)linksFor('_top').forEach(link=>labelLink(link,title));
     // Bring the active member into the independent desktop rail, without
     // scrolling the article or overriding a reader's manual rail scrolling.
