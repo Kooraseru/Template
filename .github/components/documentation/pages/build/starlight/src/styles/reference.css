@@ -126,3 +126,35 @@ a.api-type { cursor:pointer; }
   --ec-frm-tooltipSuccessBg: var(--docs-surface-secondary);
   --ec-frm-tooltipSuccessFg: var(--docs-heading);
 }
+
+.sl-markdown-content .expressive-code .copy > [aria-live]:not(:empty) {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  max-inline-size: calc(100vw - 32px);
+  padding: 10px 16px;
+  border: 1px solid var(--docs-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px #0004;
+  pointer-events: none;
+}
+.sl-markdown-content .expressive-code .copy > [aria-live]::after { display: none; }
+
+.docs-code-sample .expressive-code[data-collapsed] pre {
+  max-block-size: 25rem;
+  overflow: auto;
+}
+.docs-code-sample .docs-code-toggle {
+  margin-block-start: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--docs-border);
+  border-radius: 4px;
+  background: var(--docs-surface-secondary);
+  color: var(--docs-heading);
+  font: inherit;
+  cursor: pointer;
+}
