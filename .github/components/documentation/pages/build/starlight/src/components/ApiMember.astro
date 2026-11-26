@@ -24,5 +24,17 @@ const multiline = ['function','method','constructor','operator'].includes(kind) 
     <h4>{group.title}</h4>
     <dl class="api-parameter-list">{group.values.map(item => <div><dt><ApiSignature signature={item.name ? item.name+' : '+item.type : item.type} types={types} memberName={Boolean(item.name)}/></dt><dd>{item.description}</dd></div>)}</dl>
   </>)}
-  {values.length > 0 && <><h4>Items</h4><table class="api-enum-table"><thead><tr><th>Name</th><th>Value</th><th>Description</th></tr></thead><tbody>{values.map(item=><tr><td><code>{item.name}</code></td><td>{item.value}</td><td>{item.description}</td></tr>)}</tbody></table></>}
+  {values.length > 0 && <>
+    <h4>Items</h4>
+    <div class="api-enum-scroll" role="region" aria-label={name + ' items'} tabindex="0">
+      <table class="api-enum-table">
+        <thead><tr><th scope="col">Name</th><th scope="col">Value</th><th scope="col">Description</th></tr></thead>
+        <tbody>{values.map(item => <tr><td><code>{item.name}</code></td><td>{item.value}</td><td>{item.description}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </>}
+  {Astro.slots.has('samples') && <>
+    <h4>Code Samples</h4>
+    <slot name="samples" />
+  </>}
 </section>
