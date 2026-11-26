@@ -11,8 +11,8 @@
       "elements": [
         {
           "id": "title",
-          "reference": "h1",
-          "candidate": "h1"
+          "reference": "span[class*=\"-Typography-h1-Typography-root-title\"]",
+          "candidate": "h1#_top"
         }
       ]
     },
@@ -25,8 +25,50 @@
       "elements": [
         {
           "id": "title",
-          "reference": "h1",
-          "candidate": "h1"
+          "reference": "span[class*=\"-Typography-h1-Typography-root-title\"]",
+          "candidate": "h1#_top"
+        }
+      ]
+    },
+    {
+      "id": "anchored",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "actions": [
+        {
+          "kind": "scroll",
+          "reference": "div:has(> div[class*=\"-titleSection\"] #Anchored) [class*=\"-signatureContainer\"]",
+          "candidate": "[data-api-member=\"anchored\"] .api-signature-panel"
+        }
+      ],
+      "elements": [
+        {
+          "id": "signature",
+          "reference": "div:has(> div[class*=\"-titleSection\"] #Anchored) [class*=\"-signatureContainer\"]",
+          "candidate": "[data-api-member=\"anchored\"] .api-signature-panel"
+        }
+      ]
+    },
+    {
+      "id": "method-signature",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "actions": [
+        {
+          "kind": "scroll",
+          "reference": "div:has(> div[class*=\"-titleSection\"] #AngularAccelerationToTorque) [class*=\"-signatureContainer\"]",
+          "candidate": "[data-api-member=\"angularaccelerationtotorque\"] .api-signature-panel"
+        }
+      ],
+      "elements": [
+        {
+          "id": "signature",
+          "reference": "div:has(> div[class*=\"-titleSection\"] #AngularAccelerationToTorque) [class*=\"-signatureContainer\"]",
+          "candidate": "[data-api-member=\"angularaccelerationtotorque\"] .api-signature-panel"
         }
       ]
     }

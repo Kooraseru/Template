@@ -10,4 +10,11 @@ for(const category of ["valid","invalid","review"]) for(const file of fs.readdir
         else assert.equal(check().length>0,category==="invalid");
     });
 }
-test("discovers BasePart scenarios",()=>assert.ok(discover(path.resolve(directory,"../experiments")).some(x=>x.id==="base-part"&&x.spec.scenarios.length===2)));
+test("discovers the declared BasePart scenarios with independent reference selectors",()=>{
+    const experiment=discover(path.resolve(directory,"../experiments")).find(x=>x.id==="base-part");
+    assert.ok(experiment);
+    assert.deepEqual(experiment.spec.scenarios.map(x=>x.id),["desktop","mobile","anchored","method-signature"]);
+    for(const scenario of experiment.spec.scenarios) for(const element of scenario.elements) {
+        assert.notEqual(element.reference,element.candidate);
+    }
+});
