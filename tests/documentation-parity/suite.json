@@ -5,6 +5,11 @@
       "runtime": "node",
       "entry": "comparison.test.cjs",
       "timeoutSeconds": 60
+    },
+    "structure": {
+      "runtime": "node",
+      "entry": "structure.test.cjs",
+      "timeoutSeconds": 60
     }
   }
 }

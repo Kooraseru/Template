@@ -46,6 +46,10 @@ function discover(root) {
                 for(const key of ["reference","candidate"]) assert(typeof action[key]==="string"&&action[key].trim(),"Missing action selector");
             }
         }
+        if(spec.structure!==undefined) {
+            assert(spec.structure&&seen.has(spec.structure.scenario),"Unknown structural scenario");
+            for(const side of ["reference","candidate"])assert(typeof spec.structure[side]==="string"&&spec.structure[side].trim(),"Missing structural root");
+        }
         return {id:entry.name,directory,spec};
     });
     assert(experiments.length,"No experiments discovered");

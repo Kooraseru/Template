@@ -20,3 +20,7 @@ This evidence does not substitute for screenshot baselines or computed styles. C
 ## Captured browser evidence
 
 Workflow dispatch [45876453646](https://github.com/Kooraseru/Template/actions/runs/45876453646) successfully acquired all four reference scenarios. The committed reference metrics and screenshot digests originate from its downloaded capture artifact, not Template's candidate output. See `reference/provenance.json` for provenance. The raw PNG archive is not yet committed; the exact image equality criterion is retained by its digests.
+
+## Structural reference
+
+The complete article structure was independently recovered from the original rendered HTML export, parsed with Chromium DOMParser without executing page scripts or fetching resources. See `reference/structure-provenance.json` and `reference/structure.json.gz.b64`. The baseline covers all 13,877 elements in the article root, not just the title and signatures.
