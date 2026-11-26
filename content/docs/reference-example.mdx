@@ -137,6 +137,47 @@ end)
 tween:Play()
 ```
 
+<h5>Track parts touching a sensor</h5>
+
+Attach this script to a part with touch events enabled. It tracks the parts currently touching the sensor and updates a count attribute that another script can read.
+
+```luau
+local sensor = script.Parent
+assert(sensor:IsA("BasePart"), "Put this script under a BasePart")
+
+local touching: { [BasePart]: boolean } = {}
+
+local function publishCount()
+    local count = 0
+
+    for _ in touching do
+        count += 1
+    end
+
+    sensor:SetAttribute("TouchCount", count)
+end
+
+sensor.Touched:Connect(function(part)
+    if touching[part] then
+        return
+    end
+
+    touching[part] = true
+    publishCount()
+end)
+
+sensor.TouchEnded:Connect(function(part)
+    if not touching[part] then
+        return
+    end
+
+    touching[part] = nil
+    publishCount()
+end)
+
+publishCount()
+```
+
   </div>
 </ApiMember>
 
