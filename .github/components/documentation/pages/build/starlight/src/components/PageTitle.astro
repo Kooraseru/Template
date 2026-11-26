@@ -17,3 +17,13 @@ const home=import.meta.env.BASE_URL;
 h1#_top { margin:24px 0 0; color:var(--docs-title); }
 @media (max-width:37.499rem) { h1#_top { margin-top:16px; } }
 </style>
+
+<script>
+  for (const table of document.querySelectorAll('.sl-markdown-content table:not(.api-enum-table)')) {
+    if (table.parentElement?.classList.contains('docs-table-scroll')) continue;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'docs-table-scroll';
+    table.before(wrapper);
+    wrapper.append(table);
+  }
+</script>
