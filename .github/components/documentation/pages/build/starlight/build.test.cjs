@@ -126,3 +126,14 @@ test('favicon is staged from authored assets and can be replaced per repository'
   assert.match(signature,/<a class="api-type"/);
   assert.match(signature,/<button type="button" class="api-type"/);
 });
+
+test('API icon families share captured geometry and exact colors without inventing constructors', () => {
+  const icons = require('./src/data/api-icons.json');
+  assert.deepEqual(Object.keys(icons).sort(), ['event','method','property']);
+  assert.deepEqual([icons.property.color,icons.method.color,icons.event.color], ['#1AC8FF','#E26CF4','#F2BA2A']);
+  assert.deepEqual([icons.property.paths.length,icons.method.paths.length,icons.event.paths.length],[1,6,1]);
+  const component = fs.readFileSync(path.join(__dirname,'src/components/ApiIcon.astro'),'utf8');
+  assert.match(component,/callback: 'method'/);
+  assert.match(component,/signal: 'event'/);
+  assert.match(component,/icon && <svg/);
+});

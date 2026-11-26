@@ -22,7 +22,8 @@ function sitePages(directory = documentation, pages = []) {
 
 test("published documentation has predictable Markdown metadata", () => {
   const pages = sitePages();
-  assert.ok(pages.length >= 5, "Expected documentation specimens");
+  assert.equal(pages.length, 2, "Template contains exactly two published documentation specimens");
+  assert.ok(pages.includes(path.join(documentation, "reference-example.mdx")));
   assert.ok(pages.includes(path.join(documentation, "index.md")));
   for (const file of pages) {
     const source = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");

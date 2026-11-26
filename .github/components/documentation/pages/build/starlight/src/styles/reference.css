@@ -3,18 +3,16 @@
 .sl-markdown-content .api-summary > li { margin:0; padding:0; }
 .api-summary > li + li { border-top:1px solid var(--docs-border); }
 .api-summary-row { display:flex; align-items:start; gap:8px; min-height:41px; padding:8px 12px 8px 8px; color:var(--docs-heading); }
-.api-summary [data-kind='constructor'] .api-summary-row { padding-inline-start:16px; }
+.api-summary [data-kind='constructor'] .api-summary-row { padding-inline-start:8px; }
 .api-summary-row:hover { background:var(--docs-hover); }
 .sl-markdown-content .api-member-link { color:var(--docs-heading); font-weight:500; text-decoration:none; }
 .api-member-link:hover { text-decoration:underline; }
 .api-member-link:focus-visible { outline:2px solid var(--docs-link); outline-offset:-2px; }
 .api-summary-content { min-width:0; }
 .api-summary .api-signature { display:inline; }
-.api-icon { display:inline-block; flex:0 0 21px; width:21px; height:21px; vertical-align:middle; color:var(--docs-function-icon); }
-.api-icon:is([data-kind='signal'],[data-kind='event']) { color:var(--docs-event-icon); }
-.api-icon:is([data-kind='property'],[data-kind='constant']) { color:var(--docs-property-icon); }
-.api-icon:is([data-kind='type'],[data-kind='class'],[data-kind='enum']) { color:var(--docs-type-icon); }
-.api-icon[data-kind='callback'] { color:var(--docs-callback-icon); }
+.api-icon { display:inline-block; flex:0 0 auto; width:21px; height:21px; vertical-align:middle; color:var(--api-icon-color); }
+.api-icon[data-family='method'] { width:25px; height:25px; }
+@media (forced-colors:active) { .api-icon { color:LinkText; } }
 .api-signature { font-family:var(--sl-font-mono); font-size:14px; line-height:1.4; color:var(--docs-heading); white-space:pre-wrap; overflow-wrap:anywhere; }
 .api-summary .api-description { display:block; font-size:14px; line-height:21px; color:var(--docs-muted); margin-top:4px; }
 .sl-markdown-content .api-type { display:inline; color:inherit; text-decoration:underline; text-underline-offset:4px; cursor:help; }
@@ -29,8 +27,8 @@ a.api-type { cursor:pointer; }
 .api-type-card[data-side='below']::before { bottom:100%; border-bottom-color:var(--docs-tooltip-bg); }
 .api-type-card[data-side='above']::before { top:100%; border-top-color:var(--docs-tooltip-bg); }
 .api-member { margin-block:0 32px; }
-.sl-markdown-content h3.api-member-heading { border-top:2px solid var(--docs-border); padding-top:24px; margin-top:32px; }
-.sl-markdown-content .api-member-heading { display:flex; align-items:center; gap:12px; margin-bottom:24px; font-size:20px; line-height:1.35; }
+.sl-markdown-content h3.api-member-heading { border-top:0; padding-top:0; margin-top:36px; }
+.sl-markdown-content .api-member-heading { display:flex; align-items:center; gap:8px; margin-bottom:24px; font-size:24px; line-height:1.2; }
 .api-member-heading a { color:var(--docs-heading); text-decoration:none; }
 .api-member-heading a:hover { text-decoration:underline; }
 .api-member p { margin-block:16px 24px; }
@@ -48,7 +46,13 @@ a.api-type { cursor:pointer; }
 .sl-markdown-content h3:has(+ .api-summary) { font-size:16px; line-height:22.4px; margin:24px 0 12px; }
 .sl-markdown-content h3 + .api-summary { margin-top:0; }
 .api-reference-page .sl-markdown-content > p { line-height:1.4; }
-.api-reference-page .sl-markdown-content > p:first-of-type { padding-bottom:24px; border-bottom:2px solid var(--docs-border); }
-.api-reference-page .sl-markdown-content h2 { color:var(--docs-title); margin:32px 0 24px; }
+.api-reference-page .sl-markdown-content > p:first-of-type { padding-bottom:36px; border-bottom:3px solid var(--docs-border); }
+.api-reference-page .sl-markdown-content h2 { color:var(--docs-title); margin:36px 0 24px; }
 .api-reference-page .sl-markdown-content h3 { color:var(--docs-title); }
 .api-member p { line-height:1.4; }
+
+.api-member-heading .api-icon { width:24px; height:24px; }
+.api-toc-member .api-icon[data-family='method'] { width:25px; height:25px; }
+.api-summary-row .api-signature { line-height:1.4; }
+.api-summary-content { min-height:25px; }
+.api-signature-panel { overflow-x:auto; }
