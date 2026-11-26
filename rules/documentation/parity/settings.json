@@ -6,6 +6,11 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "commissioning": {
+      "type": "boolean",
+      "description": "Permit missing entire reference scenarios as explicitly unverified while acquiring initial baselines. Never permits a malformed or partial baseline.",
+      "default": false
     }
   }
 }

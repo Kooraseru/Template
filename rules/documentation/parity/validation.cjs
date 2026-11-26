@@ -28,11 +28,14 @@ async function serve(directory, base = "/") {
 }
 async function capture(browser, url, scenario, side, folder, offlineOrigin) {
     const context = await browser.newContext({viewport:scenario.viewport, deviceScaleFactor:1, colorScheme:"dark", locale:"en-US", reducedMotion:"reduce", timezoneId:"UTC"});
+    let page;
     try {
+        fs.mkdirSync(folder,{recursive:true});
         if (offlineOrigin) await context.route("**/*", route => new URL(route.request().url()).origin === offlineOrigin || /^(data|blob):/.test(route.request().url()) ? route.continue() : route.abort());
-        const page = await context.newPage();
+        page = await context.newPage();
         const response = await page.goto(url,{waitUntil:"load",timeout:45000});
-        if (!response?.ok()) throw Error("Navigation failed: " + url);
+        if (!response?.ok()) throw Error("Navigation failed: " + url + " (" + response?.status() + ")");
+        if (side === "reference" && new URL(page.url()).origin !== new URL(url).origin) throw Error("Reference redirected away from expected origin: " + page.url());
         await page.evaluate(()=>document.fonts.ready);
         for (const action of scenario.actions || []) {
             const element = page.locator(action[side]);
@@ -60,6 +63,14 @@ async function capture(browser, url, scenario, side, folder, offlineOrigin) {
         if (side === "reference") console.log("REFERENCE_METRICS " + JSON.stringify({url,scenario:scenario.id,...result}));
         fs.writeFileSync(path.join(folder,"metrics.json"),JSON.stringify(result,null,2)+"\n");
         return result;
+    } catch (error) {
+        if (page) {
+            const details = { url: page.url(), title: await page.title().catch(() => ""), headings: await page.locator("h1,h2").allTextContents().catch(() => []) };
+            fs.writeFileSync(path.join(folder,"failure.json"), JSON.stringify(details,null,2)+"\n");
+            await page.screenshot({path:path.join(folder,"failure.png"),timeout:5000}).catch(()=>{});
+            console.log("CAPTURE_FAILURE " + JSON.stringify(details));
+        }
+        throw error;
     } finally { await context.close(); }
 }
 function Create(settings) {
@@ -86,8 +97,13 @@ function Create(settings) {
                         coverage.push({id,status:"captured"}); continue;
                     }
                     const reference=path.join(experiment.directory,"reference",scenario.id);
-                    const expected=JSON.parse(fs.readFileSync(path.join(reference,"metrics.json"),"utf8"));
                     const actual=await capture(browser,new URL(base+experiment.spec.candidate.slice(1),server.url).href,scenario,"candidate",destination,server.url);
+                    if (!fs.existsSync(reference) && settings.commissioning === true) {
+                        emit("Reference baseline not acquired; candidate captured, parity UNVERIFIED");
+                        coverage.push({id,status:"unverified"});
+                        continue;
+                    }
+                    const expected=JSON.parse(fs.readFileSync(path.join(reference,"metrics.json"),"utf8"));
                     assert.equal(actual.browser,expected.browser,"Reference browser version differs");
                     const differences=compare(expected,actual,tolerance,scenario.elements.map(e=>e.id));
                     for(const key of ["viewport",...scenario.elements.map(e=>e.id)]) {
@@ -102,4 +118,4 @@ function Create(settings) {
         return {findings,coverage};
     }};
 }
-module.exports={Create};
+module.exports={Create,serve,capture};

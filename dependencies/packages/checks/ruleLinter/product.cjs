@@ -32,7 +32,7 @@ async function run({ workspace = root, family, product, output, mode = "check" }
                 }
                 report.findings = result.findings;
                 report.coverage = result.coverage;
-                report.status = result.findings.some(item => item.infrastructure) ? "failed" : result.findings.length ? "different" : mode === "capture" ? "captured" : "passed";
+                report.status = result.findings.some(item => item.infrastructure) || result.coverage.some(item => item.status === "failed") ? "failed" : result.coverage.some(item => item.status === "unverified") ? "unverified" : result.findings.length ? "different" : mode === "capture" ? "captured" : "passed";
             }
         } catch (error) {
             report.findings.push({ file: rule.readme, line: 1, column: 1, message: String(error.message || error), infrastructure: true });
@@ -44,7 +44,7 @@ async function run({ workspace = root, family, product, output, mode = "check" }
         fs.writeFileSync(path.join(destination, "report.json"), JSON.stringify(report, null, 2) + "\n");
         reports.push(report);
     }
-    const failed = reports.some(report => report.status === "failed" || report.status === "different" && report.severity === "error");
+    const failed = reports.some(report => report.status === "failed" || ["different","unverified"].includes(report.status) && report.severity === "error");
     return { reports, failed };
 }
 if (require.main === module) {

@@ -4,6 +4,11 @@ on:
   push:
     branches: ['**', '!ci/**', '!run/**']
   workflow_dispatch:
+    inputs:
+      capture_documentation_reference:
+        description: Acquire independent documentation reference evidence
+        type: boolean
+        default: false
   workflow_call:
 permissions:
   contents: read
@@ -152,19 +157,15 @@ jobs:
       - name: Install parity browser
         working-directory: .github/components/documentation/pages/build/starlight
         run: npx --no-install playwright install --with-deps chromium
-      - name: Acquire initial reference evidence (temporary)
+      - name: Browser checker integration tests
+        run: node --test rules/documentation/parity/tests/browser.test.cjs
+      - name: Documentation parity
+        run: node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/documentation
+      - name: Acquire independent reference evidence
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_documentation_reference }}
         run: node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/reference-capture --capture
-      - name: Documentation parity (initial diagnostic against separately captured reference)
-        run: |
-          for experiment in build/rules/reference-capture/parity/*/; do
-            name=$(basename "$experiment")
-            test -d "rules/documentation/parity/experiments/$name"
-            mkdir -p "rules/documentation/parity/experiments/$name/reference"
-            cp -R "$experiment/." "rules/documentation/parity/experiments/$name/reference/"
-          done
-          node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/documentation
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.capture_documentation_reference }}
         with:
           name: documentation-reference-capture
           path: build/rules/reference-capture

@@ -53,7 +53,8 @@
     "documentation/parity": {
       "severity": "warning",
       "settings": {
-        "geometryTolerance": 1
+        "geometryTolerance": 1,
+        "commissioning": true
       }
     }
   }
