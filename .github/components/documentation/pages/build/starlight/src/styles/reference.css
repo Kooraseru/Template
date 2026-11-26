@@ -43,13 +43,13 @@ a.api-type { cursor:pointer; }
 .api-member-icon-template[hidden] { display:none; }
 
 /* Starlight wraps Markdown headings in a separate anchor-link container. */
-.sl-markdown-content .api-summary-heading-wrapper { margin:24px 0 12px; }
-.sl-markdown-content .api-summary-heading { font-size:16px; line-height:22.4px; margin:0; }
+.sl-markdown-content .sl-heading-wrapper.api-summary-heading-wrapper { margin:24px 0 12px; }
+.sl-markdown-content h3.api-summary-heading { font-size:16px; line-height:1.4; margin:0; }
 .sl-markdown-content .api-summary-heading-wrapper + .api-summary { margin-top:0; }
 .api-reference-page .sl-markdown-content > p:first-of-type { padding-bottom:36px; border-bottom:3px solid var(--docs-border); margin-bottom:36px; }
-.sl-markdown-content .api-group-heading-wrapper { border-top:3px solid var(--docs-border); padding-top:36px; margin:48px 0 36px; }
+.sl-markdown-content .sl-heading-wrapper.api-group-heading-wrapper { border-top:3px solid var(--docs-border); padding-top:36px; margin:48px 0 36px; }
 .sl-markdown-content .api-group-heading { font-size:16px; line-height:1; margin:0; color:var(--docs-heading); }
-.sl-markdown-content .api-member-heading-wrapper { margin:0 0 24px; }
+.sl-markdown-content .sl-heading-wrapper.api-member-heading-wrapper { margin:0 0 24px; }
 .sl-markdown-content .api-member-heading { color:var(--docs-heading); }
 .api-member-heading .api-icon { width:24px; height:24px; }
 .api-signature-panel { overflow-x:auto; }
@@ -65,15 +65,12 @@ a.api-type { cursor:pointer; }
 /* The generic Markdown rhythm must not add paragraph margins within API rows. */
 .sl-markdown-content .api-summary > li > .api-summary-row { margin:0; }
 .sl-markdown-content .api-summary-row > * { margin:0; }
-.sl-markdown-content .api-summary-heading-wrapper { margin-top:24px; margin-bottom:12px; }
-.sl-markdown-content .api-group-heading-wrapper { margin-top:48px; margin-bottom:36px; }
-.sl-markdown-content .api-member-heading-wrapper { margin-top:0; margin-bottom:24px; }
 .api-signature-panel { font-size:14px; line-height:1.4; }
 .api-summary-row { font-size:14px; line-height:1.4; }
 .api-member .api-signature-panel { margin-top:0; }
 .api-parameter-list dt,.api-parameter-list dd { margin-top:0; margin-bottom:0; }
 .api-parameter-list dd { margin-top:4px; }
 
-/* Match the reference's 36px divider rhythm and 24px summary-to-group gap. */
-.sl-markdown-content .sl-heading-wrapper:has(> #summary) { margin:36px 0 24px; }
-.sl-markdown-content .sl-heading-wrapper:has(> #summary) + .api-summary-heading-wrapper { margin-top:0; }
+/* Keep the API summary spacing local to pages that render API members. */
+.api-reference-page .sl-markdown-content .sl-heading-wrapper:has(> #summary) { margin:36px 0 24px; }
+.api-reference-page .sl-markdown-content .sl-heading-wrapper:has(> #summary) + .api-summary-heading-wrapper { margin-top:0; }
