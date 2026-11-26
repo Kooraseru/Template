@@ -143,14 +143,23 @@ a.api-type { cursor:pointer; }
   pointer-events: none;
 }
 .sl-markdown-content .expressive-code .copy > [aria-live]::after { display: none; }
+.sl-markdown-content .expressive-code .copy .feedback {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.sl-markdown-content .expressive-code .copy .feedback::after { display: none; }
 
 .docs-code-sample .expressive-code[data-collapsed] pre {
   max-block-size: 25rem;
   overflow: auto;
 }
 .docs-code-sample .docs-code-toggle {
-  margin-block-start: 8px;
-  padding: 4px 10px;
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-end: 48px;
+  z-index: 1;
+  padding: 3px 8px;
   border: 1px solid var(--docs-border);
   border-radius: 4px;
   background: var(--docs-surface-secondary);
@@ -158,3 +167,5 @@ a.api-type { cursor:pointer; }
   font: inherit;
   cursor: pointer;
 }
+
+.docs-code-sample .expressive-code { position: relative; }
