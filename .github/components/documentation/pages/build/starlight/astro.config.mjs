@@ -19,7 +19,25 @@ if (!/^\/(?:[A-Za-z0-9._~-]+\/)*$/.test(base)) {
   throw new Error('DOCS_BASE must be a root-relative directory path ending in /');
 }
 
+function wrapMarkdownTables() {
+  return function transform(node) {
+    if (!node.children) return;
+    node.children = node.children.map(child => {
+      transform(child);
+      if (child.type !== 'element' || child.tagName !== 'table') return child;
+      if (child.properties.className?.includes('api-enum-table')) return child;
+      return {
+        type: 'element',
+        tagName: 'div',
+        properties: { className: ['docs-table-scroll'] },
+        children: [child],
+      };
+    });
+  };
+}
+
 export default defineConfig({
+  markdown: { rehypePlugins: [wrapMarkdownTables] },
   srcDir: resolve(here, 'src'),
   // Prerendered server chunks must resolve dependencies from this package.
   outDir: resolve(here, 'dist'),
@@ -58,7 +76,7 @@ export default defineConfig({
         codePaddingBlock: '12px',
         codePaddingInline: '16px',
         codeFontSize: '14px',
-        codeLineHeight: '1.5',
+        codeLineHeight: '1.4',
       },
     },
     social: repository ? [{ icon: 'github', label: 'GitHub', href: 'https://github.com/' + repository }] : [],

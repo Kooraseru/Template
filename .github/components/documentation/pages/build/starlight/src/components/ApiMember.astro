@@ -5,13 +5,40 @@ import type { TypeReferences } from './ApiSignature.astro';
 import type { Props as IconProps } from './ApiIcon.astro';
 import { formatSignature } from '../data/format-signature.mjs';
 interface Entry { name: string; type: string; description: string }
-interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; types?: TypeReferences; parameters?: Entry[]; returns?: Entry[]; values?: { name: string; value: number; description: string }[] }
-const { id, name, kind, signature, description, types, parameters = [], returns = [], values = [] } = Astro.props;
+interface Props {
+  id: string;
+  name: string;
+  kind: IconProps['kind'];
+  signature: string;
+  description: string;
+  types?: TypeReferences;
+  parameters?: Entry[];
+  returns?: Entry[];
+  values?: { name: string; value: number; description: string }[];
+  deprecation?: string;
+  metadata?: { label: string; value: string }[];
+}
+const {
+  id, name, kind, signature, description, types, parameters = [], returns = [],
+  values = [], deprecation, metadata = [],
+} = Astro.props;
 const multiline = ['function','method','constructor','operator'].includes(kind) ? formatSignature(signature) : null;
 ---
 <section class="api-member" data-api-member={id} data-kind={kind} data-member-name={name}>
   <span class="api-member-icon-template" hidden>{kind !== 'constructor' && <ApiIcon kind={kind}/>}</span>
+  {deprecation && <span class="api-member-status">Deprecated</span>}
   <p>{description}</p>
+  {(deprecation || metadata.length > 0) && (
+    <details class="api-disclosure">
+      <summary>{name} details</summary>
+      {deprecation && <p>{deprecation}</p>}
+      {metadata.length > 0 && (
+        <dl class="api-member-metadata">
+          {metadata.map(({ label, value }) => <div><dt>{label}</dt><dd>{value}</dd></div>)}
+        </dl>
+      )}
+    </details>
+  )}
   <div class="api-signature-panel">{multiline ? <>
     <span class="api-signature-line"><ApiSignature signature={multiline.before} types={types} memberName/></span>
     <span class="api-signature-line api-signature-indent"><ApiSignature signature={multiline.args} types={types}/></span>

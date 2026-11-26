@@ -48,6 +48,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 
 <ApiSummary types={types} members={[{"kind":"class","signature":"Lorem<T>","href":"#lorem","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"type","signature":"Ipsum<T>","href":"#ipsum","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"enum","signature":"Dolor","href":"#dolor","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"operator","signature":"__add(other: Lorem): Lorem","href":"#add","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
 
+### Inherited members
+
+<details className="api-disclosure">
+  <summary>1 member inherited from Observable</summary>
+  <ApiSummary types={types} members={[{kind: 'method', signature: 'Observe(): Signal<string>', href: '#observe'}]} />
+</details>
+
 ## Usage
 
 ```luau
@@ -91,7 +98,7 @@ end
 
 ### default
 
-<ApiMember types={types} id="default" name="Default" kind="constant" signature={"Default: number"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="default" name="Default" kind="constant" deprecation="Use the Value property for the current value." metadata={[{label: 'Access', value: 'Read only'}]} signature={"Default: number"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ## Functions reference
 
@@ -205,5 +212,13 @@ publishCount()
 
 <ApiMember types={types} id="add" name="__add()" kind="operator" signature={"__add(other: Lorem): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"other","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
+
+## Observable
+
+Observable is the base type used in this example.
+
+### Observe
+
+`Observe(): Signal<string>` returns a signal that emits the current value whenever it changes.
 
 <ApiInteractions />

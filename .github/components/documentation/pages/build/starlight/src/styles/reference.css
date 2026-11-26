@@ -177,3 +177,33 @@ a.api-type { cursor:pointer; }
 .sl-markdown-content .docs-code-toggle:hover {
   background: var(--docs-hover);
 }
+
+.sl-markdown-content .api-disclosure {
+  margin-block: 12px;
+  border: 1px solid var(--docs-border);
+  border-radius: 6px;
+}
+.api-disclosure > summary {
+  padding: 10px 12px;
+  color: var(--docs-heading);
+  cursor: pointer;
+}
+.sl-markdown-content .api-disclosure[open] > :not(summary) {
+  margin: 0 12px 12px;
+}
+.api-member-status {
+  display: inline-block;
+  padding-inline: 6px;
+  border: 1px solid var(--docs-border);
+  border-radius: 4px;
+  color: var(--docs-muted);
+  font-size: 14px;
+}
+.api-member-metadata > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 8px;
+  padding-block: 4px;
+}
+.api-member-metadata dt { font-weight: 600; }
+.api-member-metadata dd { margin: 0; overflow-wrap: anywhere; }
