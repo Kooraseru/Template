@@ -104,7 +104,8 @@ a.api-type { cursor:pointer; }
   counter-increment: sample-line;
   content: counter(sample-line) / "";
   display: block;
-  flex: 0 0 3ch;
+  grid-area: gutter;
+  inline-size: 3ch;
   margin-inline-end: 1.5ch;
   color: var(--docs-muted);
   text-align: end;
