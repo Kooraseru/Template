@@ -95,14 +95,14 @@ a.api-type { cursor:pointer; }
   font-size: var(--sl-text-body);
 }
 .sl-markdown-content .docs-code-sample p { margin-block: 0 12px; }
-.sl-markdown-content .docs-code-sample .expressive-code pre {
+.sl-markdown-content .expressive-code pre {
   background-color: var(--docs-surface-secondary);
   border-color: var(--docs-border);
 }
-.docs-code-sample .expressive-code code { counter-reset: sample-line; }
-.docs-code-sample .expressive-code .ec-line::before {
-  counter-increment: sample-line;
-  content: counter(sample-line) / "";
+.sl-markdown-content .expressive-code pre code { counter-reset: docs-code-line; }
+.sl-markdown-content .expressive-code .ec-line { counter-increment: docs-code-line; }
+.sl-markdown-content .expressive-code .ec-line:not(:has(> .gutter))::before {
+  content: counter(docs-code-line) / "";
   display: block;
   grid-area: gutter;
   inline-size: 3ch;
@@ -110,4 +110,19 @@ a.api-type { cursor:pointer; }
   color: var(--docs-muted);
   text-align: end;
   user-select: none;
+}
+
+/* Keep the native copy action discoverable with a mouse, keyboard, or touch. */
+.sl-markdown-content .expressive-code .copy,
+.sl-markdown-content .expressive-code .copy button {
+  opacity: 1;
+}
+.sl-markdown-content .expressive-code .copy button {
+  --ec-frm-inlBtnFg: var(--docs-heading);
+  --ec-frm-inlBtnBgIdleOpa: 0;
+  --ec-frm-inlBtnBrdOpa: 0;
+}
+.sl-markdown-content .expressive-code .copy {
+  --ec-frm-tooltipSuccessBg: var(--docs-surface-secondary);
+  --ec-frm-tooltipSuccessFg: var(--docs-heading);
 }
