@@ -34,3 +34,18 @@ html { scroll-behavior:auto; scroll-padding-top:var(--docs-anchor-offset); }
 .sl-markdown-content .sl-heading-wrapper.level-h2 { margin-top:64px; margin-bottom:16px; }
 .sl-markdown-content .sl-heading-wrapper.level-h3 { margin-top:48px; margin-bottom:16px; }
 .sl-markdown-content .sl-heading-wrapper.level-h4 { margin-top:32px; margin-bottom:16px; }
+
+/* Native media works in Markdown HTML blocks and MDX. */
+.sl-markdown-content :is(figure, picture, video) { max-inline-size: 100%; }
+.sl-markdown-content :is(figure img, video) {
+  display: block;
+  block-size: auto;
+  max-inline-size: 100%;
+}
+.sl-markdown-content figure { margin-inline: 0; }
+.sl-markdown-content figcaption {
+  margin-block-start: 8px;
+  color: var(--docs-muted);
+  font-size: 14px;
+}
+.sl-markdown-content figure > video { margin-inline: auto; }
