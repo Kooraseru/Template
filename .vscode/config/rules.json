@@ -54,7 +54,7 @@
       "severity": "warning",
       "settings": {
         "geometryTolerance": 1,
-        "commissioning": true
+        "commissioning": false
       }
     }
   }

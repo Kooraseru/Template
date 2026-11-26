@@ -16,3 +16,7 @@ Observed stylesheet declarations (not computed browser measurements):
 | Scrollbar | thin, grey thumb, transparent track |
 
 This evidence does not substitute for screenshot baselines or computed styles. Capture the live reference explicitly using the workflow dispatch or local capture command. Do not treat static declarations as a passing visual comparison.
+
+## Captured browser evidence
+
+Workflow dispatch [45876453646](https://github.com/Kooraseru/Template/actions/runs/45876453646) successfully acquired all four reference scenarios. The committed reference metrics and screenshot digests originate from its downloaded capture artifact, not Template's candidate output. See `reference/provenance.json` for provenance. The raw PNG archive is not yet committed; the exact image equality criterion is retained by its digests.

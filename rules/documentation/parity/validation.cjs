@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const http = require("node:http");
 const assert = require("node:assert/strict");
-const { compare, discover } = require("./comparison.cjs");
+const { compare, discover, compareScreenshots, screenshotManifest } = require("./comparison.cjs");
 const site = ".github/components/documentation/pages/build/starlight";
 const properties = ["color","backgroundColor","fontFamily","fontSize","fontWeight","lineHeight","paddingTop","paddingRight","paddingBottom","paddingLeft","marginTop","marginBottom","borderTopWidth","borderRadius","display","position","textDecorationLine","overflowY"];
 const mime = { ".html":"text/html", ".css":"text/css", ".js":"text/javascript", ".svg":"image/svg+xml", ".png":"image/png", ".woff2":"font/woff2", ".json":"application/json" };
@@ -59,6 +59,7 @@ async function capture(browser, url, scenario, side, folder, offlineOrigin) {
         fs.mkdirSync(folder,{recursive:true});
         const screenshot=await page.screenshot({animations:"disabled",path:path.join(folder,"viewport.png")});
         for(const mapping of scenario.elements) await page.locator(mapping[side]).screenshot({animations:"disabled",path:path.join(folder,mapping.id+".png")});
+        fs.writeFileSync(path.join(folder,"screenshots.json"),JSON.stringify(screenshotManifest(folder,["viewport",...scenario.elements.map(e=>e.id)]),null,2)+"\n");
         const result={browser:browser.version(),viewport:scenario.viewport,elements};
         if (side === "reference") console.log("REFERENCE_METRICS " + JSON.stringify({url,scenario:scenario.id,...result}));
         fs.writeFileSync(path.join(folder,"metrics.json"),JSON.stringify(result,null,2)+"\n");
@@ -106,10 +107,7 @@ function Create(settings) {
                     const expected=JSON.parse(fs.readFileSync(path.join(reference,"metrics.json"),"utf8"));
                     assert.equal(actual.browser,expected.browser,"Reference browser version differs");
                     const differences=compare(expected,actual,tolerance,scenario.elements.map(e=>e.id));
-                    for(const key of ["viewport",...scenario.elements.map(e=>e.id)]) {
-                        const a=fs.readFileSync(path.join(reference,key+".png")),b=fs.readFileSync(path.join(destination,key+".png"));
-                        if(!a.equals(b)) differences.push(key+": screenshot differs");
-                    }
+                    differences.push(...compareScreenshots(reference,destination,["viewport",...scenario.elements.map(e=>e.id)]));
                     for(const difference of differences) emit(difference);
                     coverage.push({id,status:differences.length?"different":"passed"});
                 } catch(error) { emit(String(error.message||error),true); coverage.push({id,status:"failed"}); }

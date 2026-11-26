@@ -1,6 +1,24 @@
 "use strict";
 const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict");
+const {createHash}=require("node:crypto");
 const id=/^[a-z][a-z0-9-]*$/;
+function digest(file) { return createHash("sha256").update(fs.readFileSync(file)).digest("hex"); }
+function screenshotManifest(directory,keys) {
+    return Object.fromEntries(keys.map(key=>[key+".png",digest(path.join(directory,key+".png"))]));
+}
+function compareScreenshots(reference,actual,keys) {
+    const manifestPath=path.join(reference,"screenshots.json");
+    const manifest=fs.existsSync(manifestPath)?JSON.parse(fs.readFileSync(manifestPath,"utf8")):screenshotManifest(reference,keys);
+    assert.deepEqual(Object.keys(manifest).sort(),keys.map(key=>key+".png").sort(),"Missing or unexpected reference screenshots");
+    const differences=[];
+    for(const key of keys) {
+        const name=key+".png", expected=manifest[name], original=path.join(reference,name);
+        assert(typeof expected==="string"&&/^[a-f0-9]{64}$/.test(expected),"Invalid reference screenshot digest: "+name);
+        if(fs.existsSync(original)) assert.equal(digest(original),expected,"Reference image does not match recorded digest: "+name);
+        if(digest(path.join(actual,name))!==expected) differences.push(key+": screenshot differs");
+    }
+    return differences;
+}
 function discover(root) {
     const entries=fs.readdirSync(root,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name));
     const experiments=entries.map(entry=>{
@@ -56,4 +74,4 @@ function compare(expected,actual,tolerance,ids) {
     }
     return differences;
 }
-module.exports={discover,compare};
+module.exports={discover,compare,compareScreenshots,screenshotManifest};

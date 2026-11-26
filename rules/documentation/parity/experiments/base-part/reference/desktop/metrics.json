@@ -1,0 +1,42 @@
+{
+  "browser": "134.0.6998.35",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "elements": {
+    "title": {
+      "text": "BasePart",
+      "rect": {
+        "x": 537,
+        "y": 140,
+        "width": 121,
+        "height": 36.40625
+      },
+      "style": {
+        "color": "rgb(255, 255, 255)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "\"Builder Sans\", Helvetica, Arial, san-serif",
+        "fontSize": "28px",
+        "fontWeight": "700",
+        "lineHeight": "36.4px",
+        "paddingTop": "0px",
+        "paddingRight": "0px",
+        "paddingBottom": "0px",
+        "paddingLeft": "0px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "borderTopWidth": "0px",
+        "borderRadius": "0px",
+        "display": "block",
+        "position": "static",
+        "textDecorationLine": "none",
+        "overflowY": "visible"
+      },
+      "state": {
+        "expanded": null,
+        "open": null
+      }
+    }
+  }
+}
