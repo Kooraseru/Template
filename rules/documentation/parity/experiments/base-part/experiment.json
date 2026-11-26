@@ -1,0 +1,34 @@
+{
+  "reference": "https://create.roblox.com/docs/reference/engine/classes/BasePart",
+  "candidate": "/reference-example/",
+  "scenarios": [
+    {
+      "id": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "elements": [
+        {
+          "id": "title",
+          "reference": "h1",
+          "candidate": "h1"
+        }
+      ]
+    },
+    {
+      "id": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "elements": [
+        {
+          "id": "title",
+          "reference": "h1",
+          "candidate": "h1"
+        }
+      ]
+    }
+  ]
+}

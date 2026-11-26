@@ -49,6 +49,12 @@
           ]
         }
       }
+    },
+    "documentation/parity": {
+      "severity": "warning",
+      "settings": {
+        "geometryTolerance": 1
+      }
     }
   }
 }

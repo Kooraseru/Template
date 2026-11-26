@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "checks": {
+    "comparison": {
+      "runtime": "node",
+      "entry": "comparison.test.cjs",
+      "timeoutSeconds": 60
+    }
+  }
+}
