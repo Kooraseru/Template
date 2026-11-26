@@ -124,7 +124,7 @@ function Create(settings) {
                         fs.writeFileSync(path.join(destination,"structure-report.json"),JSON.stringify(report,null,2)+"\n");
                         const total=Object.values(report.counts).reduce((a,b)=>a+b,0);
                         if(total) {
-                            differences.push("structure: "+report.matched+" matching paths; expected "+report.expectedCount+" elements, actual "+report.actualCount+"; "+JSON.stringify(report.counts)+" (see structure-report.json)");
+                            differences.push("structure: "+report.matched+" matching paths; "+report.matchingNamedSubtrees+" matching named subtrees independent of ancestor; expected "+report.expectedCount+" elements, actual "+report.actualCount+"; "+JSON.stringify(report.counts)+" (see structure-report.json)");
                             for(const entry of report.inventory.slice(0,12))differences.push("structure inventory: "+entry.element+": expected "+entry.expected+", actual "+entry.actual);
                         }
                     }

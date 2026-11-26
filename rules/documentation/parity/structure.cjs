@@ -47,7 +47,7 @@ function count(tree) {
 }
 function compareStructure(expected,actual) {
     const expectedCount=count(expected),actualCount=count(actual);
-    const inventory=new Map(),differences=[];
+    const inventory=new Map(),differences=[],componentShapes=new Map();
     const label=(tree,index)=>tree.labels[tree.nodes[index][0]];
     const name=(tree,index)=>{const [tag,classes]=label(tree,index);return tag+(classes.length?"."+classes.join("."):"");};
     const key=(tree,index)=>JSON.stringify(label(tree,index));
@@ -58,6 +58,36 @@ function compareStructure(expected,actual) {
         for(const child of tree.nodes[index].slice(1))collect(tree,child,side);
     }
     collect(expected,expected.root,"expected");collect(actual,actual.root,"actual");
+    // A component may already match even if an ancestor has a different name.
+    // Compare the full descendant tree independently of its absolute location,
+    // without forgiving the strict path mismatch above it.
+    function shapes(tree,side){
+        const hashes=[];
+        for(const node of tree.nodes){
+            const identity=tree.labels[node[0]];
+            const children=node.slice(1).map(child=>hashes[child]);
+            hashes.push(createHash("sha256").update(JSON.stringify([identity,children])).digest("hex"));
+        }
+        function visit(index){
+            const identity=label(tree,index);
+            if(identity[1].length) {
+                const id=key(tree,index);
+                if(!componentShapes.has(id))componentShapes.set(id,{element:name(tree,index),expected:0,actual:0,expectedShapes:new Map(),actualShapes:new Map()});
+                const entry=componentShapes.get(id),map=entry[side+"Shapes"],hash=hashes[index];
+                entry[side]++;map.set(hash,(map.get(hash)||0)+1);
+            }
+            for(const child of tree.nodes[index].slice(1))visit(child);
+        }
+        visit(tree.root);
+    }
+    shapes(expected,"expected");shapes(actual,"actual");
+    const components=[...componentShapes.values()].map(entry=>{
+        const matchingSubtrees=[...entry.expectedShapes].reduce((total,[hash,n])=>total+Math.min(n,entry.actualShapes.get(hash)||0),0);
+        return {element:entry.element,expected:entry.expected,actual:entry.actual,matchingSubtrees,
+            missingShapes:[...entry.expectedShapes].filter(([hash,n])=>n>(entry.actualShapes.get(hash)||0)).map(([hash,n])=>({hash,count:n-(entry.actualShapes.get(hash)||0)})),
+            unexpectedShapes:[...entry.actualShapes].filter(([hash,n])=>n>(entry.expectedShapes.get(hash)||0)).map(([hash,n])=>({hash,count:n-(entry.expectedShapes.get(hash)||0)}))};
+    }).sort((a,b)=>a.element.localeCompare(b.element));
+    const matchingNamedSubtrees=components.reduce((sum,entry)=>sum+entry.matchingSubtrees,0);
     function children(tree,index){
         const seen=new Map();
         return tree.nodes[index].slice(1).map(child=>{
@@ -85,6 +115,6 @@ function compareStructure(expected,actual) {
     }
     walk(expected.root,actual.root,"$");
     const counts=Object.fromEntries(["identity","missing","unexpected","order"].map(kind=>[kind,differences.filter(x=>x.kind===kind).length]));
-    return {expectedCount,actualCount,matched,counts,inventory:[...inventory.values()].filter(x=>x.expected!==x.actual).sort((a,b)=>Math.abs(b.expected-b.actual)-Math.abs(a.expected-a.actual)),differences};
+    return {expectedCount,actualCount,matched,matchingNamedSubtrees,components,counts,inventory:[...inventory.values()].filter(x=>x.expected!==x.actual).sort((a,b)=>Math.abs(b.expected-b.actual)-Math.abs(a.expected-a.actual)),differences};
 }
 module.exports={snapshot,loadReference,count,compareStructure};

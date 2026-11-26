@@ -26,3 +26,22 @@ test("class rename and tag changes cannot pass",()=>{
 test("malformed or cyclic trees fail closed",()=>{
     assert.throws(()=>count({labels:[["main",[]]],nodes:[[0,0]],root:0}),/cyclic/);
 });
+
+test("component tree matching earns independent credit under a different ancestor",()=>{
+    const labels=[["main",[]],["span",["title"]],["button",["copy"]],["div",["wrapper"]]];
+    const expected=tree([0,1],labels),actual=tree([2,1],labels);
+    const report=compareStructure(expected,actual);
+    assert.equal(report.matched,2);
+    assert.equal(report.matchingNamedSubtrees,2);
+    const title=report.components.find(x=>x.element==="span.title");
+    assert.equal(title.matchingSubtrees,1);
+    assert.equal(report.counts.missing,1);
+    assert.equal(report.counts.unexpected,2);
+});
+test("same named component with incorrect descendants is not a matching subtree",()=>{
+    const expected=tree([2,1]);
+    const actual=tree([2,1],[["main",[]],["span",["wrong"]],["button",["copy"]],["div",["wrapper"]]]);
+    const report=compareStructure(expected,actual);
+    assert.equal(report.components.find(x=>x.element==="div.wrapper").matchingSubtrees,0);
+    assert.equal(report.components.find(x=>x.element==="button.copy").matchingSubtrees,1);
+});
