@@ -154,3 +154,9 @@ test('shared TOC is a renderer override, not two competing scrollspies', () => {
   assert.match(controller,/getBoundingClientRect\(\)\.top<=threshold/);
   assert.match(controller,/link\.removeAttribute\('aria-current'\)/);
 });
+
+test('scroll padding is the only anchor offset', () => {
+  const css=fs.readFileSync(path.join(__dirname,'src/styles/typography.css'),'utf8');
+  assert.match(css,/scroll-padding-top:var\(--docs-anchor-offset\)/);
+  assert.doesNotMatch(css,/scroll-margin-top:\s*var\(--docs-anchor-offset/);
+});

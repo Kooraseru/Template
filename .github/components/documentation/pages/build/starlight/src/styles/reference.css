@@ -73,3 +73,7 @@ a.api-type { cursor:pointer; }
 .api-member .api-signature-panel { margin-top:0; }
 .api-parameter-list dt,.api-parameter-list dd { margin-top:0; margin-bottom:0; }
 .api-parameter-list dd { margin-top:4px; }
+
+/* Match the reference's 36px divider rhythm and 24px summary-to-group gap. */
+.sl-markdown-content .sl-heading-wrapper:has(> #summary) { margin:36px 0 24px; }
+.sl-markdown-content .sl-heading-wrapper:has(> #summary) + .api-summary-heading-wrapper { margin-top:0; }

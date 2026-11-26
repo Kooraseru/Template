@@ -60,7 +60,9 @@
     const rename=(heading:HTMLElement,label:string,icon?:Element|null)=>{
       const anchor=heading.querySelector('a');
       heading.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),document.createTextNode(label),...(anchor?[anchor]:[]));
-      if(anchor)anchor.setAttribute('aria-label','Link to '+label);
+      const permalink=wrapperFor(heading).querySelector('.sl-anchor-link');
+      if(permalink){permalink.setAttribute('aria-label','Link to '+label);const accessible=permalink.querySelector('.sr-only');if(accessible)accessible.textContent='Link to '+label;}
+      else if(anchor)anchor.setAttribute('aria-label','Link to '+label);
     };
     const labelLink=(link:HTMLAnchorElement,label:string,icon?:Element|null)=>{
       const span=document.createElement('span');span.textContent=label;span.title=label;
