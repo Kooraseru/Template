@@ -57,6 +57,7 @@ async function capture(browser, url, scenario, side, folder, offlineOrigin) {
         const screenshot=await page.screenshot({animations:"disabled",path:path.join(folder,"viewport.png")});
         for(const mapping of scenario.elements) await page.locator(mapping[side]).screenshot({animations:"disabled",path:path.join(folder,mapping.id+".png")});
         const result={browser:browser.version(),viewport:scenario.viewport,elements};
+        if (side === "reference") console.log("REFERENCE_METRICS " + JSON.stringify({url,scenario:scenario.id,...result}));
         fs.writeFileSync(path.join(folder,"metrics.json"),JSON.stringify(result,null,2)+"\n");
         return result;
     } finally { await context.close(); }
