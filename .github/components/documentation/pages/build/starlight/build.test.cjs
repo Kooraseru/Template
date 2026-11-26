@@ -145,3 +145,12 @@ test('multiline callable signatures preserve nested parentheses and return tuple
   assert.equal(formatSignature('OnInvoke: (x: number) -> boolean'),null);
   assert.equal(formatSignature('new()'),null);
 });
+
+test('shared TOC is a renderer override, not two competing scrollspies', () => {
+  const config=fs.readFileSync(path.join(__dirname,'astro.config.mjs'),'utf8');
+  assert.match(config,/TableOfContents: '.\/src\/components\/TableOfContents\.astro'/);
+  assert.match(config,/MobileTableOfContents: '.\/src\/components\/MobileTableOfContents\.astro'/);
+  const controller=fs.readFileSync(path.join(__dirname,'src/components/TocController.astro'),'utf8');
+  assert.match(controller,/getBoundingClientRect\(\)\.top<=threshold/);
+  assert.match(controller,/link\.removeAttribute\('aria-current'\)/);
+});

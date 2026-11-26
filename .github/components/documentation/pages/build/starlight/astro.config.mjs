@@ -44,6 +44,9 @@ export default defineConfig({
       ThemeProvider: './src/components/ThemeProvider.astro',
       ThemeSelect: './src/components/ThemeSelect.astro',
       EditLink: './src/components/EditLink.astro',
+      PageTitle: './src/components/PageTitle.astro',
+      TableOfContents: './src/components/TableOfContents.astro',
+      MobileTableOfContents: './src/components/MobileTableOfContents.astro',
     },
     expressiveCode: {
       themes: ['github-dark'],

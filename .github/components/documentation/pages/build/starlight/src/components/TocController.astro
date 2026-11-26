@@ -1,0 +1,59 @@
+<script>
+  // A single scrollspy for both rails. The heading nearest the anchor offset
+  // wins; intersection order must never prefer an earlier parent section.
+  const tocs=[...document.querySelectorAll<HTMLElement>('docs-toc, docs-mobile-toc')];
+  const linkSets=tocs.map(toc=>[...toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')]);
+  const links=linkSets[0]||[];
+  const items=links.map(link=>({id:decodeURIComponent(link.hash.slice(1)),heading:document.getElementById(decodeURIComponent(link.hash.slice(1)))})).filter((item):item is {id:string;heading:HTMLElement}=>Boolean(item.heading));
+  let current='';
+  function select(id:string){
+    if(current===id)return;
+    current=id;
+    for(let index=0;index<tocs.length;index++){
+      const set=linkSets[index];
+      for(const link of set){
+        if(decodeURIComponent(link.hash.slice(1))===id)link.setAttribute('aria-current','true');
+        else link.removeAttribute('aria-current');
+      }
+      const active=set.find(link=>link.getAttribute('aria-current')==='true');
+      const label=tocs[index].querySelector('.docs-mobile-toc-current');
+      if(label && active)label.textContent=active.textContent;
+    }
+  }
+  function update(){
+    if(!items.length)return;
+    const header=document.querySelector('header')?.getBoundingClientRect().height||0;
+    const mobile=tocs.find(toc=>toc.tagName==='DOCS-MOBILE-TOC');
+    const bar=mobile?.querySelector('summary')?.getBoundingClientRect().height||0;
+    const threshold=header+bar+18;
+    let lo=0,hi=items.length-1;
+    while(lo<hi){
+      const mid=Math.ceil((lo+hi)/2);
+      if(items[mid].heading.getBoundingClientRect().top<=threshold)lo=mid;
+      else hi=mid-1;
+    }
+    select(items[lo].id);
+  }
+  let frame=0;
+  function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;update();});}
+  for(const toc of tocs){
+    const details=toc.querySelector('details');
+    for(const link of toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')){
+      link.addEventListener('click',()=>{
+        if(details)details.open=false;
+        select(decodeURIComponent(link.hash.slice(1)));
+        schedule();
+      });
+    }
+    if(details){
+      document.addEventListener('pointerdown',event=>{if(!details.contains(event.target as Node))details.open=false;});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape'&&details.open){const focused=details.contains(document.activeElement);details.open=false;if(focused)details.querySelector('summary')?.focus();}});
+    }
+  }
+  addEventListener('scroll',schedule,{passive:true});
+  addEventListener('resize',schedule);
+  addEventListener('hashchange',schedule);
+  addEventListener('load',schedule);
+  document.fonts?.ready.then(schedule);
+  schedule();
+</script>

@@ -48,12 +48,12 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
   document.addEventListener('pointerdown',e=>{if(active && !active.contains(e.target as Node)&&!card.contains(e.target as Node))hide();});
   addEventListener('resize',position);addEventListener('scroll',hide,{passive:true,capture:true});
-  // Keep Starlight's generated heading anchors and scrollspy. Mark actual
+  // Keep Starlight's generated heading anchors and our shared scrollspy. Mark actual
   // summary groups and member headings, including their heading wrappers.
   const members = [...document.querySelectorAll<HTMLElement>('[data-api-member]')];
   if(members.length){
     document.documentElement.classList.add('api-reference-page');
-    const tocLinks=[...document.querySelectorAll<HTMLAnchorElement>('starlight-toc a[href^="#"], mobile-starlight-toc a[href^="#"]')];
+    const tocLinks=[...document.querySelectorAll<HTMLAnchorElement>('docs-toc a[href^="#"], docs-mobile-toc a[href^="#"]')];
     const headingFor=(id:string)=>document.getElementById(id);
     const linksFor=(id:string)=>tocLinks.filter(link=>decodeURIComponent(link.hash.slice(1))===id);
     const wrapperFor=(heading:HTMLElement)=>heading.closest('.sl-heading-wrapper') || heading;
@@ -101,7 +101,7 @@
     // Bring the active member into the independent desktop rail, without
     // scrolling the article or overriding a reader's manual rail scrolling.
     const rail=document.querySelector<HTMLElement>('.right-sidebar');
-    const toc=rail?.querySelector('starlight-toc');
+    const toc=rail?.querySelector('docs-toc');
     if(rail&&toc){
       const reveal=()=>{
         if(rail.matches(':hover'))return;
