@@ -5,6 +5,7 @@ sidebar:
   order: 100
 ---
 
+import ApiSignature from '../../components/ApiSignature.astro';
 import ApiSummary from '../../components/ApiSummary.astro';
 import ApiMember from '../../components/ApiMember.astro';
 import ApiInteractions from '../../components/ApiInteractions.astro';
@@ -134,7 +135,7 @@ end)
 
 ### anchored
 
-<ApiMember types={types} id="anchored" name="Anchored" kind="property" signature="Anchored: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="anchored" name="Anchored" kind="property" signature="BasePart.Anchored : boolean" description={"Determines whether a part is immovable by physics."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -207,7 +208,7 @@ cd.MouseClick:Connect(onToggle)
 
 ### assemblyangularvelocity
 
-<ApiMember types={types} id="assemblyangularvelocity" name="AssemblyAngularVelocity" kind="property" signature="AssemblyAngularVelocity: Vector3" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
+<ApiMember types={types} id="assemblyangularvelocity" name="AssemblyAngularVelocity" kind="property" signature="BasePart.AssemblyAngularVelocity : Vector3" description={"The angular velocity of the part's assembly."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
 <div slot="description">
 
@@ -236,7 +237,7 @@ no effect.
 
 ### assemblycenterofmass
 
-<ApiMember types={types} id="assemblycenterofmass" name="AssemblyCenterOfMass" kind="property" signature="AssemblyCenterOfMass: Vector3" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="assemblycenterofmass" name="AssemblyCenterOfMass" kind="property" signature="BasePart.AssemblyCenterOfMass : Vector3" description={"The center of mass of the part's assembly in world space."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -257,7 +258,7 @@ staying upright under the effect of gravity.
 
 ### assemblylinearvelocity
 
-<ApiMember types={types} id="assemblylinearvelocity" name="AssemblyLinearVelocity" kind="property" signature="AssemblyLinearVelocity: Vector3" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
+<ApiMember types={types} id="assemblylinearvelocity" name="AssemblyLinearVelocity" kind="property" signature="BasePart.AssemblyLinearVelocity : Vector3" description={"The linear velocity of the part's assembly."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
 <div slot="description">
 
@@ -290,7 +291,7 @@ no effect.
 
 ### assemblymass
 
-<ApiMember types={types} id="assemblymass" name="AssemblyMass" kind="property" signature="AssemblyMass: float" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="assemblymass" name="AssemblyMass" kind="property" signature="BasePart.AssemblyMass : float" description={"The total mass of the part's assembly."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -308,7 +309,7 @@ assemblies with a large difference in mass may cause instabilities.
 
 ### assemblyrootpart
 
-<ApiMember types={types} id="assemblyrootpart" name="AssemblyRootPart" kind="property" signature="AssemblyRootPart: BasePart" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="assemblyrootpart" name="AssemblyRootPart" kind="property" signature="BasePart.AssemblyRootPart : BasePart" description={"A reference to the root part of the assembly."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -330,7 +331,7 @@ For more information on root parts, see
 
 ### audiocancollide
 
-<ApiMember types={types} id="audiocancollide" name="AudioCanCollide" kind="property" signature="AudioCanCollide: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="audiocancollide" name="AudioCanCollide" kind="property" signature="BasePart.AudioCanCollide : boolean" description={"Determines whether the part will physically interact with audio\nsimulation, similar to `Class.BasePart.CastShadow|CastShadow` for\nlighting."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -347,7 +348,7 @@ reflected.
 
 ### backparama
 
-<ApiMember types={types} id="backparama" name="BackParamA" kind="property" signature="BackParamA: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="backparama" name="BackParamA" kind="property" signature="BasePart.BackParamA : float" description={"Determines the first parameter for the SurfaceType on the Back face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -415,7 +416,7 @@ end
 
 ### backparamb
 
-<ApiMember types={types} id="backparamb" name="BackParamB" kind="property" signature="BackParamB: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="backparamb" name="BackParamB" kind="property" signature="BasePart.BackParamB : float" description={"Determines the second parameter for the SurfaceType on the Back face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -484,7 +485,7 @@ end
 
 ### backsurface
 
-<ApiMember types={types} id="backsurface" name="BackSurface" kind="property" signature="BackSurface: SurfaceType" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="backsurface" name="BackSurface" kind="property" signature="BasePart.BackSurface : SurfaceType" description={"Determines the type of surface for the back face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -498,7 +499,7 @@ to each other, they may create a joint between them.
 
 ### backsurfaceinput
 
-<ApiMember types={types} id="backsurfaceinput" name="BackSurfaceInput" kind="property" signature="BackSurfaceInput: InputType" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="backsurfaceinput" name="BackSurfaceInput" kind="property" signature="BasePart.BackSurfaceInput : InputType" description={"Determines the kind of input for the Back face of a part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -575,7 +576,7 @@ end
 
 ### bottomparama
 
-<ApiMember types={types} id="bottomparama" name="BottomParamA" kind="property" signature="BottomParamA: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="bottomparama" name="BottomParamA" kind="property" signature="BasePart.BottomParamA : float" description={"Determines the first parameter for the SurfaceType on the Bottom face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -643,7 +644,7 @@ end
 
 ### bottomparamb
 
-<ApiMember types={types} id="bottomparamb" name="BottomParamB" kind="property" signature="BottomParamB: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="bottomparamb" name="BottomParamB" kind="property" signature="BasePart.BottomParamB : float" description={"Determines the second parameter for the SurfaceType on the Bottom face of\na part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -712,7 +713,7 @@ end
 
 ### bottomsurface
 
-<ApiMember types={types} id="bottomsurface" name="BottomSurface" kind="property" signature="BottomSurface: SurfaceType" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="bottomsurface" name="BottomSurface" kind="property" signature="BasePart.BottomSurface : SurfaceType" description={"Determines the type of surface for the bottom face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -726,7 +727,7 @@ to each other, they may create a joint between them.
 
 ### bottomsurfaceinput
 
-<ApiMember types={types} id="bottomsurfaceinput" name="BottomSurfaceInput" kind="property" signature="BottomSurfaceInput: InputType" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="bottomsurfaceinput" name="BottomSurfaceInput" kind="property" signature="BasePart.BottomSurfaceInput : InputType" description={"Determines the kind of input for the Bottom face of a part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -803,7 +804,7 @@ end
 
 ### brickcolor
 
-<ApiMember types={types} id="brickcolor" name="BrickColor" kind="property" signature="BrickColor: BrickColor" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
+<ApiMember types={types} id="brickcolor" name="BrickColor" kind="property" signature="BasePart.BrickColor : BrickColor" description={"Determines the color of a part."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
 <div slot="description">
 
@@ -823,7 +824,7 @@ Other visual properties of a part are determined by
 
 ### brickcolor-2
 
-<ApiMember types={types} id="brickcolor-2" name="brickColor" kind="property" signature="brickColor: BrickColor" metadata={[{"label":"Tags","value":"NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]} deprecated>
+<ApiMember types={types} id="brickcolor-2" name="brickColor" kind="property" signature="BasePart.brickColor : BrickColor" description={""} metadata={[{"label":"Tags","value":"NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -836,7 +837,7 @@ This deprecated property is an old Camel Case variant of the Pascal Case
 
 ### cancollide
 
-<ApiMember types={types} id="cancollide" name="CanCollide" kind="property" signature="CanCollide: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="cancollide" name="CanCollide" kind="property" signature="BasePart.CanCollide : boolean" description={"Determines whether a part may collide with other parts."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -918,7 +919,7 @@ close()
 
 ### canquery
 
-<ApiMember types={types} id="canquery" name="CanQuery" kind="property" signature="CanQuery: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="canquery" name="CanQuery" kind="property" signature="BasePart.CanQuery : boolean" description={"Determines whether the part is considered during spatial query operations."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -940,7 +941,7 @@ descendants of a given list of parts using an [`OverlapParams`](https://create.r
 
 ### cantouch
 
-<ApiMember types={types} id="cantouch" name="CanTouch" kind="property" signature="CanTouch: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="cantouch" name="CanTouch" kind="property" signature="BasePart.CanTouch : boolean" description={"Determines if `Class.BasePart.Touched|Touched` and\n`Class.BasePart.TouchEnded|TouchEnded` events fire on the part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -972,7 +973,7 @@ can still be hit by [`Raycasts`](https://create.roblox.com/docs/reference/engine
 
 ### castshadow
 
-<ApiMember types={types} id="castshadow" name="CastShadow" kind="property" signature="CastShadow: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="castshadow" name="CastShadow" kind="property" signature="BasePart.CastShadow : boolean" description={"Determines whether or not a part casts a shadow."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -991,7 +992,7 @@ leaving it enabled on all parts in most situations.
 
 ### centerofmass
 
-<ApiMember types={types} id="centerofmass" name="CenterOfMass" kind="property" signature="CenterOfMass: Vector3" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="centerofmass" name="CenterOfMass" kind="property" signature="BasePart.CenterOfMass : Vector3" description={"Describes the local position of a part's center of mass, relative to its\n`Class.BasePart.CFrame|CFrame`."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -1008,7 +1009,7 @@ always `(0, 0, 0)`, but it can vary for [`WedgePart`](https://create.roblox.com/
 
 ### cframe
 
-<ApiMember types={types} id="cframe" name="CFrame" kind="property" signature="CFrame: CFrame" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="cframe" name="CFrame" kind="property" signature="BasePart.CFrame : CFrame" description={"Determines the position and orientation of the `Class.BasePart` in the\nworld."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1092,7 +1093,7 @@ part.CFrame = otherPart.CFrame * CFrame.new(0, part.Size.Y / 2 + otherPart.Size.
 
 ### collisiongroup
 
-<ApiMember types={types} id="collisiongroup" name="CollisionGroup" kind="property" signature="CollisionGroup: string" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="collisiongroup" name="CollisionGroup" kind="property" signature="BasePart.CollisionGroup : string" description={"Describes the name of a part's collision group."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1140,7 +1141,7 @@ print(Workspace:CollisionGroupsAreCollidable(collisionGroupBall, collisionGroupD
 
 ### collisiongroupid
 
-<ApiMember types={types} id="collisiongroupid" name="CollisionGroupId" kind="property" signature="CollisionGroupId: int" metadata={[{"label":"Tags","value":"NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="collisiongroupid" name="CollisionGroupId" kind="property" signature="BasePart.CollisionGroupId : int" description={"Describes the automatically set ID number of a part's collision group."} metadata={[{"label":"Tags","value":"NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1160,7 +1161,7 @@ the collision group's **name**.
 
 ### color
 
-<ApiMember types={types} id="color" name="Color" kind="property" signature="Color: Color3" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
+<ApiMember types={types} id="color" name="Color" kind="property" signature="BasePart.Color : Color3" description={"Determines the color of a part."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
 <div slot="description">
 
@@ -1236,7 +1237,7 @@ human.HealthChanged:Connect(update)
 
 ### currentphysicalproperties
 
-<ApiMember types={types} id="currentphysicalproperties" name="CurrentPhysicalProperties" kind="property" signature="CurrentPhysicalProperties: PhysicalProperties" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="currentphysicalproperties" name="CurrentPhysicalProperties" kind="property" signature="BasePart.CurrentPhysicalProperties : PhysicalProperties" description={"Indicates the current physical properties of the part."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -1259,7 +1260,7 @@ are in order from highest to lowest priority:
 
 ### customphysicalproperties
 
-<ApiMember types={types} id="customphysicalproperties" name="CustomPhysicalProperties" kind="property" signature="CustomPhysicalProperties: PhysicalProperties" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="customphysicalproperties" name="CustomPhysicalProperties" kind="property" signature="BasePart.CustomPhysicalProperties : PhysicalProperties" description={"Determines several physical properties of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1299,7 +1300,7 @@ part.CustomPhysicalProperties = physProperties
 
 ### elasticity
 
-<ApiMember types={types} id="elasticity" name="Elasticity" kind="property" signature="Elasticity: float" metadata={[{"label":"Tags","value":"Hidden, NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: no"}]} deprecated>
+<ApiMember types={types} id="elasticity" name="Elasticity" kind="property" signature="BasePart.Elasticity : float" description={"Used to control the Elasticity of the part, but it no longer does\nanything."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: no"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -1320,7 +1321,7 @@ or its `CustomPhysicalProperties`.
 
 ### enablefluidforces
 
-<ApiMember types={types} id="enablefluidforces" name="EnableFluidForces" kind="property" signature="EnableFluidForces: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Behavior"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="enablefluidforces" name="EnableFluidForces" kind="property" signature="BasePart.EnableFluidForces : boolean" description={"Used to enable or disable aerodynamic forces on parts and assemblies."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Behavior"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1333,7 +1334,7 @@ physics engine to compute aerodynamic forces on this [`BasePart`](https://create
 
 ### extentscframe
 
-<ApiMember types={types} id="extentscframe" name="ExtentsCFrame" kind="property" signature="ExtentsCFrame: CFrame" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="extentscframe" name="ExtentsCFrame" kind="property" signature="BasePart.ExtentsCFrame : CFrame" description={"The `Datatype.CFrame` of the physical extents of the `Class.BasePart`."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -1346,7 +1347,7 @@ representing its physical center.
 
 ### extentssize
 
-<ApiMember types={types} id="extentssize" name="ExtentsSize" kind="property" signature="ExtentsSize: Vector3" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="extentssize" name="ExtentsSize" kind="property" signature="BasePart.ExtentsSize : Vector3" description={"The actual physical size of the `Class.BasePart` as regarded by the\nphysics engine."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -1360,7 +1361,7 @@ physics engine, for example in
 
 ### friction
 
-<ApiMember types={types} id="friction" name="Friction" kind="property" signature="Friction: float" metadata={[{"label":"Tags","value":"Hidden, NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: no"}]} deprecated>
+<ApiMember types={types} id="friction" name="Friction" kind="property" signature="BasePart.Friction : float" description={"Used to control the Friction of the part, but now it no longer does\nanything."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: no"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -1383,7 +1384,7 @@ anything. The Friction of a part is now determined by either its
 
 ### frontparama
 
-<ApiMember types={types} id="frontparama" name="FrontParamA" kind="property" signature="FrontParamA: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="frontparama" name="FrontParamA" kind="property" signature="BasePart.FrontParamA : float" description={"Determines the first parameter for the SurfaceType on the Front face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1451,7 +1452,7 @@ end
 
 ### frontparamb
 
-<ApiMember types={types} id="frontparamb" name="FrontParamB" kind="property" signature="FrontParamB: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="frontparamb" name="FrontParamB" kind="property" signature="BasePart.FrontParamB : float" description={"Determines the second parameter for the SurfaceType on the Front face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1520,7 +1521,7 @@ end
 
 ### frontsurface
 
-<ApiMember types={types} id="frontsurface" name="FrontSurface" kind="property" signature="FrontSurface: SurfaceType" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="frontsurface" name="FrontSurface" kind="property" signature="BasePart.FrontSurface : SurfaceType" description={"Determines the type of surface for the front face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1534,7 +1535,7 @@ to each other, they may create a joint between them.
 
 ### frontsurfaceinput
 
-<ApiMember types={types} id="frontsurfaceinput" name="FrontSurfaceInput" kind="property" signature="FrontSurfaceInput: InputType" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="frontsurfaceinput" name="FrontSurfaceInput" kind="property" signature="BasePart.FrontSurfaceInput : InputType" description={"Determines the kind of input for the Front face of a part (-Z direction)."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1611,7 +1612,7 @@ end
 
 ### leftparama
 
-<ApiMember types={types} id="leftparama" name="LeftParamA" kind="property" signature="LeftParamA: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="leftparama" name="LeftParamA" kind="property" signature="BasePart.LeftParamA : float" description={"Determines the first parameter for the SurfaceType on the Left face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1679,7 +1680,7 @@ end
 
 ### leftparamb
 
-<ApiMember types={types} id="leftparamb" name="LeftParamB" kind="property" signature="LeftParamB: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="leftparamb" name="LeftParamB" kind="property" signature="BasePart.LeftParamB : float" description={"Determines the second parameter for the SurfaceType on the Left face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1748,7 +1749,7 @@ end
 
 ### leftsurface
 
-<ApiMember types={types} id="leftsurface" name="LeftSurface" kind="property" signature="LeftSurface: SurfaceType" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="leftsurface" name="LeftSurface" kind="property" signature="BasePart.LeftSurface : SurfaceType" description={"Determines the type of surface for the left face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1762,7 +1763,7 @@ to each other, they may create a joint between them.
 
 ### leftsurfaceinput
 
-<ApiMember types={types} id="leftsurfaceinput" name="LeftSurfaceInput" kind="property" signature="LeftSurfaceInput: InputType" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="leftsurfaceinput" name="LeftSurfaceInput" kind="property" signature="BasePart.LeftSurfaceInput : InputType" description={"Determines the kind of input for the Left face of a part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -1839,7 +1840,7 @@ end
 
 ### localtransparencymodifier
 
-<ApiMember types={types} id="localtransparencymodifier" name="LocalTransparencyModifier" kind="property" signature="LocalTransparencyModifier: float" metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="localtransparencymodifier" name="LocalTransparencyModifier" kind="property" signature="BasePart.LocalTransparencyModifier : float" description={"Determines a multiplier for `Class.BasePart.Transparency` that is only\nvisible to the local client."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -1905,7 +1906,7 @@ formula, with resulting values clamped between `0` and `1`.
 
 ### locked
 
-<ApiMember types={types} id="locked" name="Locked" kind="property" signature="Locked: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="locked" name="Locked" kind="property" signature="BasePart.Locked : boolean" description={"Determines whether a part is selectable in Studio."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -1950,7 +1951,7 @@ recursiveUnlock(model)
 
 ### mass
 
-<ApiMember types={types} id="mass" name="Mass" kind="property" signature="Mass: float" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="mass" name="Mass" kind="property" signature="BasePart.Mass : float" description={"Describes the mass of the part, the product of its density and volume."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -1972,7 +1973,7 @@ volume and density. It is returned by the
 
 ### massless
 
-<ApiMember types={types} id="massless" name="Massless" kind="property" signature="Massless: boolean" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="massless" name="Massless" kind="property" signature="BasePart.Massless : boolean" description={"Determines whether the part contributes to the total mass or inertia of\nits rigid body."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2000,7 +2001,7 @@ documenting what root parts are and how to use them.
 
 ### material
 
-<ApiMember types={types} id="material" name="Material" kind="property" signature="Material: Material" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="material" name="Material" kind="property" signature="BasePart.Material : Material" description={"Determines the texture and default physical properties of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2032,7 +2033,7 @@ parts behind [`Glass`](https://create.roblox.com/docs/reference/engine/enums/Mat
 
 ### materialvariant
 
-<ApiMember types={types} id="materialvariant" name="MaterialVariant" kind="property" signature="MaterialVariant: string" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="materialvariant" name="MaterialVariant" kind="property" signature="BasePart.MaterialVariant : string" description={"The name of `Class.MaterialVariant`."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -2049,7 +2050,7 @@ default material can be the built-in material or an override
 
 ### orientation
 
-<ApiMember types={types} id="orientation" name="Orientation" kind="property" signature="Orientation: Vector3" metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="orientation" name="Orientation" kind="property" signature="BasePart.Orientation : Vector3" description={"Describes the rotation of the part in the world."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -2106,7 +2107,7 @@ end
 
 ### pivotoffset
 
-<ApiMember types={types} id="pivotoffset" name="PivotOffset" kind="property" signature="PivotOffset: CFrame" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Pivot"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="pivotoffset" name="PivotOffset" kind="property" signature="BasePart.PivotOffset : CFrame" description={"Specifies the offset of the part's pivot from its `Datatype.CFrame`."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Pivot"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2212,7 +2213,7 @@ part.PivotOffset = part.CFrame:ToObjectSpace(desiredPivotCFrameInWorldSpace)
 
 ### position
 
-<ApiMember types={types} id="position" name="Position" kind="property" signature="Position: Vector3" metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="position" name="Position" kind="property" signature="BasePart.Position : Vector3" description={"Describes the position of the part in the world."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -2233,7 +2234,7 @@ disabled and re-enabled during the move.
 
 ### receiveage
 
-<ApiMember types={types} id="receiveage" name="ReceiveAge" kind="property" signature="ReceiveAge: float" metadata={[{"label":"Tags","value":"Hidden, ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="receiveage" name="ReceiveAge" kind="property" signature="BasePart.ReceiveAge : float" description={"Time since last recorded physics update."} metadata={[{"label":"Tags","value":"Hidden, ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -2247,7 +2248,7 @@ has no physics ([`Anchored`](#anchored) is `true`).
 
 ### reflectance
 
-<ApiMember types={types} id="reflectance" name="Reflectance" kind="property" signature="Reflectance: float" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="reflectance" name="Reflectance" kind="property" signature="BasePart.Reflectance : float" description={"Determines how much a part reflects the skybox."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2266,7 +2267,7 @@ render at all. Reflectance may or may not be ignored depending on the
 
 ### resizeablefaces
 
-<ApiMember types={types} id="resizeablefaces" name="ResizeableFaces" kind="property" signature="ResizeableFaces: Faces" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="resizeablefaces" name="ResizeableFaces" kind="property" signature="BasePart.ResizeableFaces : Faces" description={"Describes the faces on which a part may be resized."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -2321,7 +2322,7 @@ handles.Faces = part.ResizeableFaces
 
 ### resizeincrement
 
-<ApiMember types={types} id="resizeincrement" name="ResizeIncrement" kind="property" signature="ResizeIncrement: int" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
+<ApiMember types={types} id="resizeincrement" name="ResizeIncrement" kind="property" signature="BasePart.ResizeIncrement : int" description={"Describes the smallest change in size allowable by the\n`Class.BasePart:Resize()|Resize()` method."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
 <div slot="description">
 
@@ -2338,7 +2339,7 @@ implementations of the [`BasePart`](https://create.roblox.com/docs/reference/eng
 
 ### rightparama
 
-<ApiMember types={types} id="rightparama" name="RightParamA" kind="property" signature="RightParamA: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="rightparama" name="RightParamA" kind="property" signature="BasePart.RightParamA : float" description={"Determines the first parameter for the SurfaceType on the Right face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -2406,7 +2407,7 @@ end
 
 ### rightparamb
 
-<ApiMember types={types} id="rightparamb" name="RightParamB" kind="property" signature="RightParamB: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="rightparamb" name="RightParamB" kind="property" signature="BasePart.RightParamB : float" description={"Determines the second parameter for the SurfaceType on the Right face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -2475,7 +2476,7 @@ end
 
 ### rightsurface
 
-<ApiMember types={types} id="rightsurface" name="RightSurface" kind="property" signature="RightSurface: SurfaceType" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="rightsurface" name="RightSurface" kind="property" signature="BasePart.RightSurface : SurfaceType" description={"Determines the type of surface for the right face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2489,7 +2490,7 @@ to each other, they may create a joint between them.
 
 ### rightsurfaceinput
 
-<ApiMember types={types} id="rightsurfaceinput" name="RightSurfaceInput" kind="property" signature="RightSurfaceInput: InputType" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="rightsurfaceinput" name="RightSurfaceInput" kind="property" signature="BasePart.RightSurfaceInput : InputType" description={"Determines the kind of input for the Right face of a part (-X direction)."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -2558,7 +2559,7 @@ end
 
 ### rootpriority
 
-<ApiMember types={types} id="rootpriority" name="RootPriority" kind="property" signature="RootPriority: int" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="rootpriority" name="RootPriority" kind="property" signature="BasePart.RootPriority : int" description={"The main rule in determining the root part of an assembly."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2580,7 +2581,7 @@ documenting what root parts are and how to use them.
 
 ### rotation
 
-<ApiMember types={types} id="rotation" name="Rotation" kind="property" signature="Rotation: Vector3" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
+<ApiMember types={types} id="rotation" name="Rotation" kind="property" signature="BasePart.Rotation : Vector3" description={"The rotation of the part in degrees for the three axes."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
 <div slot="description">
 
@@ -2599,7 +2600,7 @@ disabled and re-enabled during the move.
 
 ### rotvelocity
 
-<ApiMember types={types} id="rotvelocity" name="RotVelocity" kind="property" signature="RotVelocity: Vector3" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="rotvelocity" name="RotVelocity" kind="property" signature="BasePart.RotVelocity : Vector3" description={"Determines a part's change in orientation over time."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -2651,7 +2652,7 @@ RunService.RenderStepped:Connect(renderStepped)
 
 ### size
 
-<ApiMember types={types} id="size" name="Size" kind="property" signature="Size: Vector3" metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
+<ApiMember types={types} id="size" name="Size" kind="property" signature="BasePart.Size : Vector3" description={"Determines the dimensions of a part (length, height, width)."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
 <div slot="description">
 
@@ -2723,7 +2724,7 @@ model.Parent = workspace
 
 ### specificgravity
 
-<ApiMember types={types} id="specificgravity" name="SpecificGravity" kind="property" signature="SpecificGravity: float" metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]} deprecated>
+<ApiMember types={types} id="specificgravity" name="SpecificGravity" kind="property" signature="BasePart.SpecificGravity : float" description={"The ratio of the part's density to the density of water determined by the\n`Class.BasePart.Material`."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -2831,7 +2832,7 @@ dense a part is than water.
 
 ### topparama
 
-<ApiMember types={types} id="topparama" name="TopParamA" kind="property" signature="TopParamA: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="topparama" name="TopParamA" kind="property" signature="BasePart.TopParamA : float" description={"Determines the first parameter for the SurfaceType on the Top face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -2899,7 +2900,7 @@ end
 
 ### topparamb
 
-<ApiMember types={types} id="topparamb" name="TopParamB" kind="property" signature="TopParamB: float" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="topparamb" name="TopParamB" kind="property" signature="BasePart.TopParamB : float" description={"Determines the second parameter for the SurfaceType on the Top face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -2968,7 +2969,7 @@ end
 
 ### topsurface
 
-<ApiMember types={types} id="topsurface" name="TopSurface" kind="property" signature="TopSurface: SurfaceType" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="topsurface" name="TopSurface" kind="property" signature="BasePart.TopSurface : SurfaceType" description={"Determines the type of surface for the top face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -2982,7 +2983,7 @@ to each other, they may create a joint between them.
 
 ### topsurfaceinput
 
-<ApiMember types={types} id="topsurfaceinput" name="TopSurfaceInput" kind="property" signature="TopSurfaceInput: InputType" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="topsurfaceinput" name="TopSurfaceInput" kind="property" signature="BasePart.TopSurfaceInput : InputType" description={"Determines the kind of input for the Top face of a part (+Y direction)."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="description">
 
@@ -3059,7 +3060,7 @@ end
 
 ### transparency
 
-<ApiMember types={types} id="transparency" name="Transparency" kind="property" signature="Transparency: float" metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
+<ApiMember types={types} id="transparency" name="Transparency" kind="property" signature="BasePart.Transparency : float" description={"Determines how much a part can be seen through (the inverse of part\nopacity)."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
 <div slot="description">
 
@@ -3140,7 +3141,7 @@ close()
 
 ### velocity
 
-<ApiMember types={types} id="velocity" name="Velocity" kind="property" signature="Velocity: Vector3" metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
+<ApiMember types={types} id="velocity" name="Velocity" kind="property" signature="BasePart.Velocity : Vector3" description={"Determines a part's change in position over time."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -3238,7 +3239,7 @@ end
 
 ### angularaccelerationtotorque
 
-<ApiMember types={types} id="angularaccelerationtotorque" name="AngularAccelerationToTorque()" kind="method" signature="AngularAccelerationToTorque(angAcceleration: Vector3, angVelocity: Vector3): Vector3" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="angularaccelerationtotorque" name="AngularAccelerationToTorque()" kind="method" signature="AngularAccelerationToTorque(angAcceleration: Vector3, angVelocity: Vector3): Vector3" description={"Returns the torque needed to achieve a given angular acceleration on this\npart's assembly, optionally accounting for gyroscopic effects."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3267,34 +3268,40 @@ effects are omitted from the calculation.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`angAcceleration: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"angAcceleration: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 The desired angular acceleration vector in world space.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`angVelocity: Vector3 = 0, 0, 0`
+<div>
+<dt><ApiSignature signature={"angVelocity: Vector3 = 0, 0, 0"} types={types} memberName={true} /></dt>
+<dd>
 
 The current angular velocity of the assembly in world space. Defaults
 to `(0, 0, 0)`. Supply the assembly's angular velocity to account for
 gyroscopic effects.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
+<dd>
 
 A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the world-space torque required to
 produce the specified angular acceleration.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3322,7 +3329,7 @@ print(torque)
 
 ### applyangularimpulse
 
-<ApiMember types={types} id="applyangularimpulse" name="ApplyAngularImpulse()" kind="method" signature="ApplyAngularImpulse(impulse: Vector3): ()" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="applyangularimpulse" name="ApplyAngularImpulse()" kind="method" signature="ApplyAngularImpulse(impulse: Vector3): ()" description={"Apply an angular impulse to the assembly."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3345,23 +3352,29 @@ effect.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`impulse: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"impulse: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 An angular impulse vector to be applied to the assembly.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3369,7 +3382,7 @@ An angular impulse vector to be applied to the assembly.
 
 ### applyimpulse
 
-<ApiMember types={types} id="applyimpulse" name="ApplyImpulse()" kind="method" signature="ApplyImpulse(impulse: Vector3): ()" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="applyimpulse" name="ApplyImpulse()" kind="method" signature="ApplyImpulse(impulse: Vector3): ()" description={"Apply an impulse to the assembly at the assembly's\n`Class.BasePart.AssemblyCenterOfMass|center of mass`."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3395,23 +3408,29 @@ effect.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`impulse: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"impulse: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 A linear impulse vector to be applied to the assembly.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3419,7 +3438,7 @@ A linear impulse vector to be applied to the assembly.
 
 ### applyimpulseatposition
 
-<ApiMember types={types} id="applyimpulseatposition" name="ApplyImpulseAtPosition()" kind="method" signature="ApplyImpulseAtPosition(impulse: Vector3, position: Vector3): ()" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="applyimpulseatposition" name="ApplyImpulseAtPosition()" kind="method" signature="ApplyImpulseAtPosition(impulse: Vector3, position: Vector3): ()" description={"Apply an impulse to the assembly at specified position."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3447,31 +3466,37 @@ effect.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`impulse: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"impulse: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 An impulse vector to be applied to the assembly.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`position: Vector3`
+<div>
+<dt><ApiSignature signature={"position: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 The position, in world space, to apply the impulse.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3479,7 +3504,7 @@ The position, in world space, to apply the impulse.
 
 ### bindtocollisionsummaries
 
-<ApiMember types={types} id="bindtocollisionsummaries" name="BindToCollisionSummaries()" kind="method" signature="BindToCollisionSummaries(callback: Function): RBXScriptConnection" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"Basic"}]}>
+<ApiMember types={types} id="bindtocollisionsummaries" name="BindToCollisionSummaries()" kind="method" signature="BindToCollisionSummaries(callback: Function): RBXScriptConnection" description={"Subscribes to detailed per-frame contact data for the collisions this part\nis involved in."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"Basic"}]}>
 
 <div slot="description">
 
@@ -3582,25 +3607,31 @@ to `Normal` describes sliding and glancing contact.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`callback: Function`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"callback: Function"} types={types} memberName={true} /></dt>
+<dd>
 
 Invoked with an array of summary tables, at most once per frame, if
 the part was involved in a collision.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`RBXScriptConnection`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"RBXScriptConnection"} types={types} memberName={false} /></dt>
+<dd>
 
 A [`RBXScriptConnection`](https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptConnection) that ends the subscription when
 disconnected.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3608,7 +3639,7 @@ disconnected.
 
 ### breakjoints
 
-<ApiMember types={types} id="breakjoints" name="BreakJoints()" kind="method" signature="BreakJoints(): ()" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]} deprecated>
+<ApiMember types={types} id="breakjoints" name="BreakJoints()" kind="method" signature="BreakJoints(): ()" description={"Breaks any surface connection with any adjacent part, including\n`Class.Weld` and other `Class.JointInstance`."} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -3625,13 +3656,16 @@ Breaks any surface connection with any adjacent part, including
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3639,7 +3673,7 @@ Breaks any surface connection with any adjacent part, including
 
 ### breakjoints-2
 
-<ApiMember types={types} id="breakjoints-2" name="breakJoints()" kind="method" signature="breakJoints(): ()" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
+<ApiMember types={types} id="breakjoints-2" name="breakJoints()" kind="method" signature="breakJoints(): ()" description={""} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -3652,13 +3686,16 @@ which should be used instead.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3666,7 +3703,7 @@ which should be used instead.
 
 ### cancollidewith
 
-<ApiMember types={types} id="cancollidewith" name="CanCollideWith()" kind="method" signature="CanCollideWith(part: BasePart): boolean" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="cancollidewith" name="CanCollideWith()" kind="method" signature="CanCollideWith(part: BasePart): boolean" description={"Returns whether the parts can collide with each other."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3676,23 +3713,29 @@ function will error if the specified part is not a BasePart.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`part: BasePart`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"part: BasePart"} types={types} memberName={true} /></dt>
+<dd>
 
 The specified part being checked for collidability.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`boolean`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
+<dd>
 
 Whether the parts can collide with each other.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3700,7 +3743,7 @@ Whether the parts can collide with each other.
 
 ### cansetnetworkownership
 
-<ApiMember types={types} id="cansetnetworkownership" name="CanSetNetworkOwnership()" kind="method" signature="CanSetNetworkOwnership(): Tuple" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="cansetnetworkownership" name="CanSetNetworkOwnership()" kind="method" signature="CanSetNetworkOwnership(): Tuple" description={"Checks whether you can set a part's network ownership."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3715,13 +3758,16 @@ false and the reason you can't, as a string.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Tuple`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Tuple"} types={types} memberName={false} /></dt>
+<dd>
 
 Whether you can modify or read the network ownership and the reason.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3751,7 +3797,7 @@ end
 
 ### getclosestpointonsurface
 
-<ApiMember types={types} id="getclosestpointonsurface" name="GetClosestPointOnSurface()" kind="method" signature="GetClosestPointOnSurface(position: Vector3): Vector3" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getclosestpointonsurface" name="GetClosestPointOnSurface()" kind="method" signature="GetClosestPointOnSurface(position: Vector3): Vector3" description={"Returns the closest point on the part's surface to the given point."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3766,23 +3812,29 @@ more complex shape.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`position: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"position: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 The world-space point to find the closest surface point to.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
+<dd>
 
 The closest point on the part's surface in world space.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3790,7 +3842,7 @@ The closest point on the part's surface in world space.
 
 ### getconnectedparts
 
-<ApiMember types={types} id="getconnectedparts" name="GetConnectedParts()" kind="method" signature="GetConnectedParts(recursive: boolean): List<BasePart>" metadata={[{"label":"Thread safety","value":"Safe"}]}>
+<ApiMember types={types} id="getconnectedparts" name="GetConnectedParts()" kind="method" signature="GetConnectedParts(recursive: boolean): List<BasePart>" description={"Returns a table of parts connected to the object by any kind of rigid\njoint."} metadata={[{"label":"Thread safety","value":"Safe"}]}>
 
 <div slot="description">
 
@@ -3815,25 +3867,31 @@ This only applies to the following joint types:
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`recursive: boolean = False`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"recursive: boolean = False"} types={types} memberName={true} /></dt>
+<dd>
 
 A table of parts connected to the object by any kind of
 [`joint`](https://create.roblox.com/docs/reference/engine/classes/JointInstance).
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`List<BasePart>`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"List<BasePart>"} types={types} memberName={false} /></dt>
+<dd>
 
 An array of [`BaseParts`](https://create.roblox.com/docs/reference/engine/classes/BasePart) connected to this part by rigid
 joints. If `recursive` is true, includes all parts in the assembly.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3841,7 +3899,7 @@ joints. If `recursive` is true, includes all parts in the assembly.
 
 ### getjoints
 
-<ApiMember types={types} id="getjoints" name="GetJoints()" kind="method" signature="GetJoints(): Instances" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getjoints" name="GetJoints()" kind="method" signature="GetJoints(): Instances" description={"Returns all Joints or Constraints connected to this part that are active\nin the simulation."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3859,15 +3917,18 @@ even though the joint instance still exists in the data model.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instances`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instances"} types={types} memberName={false} /></dt>
+<dd>
 
 An array of all [`Joints`](https://create.roblox.com/docs/reference/engine/classes/JointInstance) and
 [`Constraints`](https://create.roblox.com/docs/reference/engine/classes/Constraint) connected to the part that are active
 in the simulation.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3875,7 +3936,7 @@ in the simulation.
 
 ### getmass
 
-<ApiMember types={types} id="getmass" name="GetMass()" kind="method" signature="GetMass(): float" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getmass" name="GetMass()" kind="method" signature="GetMass(): float" description={"Returns the value of the `Class.BasePart.Mass|Mass` property."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3887,13 +3948,16 @@ backward-compatibility; you should use the Mass property directly.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`float`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"float"} types={types} memberName={false} /></dt>
+<dd>
 
 The part's mass.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3926,7 +3990,7 @@ print("My part's mass is " .. myMass)
 
 ### getmass-2
 
-<ApiMember types={types} id="getmass-2" name="getMass()" kind="method" signature="getMass(): float" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
+<ApiMember types={types} id="getmass-2" name="getMass()" kind="method" signature="getMass(): float" description={""} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -3939,13 +4003,16 @@ variant, [`BasePart:GetMass()`](#getmass).
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"float"} types={types} memberName={false} /></dt>
+<dd>
 
-`float`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3953,7 +4020,7 @@ variant, [`BasePart:GetMass()`](#getmass).
 
 ### getnetworkowner
 
-<ApiMember types={types} id="getnetworkowner" name="GetNetworkOwner()" kind="method" signature="GetNetworkOwner(): Instance" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getnetworkowner" name="GetNetworkOwner()" kind="method" signature="GetNetworkOwner(): Instance" description={"Returns the current player who is the network owner of this part, or `nil`\nin case of the server."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3962,14 +4029,17 @@ in case of the server.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instance`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
+<dd>
 
 The current player who is the network owner of this part, or `nil` in
 case of the server.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -3977,7 +4047,7 @@ case of the server.
 
 ### getnetworkownershipauto
 
-<ApiMember types={types} id="getnetworkownershipauto" name="GetNetworkOwnershipAuto()" kind="method" signature="GetNetworkOwnershipAuto(): boolean" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getnetworkownershipauto" name="GetNetworkOwnershipAuto()" kind="method" signature="GetNetworkOwnershipAuto(): boolean" description={"Returns true if the game engine automatically decides the network owner\nfor this part."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -3986,14 +4056,17 @@ for this part.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`boolean`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
+<dd>
 
 Whether the game engine automatically decides the network owner for
 this part.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4001,7 +4074,7 @@ this part.
 
 ### getnocollisionconstraints
 
-<ApiMember types={types} id="getnocollisionconstraints" name="GetNoCollisionConstraints()" kind="method" signature="GetNoCollisionConstraints(): Instances" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getnocollisionconstraints" name="GetNoCollisionConstraints()" kind="method" signature="GetNoCollisionConstraints(): Instances" description={"Returns the enabled `Class.NoCollisionConstraint` objects currently\nregistered for this part in its physics world."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4016,14 +4089,17 @@ for this part. The order of the returned constraints is not guaranteed.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instances`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instances"} types={types} memberName={false} /></dt>
+<dd>
 
 An array of the enabled [`NoCollisionConstraint`](https://create.roblox.com/docs/reference/engine/classes/NoCollisionConstraint) objects
 currently registered for this part in its physics world.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4031,7 +4107,7 @@ currently registered for this part in its physics world.
 
 ### getrendercframe
 
-<ApiMember types={types} id="getrendercframe" name="GetRenderCFrame()" kind="method" signature="GetRenderCFrame(): CFrame" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
+<ApiMember types={types} id="getrendercframe" name="GetRenderCFrame()" kind="method" signature="GetRenderCFrame(): CFrame" description={"OBSOLETE. Returns a CFrame describing where the part is being rendered at."} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4048,14 +4124,17 @@ applied to the [`CFrame`](https://create.roblox.com/docs/reference/engine/dataty
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`CFrame`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"CFrame"} types={types} memberName={false} /></dt>
+<dd>
 
 The [`CFrame`](https://create.roblox.com/docs/reference/engine/datatypes/CFrame) representing where the part is being rendered,
 which is now equivalent to the part's [`CFrame`](#cframe).
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4063,7 +4142,7 @@ which is now equivalent to the part's [`CFrame`](#cframe).
 
 ### getrootpart
 
-<ApiMember types={types} id="getrootpart" name="GetRootPart()" kind="method" signature="GetRootPart(): Instance" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]} deprecated>
+<ApiMember types={types} id="getrootpart" name="GetRootPart()" kind="method" signature="GetRootPart(): Instance" description={"Returns the base part of an assembly of parts."} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]} deprecated>
 
 <div slot="description">
 
@@ -4079,14 +4158,17 @@ supported for backwards compatibility, but you should use
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instance`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
+<dd>
 
 The base part of an assembly (a collection of parts connected
 together).
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4094,7 +4176,7 @@ together).
 
 ### gettouchingparts
 
-<ApiMember types={types} id="gettouchingparts" name="GetTouchingParts()" kind="method" signature="GetTouchingParts(): Instances" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="gettouchingparts" name="GetTouchingParts()" kind="method" signature="GetTouchingParts(): Instances" description={"Returns a table of all `Class.BasePart.CanCollide` true parts that\nintersect with this part."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4110,13 +4192,16 @@ rules described above. Use [`WorldRoot:GetPartsInPart()`](https://create.roblox.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instances`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instances"} types={types} memberName={false} /></dt>
+<dd>
 
 A table of all parts that intersect and can collide with this part.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4124,7 +4209,7 @@ A table of all parts that intersect and can collide with this part.
 
 ### getvelocityatposition
 
-<ApiMember types={types} id="getvelocityatposition" name="GetVelocityAtPosition()" kind="method" signature="GetVelocityAtPosition(position: Vector3): Vector3" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="getvelocityatposition" name="GetVelocityAtPosition()" kind="method" signature="GetVelocityAtPosition(position: Vector3): Vector3" description={"Returns the linear velocity of the part's assembly at the given position\nrelative to this part."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4136,25 +4221,31 @@ every position.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`position: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"position: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 The world-space position at which to compute the assembly's linear
 velocity.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
+<dd>
 
 A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the linear velocity of the assembly
 at the specified world-space position.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4162,7 +4253,7 @@ at the specified world-space position.
 
 ### intersectasync
 
-<ApiMember types={types} id="intersectasync" name="IntersectAsync()" kind="method" signature="IntersectAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
+<ApiMember types={types} id="intersectasync" name="IntersectAsync()" kind="method" signature="IntersectAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" description={"Creates a new `Class.IntersectOperation` from the overlapping geometry of\nthe part and the other parts in the given array."} metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
 
 <div slot="description">
 
@@ -4221,41 +4312,47 @@ follows:
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`parts: Instances`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"parts: Instances"} types={types} memberName={true} /></dt>
+<dd>
 
 The objects taking part in the intersection.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`collisionfidelity: CollisionFidelity = Default`
+<div>
+<dt><ApiSignature signature={"collisionfidelity: CollisionFidelity = Default"} types={types} memberName={true} /></dt>
+<dd>
 
 The [`CollisionFidelity`](https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity) value for the resulting
 [`IntersectOperation`](https://create.roblox.com/docs/reference/engine/classes/IntersectOperation).
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`renderFidelity: RenderFidelity = Automatic`
+<div>
+<dt><ApiSignature signature={"renderFidelity: RenderFidelity = Automatic"} types={types} memberName={true} /></dt>
+<dd>
 
 The [`RenderFidelity`](https://create.roblox.com/docs/reference/engine/enums/RenderFidelity) value of the resulting
 [`PartOperation`](https://create.roblox.com/docs/reference/engine/classes/PartOperation).
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instance`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
+<dd>
 
 Resulting [`IntersectOperation`](https://create.roblox.com/docs/reference/engine/classes/IntersectOperation) with default name **Intersect**.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4263,7 +4360,7 @@ Resulting [`IntersectOperation`](https://create.roblox.com/docs/reference/engine
 
 ### isgrounded
 
-<ApiMember types={types} id="isgrounded" name="IsGrounded()" kind="method" signature="IsGrounded(): boolean" metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="isgrounded" name="IsGrounded()" kind="method" signature="IsGrounded(): boolean" description={"Returns true if the object is connected to a part that will hold it in\nplace (eg an `Class.BasePart.Anchored|Anchored` part), otherwise returns\nfalse."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4274,13 +4371,16 @@ every other part is grounded.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`boolean`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
+<dd>
 
 Whether the object is connected to a part that will hold it in place.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4288,7 +4388,7 @@ Whether the object is connected to a part that will hold it in place.
 
 ### makejoints
 
-<ApiMember types={types} id="makejoints" name="MakeJoints()" kind="method" signature="MakeJoints(): ()" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
+<ApiMember types={types} id="makejoints" name="MakeJoints()" kind="method" signature="MakeJoints(): ()" description={"Creates a joint on any side of the object that has a surface ID that can\nmake a joint."} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4331,13 +4431,16 @@ often used to make simple destructible buildings and other models.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4345,7 +4448,7 @@ often used to make simple destructible buildings and other models.
 
 ### makejoints-2
 
-<ApiMember types={types} id="makejoints-2" name="makeJoints()" kind="method" signature="makeJoints(): ()" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
+<ApiMember types={types} id="makejoints-2" name="makeJoints()" kind="method" signature="makeJoints(): ()" description={""} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4358,13 +4461,16 @@ which should be used instead.
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4372,7 +4478,7 @@ which should be used instead.
 
 ### resize
 
-<ApiMember types={types} id="resize" name="Resize()" kind="method" signature="Resize(normalId: NormalId, deltaAmount: int): boolean" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="resize" name="Resize()" kind="method" signature="Resize(normalId: NormalId, deltaAmount: int): boolean" description={"Changes the size of an object just like using the Studio resize tool."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4380,31 +4486,37 @@ Changes the size of an object just like using the Studio resize tool.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`normalId: NormalId`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"normalId: NormalId"} types={types} memberName={true} /></dt>
+<dd>
 
 The side to resize.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`deltaAmount: int`
+<div>
+<dt><ApiSignature signature={"deltaAmount: int"} types={types} memberName={true} /></dt>
+<dd>
 
 How much to grow/shrink on the specified side.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`boolean`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
+<dd>
 
 Whether the part is resized.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4412,7 +4524,7 @@ Whether the part is resized.
 
 ### resize-2
 
-<ApiMember types={types} id="resize-2" name="resize()" kind="method" signature="resize(normalId: NormalId, deltaAmount: int): boolean" metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
+<ApiMember types={types} id="resize-2" name="resize()" kind="method" signature="resize(normalId: NormalId, deltaAmount: int): boolean" description={""} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Unsafe"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4425,31 +4537,37 @@ should be used instead.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"normalId: NormalId"} types={types} memberName={true} /></dt>
+<dd>
 
-`normalId: NormalId`
 
 
-
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`deltaAmount: int`
-
+<div>
+<dt><ApiSignature signature={"deltaAmount: int"} types={types} memberName={true} /></dt>
+<dd>
 
 
+
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
+<dd>
 
-`boolean`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4457,7 +4575,7 @@ should be used instead.
 
 ### setnetworkowner
 
-<ApiMember types={types} id="setnetworkowner" name="SetNetworkOwner()" kind="method" signature="SetNetworkOwner(playerInstance: Player): ()" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="setnetworkowner" name="SetNetworkOwner()" kind="method" signature="SetNetworkOwner(playerInstance: Player): ()" description={"Sets the given player as network owner for this and all connected parts."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4467,23 +4585,29 @@ player.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`playerInstance: Player = nil`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"playerInstance: Player = nil"} types={types} memberName={true} /></dt>
+<dd>
 
 The player being given network ownership of the part.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4491,7 +4615,7 @@ The player being given network ownership of the part.
 
 ### setnetworkownershipauto
 
-<ApiMember types={types} id="setnetworkownershipauto" name="SetNetworkOwnershipAuto()" kind="method" signature="SetNetworkOwnershipAuto(): ()" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="setnetworkownershipauto" name="SetNetworkOwnershipAuto()" kind="method" signature="SetNetworkOwnershipAuto(): ()" description={"Lets the game engine dynamically decide who will handle the part's physics\n(one of the clients or the server)."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4500,13 +4624,16 @@ Lets the game engine dynamically decide who will handle the part's physics
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
+<dd>
 
-`()`
 
 
-
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4514,7 +4641,7 @@ Lets the game engine dynamically decide who will handle the part's physics
 
 ### subtractasync
 
-<ApiMember types={types} id="subtractasync" name="SubtractAsync()" kind="method" signature="SubtractAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
+<ApiMember types={types} id="subtractasync" name="SubtractAsync()" kind="method" signature="SubtractAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" description={"Creates a new `Class.UnionOperation` from the part, minus the geometry\noccupied by the parts in the given array."} metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
 
 <div slot="description">
 
@@ -4548,41 +4675,47 @@ follows:
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`parts: Instances`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"parts: Instances"} types={types} memberName={true} /></dt>
+<dd>
 
 The objects taking part in the subtraction.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`collisionfidelity: CollisionFidelity = Default`
+<div>
+<dt><ApiSignature signature={"collisionfidelity: CollisionFidelity = Default"} types={types} memberName={true} /></dt>
+<dd>
 
 The [`CollisionFidelity`](https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity) value for the resulting
 [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation).
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`renderFidelity: RenderFidelity = Automatic`
+<div>
+<dt><ApiSignature signature={"renderFidelity: RenderFidelity = Automatic"} types={types} memberName={true} /></dt>
+<dd>
 
 The [`RenderFidelity`](https://create.roblox.com/docs/reference/engine/enums/RenderFidelity) value of the resulting
 [`PartOperation`](https://create.roblox.com/docs/reference/engine/classes/PartOperation).
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instance`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
+<dd>
 
 Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation) with default name **Union**.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4590,7 +4723,7 @@ Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/cla
 
 ### torquetoangularacceleration
 
-<ApiMember types={types} id="torquetoangularacceleration" name="TorqueToAngularAcceleration()" kind="method" signature="TorqueToAngularAcceleration(torque: Vector3, angVelocity: Vector3): Vector3" metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
+<ApiMember types={types} id="torquetoangularacceleration" name="TorqueToAngularAcceleration()" kind="method" signature="TorqueToAngularAcceleration(torque: Vector3, angVelocity: Vector3): Vector3" description={"Returns the angular acceleration that would result from applying a given\ntorque to this part's assembly, optionally accounting for gyroscopic\neffects."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
 <div slot="description">
 
@@ -4622,34 +4755,40 @@ this contribution from the result.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`torque: Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"torque: Vector3"} types={types} memberName={true} /></dt>
+<dd>
 
 The torque vector applied to the assembly in world space.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`angVelocity: Vector3 = 0, 0, 0`
+<div>
+<dt><ApiSignature signature={"angVelocity: Vector3 = 0, 0, 0"} types={types} memberName={true} /></dt>
+<dd>
 
 The current angular velocity of the assembly in world space. Defaults
 to `(0, 0, 0)`. Supply the assembly's angular velocity to account for
 gyroscopic effects.
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Vector3`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
+<dd>
 
 A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the resulting angular acceleration
 in world space.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4677,7 +4816,7 @@ print(angAccel)
 
 ### unionasync
 
-<ApiMember types={types} id="unionasync" name="UnionAsync()" kind="method" signature="UnionAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
+<ApiMember types={types} id="unionasync" name="UnionAsync()" kind="method" signature="UnionAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" description={"Creates a new `Class.UnionOperation` from the part, plus the geometry\noccupied by the parts in the given array."} metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
 
 <div slot="description">
 
@@ -4735,41 +4874,47 @@ follows:
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`parts: Instances`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"parts: Instances"} types={types} memberName={true} /></dt>
+<dd>
 
 The objects taking part in the union with the calling part.
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`collisionfidelity: CollisionFidelity = Default`
+<div>
+<dt><ApiSignature signature={"collisionfidelity: CollisionFidelity = Default"} types={types} memberName={true} /></dt>
+<dd>
 
 The [`CollisionFidelity`](https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity) value for the resulting
 [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation).
 
+</dd>
 </div>
-
-<div className="api-parameter-list">
-
-`renderFidelity: RenderFidelity = Automatic`
+<div>
+<dt><ApiSignature signature={"renderFidelity: RenderFidelity = Automatic"} types={types} memberName={true} /></dt>
+<dd>
 
 The [`RenderFidelity`](https://create.roblox.com/docs/reference/engine/enums/RenderFidelity) value of the resulting
 [`PartOperation`](https://create.roblox.com/docs/reference/engine/classes/PartOperation).
 
+</dd>
 </div>
+</dl>
 
 <h4>Returns</h4>
 
-<div className="api-parameter-list">
-
-`Instance`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
+<dd>
 
 Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation) with default name **Union**.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4779,7 +4924,7 @@ Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/cla
 
 ### localsimulationtouched
 
-<ApiMember types={types} id="localsimulationtouched" name="LocalSimulationTouched" kind="event" signature="LocalSimulationTouched: RBXScriptSignal" metadata={[{"label":"Tags","value":"Deprecated"}]} deprecated>
+<ApiMember types={types} id="localsimulationtouched" name="LocalSimulationTouched" kind="event" signature="LocalSimulationTouched: RBXScriptSignal" description={"Fires on the local client when another part comes in contact with this\npart."} metadata={[{"label":"Tags","value":"Deprecated"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4795,13 +4940,16 @@ whereas [`BasePart.Touched`](#touched) sends data to the server.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`part: BasePart`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"part: BasePart"} types={types} memberName={true} /></dt>
+<dd>
 
 The other part that came in contact with this part.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4823,7 +4971,7 @@ end)
 
 ### outfitchanged
 
-<ApiMember types={types} id="outfitchanged" name="OutfitChanged" kind="event" signature="OutfitChanged: RBXScriptSignal" metadata={[{"label":"Tags","value":"Deprecated"}]} deprecated>
+<ApiMember types={types} id="outfitchanged" name="OutfitChanged" kind="event" signature="OutfitChanged: RBXScriptSignal" description={"Fires when the part's appearance changes due to a `Class.Shirt`."} metadata={[{"label":"Tags","value":"Deprecated"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4841,7 +4989,7 @@ Fired if the part's appearance is affected by the [`Shirt`](https://create.roblo
 
 ### stoppedtouching
 
-<ApiMember types={types} id="stoppedtouching" name="StoppedTouching" kind="event" signature="StoppedTouching: RBXScriptSignal" metadata={[{"label":"Tags","value":"Deprecated"}]} deprecated>
+<ApiMember types={types} id="stoppedtouching" name="StoppedTouching" kind="event" signature="StoppedTouching: RBXScriptSignal" description={"Fires on the local client when a part stops touching another part."} metadata={[{"label":"Tags","value":"Deprecated"}]} deprecated>
 
 <div slot="deprecation">
 
@@ -4861,13 +5009,16 @@ whereas [`BasePart.TouchEnded`](#touchended) also sends data to the server. Use
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`otherPart: BasePart`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"otherPart: BasePart"} types={types} memberName={true} /></dt>
+<dd>
 
 The other part that stopped touching the given part.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4875,7 +5026,7 @@ The other part that stopped touching the given part.
 
 ### touched
 
-<ApiMember types={types} id="touched" name="Touched" kind="event" signature="Touched: RBXScriptSignal" metadata={[]}>
+<ApiMember types={types} id="touched" name="Touched" kind="event" signature="Touched: RBXScriptSignal" description={"Fires when a part touches another part as a result of physical movement."} metadata={[]}>
 
 <div slot="description">
 
@@ -4897,13 +5048,16 @@ are acknowledged for detection.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`otherPart: BasePart`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"otherPart: BasePart"} types={types} memberName={true} /></dt>
+<dd>
 
 The other part that came in contact with the given part.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
@@ -4976,7 +5130,7 @@ end
 
 ### touchended
 
-<ApiMember types={types} id="touchended" name="TouchEnded" kind="event" signature="TouchEnded: RBXScriptSignal" metadata={[]}>
+<ApiMember types={types} id="touchended" name="TouchEnded" kind="event" signature="TouchEnded: RBXScriptSignal" description={"Fires when a part stops touching another part as a result of physical\nmovement."} metadata={[]}>
 
 <div slot="description">
 
@@ -4990,13 +5144,16 @@ are acknowledged for detection.
 
 <h4>Parameters</h4>
 
-<div className="api-parameter-list">
-
-`otherPart: BasePart`
+<dl className="api-parameter-list">
+<div>
+<dt><ApiSignature signature={"otherPart: BasePart"} types={types} memberName={true} /></dt>
+<dd>
 
 The other part that stopped touching this part.
 
+</dd>
 </div>
+</dl>
 
 </div>
 
