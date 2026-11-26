@@ -1,4 +1,4 @@
-/* Layout uses the measured documentation rail, not the Creator Hub product rail. */
+/* Creator Hub's documentation rail and article, without its product-navigation rail. */
 :root {
   --docs-unit: 4px;
   --docs-article-width: 883px;
@@ -11,31 +11,45 @@
   --sl-nav-pad-x: 2rem;
   --sl-content-pad-x: var(--docs-gutter);
 }
-.header { border-bottom: 0; }
+html, body, header.header, .header, .sidebar-pane, .right-sidebar, .right-sidebar-container {
+  background-color: var(--docs-surface);
+}
+header.header, .header { border-bottom:0; }
+.header .social-icons::after { display:none; }
 .sidebar-pane { border-inline-end: 1px solid var(--docs-border); }
-.sidebar-content { padding: 16px; }
+.sidebar-content { padding: 16px; scrollbar-width:thin; scrollbar-color:grey transparent; }
 .content-panel { padding-block: 16px; }
-.content-panel + .content-panel { border-top: 0; padding-top: 0; }
+.content-panel + .content-panel { border-top:0; padding-top:0; }
 .content-panel .sl-container { margin-inline: auto; }
-.right-sidebar { border-inline-start: 0; }
+.right-sidebar { border-inline-start:0; }
 @media (min-width: 72rem) {
   [data-has-sidebar][data-has-toc] .main-pane {
-    width: min(calc(100% - var(--docs-toc-width)), calc(var(--docs-article-width) + 2 * var(--docs-gutter)));
-    margin-inline-start: auto;
-    min-width: 0;
+    width: min(calc(100% - var(--docs-toc-width) - var(--docs-gutter)), calc(var(--docs-article-width) + var(--docs-gutter)));
+    margin-inline-start:auto;
+    min-width:0;
   }
+  [data-has-sidebar][data-has-toc] .main-pane .content-panel { padding-inline-end:0; }
   .right-sidebar-container {
-    width: var(--docs-toc-width);
-    flex: 0 0 var(--docs-toc-width);
-    margin-inline-start: 0;
-    margin-inline-end: auto;
+    width:calc(var(--docs-toc-width) + var(--docs-gutter));
+    flex:0 0 calc(var(--docs-toc-width) + var(--docs-gutter));
+    margin-inline-start:0;
+    margin-inline-end:auto;
   }
-  .right-sidebar { width: var(--docs-toc-width); }
+  .right-sidebar {
+    top:calc(var(--sl-nav-height) + 64px);
+    width:var(--docs-toc-width);
+    padding-top:0;
+    height:calc(100dvh - var(--sl-nav-height) - 88px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+    scrollbar-color:grey transparent;
+  }
 }
 @media (max-width: 71.999rem) {
   :root { --sl-content-pad-x: 32px; }
 }
 @media (max-width: 37.499rem) {
   :root { --sl-nav-height: 4rem; --sl-nav-pad-x: 20px; --sl-content-pad-x: 20px; }
-  .sidebar-pane { border-inline-end: 0; }
+  .sidebar-pane { border-inline-end:0; }
 }

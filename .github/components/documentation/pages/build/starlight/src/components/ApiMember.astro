@@ -3,14 +3,20 @@ import ApiIcon from './ApiIcon.astro';
 import ApiSignature from './ApiSignature.astro';
 import type { TypeReferences } from './ApiSignature.astro';
 import type { Props as IconProps } from './ApiIcon.astro';
+import { formatSignature } from '../data/format-signature.mjs';
 interface Entry { name: string; type: string; description: string }
-interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; types?: TypeReferences; parameters?: Entry[]; returns?: Entry[] }
-const { id, name, kind, signature, description, types, parameters = [], returns = [] } = Astro.props;
+interface Props { id: string; name: string; kind: IconProps['kind']; signature: string; description: string; types?: TypeReferences; parameters?: Entry[]; returns?: Entry[]; values?: { name: string; value: number; description: string }[] }
+const { id, name, kind, signature, description, types, parameters = [], returns = [], values = [] } = Astro.props;
+const multiline = ['function','method','constructor','operator'].includes(kind) ? formatSignature(signature) : null;
 ---
 <section class="api-member" data-api-member={id} data-kind={kind} data-member-name={name}>
   <span class="api-member-icon-template" hidden>{kind !== 'constructor' && <ApiIcon kind={kind}/>}</span>
   <p>{description}</p>
-  <div class="api-signature-panel"><ApiSignature signature={signature} types={types} memberName/></div>
+  <div class="api-signature-panel">{multiline ? <>
+    <span class="api-signature-line"><ApiSignature signature={multiline.before} types={types} memberName/></span>
+    <span class="api-signature-line api-signature-indent"><ApiSignature signature={multiline.args} types={types}/></span>
+    <span class="api-signature-line"><ApiSignature signature={multiline.after} types={types}/></span>
+  </> : <ApiSignature signature={signature} types={types} memberName/>}</div>
   {[
     { title: 'Parameters', values: parameters },
     { title: 'Returns', values: returns },
@@ -18,4 +24,5 @@ const { id, name, kind, signature, description, types, parameters = [], returns 
     <h4>{group.title}</h4>
     <dl class="api-parameter-list">{group.values.map(item => <div><dt><ApiSignature signature={item.name ? item.name+' : '+item.type : item.type} types={types} memberName={Boolean(item.name)}/></dt><dd>{item.description}</dd></div>)}</dl>
   </>)}
+  {values.length > 0 && <><h4>Items</h4><table class="api-enum-table"><thead><tr><th>Name</th><th>Value</th><th>Description</th></tr></thead><tbody>{values.map(item=><tr><td><code>{item.name}</code></td><td>{item.value}</td><td>{item.description}</td></tr>)}</tbody></table></>}
 </section>

@@ -117,7 +117,7 @@ test('favicon is staged from authored assets and can be replaced per repository'
   const example = fs.readFileSync(path.join(root,'content/docs/reference-example.mdx'),'utf8');
   const ids = [...example.matchAll(/<ApiMember [^>]*id="([^"]+)"/g)].map(m=>m[1]);
   const summary = [...example.matchAll(/"href":"#([^"]+)"/g)].map(m=>m[1]);
-  assert.equal(ids.length,12);
+  assert.equal(ids.length,13);
   assert.deepEqual(summary.sort(),ids.sort());
   for(const id of ids) assert.ok(example.includes('### '+id+'\n'));
   const signature=fs.readFileSync(path.join(__dirname,'src/components/ApiSignature.astro'),'utf8');
@@ -136,4 +136,12 @@ test('API icon families share captured geometry and exact colors without inventi
   assert.match(component,/callback: 'method'/);
   assert.match(component,/signal: 'event'/);
   assert.match(component,/icon && <svg/);
+});
+
+test('multiline callable signatures preserve nested parentheses and return tuples', async () => {
+  const {formatSignature}=await import('./src/data/format-signature.mjs');
+  assert.deepEqual(formatSignature('Get(key: string, fn: (x: number) -> boolean): (unknown, boolean)'),{before:'Get (',args:'key: string, fn: (x: number) -> boolean',after:'): (unknown, boolean)'});
+  assert.equal(formatSignature('Value: string'),null);
+  assert.equal(formatSignature('OnInvoke: (x: number) -> boolean'),null);
+  assert.equal(formatSignature('new()'),null);
 });

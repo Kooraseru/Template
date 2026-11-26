@@ -12,6 +12,7 @@ import ApiInteractions from '../../components/ApiInteractions.astro';
 export const types = {
   Lorem: { category: 'Template', description: 'Lorem ipsum dolor sit amet.', href: '#lorem' },
   Ipsum: { category: 'Template', description: 'Lorem ipsum dolor sit amet.', href: '#ipsum' },
+  T: { category: 'Luau', description: 'A generic type parameter.' },
   Signal: { category: 'Template', description: 'Lorem ipsum dolor sit amet.' },
 };
 
@@ -21,7 +22,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 
 ### Constructors
 
-<ApiSummary types={types} members={[{"kind":"constructor","signature":"Lorem.new(value: string): Lorem","href":"#new","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."}]} />
+<ApiSummary types={types} members={[{"kind":"constructor","signature":"Lorem.new(value: string): Lorem","href":"#new","description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit."},{"kind":"constructor","signature":"Lorem.new(value: number): Lorem","href":"#new-number"}]} />
 
 ### Properties
 
@@ -78,6 +79,10 @@ end
 
 <ApiMember types={types} id="new" name="new()" kind="constructor" signature={"Lorem.new(value: string): Lorem"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[{"name":"value","type":"string","description":"Lorem ipsum dolor sit amet."}]} returns={[{"name":"","type":"Lorem","description":"Lorem ipsum dolor sit amet."}]} />
 
+### new-number
+
+<ApiMember types={types} id="new-number" name="new()" kind="constructor" signature="Lorem.new(value: number): Lorem" description="Lorem ipsum dolor sit amet." parameters={[{name:"value",type:"number",description:"Lorem ipsum dolor sit amet."}]} returns={[{name:"",type:"Lorem",description:"Lorem ipsum dolor sit amet."}]} />
+
 ## Properties reference
 
 ### value
@@ -128,7 +133,7 @@ end
 
 ### dolor
 
-<ApiMember types={types} id="dolor" name="Dolor" kind="enum" signature={"Dolor"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="dolor" name="Dolor" kind="enum" values={[{name:"Lorem",value:0,description:"Lorem ipsum."},{name:"Ipsum",value:1,description:"Dolor sit amet."}]} signature={"Dolor"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
 
 ### add
 

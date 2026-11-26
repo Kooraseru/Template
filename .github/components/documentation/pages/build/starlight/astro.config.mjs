@@ -43,6 +43,7 @@ export default defineConfig({
     components: {
       ThemeProvider: './src/components/ThemeProvider.astro',
       ThemeSelect: './src/components/ThemeSelect.astro',
+      EditLink: './src/components/EditLink.astro',
     },
     expressiveCode: {
       themes: ['github-dark'],
