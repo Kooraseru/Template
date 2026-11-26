@@ -7,12 +7,14 @@ const { compare, discover } = require("./comparison.cjs");
 const site = ".github/components/documentation/pages/build/starlight";
 const properties = ["color","backgroundColor","fontFamily","fontSize","fontWeight","lineHeight","paddingTop","paddingRight","paddingBottom","paddingLeft","marginTop","marginBottom","borderTopWidth","borderRadius","display","position","textDecorationLine","overflowY"];
 const mime = { ".html":"text/html", ".css":"text/css", ".js":"text/javascript", ".svg":"image/svg+xml", ".png":"image/png", ".woff2":"font/woff2", ".json":"application/json" };
-async function serve(directory) {
+async function serve(directory, base = "/") {
     const root = fs.realpathSync(directory);
     const server = http.createServer((req,res) => {
         try {
             const url = new URL(req.url, "http://localhost");
-            let file = path.resolve(root, "." + decodeURIComponent(url.pathname));
+            const pathname = decodeURIComponent(url.pathname);
+            if (!pathname.startsWith(base)) throw Error("Outside site base");
+            let file = path.resolve(root, "./" + pathname.slice(base.length));
             if (fs.statSync(file).isDirectory()) file = path.join(file,"index.html");
             file = fs.realpathSync(file);
             const relative = path.relative(root,file);
@@ -68,7 +70,10 @@ function Create(settings) {
         const browser=await chromium.launch();
         let server;
         try {
-            if(mode!=="capture") server=await serve(product);
+            const repository=process.env.GITHUB_REPOSITORY || "";
+            const [owner,name]=repository.split("/");
+            const base=process.env.DOCS_BASE || (owner && name && name.toLowerCase()!==owner.toLowerCase()+".github.io" ? "/"+name+"/" : "/");
+            if(mode!=="capture") server=await serve(product,base);
             for(const experiment of experiments) for(const scenario of experiment.spec.scenarios) {
                 const id=experiment.id+"/"+scenario.id;
                 const file=path.relative(root,path.join(experiment.directory,"experiment.json")).split(path.sep).join("/");
@@ -81,7 +86,7 @@ function Create(settings) {
                     }
                     const reference=path.join(experiment.directory,"reference",scenario.id);
                     const expected=JSON.parse(fs.readFileSync(path.join(reference,"metrics.json"),"utf8"));
-                    const actual=await capture(browser,new URL(experiment.spec.candidate,server.url).href,scenario,"candidate",destination,server.url);
+                    const actual=await capture(browser,new URL(base+experiment.spec.candidate.slice(1),server.url).href,scenario,"candidate",destination,server.url);
                     assert.equal(actual.browser,expected.browser,"Reference browser version differs");
                     const differences=compare(expected,actual,tolerance,scenario.elements.map(e=>e.id));
                     for(const key of ["viewport",...scenario.elements.map(e=>e.id)]) {
