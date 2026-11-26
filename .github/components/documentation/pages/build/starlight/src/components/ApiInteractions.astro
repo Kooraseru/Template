@@ -11,7 +11,7 @@
     toggle.textContent = 'Expand code';
     toggle.setAttribute('aria-controls', pre.id);
     toggle.setAttribute('aria-expanded', 'false');
-    sample.after(toggle);
+    sample.append(toggle);
     toggle.addEventListener('click', () => {
       const collapsed = sample.toggleAttribute('data-collapsed');
       toggle.textContent = collapsed ? 'Expand code' : 'Collapse code';
