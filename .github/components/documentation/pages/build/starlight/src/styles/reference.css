@@ -95,9 +95,9 @@ a.api-type { cursor:pointer; }
   font-size: var(--sl-text-body);
 }
 .sl-markdown-content .docs-code-sample p { margin-block: 0 12px; }
-.docs-code-sample .expressive-code {
-  --ec-codeBg: var(--docs-surface-secondary);
-  --ec-brdCol: var(--docs-border);
+.sl-markdown-content .docs-code-sample .expressive-code pre {
+  background-color: var(--docs-surface-secondary);
+  border-color: var(--docs-border);
 }
 .docs-code-sample .expressive-code code { counter-reset: sample-line; }
 .docs-code-sample .expressive-code .ec-line::before {
