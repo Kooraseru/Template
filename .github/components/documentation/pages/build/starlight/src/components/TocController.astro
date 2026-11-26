@@ -1,6 +1,5 @@
 <script>
-  // A single scrollspy for both rails. The heading nearest the anchor offset
-  // wins; intersection order must never prefer an earlier parent section.
+  // Activate headings as they enter the reading area below the sticky header.
   const tocs=[...document.querySelectorAll<HTMLElement>('docs-toc, docs-mobile-toc')];
   const linkSets=tocs.map(toc=>[...toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')]);
   const links=linkSets[0]||[];
@@ -29,7 +28,13 @@
     const mobile=tocs.find(toc=>toc.tagName==='DOCS-MOBILE-TOC');
     const bar=mobile?.querySelector('summary')?.getBoundingClientRect().height||0;
     const scrollPadding=parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
-    const threshold=(Number.isFinite(scrollPadding)?scrollPadding:header+bar+16)+2;
+    const anchorOffset = Number.isFinite(scrollPadding) ? scrollPadding : header + bar + 16;
+    const threshold = anchorOffset + Math.min(96, Math.round(innerHeight * 0.1));
+    const target = document.querySelector(':target');
+    if (target && Math.abs(target.getBoundingClientRect().top - anchorOffset) <= 2 && items.some(item => item.heading === target)) {
+      select(target.id);
+      return;
+    }
     let lo=0,hi=items.length-1;
     while(lo<hi){
       const mid=Math.ceil((lo+hi)/2);
