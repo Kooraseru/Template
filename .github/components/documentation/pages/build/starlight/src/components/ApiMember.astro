@@ -45,6 +45,7 @@ const multiline = ['function','method','constructor','operator'].includes(kind) 
     <span class="api-signature-line api-signature-indent"><ApiSignature signature={multiline.args} types={types}/></span>
     <span class="api-signature-line"><ApiSignature signature={multiline.after} types={types}/></span>
   </> : <ApiSignature signature={signature} types={types} memberName/>}</div>
+  <slot name="body" />
   <slot name="description" />
   {(deprecation || Astro.slots.has('deprecation') || metadata.length > 0) && (
     <details class="api-disclosure">

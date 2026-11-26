@@ -137,7 +137,7 @@ end)
 
 <ApiMember types={types} id="anchored" name="Anchored" kind="property" signature="BasePart.Anchored : boolean" description={"Determines whether a part is immovable by physics."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Anchored` property determines whether the part will be immovable by
 physics. When enabled, a part will never change position due to gravity,
@@ -210,7 +210,7 @@ cd.MouseClick:Connect(onToggle)
 
 <ApiMember types={types} id="assemblyangularvelocity" name="AssemblyAngularVelocity" kind="property" signature="BasePart.AssemblyAngularVelocity : Vector3" description={"The angular velocity of the part's assembly."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The angular velocity vector of this part's assembly. It's the rate of
 change of orientation in radians per second.
@@ -239,7 +239,7 @@ no effect.
 
 <ApiMember types={types} id="assemblycenterofmass" name="AssemblyCenterOfMass" kind="property" signature="BasePart.AssemblyCenterOfMass : Vector3" description={"The center of mass of the part's assembly in world space."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 A position calculated via the [`Mass`](#mass) and
 [`Position`](#position) of all the parts in the assembly.
@@ -260,7 +260,7 @@ staying upright under the effect of gravity.
 
 <ApiMember types={types} id="assemblylinearvelocity" name="AssemblyLinearVelocity" kind="property" signature="BasePart.AssemblyLinearVelocity : Vector3" description={"The linear velocity of the part's assembly."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The linear velocity vector of this part's assembly. It's the rate of
 change in position of
@@ -293,7 +293,7 @@ no effect.
 
 <ApiMember types={types} id="assemblymass" name="AssemblyMass" kind="property" signature="BasePart.AssemblyMass : float" description={"The total mass of the part's assembly."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The sum of the mass of all the [`BaseParts`](https://create.roblox.com/docs/reference/engine/classes/BasePart) in this part's
 assembly. Parts that are [`Massless`](#massless) and are not
@@ -311,7 +311,7 @@ assemblies with a large difference in mass may cause instabilities.
 
 <ApiMember types={types} id="assemblyrootpart" name="AssemblyRootPart" kind="property" signature="BasePart.AssemblyRootPart : BasePart" description={"A reference to the root part of the assembly."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Assembly"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This property indicates the [`BasePart`](https://create.roblox.com/docs/reference/engine/classes/BasePart) automatically chosen to
 represent the assembly's root part. If the part is not parented to the
@@ -333,7 +333,7 @@ For more information on root parts, see
 
 <ApiMember types={types} id="audiocancollide" name="AudioCanCollide" kind="property" signature="BasePart.AudioCanCollide : boolean" description={"Determines whether the part will physically interact with audio\nsimulation, similar to `Class.BasePart.CastShadow|CastShadow` for\nlighting."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 `AudioCanCollide` determines whether the part will physically interact
 with audio simulation, similar to [`CastShadow`](#castshadow)
@@ -350,7 +350,7 @@ reflected.
 
 <ApiMember types={types} id="backparama" name="BackParamA" kind="property" signature="BasePart.BackParamA : float" description={"Determines the first parameter for the SurfaceType on the Back face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `BackParamA` property is relevant when a part's
 [`BasePart.BackSurface`](#backsurface) is set to Motor or SteppingMotor and
@@ -418,7 +418,7 @@ end
 
 <ApiMember types={types} id="backparamb" name="BackParamB" kind="property" signature="BasePart.BackParamB : float" description={"Determines the second parameter for the SurfaceType on the Back face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `BackParamB` property is relevant when a part's
 [`BasePart.BackSurface`](#backsurface) is set to Motor or SteppingMotor and
@@ -487,7 +487,7 @@ end
 
 <ApiMember types={types} id="backsurface" name="BackSurface" kind="property" signature="BasePart.BackSurface : SurfaceType" description={"Determines the type of surface for the back face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `BackSurface` property determines the type of surface used for the
 positive **Z** direction of a part. When two parts' faces are placed next
@@ -501,7 +501,7 @@ to each other, they may create a joint between them.
 
 <ApiMember types={types} id="backsurfaceinput" name="BackSurfaceInput" kind="property" signature="BasePart.BackSurfaceInput : InputType" description={"Determines the kind of input for the Back face of a part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `BackSurfaceInput` property determines the kind of input provided to a
 part's [`BasePart.BackSurface`](#backsurface). This is only relevant for Motor or
@@ -578,7 +578,7 @@ end
 
 <ApiMember types={types} id="bottomparama" name="BottomParamA" kind="property" signature="BasePart.BottomParamA : float" description={"Determines the first parameter for the SurfaceType on the Bottom face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `BottomParamA` property is relevant when a part's
 [`BasePart.BottomSurface`](#bottomsurface) is set to Motor or SteppingMotor and
@@ -646,7 +646,7 @@ end
 
 <ApiMember types={types} id="bottomparamb" name="BottomParamB" kind="property" signature="BasePart.BottomParamB : float" description={"Determines the second parameter for the SurfaceType on the Bottom face of\na part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `BottomParamB` property is relevant when a part's
 [`BasePart.BottomSurface`](#bottomsurface) is set to Motor or SteppingMotor and
@@ -715,7 +715,7 @@ end
 
 <ApiMember types={types} id="bottomsurface" name="BottomSurface" kind="property" signature="BasePart.BottomSurface : SurfaceType" description={"Determines the type of surface for the bottom face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `BottomSurface` property determines the type of surface used for the
 negative **Y** direction of a part. When two parts' faces are placed next
@@ -729,7 +729,7 @@ to each other, they may create a joint between them.
 
 <ApiMember types={types} id="bottomsurfaceinput" name="BottomSurfaceInput" kind="property" signature="BasePart.BottomSurfaceInput : InputType" description={"Determines the kind of input for the Bottom face of a part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `BottomSurfaceInput` property determines the kind of input provided to
 a part's [`BasePart.BottomSurface`](#bottomsurface). This is only relevant for Motor
@@ -806,7 +806,7 @@ end
 
 <ApiMember types={types} id="brickcolor" name="BrickColor" kind="property" signature="BasePart.BrickColor : BrickColor" description={"Determines the color of a part."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This property determines the color of a part. If the part has a
 [`Material`](#material), this also determines the color used
@@ -839,7 +839,7 @@ This deprecated property is an old Camel Case variant of the Pascal Case
 
 <ApiMember types={types} id="cancollide" name="CanCollide" kind="property" signature="BasePart.CanCollide : boolean" description={"Determines whether a part may collide with other parts."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 `CanCollide` determines whether a part will physically interact with other
 parts. When disabled, other parts can pass through the part uninterrupted.
@@ -921,7 +921,7 @@ close()
 
 <ApiMember types={types} id="canquery" name="CanQuery" kind="property" signature="BasePart.CanQuery : boolean" description={"Determines whether the part is considered during spatial query operations."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This property determines whether the part is considered during spatial
 query operations, such as
@@ -943,7 +943,7 @@ descendants of a given list of parts using an [`OverlapParams`](https://create.r
 
 <ApiMember types={types} id="cantouch" name="CanTouch" kind="property" signature="BasePart.CanTouch : boolean" description={"Determines if `Class.BasePart.Touched|Touched` and\n`Class.BasePart.TouchEnded|TouchEnded` events fire on the part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This property determines if [`Touched`](#touched) and
 [`TouchEnded`](#touchended) events fire on the part. If `true`,
@@ -975,7 +975,7 @@ can still be hit by [`Raycasts`](https://create.roblox.com/docs/reference/engine
 
 <ApiMember types={types} id="castshadow" name="CastShadow" kind="property" signature="BasePart.CastShadow : boolean" description={"Determines whether or not a part casts a shadow."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Determines whether or not a part casts a shadow. Disabling this property
 for a given part can cause visual artifacts on the shadows cast upon that
@@ -994,7 +994,7 @@ leaving it enabled on all parts in most situations.
 
 <ApiMember types={types} id="centerofmass" name="CenterOfMass" kind="property" signature="BasePart.CenterOfMass : Vector3" description={"Describes the local position of a part's center of mass, relative to its\n`Class.BasePart.CFrame|CFrame`."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `CenterOfMass` property describes the **local** position of a part's
 center of mass. If this is a single part assembly, this is the
@@ -1011,7 +1011,7 @@ always `(0, 0, 0)`, but it can vary for [`WedgePart`](https://create.roblox.com/
 
 <ApiMember types={types} id="cframe" name="CFrame" kind="property" signature="BasePart.CFrame : CFrame" description={"Determines the position and orientation of the `Class.BasePart` in the\nworld."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `CFrame` property determines both the position and orientation of the
 [`BasePart`](https://create.roblox.com/docs/reference/engine/classes/BasePart) in the world. It acts as an arbitrary reference location
@@ -1095,7 +1095,7 @@ part.CFrame = otherPart.CFrame * CFrame.new(0, part.Size.Y / 2 + otherPart.Size.
 
 <ApiMember types={types} id="collisiongroup" name="CollisionGroup" kind="property" signature="BasePart.CollisionGroup : string" description={"Describes the name of a part's collision group."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `CollisionGroup` property describes the name of the part's collision
 group (maximum of 100 characters). Parts start off in the default group
@@ -1143,7 +1143,7 @@ print(Workspace:CollisionGroupsAreCollidable(collisionGroupBall, collisionGroupD
 
 <ApiMember types={types} id="collisiongroupid" name="CollisionGroupId" kind="property" signature="BasePart.CollisionGroupId : int" description={"Describes the automatically set ID number of a part's collision group."} metadata={[{"label":"Tags","value":"NotReplicated, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Collision"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The [`BasePart.CollisionGroupId`](#collisiongroupid) property describes the ID number of
 the part's collision group. Parts start off in the `"Default"` group whose
@@ -1163,7 +1163,7 @@ the collision group's **name**.
 
 <ApiMember types={types} id="color" name="Color" kind="property" signature="BasePart.Color : Color3" description={"Determines the color of a part."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Color` property determines the color of a part. If the part has a
 [`Material`](#material), this also determines the color used
@@ -1239,7 +1239,7 @@ human.HealthChanged:Connect(update)
 
 <ApiMember types={types} id="currentphysicalproperties" name="CurrentPhysicalProperties" kind="property" signature="BasePart.CurrentPhysicalProperties : PhysicalProperties" description={"Indicates the current physical properties of the part."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 `CurrentPhysicalProperties` indicates the current physical properties of
 the part. You can set custom values for the physical properties per part,
@@ -1262,7 +1262,7 @@ are in order from highest to lowest priority:
 
 <ApiMember types={types} id="customphysicalproperties" name="CustomPhysicalProperties" kind="property" signature="BasePart.CustomPhysicalProperties : PhysicalProperties" description={"Determines several physical properties of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 `CustomPhysicalProperties` lets you customize various physical aspects of
 a part, such as its density, friction, and elasticity.
@@ -1310,7 +1310,7 @@ combines these properties into one.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 The Elasticity of a part is now determined by either its [`Material`](https://create.roblox.com/docs/reference/engine/enums/Material)
 or its `CustomPhysicalProperties`.
@@ -1323,7 +1323,7 @@ or its `CustomPhysicalProperties`.
 
 <ApiMember types={types} id="enablefluidforces" name="EnableFluidForces" kind="property" signature="BasePart.EnableFluidForces : boolean" description={"Used to enable or disable aerodynamic forces on parts and assemblies."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Behavior"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 When `true`, and when [`Workspace.FluidForces`](https://create.roblox.com/docs/reference/engine/classes/Workspace#FluidForces) is enabled, causes the
 physics engine to compute aerodynamic forces on this [`BasePart`](https://create.roblox.com/docs/reference/engine/classes/BasePart).
@@ -1336,7 +1336,7 @@ physics engine to compute aerodynamic forces on this [`BasePart`](https://create
 
 <ApiMember types={types} id="extentscframe" name="ExtentsCFrame" kind="property" signature="BasePart.ExtentsCFrame : CFrame" description={"The `Datatype.CFrame` of the physical extents of the `Class.BasePart`."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The [`CFrame`](https://create.roblox.com/docs/reference/engine/datatypes/CFrame) of the physical extents of the [`BasePart`](https://create.roblox.com/docs/reference/engine/classes/BasePart),
 representing its physical center.
@@ -1349,7 +1349,7 @@ representing its physical center.
 
 <ApiMember types={types} id="extentssize" name="ExtentsSize" kind="property" signature="BasePart.ExtentsSize : Vector3" description={"The actual physical size of the `Class.BasePart` as regarded by the\nphysics engine."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The actual physical size of the [`BasePart`](https://create.roblox.com/docs/reference/engine/classes/BasePart) as regarded by the
 physics engine, for example in
@@ -1371,7 +1371,7 @@ combines these properties into one.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 Used to control the Friction of the part, but now it no longer does
 anything. The Friction of a part is now determined by either its
@@ -1386,7 +1386,7 @@ anything. The Friction of a part is now determined by either its
 
 <ApiMember types={types} id="frontparama" name="FrontParamA" kind="property" signature="BasePart.FrontParamA : float" description={"Determines the first parameter for the SurfaceType on the Front face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `FrontParamA` property is relevant when a part's
 [`BasePart.FrontSurface`](#frontsurface) is set to Motor or SteppingMotor and
@@ -1454,7 +1454,7 @@ end
 
 <ApiMember types={types} id="frontparamb" name="FrontParamB" kind="property" signature="BasePart.FrontParamB : float" description={"Determines the second parameter for the SurfaceType on the Front face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `FrontParamB` property is relevant when a part's
 [`BasePart.FrontSurface`](#frontsurface) is set to Motor or SteppingMotor and
@@ -1523,7 +1523,7 @@ end
 
 <ApiMember types={types} id="frontsurface" name="FrontSurface" kind="property" signature="BasePart.FrontSurface : SurfaceType" description={"Determines the type of surface for the front face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `FrontSurface` property determines the type of surface used for the
 negative **Z** direction of a part. When two parts' faces are placed next
@@ -1537,7 +1537,7 @@ to each other, they may create a joint between them.
 
 <ApiMember types={types} id="frontsurfaceinput" name="FrontSurfaceInput" kind="property" signature="BasePart.FrontSurfaceInput : InputType" description={"Determines the kind of input for the Front face of a part (-Z direction)."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `FrontSurfaceInput` property determines the kind of input provided to
 a part's [`BasePart.FrontSurface`](#frontsurface). This is only relevant for Motor or
@@ -1614,7 +1614,7 @@ end
 
 <ApiMember types={types} id="leftparama" name="LeftParamA" kind="property" signature="BasePart.LeftParamA : float" description={"Determines the first parameter for the SurfaceType on the Left face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `LeftParamA` property is relevant when a part's
 [`BasePart.LeftSurface`](#leftsurface) is set to Motor or SteppingMotor and
@@ -1682,7 +1682,7 @@ end
 
 <ApiMember types={types} id="leftparamb" name="LeftParamB" kind="property" signature="BasePart.LeftParamB : float" description={"Determines the second parameter for the SurfaceType on the Left face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The LeftParamB property is relevant when a part's
 [`BasePart.LeftSurface`](#leftsurface) is set to Motor or SteppingMotor and
@@ -1751,7 +1751,7 @@ end
 
 <ApiMember types={types} id="leftsurface" name="LeftSurface" kind="property" signature="BasePart.LeftSurface : SurfaceType" description={"Determines the type of surface for the left face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `LeftSurface` property determines the type of surface used for the
 negative **X** direction of a part. When two parts' faces are placed next
@@ -1765,7 +1765,7 @@ to each other, they may create a joint between them.
 
 <ApiMember types={types} id="leftsurfaceinput" name="LeftSurfaceInput" kind="property" signature="BasePart.LeftSurfaceInput : InputType" description={"Determines the kind of input for the Left face of a part."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `LeftSurfaceInput` property determines the kind of input provided to a
 part's [`BasePart.LeftSurface`](#leftsurface). This is only relevant for Motor or
@@ -1842,7 +1842,7 @@ end
 
 <ApiMember types={types} id="localtransparencymodifier" name="LocalTransparencyModifier" kind="property" signature="BasePart.LocalTransparencyModifier : float" description={"Determines a multiplier for `Class.BasePart.Transparency` that is only\nvisible to the local client."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `LocalTransparencyModifier` property is a multiplier to
 [`Transparency`](#transparency) that is only visible to the
@@ -1908,7 +1908,7 @@ formula, with resulting values clamped between `0` and `1`.
 
 <ApiMember types={types} id="locked" name="Locked" kind="property" signature="BasePart.Locked : boolean" description={"Determines whether a part is selectable in Studio."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Locked` property determines whether a part (or a [`Model`](https://create.roblox.com/docs/reference/engine/classes/Model) it is
 contained within) may be selected in Studio by clicking on it. This
@@ -1953,7 +1953,7 @@ recursiveUnlock(model)
 
 <ApiMember types={types} id="mass" name="Mass" kind="property" signature="BasePart.Mass : float" description={"Describes the mass of the part, the product of its density and volume."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 `Mass` is a read-only property that describes the product of a part's
 volume and density. It is returned by the
@@ -1975,7 +1975,7 @@ volume and density. It is returned by the
 
 <ApiMember types={types} id="massless" name="Massless" kind="property" signature="BasePart.Massless : boolean" description={"Determines whether the part contributes to the total mass or inertia of\nits rigid body."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 If this property is enabled, the part will not contribute to the total
 mass or inertia of its assembly as long as it is welded to another part
@@ -2003,7 +2003,7 @@ documenting what root parts are and how to use them.
 
 <ApiMember types={types} id="material" name="Material" kind="property" signature="BasePart.Material : Material" description={"Determines the texture and default physical properties of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Material` property allows you to set a part's texture and default
 physical properties (in the case that
@@ -2035,7 +2035,7 @@ parts behind [`Glass`](https://create.roblox.com/docs/reference/engine/enums/Mat
 
 <ApiMember types={types} id="materialvariant" name="MaterialVariant" kind="property" signature="BasePart.MaterialVariant : string" description={"The name of `Class.MaterialVariant`."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The system searches the [`MaterialVariant`](https://create.roblox.com/docs/reference/engine/classes/MaterialVariant) instance with the
 specified `MaterialVariant` name and [`Material`](#material)
@@ -2052,7 +2052,7 @@ default material can be the built-in material or an override
 
 <ApiMember types={types} id="orientation" name="Orientation" kind="property" signature="BasePart.Orientation : Vector3" description={"Describes the rotation of the part in the world."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Orientation` property describes the part's rotation in degrees around
 the **X**, **Y**, and **Z** axes using a [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3). The rotations
@@ -2109,7 +2109,7 @@ end
 
 <ApiMember types={types} id="pivotoffset" name="PivotOffset" kind="property" signature="BasePart.PivotOffset : CFrame" description={"Specifies the offset of the part's pivot from its `Datatype.CFrame`."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Pivot"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This property specifies the offset of the part's pivot from its
 [`CFrame`](https://create.roblox.com/docs/reference/engine/datatypes/CFrame), that is [`BasePart:GetPivot()`](https://create.roblox.com/docs/reference/engine/classes/BasePart#GetPivot) is the same as
@@ -2215,7 +2215,7 @@ part.PivotOffset = part.CFrame:ToObjectSpace(desiredPivotCFrameInWorldSpace)
 
 <ApiMember types={types} id="position" name="Position" kind="property" signature="BasePart.Position : Vector3" description={"Describes the position of the part in the world."} metadata={[{"label":"Tags","value":"Hidden, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Position` property describes the coordinates of a part using a
 [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3). It reflects the position of the part's
@@ -2236,7 +2236,7 @@ disabled and re-enabled during the move.
 
 <ApiMember types={types} id="receiveage" name="ReceiveAge" kind="property" signature="BasePart.ReceiveAge : float" description={"Time since last recorded physics update."} metadata={[{"label":"Tags","value":"Hidden, ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Indicates the time in seconds since the part's physics were last updated
 on the local client or the server. This value will be `0` when the part
@@ -2250,7 +2250,7 @@ has no physics ([`Anchored`](#anchored) is `true`).
 
 <ApiMember types={types} id="reflectance" name="Reflectance" kind="property" signature="BasePart.Reflectance : float" description={"Determines how much a part reflects the skybox."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Reflectance` property determines how much a part reflects the sky. A
 value of `0` indicates the part is not reflective at all, and a value of
@@ -2269,7 +2269,7 @@ render at all. Reflectance may or may not be ignored depending on the
 
 <ApiMember types={types} id="resizeablefaces" name="ResizeableFaces" kind="property" signature="BasePart.ResizeableFaces : Faces" description={"Describes the faces on which a part may be resized."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `ResizeableFaces` property uses a [`Faces`](https://create.roblox.com/docs/reference/engine/datatypes/Faces) object to describe
 the different faces on which a part may be resized. For most
@@ -2324,7 +2324,7 @@ handles.Faces = part.ResizeableFaces
 
 <ApiMember types={types} id="resizeincrement" name="ResizeIncrement" kind="property" signature="BasePart.ResizeIncrement : int" description={"Describes the smallest change in size allowable by the\n`Class.BasePart:Resize()|Resize()` method."} metadata={[{"label":"Tags","value":"ReadOnly, NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Serialization","value":"Load: no, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `ResizeIncrement` property is a read-only property that describes the
 smallest change in size allowable by the
@@ -2341,7 +2341,7 @@ implementations of the [`BasePart`](https://create.roblox.com/docs/reference/eng
 
 <ApiMember types={types} id="rightparama" name="RightParamA" kind="property" signature="BasePart.RightParamA : float" description={"Determines the first parameter for the SurfaceType on the Right face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `RightParamA` property is relevant when a part's
 [`BasePart.RightSurface`](#rightsurface) is set to Motor or SteppingMotor and
@@ -2409,7 +2409,7 @@ end
 
 <ApiMember types={types} id="rightparamb" name="RightParamB" kind="property" signature="BasePart.RightParamB : float" description={"Determines the second parameter for the SurfaceType on the Right face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `RightParamB` property is relevant when a part's
 [`BasePart.RightSurface`](#rightsurface) is set to Motor or SteppingMotor and
@@ -2478,7 +2478,7 @@ end
 
 <ApiMember types={types} id="rightsurface" name="RightSurface" kind="property" signature="BasePart.RightSurface : SurfaceType" description={"Determines the type of surface for the right face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `RightSurface` property determines the type of surface used for the
 positive **X** direction of a part. When two parts' faces are placed next
@@ -2492,7 +2492,7 @@ to each other, they may create a joint between them.
 
 <ApiMember types={types} id="rightsurfaceinput" name="RightSurfaceInput" kind="property" signature="BasePart.RightSurfaceInput : InputType" description={"Determines the kind of input for the Right face of a part (-X direction)."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The RightSurfaceInput property determines the kind of input provided to a
 
@@ -2561,7 +2561,7 @@ end
 
 <ApiMember types={types} id="rootpriority" name="RootPriority" kind="property" signature="BasePart.RootPriority : int" description={"The main rule in determining the root part of an assembly."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Part"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This property is an integer between `-127` and `127` that takes precedence
 over all other rules for root part sort. When considering multiple parts
@@ -2583,7 +2583,7 @@ documenting what root parts are and how to use them.
 
 <ApiMember types={types} id="rotation" name="Rotation" kind="property" signature="BasePart.Rotation : Vector3" description={"The rotation of the part in degrees for the three axes."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Data"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The rotation of the part in degrees for the three axes.
 
@@ -2608,7 +2608,7 @@ This property is deprecated. Use `AssemblyAngularVelocity` instead.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 The `RotVelocity` of a [`part`](https://create.roblox.com/docs/reference/engine/classes/BasePart) describes how its
 [`BasePart.Orientation`](#orientation) is presently changing. In other words, this
@@ -2654,7 +2654,7 @@ RunService.RenderStepped:Connect(renderStepped)
 
 <ApiMember types={types} id="size" name="Size" kind="property" signature="BasePart.Size : Vector3" description={"Determines the dimensions of a part (length, height, width)."} metadata={[{"label":"Tags","value":"NotReplicated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Transform"},{"label":"Simulation access","value":"Yes"},{"label":"Serialization","value":"Load: yes, Save: no"}]}>
 
-<div slot="description">
+<div slot="body">
 
 A part's `Size` property determines its **visual** dimensions, while
 [`ExtentsSize`](#extentssize) represents the actual size used
@@ -2734,7 +2734,7 @@ for new work.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 The ratio of the part's density to the density of water determined by the
 [`BasePart.Material`](#material). Effects the part's behavior when in a water
@@ -2834,7 +2834,7 @@ dense a part is than water.
 
 <ApiMember types={types} id="topparama" name="TopParamA" kind="property" signature="BasePart.TopParamA : float" description={"Determines the first parameter for the SurfaceType on the Top face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The TopParamA property is relevant when a part's
 [`BasePart.TopSurface`](#topsurface) is set to Motor or SteppingMotor and
@@ -2902,7 +2902,7 @@ end
 
 <ApiMember types={types} id="topparamb" name="TopParamB" kind="property" signature="BasePart.TopParamB : float" description={"Determines the second parameter for the SurfaceType on the Top face of a\npart."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The TopParamB property is relevant when a part's
 [`BasePart.TopSurface`](#topsurface) is set to Motor or SteppingMotor and
@@ -2971,7 +2971,7 @@ end
 
 <ApiMember types={types} id="topsurface" name="TopSurface" kind="property" signature="BasePart.TopSurface : SurfaceType" description={"Determines the type of surface for the top face of a part."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `TopSurface` property determines the type of surface used for the
 positive **Y** direction of a part. When two parts' faces are placed next
@@ -2985,7 +2985,7 @@ to each other, they may create a joint between them.
 
 <ApiMember types={types} id="topsurfaceinput" name="TopSurfaceInput" kind="property" signature="BasePart.TopSurfaceInput : InputType" description={"Determines the kind of input for the Top face of a part (+Y direction)."} metadata={[{"label":"Tags","value":"Hidden, Deprecated"},{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Surface Inputs"},{"label":"Serialization","value":"Load: yes, Save: yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 The `TopSurfaceInput` property determines the kind of input provided to a
 part's [`BasePart.TopSurface`](#topsurface). This is only relevant for Motor or
@@ -3062,7 +3062,7 @@ end
 
 <ApiMember types={types} id="transparency" name="Transparency" kind="property" signature="BasePart.Transparency : float" description={"Determines how much a part can be seen through (the inverse of part\nopacity)."} metadata={[{"label":"Thread safety","value":"ReadSafe"},{"label":"Category","value":"Appearance"},{"label":"Serialization","value":"Load: yes, Save: yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The `Transparency` property controls the visibility of a part on a scale
 of `0` to `1` where `0` is completely visible (opaque) and `1` is
@@ -3149,7 +3149,7 @@ This property is deprecated. Use `AssemblyLinearVelocity` instead.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 The Velocity of a part describes how its [`BasePart.Position`](#position) is
 presently changing. The unit of this property is **studs per second**. For
@@ -3241,7 +3241,7 @@ end
 
 <ApiMember types={types} id="angularaccelerationtotorque" name="AngularAccelerationToTorque()" kind="method" signature="AngularAccelerationToTorque(angAcceleration: Vector3, angVelocity: Vector3): Vector3" description={"Returns the torque needed to achieve a given angular acceleration on this\npart's assembly, optionally accounting for gyroscopic effects."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns the world-space torque vector that must be applied to the part's
 assembly to achieve the specified angular acceleration. This result can be
@@ -3331,7 +3331,7 @@ print(torque)
 
 <ApiMember types={types} id="applyangularimpulse" name="ApplyAngularImpulse()" kind="method" signature="ApplyAngularImpulse(impulse: Vector3): ()" description={"Apply an angular impulse to the assembly."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Applies an instant angular force impulse to this part's assembly, causing
 the assembly to spin.
@@ -3384,7 +3384,7 @@ An angular impulse vector to be applied to the assembly.
 
 <ApiMember types={types} id="applyimpulse" name="ApplyImpulse()" kind="method" signature="ApplyImpulse(impulse: Vector3): ()" description={"Apply an impulse to the assembly at the assembly's\n`Class.BasePart.AssemblyCenterOfMass|center of mass`."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This function applies an instant force impulse to this part's assembly.
 
@@ -3440,7 +3440,7 @@ A linear impulse vector to be applied to the assembly.
 
 <ApiMember types={types} id="applyimpulseatposition" name="ApplyImpulseAtPosition()" kind="method" signature="ApplyImpulseAtPosition(impulse: Vector3, position: Vector3): ()" description={"Apply an impulse to the assembly at specified position."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 This function applies an instant force impulse to this part's assembly, at
 the specified position in world space.
@@ -3506,7 +3506,7 @@ The position, in world space, to apply the impulse.
 
 <ApiMember types={types} id="bindtocollisionsummaries" name="BindToCollisionSummaries()" kind="method" signature="BindToCollisionSummaries(callback: Function): RBXScriptConnection" description={"Subscribes to detailed per-frame contact data for the collisions this part\nis involved in."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"Basic"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Subscribes `callback` to the contact data that the physics engine
 generates for this part while detecting collisions. Once per frame, after
@@ -3649,7 +3649,7 @@ part's connections using [`BasePart:GetJoints()`](#getjoints) and call
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 Breaks any surface connection with any adjacent part, including
 [`Weld`](https://create.roblox.com/docs/reference/engine/classes/Weld) and other [`JointInstance`](https://create.roblox.com/docs/reference/engine/classes/JointInstance).
@@ -3682,7 +3682,7 @@ which should be used instead.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 <h4>Returns</h4>
 
@@ -3705,7 +3705,7 @@ which should be used instead.
 
 <ApiMember types={types} id="cancollidewith" name="CanCollideWith()" kind="method" signature="CanCollideWith(part: BasePart): boolean" description={"Returns whether the parts can collide with each other."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns whether the parts can collide with each other or not. This
 function takes into account the collision groups of the two parts. This
@@ -3745,7 +3745,7 @@ Whether the parts can collide with each other.
 
 <ApiMember types={types} id="cansetnetworkownership" name="CanSetNetworkOwnership()" kind="method" signature="CanSetNetworkOwnership(): Tuple" description={"Checks whether you can set a part's network ownership."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 The CanSetNetworkOwnership function checks whether you can set a part's
 network ownership.
@@ -3799,7 +3799,7 @@ end
 
 <ApiMember types={types} id="getclosestpointonsurface" name="GetClosestPointOnSurface()" kind="method" signature="GetClosestPointOnSurface(position: Vector3): Vector3" description={"Returns the closest point on the part's surface to the given point."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns the closest point on the part's surface to the given world-space
 position. If the provided position is inside the part, it is returned
@@ -3844,7 +3844,7 @@ The closest point on the part's surface in world space.
 
 <ApiMember types={types} id="getconnectedparts" name="GetConnectedParts()" kind="method" signature="GetConnectedParts(recursive: boolean): List<BasePart>" description={"Returns a table of parts connected to the object by any kind of rigid\njoint."} metadata={[{"label":"Thread safety","value":"Safe"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns a table of parts connected to the object by any kind of rigid
 joint.
@@ -3901,7 +3901,7 @@ joints. If `recursive` is true, includes all parts in the assembly.
 
 <ApiMember types={types} id="getjoints" name="GetJoints()" kind="method" signature="GetJoints(): Instances" description={"Returns all Joints or Constraints connected to this part that are active\nin the simulation."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns an array of all [`Joints`](https://create.roblox.com/docs/reference/engine/classes/JointInstance) and
 [`Constraints`](https://create.roblox.com/docs/reference/engine/classes/Constraint) connected to this part that are active in
@@ -3938,7 +3938,7 @@ in the simulation.
 
 <ApiMember types={types} id="getmass" name="GetMass()" kind="method" signature="GetMass(): float" description={"Returns the value of the `Class.BasePart.Mass|Mass` property."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 **GetMass** returns the value of the read-only [`Mass`](#mass)
 property.
@@ -3999,7 +3999,7 @@ variant, [`BasePart:GetMass()`](#getmass).
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 <h4>Returns</h4>
 
@@ -4022,7 +4022,7 @@ variant, [`BasePart:GetMass()`](#getmass).
 
 <ApiMember types={types} id="getnetworkowner" name="GetNetworkOwner()" kind="method" signature="GetNetworkOwner(): Instance" description={"Returns the current player who is the network owner of this part, or `nil`\nin case of the server."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns the current player who is the network owner of this part, or `nil`
 in case of the server.
@@ -4049,7 +4049,7 @@ case of the server.
 
 <ApiMember types={types} id="getnetworkownershipauto" name="GetNetworkOwnershipAuto()" kind="method" signature="GetNetworkOwnershipAuto(): boolean" description={"Returns true if the game engine automatically decides the network owner\nfor this part."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns true if the game engine automatically decides the network owner
 for this part.
@@ -4076,7 +4076,7 @@ this part.
 
 <ApiMember types={types} id="getnocollisionconstraints" name="GetNoCollisionConstraints()" kind="method" signature="GetNoCollisionConstraints(): Instances" description={"Returns the enabled `Class.NoCollisionConstraint` objects currently\nregistered for this part in its physics world."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns the enabled [`NoCollisionConstraint`](https://create.roblox.com/docs/reference/engine/classes/NoCollisionConstraint) objects currently
 registered for this part in its physics world. A
@@ -4116,7 +4116,7 @@ This item is been deprecated since interpolation is now applied to the
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 This function used to be relevant when Roblox's lag-compensating
 interpolation of parts online was internal. The interpolation is now
@@ -4144,7 +4144,7 @@ which is now equivalent to the part's [`CFrame`](#cframe).
 
 <ApiMember types={types} id="getrootpart" name="GetRootPart()" kind="method" signature="GetRootPart(): Instance" description={"Returns the base part of an assembly of parts."} metadata={[{"label":"Tags","value":"Deprecated"},{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]} deprecated>
 
-<div slot="description">
+<div slot="body">
 
 Returns the base part of an assembly. When moving an assembly of parts
 using a [`CFrame`](https://create.roblox.com/docs/reference/engine/datatypes/CFrame). it is important to move this base part (this
@@ -4178,7 +4178,7 @@ together).
 
 <ApiMember types={types} id="gettouchingparts" name="GetTouchingParts()" kind="method" signature="GetTouchingParts(): Instances" description={"Returns a table of all `Class.BasePart.CanCollide` true parts that\nintersect with this part."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns a table of all parts that are physically interacting with this
 part. If the part itself has CanCollide set to false, then this function
@@ -4211,7 +4211,7 @@ A table of all parts that intersect and can collide with this part.
 
 <ApiMember types={types} id="getvelocityatposition" name="GetVelocityAtPosition()" kind="method" signature="GetVelocityAtPosition(position: Vector3): Vector3" description={"Returns the linear velocity of the part's assembly at the given position\nrelative to this part."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns the linear velocity of the part's assembly at the given position
 relative to this part. It can be used to identify the linear velocity of
@@ -4255,7 +4255,7 @@ at the specified world-space position.
 
 <ApiMember types={types} id="intersectasync" name="IntersectAsync()" kind="method" signature="IntersectAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" description={"Creates a new `Class.IntersectOperation` from the overlapping geometry of\nthe part and the other parts in the given array."} metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Creates a new [`IntersectOperation`](https://create.roblox.com/docs/reference/engine/classes/IntersectOperation) from the intersecting geometry of
 the part and the other parts in the given array. Only [`Parts`](https://create.roblox.com/docs/reference/engine/classes/Part)
@@ -4362,7 +4362,7 @@ Resulting [`IntersectOperation`](https://create.roblox.com/docs/reference/engine
 
 <ApiMember types={types} id="isgrounded" name="IsGrounded()" kind="method" signature="IsGrounded(): boolean" description={"Returns true if the object is connected to a part that will hold it in\nplace (eg an `Class.BasePart.Anchored|Anchored` part), otherwise returns\nfalse."} metadata={[{"label":"Thread safety","value":"Safe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns true if the object is connected to a part that will hold it in
 place (eg an [`Anchored`](#anchored) part), otherwise returns
@@ -4398,7 +4398,7 @@ projects. [`WeldConstraints`](https://create.roblox.com/docs/reference/engine/cl
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 Creates a joint on any side of the [`Part`](https://create.roblox.com/docs/reference/engine/classes/BasePart) that has a
 [`SurfaceType`](https://create.roblox.com/docs/reference/engine/enums/SurfaceType) that can make a joint it will create a joint with any
@@ -4457,7 +4457,7 @@ which should be used instead.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 <h4>Returns</h4>
 
@@ -4480,7 +4480,7 @@ which should be used instead.
 
 <ApiMember types={types} id="resize" name="Resize()" kind="method" signature="Resize(normalId: NormalId, deltaAmount: int): boolean" description={"Changes the size of an object just like using the Studio resize tool."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Changes the size of an object just like using the Studio resize tool.
 
@@ -4533,7 +4533,7 @@ should be used instead.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 <h4>Parameters</h4>
 
@@ -4577,7 +4577,7 @@ should be used instead.
 
 <ApiMember types={types} id="setnetworkowner" name="SetNetworkOwner()" kind="method" signature="SetNetworkOwner(playerInstance: Player): ()" description={"Sets the given player as network owner for this and all connected parts."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Sets the given player as network owner for this and all connected parts.
 When playerInstance is `nil`, the server will be the owner instead of a
@@ -4617,7 +4617,7 @@ The player being given network ownership of the part.
 
 <ApiMember types={types} id="setnetworkownershipauto" name="SetNetworkOwnershipAuto()" kind="method" signature="SetNetworkOwnershipAuto(): ()" description={"Lets the game engine dynamically decide who will handle the part's physics\n(one of the clients or the server)."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Lets the game engine dynamically decide who will handle the part's physics
 (one of the clients or the server).
@@ -4643,7 +4643,7 @@ Lets the game engine dynamically decide who will handle the part's physics
 
 <ApiMember types={types} id="subtractasync" name="SubtractAsync()" kind="method" signature="SubtractAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" description={"Creates a new `Class.UnionOperation` from the part, minus the geometry\noccupied by the parts in the given array."} metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Creates a new [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation) from the part, minus the geometry
 occupied by the parts in the given array. Only [`Parts`](https://create.roblox.com/docs/reference/engine/classes/Part) are
@@ -4725,7 +4725,7 @@ Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/cla
 
 <ApiMember types={types} id="torquetoangularacceleration" name="TorqueToAngularAcceleration()" kind="method" signature="TorqueToAngularAcceleration(torque: Vector3, angVelocity: Vector3): Vector3" description={"Returns the angular acceleration that would result from applying a given\ntorque to this part's assembly, optionally accounting for gyroscopic\neffects."} metadata={[{"label":"Thread safety","value":"Unsafe"},{"label":"Simulation access","value":"Yes"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Returns the world-space angular acceleration that would result from
 applying the specified torque to the part's assembly, optionally taking
@@ -4818,7 +4818,7 @@ print(angAccel)
 
 <ApiMember types={types} id="unionasync" name="UnionAsync()" kind="method" signature="UnionAsync(parts: Instances, collisionfidelity: CollisionFidelity, renderFidelity: RenderFidelity): Instance" description={"Creates a new `Class.UnionOperation` from the part, plus the geometry\noccupied by the parts in the given array."} metadata={[{"label":"Tags","value":"Yields"},{"label":"Thread safety","value":"Unsafe"},{"label":"Capabilities","value":"CSG"}]}>
 
-<div slot="description">
+<div slot="body">
 
 Creates a new [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation) from the part, plus the geometry
 occupied by the parts in the given array. Only [`Parts`](https://create.roblox.com/docs/reference/engine/classes/Part) are
@@ -4932,7 +4932,7 @@ This event is deprecated in favor of [`BasePart.Touched`](#touched).
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 Fired when another part comes in contact with another object. This event
 only sends data to the client notifying it that two parts have collided,
@@ -4979,7 +4979,7 @@ This event is deprecated. Do not use it for new work.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 Fired if the part's appearance is affected by the [`Shirt`](https://create.roblox.com/docs/reference/engine/classes/Shirt) class.
 
@@ -4998,7 +4998,7 @@ should be used instead.
 
 </div>
 
-<div slot="description">
+<div slot="body">
 
 Deprecated. Fires on the local client when a part stops touching another
 part, under conditions similar to those of [`BasePart.TouchEnded`](#touchended).
@@ -5028,7 +5028,7 @@ The other part that stopped touching the given part.
 
 <ApiMember types={types} id="touched" name="Touched" kind="event" signature="Touched: RBXScriptSignal" description={"Fires when a part touches another part as a result of physical movement."} metadata={[]}>
 
-<div slot="description">
+<div slot="body">
 
 The **Touched** event fires when a part comes in contact with another
 part. For instance, if **PartA** bumps into **PartB**, then
@@ -5132,7 +5132,7 @@ end
 
 <ApiMember types={types} id="touchended" name="TouchEnded" kind="event" signature="TouchEnded: RBXScriptSignal" description={"Fires when a part stops touching another part as a result of physical\nmovement."} metadata={[]}>
 
-<div slot="description">
+<div slot="body">
 
 Fires when a part stops touching another part under similar conditions to
 those of [`BasePart.Touched`](#touched).
