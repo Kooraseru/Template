@@ -1,6 +1,6 @@
 <script>
   let sampleId = 0;
-  for (const sample of document.querySelectorAll<HTMLElement>('.docs-code-sample .expressive-code')) {
+  for (const sample of document.querySelectorAll<HTMLElement>('.sl-markdown-content .expressive-code')) {
     const pre = sample.querySelector('pre');
     if (!pre || pre.querySelectorAll('.ec-line').length <= 19) continue;
     if (!pre.id) pre.id = 'docs-code-sample-' + ++sampleId;
@@ -8,14 +8,19 @@
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'docs-code-toggle';
-    toggle.textContent = 'Expand code';
+    const setToggleLabel = (expanded: boolean) => {
+      const label = expanded ? 'Collapse code' : 'Expand code';
+      toggle.textContent = expanded ? '↟' : '↡';
+      toggle.title = label;
+      toggle.setAttribute('aria-label', label);
+      toggle.setAttribute('aria-expanded', String(expanded));
+    };
+    setToggleLabel(false);
     toggle.setAttribute('aria-controls', pre.id);
-    toggle.setAttribute('aria-expanded', 'false');
     sample.append(toggle);
     toggle.addEventListener('click', () => {
       const collapsed = sample.toggleAttribute('data-collapsed');
-      toggle.textContent = collapsed ? 'Expand code' : 'Collapse code';
-      toggle.setAttribute('aria-expanded', String(!collapsed));
+      setToggleLabel(!collapsed);
       if (collapsed) pre.scrollTop = 0;
     });
   }
