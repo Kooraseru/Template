@@ -103,3 +103,15 @@ test("editor suggests real rule IDs and nested settings without a generated sche
 	const items = complete('{"rules":{"luau/example":{"overrides":[{"settings":{"nested":{|}}}]}}}');
 	assert.deepEqual(items.map(item => item.insertText), ['"limit": 4']);
 });
+
+test("discovers native product rules without changing Luau identities", t => {
+    const { root, write } = workspace(t);
+    write("rules/documentation/parity/README.md", "# Parity");
+    write("rules/documentation/parity/validation.cjs", "module.exports = {};");
+    const rules = catalog(root);
+    assert.equal(rules.get("luau/example").runtime, "lute");
+    assert.equal(rules.get("documentation/parity").runtime, "node-product");
+    assert.equal(rules.get("documentation/parity").entry, "rules/documentation/parity/validation.cjs");
+    write("rules/documentation/parity/validation/init.cjs", "module.exports = {};");
+    assert.throws(() => catalog(root), /exactly one validator entry/);
+});
