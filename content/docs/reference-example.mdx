@@ -113,7 +113,31 @@ end
 
 ### completed
 
-<ApiMember types={types} id="completed" name="Completed" kind="event" signature={"Completed: RBXScriptSignal"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]} />
+<ApiMember types={types} id="completed" name="Completed" kind="event" signature={"Completed: RBXScriptSignal"} description="Lorem ipsum dolor sit amet, consectetur adipiscing elit." parameters={[]} returns={[]}>
+  <div slot="samples">
+
+A [BasePart](https://create.roblox.com/docs/reference/engine/classes/BasePart) can be frozen after a tween finishes. See [BasePart.Anchored](https://create.roblox.com/docs/reference/engine/classes/BasePart#Anchored) for how anchoring affects physics.
+
+```luau title="Anchor a part after a tween"
+local TweenService = game:GetService("TweenService")
+local part = script.Parent
+assert(part:IsA("BasePart"), "Put this script under a BasePart")
+
+local tween = TweenService:Create(part, TweenInfo.new(1), {
+    Transparency = 0.5,
+})
+
+tween.Completed:Connect(function(state)
+    if state == Enum.PlaybackState.Completed then
+        part.Anchored = true
+    end
+end)
+
+tween:Play()
+```
+
+  </div>
+</ApiMember>
 
 ## Callbacks reference
 
