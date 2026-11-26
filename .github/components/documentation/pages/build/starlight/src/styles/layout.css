@@ -1,20 +1,58 @@
-/* Stable layout/typography for all operating systems and browser themes.
- * Colors are resolved independently in styles/theme/.
- */
+/* Creator Hub's documentation rail and article, without its product-navigation rail. */
 :root {
-  --sl-content-width: 52rem;
-  --sl-sidebar-width: 17rem;
-  --sl-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --docs-unit: 4px;
+  --docs-article-width: 883px;
+  --docs-toc-width: 329px;
+  --docs-gutter: 32px;
+  --docs-scroll-thumb: color-mix(in srgb, var(--docs-text) 35%, transparent);
+  --sl-content-width: var(--docs-article-width);
+  --sl-sidebar-width: 18rem;
+  --sl-sidebar-pad-x: 1rem;
+  --sl-nav-height: 4.5rem;
+  --sl-nav-pad-x: 2rem;
+  --sl-content-pad-x: var(--docs-gutter);
 }
-
-.sl-markdown-content {
-  line-height: 1.75;
+html, body, header.header, .header, .sidebar-pane, .right-sidebar, .right-sidebar-container {
+  background-color: var(--docs-surface);
 }
-
-.sl-markdown-content :is(h2, h3) {
-  scroll-margin-top: 6rem;
+header.header, .header { border-bottom:0; }
+.header .social-icons::after { display:none; }
+.sidebar-pane { border-inline-end: 1px solid var(--docs-border); }
+.sidebar-content { padding: 16px; }
+:where(.sidebar-content, .right-sidebar, .docs-mobile-toc-dropdown) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--docs-scroll-thumb) transparent;
 }
-
-.sl-markdown-content :not(pre) > code {
-  border-radius: 0.3rem;
+.content-panel { padding-block: 16px; }
+.content-panel + .content-panel { border-top:0; padding-top:0; }
+.content-panel .sl-container { margin-inline: auto; }
+.right-sidebar { border-inline-start:0; }
+@media (min-width: 72rem) {
+  [data-has-sidebar][data-has-toc] .main-pane {
+    width: min(calc(100% - var(--docs-toc-width) - var(--docs-gutter)), calc(var(--docs-article-width) + var(--docs-gutter)));
+    margin-inline-start:auto;
+    min-width:0;
+  }
+  [data-has-sidebar][data-has-toc] .main-pane .content-panel { padding-inline-end:0; }
+  .right-sidebar-container {
+    width:calc(var(--docs-toc-width) + var(--docs-gutter));
+    flex:0 0 calc(var(--docs-toc-width) + var(--docs-gutter));
+    margin-inline-start:0;
+    margin-inline-end:auto;
+  }
+  .right-sidebar {
+    top:calc(var(--sl-nav-height) + 64px);
+    width:var(--docs-toc-width);
+    padding-top:0;
+    height:calc(100dvh - var(--sl-nav-height) - 88px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+}
+@media (max-width: 71.999rem) {
+  :root { --sl-content-pad-x: 32px; }
+}
+@media (max-width: 37.499rem) {
+  :root { --sl-nav-height: 4rem; --sl-nav-pad-x: 20px; --sl-content-pad-x: 20px; }
+  .sidebar-pane { border-inline-end:0; }
 }

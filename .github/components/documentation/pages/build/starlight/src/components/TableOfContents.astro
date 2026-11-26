@@ -1,0 +1,12 @@
+---
+import TocList from './TocList.astro';
+import TocController from './TocController.astro';
+const {toc}=Astro.locals.starlightRoute;
+---
+{toc && <docs-toc>
+  <nav aria-labelledby="docs-toc-title">
+    <h2 id="docs-toc-title">{Astro.locals.t('tableOfContents.onThisPage')}</h2>
+    <TocList items={toc.items}/>
+  </nav>
+  <TocController/>
+</docs-toc>}

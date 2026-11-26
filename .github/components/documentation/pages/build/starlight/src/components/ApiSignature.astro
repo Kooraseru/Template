@@ -1,0 +1,14 @@
+---
+import builtins from '../data/luau-types.json';
+export interface TypeReference { category: string; description: string; href?: string }
+export type TypeReferences = Record<string, TypeReference>;
+interface Props { signature: string; types?: TypeReferences; memberHref?: string; memberName?: boolean }
+const { signature, types = {}, memberHref, memberName = false } = Astro.props;
+const references: TypeReferences = { ...builtins, ...types };
+const head = memberHref || memberName ? signature.match(/^[A-Za-z_][A-Za-z_0-9]*(?:[.:][A-Za-z_][A-Za-z_0-9]*)*/)?.[0] || '' : '';
+const tokens = signature.slice(head.length).split(/\b([A-Za-z_][A-Za-z_0-9]*)\b/g);
+---
+<span class="api-signature">{head && (memberHref ? <a class="api-member-link" href={memberHref}>{head}</a> : head)}{tokens.map((token,index) => {
+  const info = index % 2 && Object.hasOwn(references,token) && !/^\s*:/.test(tokens[index+1] || '') ? references[token] : undefined;
+  return info ? info.href ? <a class="api-type" href={info.href} data-api-type={token} data-category={info.category} data-description={info.description}>{token}</a> : <button type="button" class="api-type" data-api-type={token} data-category={info.category} data-description={info.description}>{token}</button> : token;
+})}</span>

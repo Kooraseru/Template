@@ -32,12 +32,35 @@ export default defineConfig({
     // Navigation stays filesystem-generated. Authored Markdown is staged into
     // src/content/docs before each build or local preview.
     customCss: [
-      './src/styles/layout.css',
       './src/styles/theme/fallback.css',
-      './src/styles/theme/native.css',
+      './src/styles/layout.css',
+      './src/styles/typography.css',
+      './src/styles/navigation.css',
+      './src/styles/reference.css',
       './src/styles/project.css',
       './src/styles/theme/forced-colors.css',
     ],
+    components: {
+      ThemeProvider: './src/components/ThemeProvider.astro',
+      ThemeSelect: './src/components/ThemeSelect.astro',
+      EditLink: './src/components/EditLink.astro',
+      PageTitle: './src/components/PageTitle.astro',
+      TableOfContents: './src/components/TableOfContents.astro',
+      MobileTableOfContents: './src/components/MobileTableOfContents.astro',
+    },
+    expressiveCode: {
+      themes: ['github-dark'],
+      useStarlightDarkModeSwitch: false,
+      useStarlightUiThemeColors: false,
+      useDarkModeMediaQuery: false,
+      styleOverrides: {
+        borderRadius: '4px',
+        codePaddingBlock: '12px',
+        codePaddingInline: '16px',
+        codeFontSize: '14px',
+        codeLineHeight: '1.4',
+      },
+    },
     social: repository ? [{ icon: 'github', label: 'GitHub', href: 'https://github.com/' + repository }] : [],
     // Omit sidebar: Starlight derives it from the staged Markdown tree.
     editLink: projectSite ? { baseUrl: 'https://github.com/' + repository + '/edit/source/content/docs/' } : undefined,

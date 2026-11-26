@@ -1,7 +1,20 @@
 /* Respect the browser's accessibility palette after ordinary theme layers. */
 @media (forced-colors: active) {
-  :root,
-  :root[data-theme='light'] {
+  :root {
+    --docs-surface: Canvas;
+    --docs-surface-secondary: Canvas;
+    --docs-surface-raised: Canvas;
+    --docs-surface-interactive: Field;
+    --docs-text: CanvasText;
+    --docs-heading: CanvasText;
+    --docs-title: CanvasText;
+    --docs-muted: GrayText;
+    --docs-link: LinkText;
+    --docs-border: ButtonBorder;
+    --docs-hover: Canvas;
+    --docs-selected: Highlight;
+    --docs-tooltip-bg: Canvas;
+    --docs-tooltip-text: CanvasText;
     --sl-color-white: CanvasText;
     --sl-color-black: Canvas;
     --sl-color-accent: LinkText;
@@ -26,4 +39,7 @@
     --sl-color-gray-6: Canvas;
     --sl-color-gray-7: Canvas;
   }
+  .sidebar-content a[aria-current='page'] { color: HighlightText; }
+  .api-summary a:focus-visible { outline-color: Highlight; }
 }
+

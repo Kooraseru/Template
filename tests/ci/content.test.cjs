@@ -13,7 +13,7 @@ function sitePages(directory = documentation, pages = []) {
     const location = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       if (location !== repositoryTemplates) sitePages(location, pages);
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+    } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
       pages.push(location);
     }
   }
@@ -22,17 +22,18 @@ function sitePages(directory = documentation, pages = []) {
 
 test("published documentation has predictable Markdown metadata", () => {
   const pages = sitePages();
-  assert.ok(pages.length >= 5, "Expected actual user documentation");
+  assert.equal(pages.length, 2, "Template contains exactly two published documentation specimens");
+  assert.ok(pages.includes(path.join(documentation, "reference-example.mdx")));
   assert.ok(pages.includes(path.join(documentation, "index.md")));
   for (const file of pages) {
     const source = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
-    const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n---\n/);
+    const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n(?:sidebar:\n  order: \d+\n)?---\n/);
     assert.ok(metadata, file + ": requires title/description YAML front matter");
     assert.ok(metadata[1].trim() && metadata[2].trim(), file + ": empty metadata");
     assert.equal((source.match(/^# /gm) || []).length, 0, file + ": Starlight renders the frontmatter title as H1");
     // Starlight emits directory URLs, not raw Markdown source filenames.
     const route = '/' + path.relative(documentation, file).replace(/\\/g, '/')
-      .replace(/(?:^|\/)index\.md$/, '/').replace(/\.md$/, '/').replace(/^\/+/, '');
+      .replace(/(?:^|\/)index\.mdx?$/, '/').replace(/\.mdx?$/, '/').replace(/^\/+/, '');
     for (const match of source.matchAll(/\]\(([^)\s]+)\)/g)) {
       const link = match[1];
       if (/^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(link)) continue;
@@ -40,7 +41,7 @@ test("published documentation has predictable Markdown metadata", () => {
       if (!link.startsWith('.')) continue;
       const resolved = new URL(link, 'https://docs.example' + route);
       const target = resolved.pathname.replace(/^\//, '').replace(/\/$/, '');
-      const candidates = [path.join(documentation, target + '.md'), path.join(documentation, target, 'index.md')];
+      const candidates = [path.join(documentation, target + '.md'), path.join(documentation, target, 'index.md'), path.join(documentation, target + '.mdx'), path.join(documentation, target, 'index.mdx')];
       assert.ok(candidates.some(candidate => pages.includes(candidate)), file + ": broken guide route " + link);
     }
   }

@@ -1,0 +1,272 @@
+/* API signatures are neutral; GitHub highlighting applies only to fenced source examples. */
+.sl-markdown-content .api-summary { border:1px solid var(--docs-border); border-radius:4px; padding:0; margin:12px 0 24px; list-style:none; }
+.sl-markdown-content .api-summary > li { margin:0; padding:0; }
+.api-summary > li + li { border-top:1px solid var(--docs-border); }
+.api-summary-row { display:flex; align-items:start; gap:8px; min-height:41px; padding:8px 12px 8px 8px; color:var(--docs-heading); }
+.api-summary [data-kind='constructor'] .api-summary-row { padding-inline-start:8px; }
+.api-summary-row:hover { background:var(--docs-hover); }
+.sl-markdown-content .api-member-link { color:var(--docs-heading); font-weight:500; text-decoration:none; }
+.api-member-link:hover { text-decoration:underline; }
+.api-member-link:focus-visible { outline:2px solid var(--docs-link); outline-offset:-2px; }
+.api-summary-content { min-width:0; min-height:25px; }
+.api-summary .api-signature { display:inline; }
+.api-icon { display:inline-block; flex:0 0 auto; width:21px; height:21px; vertical-align:middle; color:var(--api-icon-color); }
+.api-icon[data-family='method'] { width:25px; height:25px; }
+@media (forced-colors:active) { .api-icon { color:LinkText; } }
+.api-signature { font-family:var(--sl-font-mono); font-size:14px; line-height:1.4; color:var(--docs-heading); white-space:pre-wrap; overflow-wrap:anywhere; }
+.api-summary .api-description { display:block; font-size:14px; line-height:21px; color:var(--docs-muted); margin-top:4px; }
+.sl-markdown-content .api-type { display:inline; color:inherit; text-decoration:underline; text-underline-offset:4px; cursor:help; }
+button.api-type { appearance:none; padding:0; margin:0; border:0; background:none; font:inherit; }
+a.api-type { cursor:pointer; }
+.api-type:focus-visible { outline:2px solid var(--docs-link); outline-offset:2px; }
+.api-type-card { position:fixed; z-index:100; width:min(320px,calc(100vw - 16px)); padding:16px; border-radius:4px; background:var(--docs-tooltip-bg); color:var(--docs-tooltip-text); font:400 16px/1.4 var(--sl-font); box-shadow:0 4px 12px #0004; max-height:calc(100dvh - 16px); overflow-wrap:anywhere; }
+.api-type-card[hidden] { display:none; }
+.api-type-card strong { display:block; font-weight:700; margin-bottom:8px; }
+.api-type-card .api-type-category { margin-bottom:12px; font-size:14px; }
+.api-type-card::before { content:''; position:absolute; left:var(--arrow-x); transform:translateX(-50%); border:8px solid transparent; }
+.api-type-card[data-side='below']::before { bottom:100%; border-bottom-color:var(--docs-tooltip-bg); }
+.api-type-card[data-side='above']::before { top:100%; border-top-color:var(--docs-tooltip-bg); }
+.api-member { margin-block:0 48px; }
+.sl-markdown-content h3.api-member-heading { border:0; padding:0; margin:0; }
+.sl-markdown-content .api-member-heading { display:flex; align-items:center; gap:8px; margin-bottom:0; font-size:24px; line-height:1.2; }
+.api-member-heading a { color:var(--docs-heading); text-decoration:none; }
+.api-member-heading a:hover { text-decoration:underline; }
+.api-member p { margin:0 0 16px; line-height:1.4; }
+.api-signature-panel { border:1px solid var(--docs-border); border-radius:4px; background:var(--docs-surface-secondary); padding:12px; }
+.sl-markdown-content .api-member h4 { margin:24px 0 16px; font-size:16px; }
+.api-parameter-list { border:1px solid var(--docs-border); border-radius:4px; margin:0; padding:0; }
+.api-parameter-list > div { padding:12px; margin:0; }
+.api-parameter-list > div + div { border-top:1px solid var(--docs-border); }
+.api-parameter-list dt { font-weight:400; }
+.api-parameter-list dd { margin:4px 0 0; color:var(--docs-text); font-size:16px; }
+
+.api-member-icon-template[hidden] { display:none; }
+
+/* Starlight wraps Markdown headings in a separate anchor-link container. */
+.sl-markdown-content .sl-heading-wrapper.api-summary-heading-wrapper { margin:24px 0 12px; }
+.sl-markdown-content h3.api-summary-heading { font-size:16px; line-height:1.4; margin:0; }
+.sl-markdown-content .api-summary-heading-wrapper + .api-summary { margin-top:0; }
+.api-reference-page .sl-markdown-content > p:first-of-type { padding-bottom:36px; border-bottom:3px solid var(--docs-border); margin-bottom:36px; }
+.sl-markdown-content .sl-heading-wrapper.api-group-heading-wrapper { border-top:3px solid var(--docs-border); padding-top:36px; margin:48px 0 36px; }
+.sl-markdown-content .api-group-heading { font-size:16px; line-height:1; margin:0; color:var(--docs-heading); }
+.sl-markdown-content .sl-heading-wrapper.api-member-heading-wrapper { margin:0 0 16px; }
+.sl-markdown-content .api-member-heading {
+  color: var(--docs-heading);
+  overflow-wrap: anywhere;
+}
+.api-member-heading .api-icon { width:24px; height:24px; }
+.api-signature-panel { overflow-x:auto; }
+.api-signature-panel .api-signature { display:block; }
+.api-signature-panel .api-signature-line { display:block; }
+.api-signature-panel .api-signature-indent { padding-inline-start:24px; }
+.sl-markdown-content .api-member h4 { font-weight:700; line-height:1.4; }
+.api-summary-row .api-signature { line-height:1.4; }
+.api-enum-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--docs-border);
+  border-radius: 4px;
+}
+.sl-markdown-content table.api-enum-table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+}
+.sl-markdown-content .api-enum-table :is(th, td) { border-bottom: 1px solid var(--docs-border); }
+.api-enum-table th { font-weight: 600; }
+.api-enum-table :is(th, td):nth-child(-n+2) { width: 1%; white-space: nowrap; }
+.api-enum-table td:nth-child(2) { font-family: var(--sl-font-mono); }
+.api-enum-table td:last-child { font-size: var(--sl-text-body); overflow-wrap: anywhere; }
+.sl-markdown-content .api-enum-table tbody tr:last-child td { border-bottom: 0; }
+
+/* The generic Markdown rhythm must not add paragraph margins within API rows. */
+.sl-markdown-content .api-summary > li > .api-summary-row { margin:0; }
+.sl-markdown-content .api-summary-row > * { margin:0; }
+.api-signature-panel { font-size:14px; line-height:1.4; }
+.api-summary-row { font-size:14px; line-height:1.4; }
+.api-member .api-signature-panel { margin-top:0; }
+.api-parameter-list dt,.api-parameter-list dd { margin-top:0; margin-bottom:0; }
+.api-parameter-list dd { margin-top:4px; }
+
+/* Keep the API summary spacing local to pages that render API members. */
+.api-reference-page .sl-markdown-content .sl-heading-wrapper:has(> #summary) { margin:36px 0 24px; }
+.api-reference-page .sl-markdown-content .sl-heading-wrapper:has(> #summary) + .api-summary-heading-wrapper { margin-top:0; }
+
+/* API samples keep their title and introduction in the article flow. */
+.sl-markdown-content .docs-code-sample h5 {
+  margin-block: 16px 8px;
+  font-size: var(--sl-text-body);
+}
+.sl-markdown-content .docs-code-sample p { margin-block: 0 12px; }
+.sl-markdown-content .expressive-code pre {
+  background-color: var(--docs-surface-secondary);
+  border-color: var(--docs-border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--docs-scroll-thumb) transparent;
+}
+.sl-markdown-content .expressive-code pre code { counter-reset: docs-code-line; }
+.sl-markdown-content .expressive-code .ec-line { counter-increment: docs-code-line; }
+.sl-markdown-content .expressive-code .ec-line:not(:has(> .gutter))::before {
+  content: counter(docs-code-line) / "";
+  display: block;
+  grid-area: gutter;
+  inline-size: 3ch;
+  margin-inline-end: 1.5ch;
+  color: var(--docs-muted);
+  text-align: end;
+  user-select: none;
+}
+
+/* Keep the native copy action discoverable with a mouse, keyboard, or touch. */
+.sl-markdown-content .expressive-code .copy,
+.sl-markdown-content .expressive-code .copy button {
+  opacity: 1;
+}
+.sl-markdown-content .expressive-code .copy button {
+  --ec-frm-inlBtnFg: var(--docs-muted);
+  --ec-frm-copyIcon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='8' width='12' height='12' rx='2'/%3E%3Cpath d='M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2'/%3E%3C/svg%3E");
+  background: var(--docs-surface-secondary);
+}
+.sl-markdown-content .expressive-code .copy button:is(:hover, :focus-visible) {
+  --ec-frm-inlBtnFg: var(--docs-heading);
+  background: var(--docs-surface-interactive);
+}
+.sl-markdown-content .expressive-code .copy button > div { display: none; }
+.sl-markdown-content .expressive-code .copy button::before { content: none; }
+.sl-markdown-content .expressive-code .copy button::after {
+  margin: 7px;
+  mask-size: contain;
+}
+.sl-markdown-content .expressive-code .copy {
+  --ec-frm-tooltipSuccessBg: var(--docs-surface-secondary);
+  --ec-frm-tooltipSuccessFg: var(--docs-heading);
+}
+
+.sl-markdown-content .expressive-code .copy > [aria-live]:not(:empty) {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  max-inline-size: calc(100vw - 32px);
+  padding: 10px 16px;
+  background: var(--docs-surface-secondary);
+  color: var(--docs-heading);
+  border: 1px solid var(--docs-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px #0004;
+  pointer-events: none;
+}
+.sl-markdown-content .expressive-code .copy > [aria-live]::after { display: none; }
+.sl-markdown-content .expressive-code .copy .feedback {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.sl-markdown-content .expressive-code .copy .feedback::after { display: none; }
+
+.sl-markdown-content .expressive-code[data-collapsed] pre {
+  max-block-size: 25rem;
+  overflow: auto;
+}
+.sl-markdown-content .docs-code-toggle {
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-end: 44px;
+  z-index: 1;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.2rem;
+  background: var(--docs-surface-secondary);
+  color: var(--docs-muted);
+  cursor: pointer;
+}
+.sl-markdown-content .docs-code-toggle::before {
+  content: '';
+  display: block;
+  inline-size: 7px;
+  block-size: 7px;
+  margin: auto;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+.sl-markdown-content .docs-code-toggle[aria-expanded='true']::before {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.sl-markdown-content .expressive-code:has(> .docs-code-toggle) { position: relative; }
+
+.sl-markdown-content .docs-code-toggle:is(:hover, :focus-visible) {
+  background: var(--docs-surface-interactive);
+  color: var(--docs-heading);
+}
+
+.sl-markdown-content .api-disclosure {
+  margin-block: 12px;
+  border: 1px solid var(--docs-border);
+  border-radius: 6px;
+}
+.api-disclosure > summary {
+  padding: 10px 12px;
+  color: var(--docs-heading);
+  cursor: pointer;
+}
+.sl-markdown-content .api-disclosure[open] > :not(summary) {
+  margin: 0 12px 12px;
+}
+.api-member-status {
+  display: inline-block;
+  padding-inline: 6px;
+  border: 1px solid var(--docs-border);
+  border-radius: 4px;
+  color: var(--docs-muted);
+  font-size: 14px;
+}
+.api-member-metadata > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 8px;
+  padding-block: 4px;
+}
+.api-member-metadata dt { font-weight: 600; }
+.api-member-metadata dd { margin: 0; overflow-wrap: anywhere; }
+
+.sl-markdown-content .api-class-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.sl-markdown-content .api-class-status li {
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--docs-surface-interactive);
+  font-size: 14px;
+}
+.api-summary-content .api-member-status {
+  margin-inline-start: 8px;
+}
+
+.api-member-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.api-member-badges .api-member-status {
+  background: var(--docs-surface-interactive);
+  border: 0;
+  line-height: 1.4;
+}
+.sl-markdown-content .api-member .api-disclosure > summary { font-size: 14px; }
+.sl-markdown-content .api-parameter-list > div { padding: 10px 12px; }
+.sl-markdown-content .api-parameter-list dd > p { margin: 0; }
+.sl-markdown-content .api-parameter-list dt .api-signature { overflow-wrap: anywhere; }
+.sl-markdown-content .api-member a > code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--docs-heading);
+}
