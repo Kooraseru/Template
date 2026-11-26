@@ -58,9 +58,23 @@ a.api-type { cursor:pointer; }
 .api-signature-panel .api-signature-indent { padding-inline-start:24px; }
 .sl-markdown-content .api-member h4 { font-weight:700; line-height:1.4; }
 .api-summary-row .api-signature { line-height:1.4; }
-.api-enum-table { width:100%; border:1px solid var(--docs-border); border-radius:4px; border-collapse:separate; border-spacing:0; }
-.api-enum-table th { font-weight:600; }
-.api-enum-table tr:last-child td { border-bottom:0; }
+.api-enum-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--docs-border);
+  border-radius: 4px;
+}
+.sl-markdown-content table.api-enum-table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+}
+.sl-markdown-content .api-enum-table :is(th, td) { border-bottom: 1px solid var(--docs-border); }
+.api-enum-table th { font-weight: 600; }
+.api-enum-table :is(th, td):nth-child(-n+2) { width: 1%; white-space: nowrap; }
+.api-enum-table td:nth-child(2) { font-family: var(--sl-font-mono); }
+.api-enum-table td:last-child { font-size: var(--sl-text-body); overflow-wrap: anywhere; }
+.sl-markdown-content .api-enum-table tbody tr:last-child td { border-bottom: 0; }
 
 /* The generic Markdown rhythm must not add paragraph margins within API rows. */
 .sl-markdown-content .api-summary > li > .api-summary-row { margin:0; }
