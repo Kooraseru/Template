@@ -3,7 +3,7 @@ import ApiIcon from './ApiIcon.astro';
 import ApiSignature from './ApiSignature.astro';
 import type { TypeReferences } from './ApiSignature.astro';
 import type { Props as IconProps } from './ApiIcon.astro';
-interface Member { kind: IconProps['kind']; signature: string; href: string; description?: string }
+interface Member { kind: IconProps['kind']; signature: string; href: string; description?: string; deprecated?: boolean }
 interface Props { members: Member[]; types?: TypeReferences; descriptions?: boolean }
 const { members, types, descriptions = false } = Astro.props;
 ---
@@ -12,7 +12,7 @@ const { members, types, descriptions = false } = Astro.props;
     <li data-kind={member.kind}>
       <div class="api-summary-row">
         {member.kind !== 'constructor' && <ApiIcon kind={member.kind} />}
-        <span class="api-summary-content"><ApiSignature signature={member.signature} memberHref={member.href} types={types}/>{descriptions && member.description && <span class="api-description">{member.description}</span>}</span>
+        <span class="api-summary-content"><ApiSignature signature={member.signature} memberHref={member.href} types={types}/>{member.deprecated && <span class="api-member-status">Deprecated</span>}{descriptions && member.description && <span class="api-description">{member.description}</span>}</span>
       </div>
     </li>
   ))}

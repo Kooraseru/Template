@@ -98,6 +98,8 @@ a.api-type { cursor:pointer; }
 .sl-markdown-content .expressive-code pre {
   background-color: var(--docs-surface-secondary);
   border-color: var(--docs-border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--docs-scroll-thumb) transparent;
 }
 .sl-markdown-content .expressive-code pre code { counter-reset: docs-code-line; }
 .sl-markdown-content .expressive-code .ec-line { counter-increment: docs-code-line; }
@@ -118,9 +120,19 @@ a.api-type { cursor:pointer; }
   opacity: 1;
 }
 .sl-markdown-content .expressive-code .copy button {
+  --ec-frm-inlBtnFg: var(--docs-muted);
+  --ec-frm-copyIcon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='8' width='12' height='12' rx='2'/%3E%3Cpath d='M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2'/%3E%3C/svg%3E");
+  background: var(--docs-surface-secondary);
+}
+.sl-markdown-content .expressive-code .copy button:is(:hover, :focus-visible) {
   --ec-frm-inlBtnFg: var(--docs-heading);
-  --ec-frm-inlBtnBgIdleOpa: 0;
-  --ec-frm-inlBtnBrdOpa: 0;
+  background: var(--docs-surface-interactive);
+}
+.sl-markdown-content .expressive-code .copy button > div { display: none; }
+.sl-markdown-content .expressive-code .copy button::before { content: none; }
+.sl-markdown-content .expressive-code .copy button::after {
+  margin: 7px;
+  mask-size: contain;
 }
 .sl-markdown-content .expressive-code .copy {
   --ec-frm-tooltipSuccessBg: var(--docs-surface-secondary);
@@ -159,7 +171,7 @@ a.api-type { cursor:pointer; }
 .sl-markdown-content .docs-code-toggle {
   position: absolute;
   inset-block-start: 7px;
-  inset-inline-end: 48px;
+  inset-inline-end: 44px;
   z-index: 1;
   inline-size: 32px;
   block-size: 32px;
@@ -168,8 +180,20 @@ a.api-type { cursor:pointer; }
   border-radius: 4px;
   background: transparent;
   color: var(--docs-heading);
-  font: inherit;
   cursor: pointer;
+}
+.sl-markdown-content .docs-code-toggle::before {
+  content: '';
+  display: block;
+  inline-size: 7px;
+  block-size: 7px;
+  margin: auto;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+.sl-markdown-content .docs-code-toggle[aria-expanded='true']::before {
+  transform: translateY(2px) rotate(225deg);
 }
 
 .sl-markdown-content .expressive-code:has(> .docs-code-toggle) { position: relative; }
@@ -207,3 +231,21 @@ a.api-type { cursor:pointer; }
 }
 .api-member-metadata dt { font-weight: 600; }
 .api-member-metadata dd { margin: 0; overflow-wrap: anywhere; }
+
+.sl-markdown-content .api-class-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.sl-markdown-content .api-class-status li {
+  margin: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--docs-surface-interactive);
+  font-size: 14px;
+}
+.api-summary-content .api-member-status {
+  margin-inline-start: 8px;
+}

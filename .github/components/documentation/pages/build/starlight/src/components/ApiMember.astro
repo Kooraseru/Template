@@ -10,28 +10,30 @@ interface Props {
   name: string;
   kind: IconProps['kind'];
   signature: string;
-  description: string;
+  description?: string;
   types?: TypeReferences;
   parameters?: Entry[];
   returns?: Entry[];
   values?: { name: string; value: number; description: string }[];
   deprecation?: string;
+  deprecated?: boolean;
   metadata?: { label: string; value: string }[];
 }
 const {
   id, name, kind, signature, description, types, parameters = [], returns = [],
-  values = [], deprecation, metadata = [],
+  values = [], deprecation, deprecated = Boolean(deprecation), metadata = [],
 } = Astro.props;
 const multiline = ['function','method','constructor','operator'].includes(kind) ? formatSignature(signature) : null;
 ---
 <section class="api-member" data-api-member={id} data-kind={kind} data-member-name={name}>
   <span class="api-member-icon-template" hidden>{kind !== 'constructor' && <ApiIcon kind={kind}/>}</span>
-  {deprecation && <span class="api-member-status">Deprecated</span>}
-  <p>{description}</p>
-  {(deprecation || metadata.length > 0) && (
+  {deprecated && <span class="api-member-status">Deprecated</span>}
+  {description && <p>{description}</p>}
+  {(deprecation || Astro.slots.has('deprecation') || metadata.length > 0) && (
     <details class="api-disclosure">
       <summary>{name} details</summary>
       {deprecation && <p>{deprecation}</p>}
+      <slot name="deprecation" />
       {metadata.length > 0 && (
         <dl class="api-member-metadata">
           {metadata.map(({ label, value }) => <div><dt>{label}</dt><dd>{value}</dd></div>)}
@@ -44,6 +46,7 @@ const multiline = ['function','method','constructor','operator'].includes(kind) 
     <span class="api-signature-line api-signature-indent"><ApiSignature signature={multiline.args} types={types}/></span>
     <span class="api-signature-line"><ApiSignature signature={multiline.after} types={types}/></span>
   </> : <ApiSignature signature={signature} types={types} memberName/>}</div>
+  <slot name="description" />
   {[
     { title: 'Parameters', values: parameters },
     { title: 'Returns', values: returns },

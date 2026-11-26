@@ -10,7 +10,6 @@
     toggle.className = 'docs-code-toggle';
     const setToggleLabel = (expanded: boolean) => {
       const label = expanded ? 'Collapse code' : 'Expand code';
-      toggle.textContent = expanded ? '↟' : '↡';
       toggle.title = label;
       toggle.setAttribute('aria-label', label);
       toggle.setAttribute('aria-expanded', String(expanded));
@@ -98,7 +97,7 @@
       const span=document.createElement('span');span.textContent=label;span.title=label;
       link.replaceChildren(...(icon?[icon.cloneNode(true)]:[]),span);
     };
-    for(const summary of document.querySelectorAll('.api-summary')){
+    for(const summary of document.querySelectorAll('.api-summary:not(details *)')){
       const previous=summary.previousElementSibling;
       const heading=previous?.matches('h3[id]')?previous:previous?.querySelector('h3[id]');
       if(!(heading instanceof HTMLElement))continue;

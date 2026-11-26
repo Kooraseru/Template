@@ -4,6 +4,7 @@
   --docs-article-width: 883px;
   --docs-toc-width: 329px;
   --docs-gutter: 32px;
+  --docs-scroll-thumb: color-mix(in srgb, var(--docs-text) 35%, transparent);
   --sl-content-width: var(--docs-article-width);
   --sl-sidebar-width: 18rem;
   --sl-sidebar-pad-x: 1rem;
@@ -17,7 +18,11 @@ html, body, header.header, .header, .sidebar-pane, .right-sidebar, .right-sideba
 header.header, .header { border-bottom:0; }
 .header .social-icons::after { display:none; }
 .sidebar-pane { border-inline-end: 1px solid var(--docs-border); }
-.sidebar-content { padding: 16px; scrollbar-width:thin; scrollbar-color:grey transparent; }
+.sidebar-content { padding: 16px; }
+:where(.sidebar-content, .right-sidebar, .docs-mobile-toc-dropdown) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--docs-scroll-thumb) transparent;
+}
 .content-panel { padding-block: 16px; }
 .content-panel + .content-panel { border-top:0; padding-top:0; }
 .content-panel .sl-container { margin-inline: auto; }
@@ -42,8 +47,6 @@ header.header, .header { border-bottom:0; }
     height:calc(100dvh - var(--sl-nav-height) - 88px);
     overflow-y:auto;
     overscroll-behavior:contain;
-    scrollbar-width:thin;
-    scrollbar-color:grey transparent;
   }
 }
 @media (max-width: 71.999rem) {

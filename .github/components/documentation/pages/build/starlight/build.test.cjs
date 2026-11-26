@@ -117,7 +117,9 @@ test('favicon is staged from authored assets and can be replaced per repository'
   const example = fs.readFileSync(path.join(root,'content/docs/reference-example.mdx'),'utf8');
   const ids = [...example.matchAll(/<ApiMember [^>]*id="([^"]+)"/g)].map(m=>m[1]);
   const summary = [...example.matchAll(/"href":"#([^"]+)"/g)].map(m=>m[1]);
-  assert.equal(ids.length,13);
+  assert.equal(ids.length, 106);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.match(example, /^title: BasePart$/m);
   assert.deepEqual(summary.sort(),ids.sort());
   for(const id of ids) assert.ok(example.includes('### '+id+'\n'));
   const signature=fs.readFileSync(path.join(__dirname,'src/components/ApiSignature.astro'),'utf8');
