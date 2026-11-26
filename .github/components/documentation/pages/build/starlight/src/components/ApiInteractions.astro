@@ -1,4 +1,29 @@
 <script>
+  let sampleId = 0;
+  for (const sample of document.querySelectorAll<HTMLElement>('.docs-code-sample .expressive-code')) {
+    const pre = sample.querySelector('pre');
+    if (!pre || pre.querySelectorAll('.ec-line').length <= 19) continue;
+    if (!pre.id) pre.id = 'docs-code-sample-' + ++sampleId;
+    sample.setAttribute('data-collapsed', '');
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'docs-code-toggle';
+    toggle.textContent = 'Expand code';
+    toggle.setAttribute('aria-controls', pre.id);
+    toggle.setAttribute('aria-expanded', 'false');
+    sample.after(toggle);
+    toggle.addEventListener('click', () => {
+      const collapsed = sample.toggleAttribute('data-collapsed');
+      toggle.textContent = collapsed ? 'Expand code' : 'Collapse code';
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      if (collapsed) pre.scrollTop = 0;
+    });
+  }
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.expressive-code .copy button[data-copied]')) {
+    button.dataset.copied = 'Text copied to clipboard';
+  }
+
   // One viewport-positioned card avoids clipping inside summary rows and code signatures.
   const card = document.createElement('div');
   card.className = 'api-type-card';
