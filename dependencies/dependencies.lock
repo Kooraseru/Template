@@ -310,10 +310,10 @@
     },
     "tools.documentation": {
       "provider": "git-source",
-      "fingerprint": "1d64ff7b3ae7477f84e099d377339c867249cdc7bbed2b3a362c41f05b55f618",
+      "fingerprint": "2fdebe2aca7958707e076aae308425818c54aede746c6ffd4400b3e5155decf5",
       "resolution": {
         "repository": "Kooraseru-Hub/CI-Packages",
-        "commit": "62c7f6bb95d91ca0ad5375f33405ee4fb01b9bba",
+        "commit": "72ff6ea83f3e7ecee964d7fd48d95c3c212ea925",
         "sourcePath": "packages/documentation"
       }
     }
