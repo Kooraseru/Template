@@ -1,0 +1,62 @@
+[
+  {
+    "path": "reference/studio/general/Toolbar-Material-Picker.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/general/Toolbar-Material-Picker.png",
+    "sha256": "5226e3a9fd24b2af9f47d2fa0b64f9870ee09f907d7533218e471c9d4ee014f8",
+    "size": 419795
+  },
+  {
+    "path": "reference/studio/material-manager/Apply-To-Selected-Parts.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/material-manager/Apply-To-Selected-Parts.png",
+    "sha256": "eaa7327c82d40848242d4f4d06a4338bde9006bc0809eed52120de776d2cef4e",
+    "size": 92407
+  },
+  {
+    "path": "reference/studio/material-manager/Paint-Parts-With-Selected-Material.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/material-manager/Paint-Parts-With-Selected-Material.png",
+    "sha256": "fc1edc70d7d8abf6645ec6a21a059481f541f5411b9ede9c52398188cf6ee8bc",
+    "size": 90497
+  },
+  {
+    "path": "reference/modeling/materials/Explorer-MaterialVariant-Instances.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/modeling/materials/Explorer-MaterialVariant-Instances.png",
+    "sha256": "703c5ef93b70dad4a1bfeb6e8c982064a2cb33001b903af45910a9ba2b166756",
+    "size": 20750
+  },
+  {
+    "path": "reference/studio/material-manager/Base-Material-Selected.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/material-manager/Base-Material-Selected.png",
+    "sha256": "6b911efc131a52def6ca06bde3e4c0f90c1f882936cd3fc4ce6086e463c1733d",
+    "size": 108558
+  },
+  {
+    "path": "reference/studio/material-manager/Create-Material-Variant.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/material-manager/Create-Material-Variant.png",
+    "sha256": "572895e96729ac6040e3f8a2072406632d10d0dcb864cb3ab437a32bd78ff013",
+    "size": 95234
+  },
+  {
+    "path": "reference/studio/material-manager/Custom-Material-Icon.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/material-manager/Custom-Material-Icon.png",
+    "sha256": "429bc522cbc3f17345f566585023e553ebddb15cea9e0eadb214017655ff071f",
+    "size": 76969
+  },
+  {
+    "path": "reference/modeling/materials/Properties-Material-And-MaterialVariant.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/modeling/materials/Properties-Material-And-MaterialVariant.png",
+    "sha256": "c28529a5cc8c3a9e43d9102a77c7e01a355f09fc8d295e581281896343368596",
+    "size": 20391
+  },
+  {
+    "path": "reference/studio/material-manager/Set-Override-Enabled.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/studio/material-manager/Set-Override-Enabled.png",
+    "sha256": "24955583cb89e096fd4f021bc5d666287e7ea7bbdeead4cf2f31a14f86cdbc82",
+    "size": 9541
+  },
+  {
+    "path": "reference/modeling/materials/Properties-View-Override.png",
+    "url": "https://media.githubusercontent.com/media/Roblox/creator-docs/47ec857d6a0805124d089d3a2f68d970ccbf70d0/content/en-us/assets/modeling/materials/Properties-View-Override.png",
+    "sha256": "bcfc4cc840af3bdcb6f2d6c9901db92ea8930e8a28ec2a9990354ed37e497314",
+    "size": 29111
+  }
+]
