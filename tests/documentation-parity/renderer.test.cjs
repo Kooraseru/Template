@@ -171,6 +171,8 @@ test('reference title and member panels use the captured component structure',()
   assert.match(title,/<div class="titleRow">\s*<div class="titleContainer">\s*<span class="MuiTypography-root Typography-h1-Typography-root-title MuiTypography-inherit"/);
   assert.match(title,/role="heading" aria-level="1"/);
   assert.match(member,/class="MuiTypography-root Typography-body1-Typography-root-signatureContainer MuiTypography-inherit"/);
-  assert.match(member,/<div class="multilineSignature">[\s\S]*?<div class="parametersContainer">/);
+  const panel=fs.readFileSync(path.join(renderer,'src/components/ApiPanelSignature.astro'),'utf8');
+  assert.match(member,/<ApiPanelSignature/);
+  assert.match(panel,/<div class="multilineSignature">[\s\S]*?<div class="parametersContainer">/);
   assert.doesNotMatch(member,/class="api-signature-panel"/);
 });
