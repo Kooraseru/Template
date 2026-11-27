@@ -3,7 +3,7 @@ const test=require("node:test"),assert=require("node:assert/strict"),path=requir
 const {count,compareStructure,loadReference}=require("../../rules/documentation/parity/structure.cjs");
 const tree=(children,labels=[["main",[]],["span",["title"]],["button",["copy"]],["div",["wrapper"]]])=>({labels,nodes:[[1],[2],[3,0],[0,...children]],root:3});
 test("full independently captured article can be decoded and compared",()=>{
-    const reference=loadReference(path.resolve(__dirname,"../../rules/documentation/parity/experiments/base-part/reference"));
+    const reference=loadReference(path.resolve(__dirname,"../../rules/documentation/parity/references/base-part"));
     assert.equal(count(reference),13877);
     const result=compareStructure(reference,reference);
     assert.equal(result.matched,13877);assert.equal(result.differences.length,0);

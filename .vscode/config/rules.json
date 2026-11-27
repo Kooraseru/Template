@@ -54,7 +54,59 @@
       "severity": "warning",
       "settings": {
         "geometryTolerance": 1,
-        "commissioning": false
+        "commissioning": false,
+        "sources": [
+          {
+            "id": "base-part",
+            "url": "https://create.roblox.com/docs/reference/engine/classes/BasePart",
+            "reference": "rules/documentation/parity/references/base-part"
+          },
+          {
+            "id": "tween-service",
+            "url": "https://create.roblox.com/docs/reference/engine/classes/TweenService",
+            "reference": "rules/documentation/parity/references/tween-service"
+          },
+          {
+            "id": "user-input-service",
+            "url": "https://create.roblox.com/docs/reference/engine/classes/UserInputService",
+            "reference": "rules/documentation/parity/references/user-input-service"
+          },
+          {
+            "id": "vector3",
+            "url": "https://create.roblox.com/docs/reference/engine/datatypes/Vector3",
+            "reference": "rules/documentation/parity/references/vector3"
+          },
+          {
+            "id": "material",
+            "url": "https://create.roblox.com/docs/reference/engine/enums/Material",
+            "reference": "rules/documentation/parity/references/material"
+          },
+          {
+            "id": "events",
+            "url": "https://create.roblox.com/docs/scripting/events",
+            "reference": "rules/documentation/parity/references/events"
+          },
+          {
+            "id": "materials",
+            "url": "https://create.roblox.com/docs/parts/materials",
+            "reference": "rules/documentation/parity/references/materials"
+          },
+          {
+            "id": "engine-classes",
+            "url": "https://create.roblox.com/docs/reference/engine/classes",
+            "reference": "rules/documentation/parity/references/engine-classes"
+          },
+          {
+            "id": "vector-library",
+            "url": "https://create.roblox.com/docs/reference/engine/libraries/vector",
+            "reference": "rules/documentation/parity/references/vector-library"
+          },
+          {
+            "id": "engine-reference",
+            "url": "https://create.roblox.com/docs/reference/engine",
+            "reference": "rules/documentation/parity/references/engine-reference"
+          }
+        ]
       }
     }
   }

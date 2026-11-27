@@ -3,29 +3,23 @@ const fs=require("node:fs"),path=require("node:path"),assert=require("node:asser
 const {createHash}=require("node:crypto");
 const {loadReference,count}=require("./structure.cjs");
 
-function loadCorpus(directory){
-    const manifest=JSON.parse(fs.readFileSync(path.join(directory,"manifest.json"),"utf8"));
-    const entries=Object.entries(manifest);
-    assert(entries.length>0,"Empty reference corpus");
-    const references=path.join(directory,"references");
-    const ids=fs.readdirSync(references,{withFileTypes:true});
-    assert(ids.every(x=>x.isDirectory()),"Unexpected corpus entry");
-    assert.deepEqual(ids.map(x=>x.name).sort(),entries.map(([id])=>id).sort(),"Missing or unexpected reference directory");
-    return entries.map(([id,metadata])=>{
-        assert(/^[a-z][a-z0-9-]*$/.test(id),"Invalid reference ID");
-        assert(new URL(metadata.url).protocol==="https:","Reference must use HTTPS");
-        const folder=path.join(references,id);
+function loadCorpus(root,sources){
+    assert(Array.isArray(sources)&&sources.length>0,"Configure at least one reference source");
+    const seen=new Set(),directories=new Set();
+    const workspace=fs.realpathSync(root);
+    return sources.map(source=>{
+        const {id,url,reference}=source;
+        assert(typeof id==="string"&&/^[a-z][a-z0-9-]*$/.test(id)&&!seen.has(id),"Invalid or duplicate reference ID");seen.add(id);
+        assert(typeof url==="string"&&new URL(url).protocol==="https:","Reference must use HTTPS");
+        assert(typeof reference==="string"&&!path.isAbsolute(reference)&&reference.split("/").every(part=>part&&part!=="."&&part!==".."&&!part.includes("\\")),"Invalid reference path");
+        const folder=fs.realpathSync(path.resolve(workspace,reference));
+        const relative=path.relative(workspace,folder);
+        assert(relative&&!relative.startsWith(".."+path.sep)&&relative!==".."&&!path.isAbsolute(relative),"Reference escaped workspace");
+        assert(!directories.has(folder),"Duplicate reference directory");directories.add(folder);
         const provenance=JSON.parse(fs.readFileSync(path.join(folder,"structure-provenance.json"),"utf8"));
-        assert.equal(provenance.normalizedSha256,metadata.normalizedSha256,"Reference manifest digest differs");
-        assert.equal(provenance.sourceSha256,metadata.sourceSha256,"Source manifest digest differs");
-        assert.equal(provenance.root,metadata.root,"Reference root differs");
-        assert.equal(provenance.capture.url,metadata.url,"Reference URL differs");
-        assert.equal(provenance.assetRevision,metadata.assetRevision,"Asset revision differs");
+        assert.equal(provenance.capture.url,url,"Configured URL differs from captured URL");
         const tree=loadReference(folder);
-        assert.equal(count(tree),metadata.elements,"Reference element count differs");
-        assert.equal(tree.labels.length,metadata.uniqueLabels,"Reference label count differs");
-        assert.equal(tree.nodes.length,metadata.uniqueShapes,"Reference shape count differs");
-        return {id,metadata,tree};
+        return {id,folder,metadata:{...provenance,url,elements:count(tree),uniqueLabels:tree.labels.length,uniqueShapes:tree.nodes.length},tree};
     });
 }
 
@@ -61,7 +55,24 @@ function coverage(documents,experiments){
     return documents.map(({id,metadata})=>{
         const experiment=experiments.find(x=>x.id===id);
         if(experiment)assert.equal(experiment.spec.reference,metadata.url,"Experiment reference URL differs from corpus");
-        return {id,url:metadata.url,elements:metadata.elements,assetRevision:metadata.assetRevision,status:experiment?"configured":"reference-only"};
+        return {id,url:metadata.url,elements:metadata.elements,assetRevision:metadata.assetRevision,status:experiment?"direct-comparison":"component-reference"};
     });
 }
-module.exports={loadCorpus,catalogue,coverage};
+// Compare a candidate's observed component shapes to the union of registered reference shapes.
+// Absence is untested, not failure, unless the caller specifies required identities.
+// Occurrence counts in unrelated documents must not be treated as candidate expectations.
+function compareCatalogue(references,candidates){
+    const expected=catalogue(references),actual=catalogue(candidates);
+    const key=x=>JSON.stringify([x.tag,x.classes]);
+    const actualMap=new Map(actual.map(x=>[key(x),x]));
+    const result=expected.map(entry=>{
+        const other=actualMap.get(key(entry));actualMap.delete(key(entry));
+        const shapes=new Set(entry.shapes.map(x=>x.hash));
+        const matching=other?.shapes.filter(x=>shapes.has(x.hash))||[];
+        const different=other?.shapes.filter(x=>!shapes.has(x.hash))||[];
+        return {tag:entry.tag,classes:entry.classes,sources:Object.keys(entry.documents),candidateDocuments:Object.keys(other?.documents||{}),status:!other?"untested":different.length?"different":"matching",matchingShapes:matching,differentShapes:different,referenceVariants:entry.shapes.length};
+    });
+    for(const entry of actualMap.values())result.push({tag:entry.tag,classes:entry.classes,sources:[],candidateDocuments:Object.keys(entry.documents),status:"unexpected",matchingShapes:[],differentShapes:entry.shapes,referenceVariants:0});
+    return result;
+}
+module.exports={loadCorpus,catalogue,coverage,compareCatalogue};

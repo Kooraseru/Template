@@ -5,7 +5,7 @@ const http = require("node:http");
 const assert = require("node:assert/strict");
 const { compare, discover, compareScreenshots, screenshotManifest } = require("./comparison.cjs");
 const {snapshot,loadReference,compareStructure}=require("./structure.cjs");
-const {loadCorpus,catalogue,coverage:corpusCoverage}=require("./corpus.cjs");
+const {loadCorpus,catalogue,coverage:corpusCoverage,compareCatalogue}=require("./corpus.cjs");
 const site = ".github/components/documentation/pages/build/starlight";
 const properties = ["color","backgroundColor","fontFamily","fontSize","fontWeight","lineHeight","paddingTop","paddingRight","paddingBottom","paddingLeft","marginTop","marginBottom","borderTopWidth","borderRadius","display","position","textDecorationLine","overflowY"];
 const mime = { ".html":"text/html", ".css":"text/css", ".js":"text/javascript", ".svg":"image/svg+xml", ".png":"image/png", ".woff2":"font/woff2", ".json":"application/json" };
@@ -88,18 +88,11 @@ function Create(settings) {
     return {async Check({root,product,output,mode,rule}) {
         const experiments=discover(path.join(root,rule.directory,"experiments"));
         const findings=[],coverage=[];
-        const corpusDirectory=path.join(root,rule.directory,"corpus");
-        if(fs.existsSync(corpusDirectory)){
-            const documents=loadCorpus(corpusDirectory), registered=corpusCoverage(documents,experiments), components=catalogue(documents);
-            fs.mkdirSync(output,{recursive:true});
-            fs.writeFileSync(path.join(output,"corpus-report.json"),JSON.stringify({documents:registered,components},null,2)+"\n");
-            console.log("Reference corpus: "+documents.length+" documents; "+documents.reduce((n,d)=>n+d.metadata.elements,0)+" article elements; "+components.length+" named component identities; "+registered.filter(d=>d.status==="configured").length+" configured experiments");
-            if(mode!=="capture"){
-                const pending=registered.filter(d=>d.status==="reference-only");
-                for(const item of pending)coverage.push({id:item.id+"/structure",status:"unverified"});
-                if(pending.length)findings.push({file:path.relative(root,path.join(corpusDirectory,"manifest.json")).split(path.sep).join("/"),line:1,column:1,message:"Reference corpus: "+pending.length+" captured documents lack independently authored candidate specimens: "+pending.map(x=>x.id).join(", "),infrastructure:false});
-            }
-        }
+        const documents=loadCorpus(root,settings.sources), registered=corpusCoverage(documents,experiments), components=catalogue(documents);
+        const candidates=[];
+        fs.mkdirSync(output,{recursive:true});
+        fs.writeFileSync(path.join(output,"corpus-report.json"),JSON.stringify({documents:registered,components},null,2)+"\n");
+        console.log("Reference corpus: "+documents.length+" documents; "+documents.reduce((n,d)=>n+d.metadata.elements,0)+" article elements; "+components.length+" named component identities");
         const {chromium}=require(path.join(root,site,"node_modules/playwright"));
         const browser=await chromium.launch();
         let server;
@@ -131,8 +124,11 @@ function Create(settings) {
                     const differences=compare(expected,actual,tolerance,scenario.elements.map(e=>e.id));
                     differences.push(...compareScreenshots(reference,destination,["viewport",...scenario.elements.map(e=>e.id)]));
                     if(captureScenario.structure) {
-                        const baseline=loadReference(path.join(experiment.directory,"reference"));
+                        const source=documents.find(d=>d.id===experiment.id);
+                        assert(source,"Direct comparison must have a configured reference source: "+experiment.id);
+                        const baseline=source.tree;
                         const candidate=JSON.parse(fs.readFileSync(path.join(destination,"structure.json"),"utf8"));
+                        candidates.push({id:experiment.id,tree:candidate});
                         const report=compareStructure(baseline,candidate);
                         fs.writeFileSync(path.join(destination,"structure-report.json"),JSON.stringify(report,null,2)+"\n");
                         const total=Object.values(report.counts).reduce((a,b)=>a+b,0);
@@ -146,6 +142,13 @@ function Create(settings) {
                 } catch(error) { emit(String(error.message||error),true); coverage.push({id,status:"failed"}); }
             }
         } finally { await browser.close(); if(server) await server.close(); }
+        if(mode!=="capture"&&candidates.length){
+            const comparisons=compareCatalogue(documents,candidates);
+            const counts=Object.fromEntries(["matching","different","untested","unexpected"].map(status=>[status,comparisons.filter(x=>x.status===status).length]));
+            fs.writeFileSync(path.join(output,"component-report.json"),JSON.stringify({counts,components:comparisons},null,2)+"\n");
+            console.log("Cross-reference component audit: "+JSON.stringify(counts));
+            for(const item of comparisons.filter(x=>x.status==="different"||x.status==="unexpected")) findings.push({file:".vscode/config/rules.json",line:1,column:1,message:"Component "+item.tag+"."+item.classes.join(".")+": "+item.status+" ("+item.differentShapes.length+" unrecognized subtree variants; sources: "+(item.sources.join(", ")||"none")+")",infrastructure:false});
+        }
         return {findings,coverage};
     }};
 }
