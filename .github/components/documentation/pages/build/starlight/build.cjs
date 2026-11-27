@@ -1,5 +1,5 @@
 "use strict";
-// Starlight compatibility entry point. The shared renderer owns the static build/github/pages output.
+// Legacy documentation build entry point. The shared renderer owns the static build/github/pages output.
 const path=require("node:path"),{spawnSync}=require("node:child_process");
 const root=path.resolve(__dirname,"../../../../../..");
 const loader=path.join(root,"dependencies/packages/core/dependencyLoader/index.ts");

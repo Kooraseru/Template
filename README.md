@@ -45,7 +45,7 @@ For real publication, configure a protected `ci-publication` environment restric
 | `config/publishing/releases/settings.json` | Shared release settings |
 | `releases/` | Version records and release notes |
 | `config/branches/` | Generated branch source globs |
-| `content/docs/` and `content/images/` | This project's Starlight documentation and assets |
+| `content/docs/` and `content/images/` | This project's Astro documentation and assets |
 
 Edit the workflow and commands for the consuming project rather than conforming to a protected template layout. The package staging fixtures do not implement a registry-specific publisher.
 

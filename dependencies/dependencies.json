@@ -185,7 +185,7 @@
       "provider": "git-source",
       "options": {
         "repository": "Kooraseru-Hub/CI-Packages",
-        "commit": "fa3bad4e9fe63015ced2c9a1018aba464a799856",
+        "commit": "af42802ddd9ceabf2dfa88b4f8ac2cb76dcc011c",
         "sourcePath": "packages/documentation",
         "packagePath": "packages/documentation",
         "entry": "build/renderer/build.cjs"

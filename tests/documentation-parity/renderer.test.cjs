@@ -8,44 +8,38 @@ const root=path.resolve(__dirname,'../..');
 const renderer=path.join(root,'dependencies/managed/packages/documentation/build/renderer');
 const { copyAssets, prepareSite, stageFavicon } = require(path.join(renderer,'build.cjs'));
 
-test('Starlight site is configured as a component, not another workflow', () => {
-  const site = renderer;
+test('Native Astro renderer owns routing and layout without a documentation theme framework', () => {
   const manifest = require(path.join(renderer,'package.json'));
-  assert.equal(manifest.private, true);
-  assert.ok(manifest.dependencies['@astrojs/starlight']);
+  assert.equal(manifest.private,true);
   assert.ok(manifest.dependencies.astro);
-  const astro = fs.readFileSync(path.join(site, 'astro.config.mjs'), 'utf8');
-  const collection = fs.readFileSync(path.join(site, 'src/content.config.mjs'), 'utf8');
+  assert.ok(manifest.dependencies['@astrojs/mdx']);
+  assert.ok(manifest.dependencies['astro-expressive-code']);
+  assert.ok(!manifest.dependencies['@astrojs/starlight']);
+  const astro=fs.readFileSync(path.join(renderer,'astro.config.mjs'),'utf8');
+  const collection=fs.readFileSync(path.join(renderer,'src/content.config.mjs'),'utf8');
+  const route=fs.readFileSync(path.join(renderer,'src/pages/[...slug].astro'),'utf8');
+  const shell=fs.readFileSync(path.join(renderer,'src/components/PageFrame.astro'),'utf8');
   assert.ok(astro.includes("resolve(here, 'dist')"));
-  assert.ok(fs.readFileSync(path.join(site, 'build.cjs'), 'utf8').includes('build/github/pages'));
-  assert.ok(astro.includes('starlight({'));
-  assert.ok(!astro.includes('sidebar: ['));
-  assert.ok(collection.includes('docsLoader()'));
-  assert.doesNotMatch(collection.replace(/^\s*\/\/.*$/gm, ''), /\bglob\s*\(/);
-  assert.ok(astro.includes('./src/styles/project.css'));
-  assert.ok(astro.includes("favicon: '/images/favicon.png'"));
-  const authoredFavicon = path.join(root, 'content/images/favicon.png');
-  assert.ok(fs.existsSync(authoredFavicon));
-  const signature = fs.readFileSync(authoredFavicon).subarray(0, 8).toString('hex');
-  assert.equal(signature, '89504e470d0a1a0a');
-  assert.ok(fs.existsSync(path.join(root, 'content/theme.css')));
-  const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
-  const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
-  assert.ok(layout.includes('--docs-article-width: 883px;'));
-  assert.ok(layout.includes('--sl-sidebar-width: 18rem;'));
+  assert.ok(fs.readFileSync(path.join(renderer,'build.cjs'),'utf8').includes('build/github/pages'));
+  assert.match(collection,/glob\(/);
+  assert.match(route,/getStaticPaths/);
+  assert.match(route,/await render\(entry\)/);
+  assert.match(shell,/<main id="main"/);
+  assert.match(shell,/import '\.\.\/styles\/project\.css'/);
+  assert.match(shell,/images\/favicon\.png/);
+  assert.match(astro,/themes: \['github-dark'\]/);
+  assert.doesNotMatch(astro,/@astrojs\/starlight/);
+  const signature=fs.readFileSync(path.join(root,'content/images/favicon.png')).subarray(0,8).toString('hex');
+  assert.equal(signature,'89504e470d0a1a0a');
+  assert.ok(fs.existsSync(path.join(root,'content/theme.css')));
+  const layout=fs.readFileSync(path.join(renderer,'src/styles/layout.css'),'utf8');
+  assert.match(layout,/--docs-article-width:\s*883px/);
   assert.ok(!layout.includes('--sl-color-bg:'));
-  assert.ok(!projectTheme.includes('--sl-color-accent:'));
-  assert.ok(astro.includes('ThemeSelect.astro'));
-  assert.ok(astro.includes('ThemeProvider.astro'));
-  assert.ok(astro.includes("themes: ['github-dark']"));
-  assert.ok(astro.includes('useStarlightDarkModeSwitch: false'));
-  assert.ok(!astro.includes('localStorage'));
-  assert.ok(!collection.includes('content/i18n'));
 });
 
 test('Measured dark palette, independent presentation layers and forced colors', () => {
-  const astro = fs.readFileSync(path.join(renderer, 'astro.config.mjs'), 'utf8');
-  const entries = [...astro.matchAll(/['"](\.\/src\/styles\/[^'"]+\.css)['"]/g)].map(match => match[1]);
+  const shell = fs.readFileSync(path.join(renderer, 'src/components/PageFrame.astro'), 'utf8');
+  const entries = [...shell.matchAll(/['"](\.\.\/styles\/[^'"]+\.css)['"]/g)].map(match => match[1].replace('../styles/','./src/styles/'));
   assert.deepEqual(entries, [
     './src/styles/theme/fallback.css',
     './src/styles/layout.css',
@@ -65,15 +59,14 @@ test('Measured dark palette, independent presentation layers and forced colors',
   assert.match(forced, /--docs-selected: Highlight;/);
   const tokens = css => [...new Set([...css.matchAll(/(--(?:docs|sl-color)-[a-z0-9-]+):/g)].map(match => match[1]))].sort();
   assert.deepEqual(tokens(forced), tokens(fallback));
-  const provider = fs.readFileSync(path.join(renderer, 'src/components/ThemeProvider.astro'), 'utf8');
-  assert.match(provider, /dataset.theme = 'dark'/);
+  assert.match(shell, /data-theme="dark"/);
   const example = fs.readFileSync(path.join(root, 'content/docs/base-part.mdx'), 'utf8');
   assert.match(example, /<ApiSummary .*members=/);
   assert.match(example, /\x60\x60\x60luau/);
 });
 
 test('Static image copier preserves nested paths', t => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'starlight-assets-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-assets-'));
   t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
   const from = path.join(tmp, 'from'), to = path.join(tmp, 'to');
   fs.mkdirSync(path.join(from, 'nested'), { recursive: true });
@@ -84,7 +77,7 @@ test('Static image copier preserves nested paths', t => {
 });
 
 test('Content staging creates a flat docs root, excludes repository templates and copies the project theme', t => {
-  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'starlight-stage-'));
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-stage-'));
   t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
   const docs = path.join(temporary, 'authored'), output = path.join(temporary, 'staged');
   const theme = path.join(temporary, 'theme.css'), stylesheet = path.join(temporary, 'project.css');
@@ -105,7 +98,7 @@ test('Content staging creates a flat docs root, excludes repository templates an
 });
 
 test('favicon is staged from authored assets and can be replaced per repository', t => {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'starlight-favicon-'));
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-favicon-'));
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
   const source = path.join(root, 'content/images/favicon.png');
   const destination = path.join(temp, 'public/images/favicon.png');
@@ -151,9 +144,9 @@ test('multiline callable signatures preserve nested parentheses and return tuple
 });
 
 test('shared TOC is a renderer override, not two competing scrollspies', () => {
-  const config=fs.readFileSync(path.join(renderer,'astro.config.mjs'),'utf8');
-  assert.match(config,/TableOfContents: '.\/src\/components\/TableOfContents\.astro'/);
-  assert.match(config,/MobileTableOfContents: '.\/src\/components\/MobileTableOfContents\.astro'/);
+  const shell=fs.readFileSync(path.join(renderer,'src/components/PageFrame.astro'),'utf8');
+  assert.match(shell,/<TableOfContents toc=\{toc\}/);
+  assert.match(shell,/<MobileTableOfContents toc=\{toc\}/);
   const controller=fs.readFileSync(path.join(renderer,'src/components/TocController.astro'),'utf8');
   assert.match(controller,/getBoundingClientRect\(\)\.top<=threshold/);
   assert.match(controller,/link\.removeAttribute\('aria-current'\)/);

@@ -35,8 +35,8 @@ test("published documentation has predictable Markdown metadata", () => {
     const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n(?:sidebar:\n  order: \d+\n)?---\n/);
     assert.ok(metadata, file + ": requires title/description YAML front matter");
     assert.ok(metadata[1].trim() && metadata[2].trim(), file + ": empty metadata");
-    assert.equal((source.match(/^# /gm) || []).length, 0, file + ": Starlight renders the frontmatter title as H1");
-    // Starlight emits directory URLs, not raw Markdown source filenames.
+    assert.equal((source.match(/^# /gm) || []).length, 0, file + ": The renderer renders the frontmatter title as H1");
+    // The renderer emits directory URLs, not raw Markdown source filenames.
     const route = '/' + path.relative(documentation, file).replace(/\\/g, '/')
       .replace(/(?:^|\/)index\.mdx?$/, '/').replace(/\.mdx?$/, '/').replace(/^\/+/, '');
     for (const match of source.matchAll(/\]\(([^)\s]+)\)/g)) {
