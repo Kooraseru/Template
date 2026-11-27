@@ -29,10 +29,11 @@ test("cross-document catalogue retains counts and actual descendant variants",()
     assert(components.some(x=>x.tag==="table"&&Object.hasOwn(x.documents,"material")));
     assert(components.some(x=>x.classes.includes("Typography-code")&&Object.hasOwn(x.documents,"events")));
 });
-test("reference acquisition is not a candidate parity pass",()=>{
-    const docs=loadCorpus(root,sources), states=coverage(docs,discover(path.join(rule,"experiments")));
-    assert.equal(states.filter(x=>x.status==="direct-comparison").length,1);
-    assert.equal(states.filter(x=>x.status==="component-reference").length,9);
+test("every independent reference is paired to a candidate route",()=>{
+    const settings=require("../../.vscode/config/rules.json").rules["documentation/parity"].settings;
+    const docs=loadCorpus(root,sources), states=coverage(docs,discover(path.join(rule,"experiments")),settings.candidates);
+    assert.equal(states.filter(x=>x.status==="direct-comparison").length,10);
+    assert.equal(states.filter(x=>x.status==="component-reference").length,0);
 });
 test("missing or corrupt corpus data fails closed",t=>{
     const folder=fs.mkdtempSync(path.join(os.tmpdir(),"parity-corpus-"));
@@ -57,9 +58,11 @@ test("component catalogue distinguishes an untested reference from a mismatched 
     assert(!results.some(x=>x.status==="different"||x.status==="unexpected"));
 });
 
-test("configured component coverage uses exactly the two published routes and known required identities",()=>{
+test("configured coverage pairs every source and keeps required component identities",()=>{
     const settings=require("../../.vscode/config/rules.json").rules["documentation/parity"].settings;
-    assert.deepEqual(settings.candidates.map(x=>x.route).sort(),["/","/reference-example/"].sort());
+    assert.equal(settings.pairedSources,true);
+    assert.deepEqual(settings.candidates.map(x=>x.id).sort(),settings.sources.map(x=>x.id).sort());
+    assert.equal(new Set(settings.candidates.map(x=>x.route)).size,10);
     const docs=loadCorpus(root,sources),report=compareCatalogue(docs,[],settings.componentPolicy);
     assert.equal(report.filter(x=>x.status==="missing").length,settings.componentPolicy.required.length);
     assert(report.some(x=>x.status==="untested"));

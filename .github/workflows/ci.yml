@@ -140,6 +140,8 @@ jobs:
           if (($actual -join "`n") -cne ($expected -join "`n")) { throw "Unexpected output: $actual" }
   documentation:
     runs-on: ubuntu-latest
+    env:
+      DOCS_ASSET_MANIFEST: content/reference-sources/assets.json
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

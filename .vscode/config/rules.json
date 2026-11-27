@@ -121,8 +121,8 @@
         },
         "candidates": [
           {
-            "id": "markdown-guide",
-            "route": "/",
+            "id": "base-part",
+            "route": "/base-part/",
             "root": "main",
             "viewport": {
               "width": 1440,
@@ -130,8 +130,80 @@
             }
           },
           {
-            "id": "base-part",
-            "route": "/reference-example/",
+            "id": "tween-service",
+            "route": "/tween-service/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "user-input-service",
+            "route": "/user-input-service/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "vector3",
+            "route": "/vector3/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "material",
+            "route": "/material/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "events",
+            "route": "/events/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "materials",
+            "route": "/materials/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "engine-classes",
+            "route": "/engine-classes/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "vector-library",
+            "route": "/vector-library/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "engine-reference",
+            "route": "/",
             "root": "main",
             "viewport": {
               "width": 1440,
@@ -195,7 +267,8 @@
             }
           ],
           "excluded": []
-        }
+        },
+        "pairedSources": true
       }
     }
   }

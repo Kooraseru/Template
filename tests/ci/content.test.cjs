@@ -13,7 +13,7 @@ function sitePages(directory = documentation, pages = []) {
     const location = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       if (location !== repositoryTemplates) sitePages(location, pages);
-    } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
+    } else if (entry.isFile() && /\.(?:mdx?|api\.yaml)$/.test(entry.name)) {
       pages.push(location);
     }
   }
@@ -22,11 +22,16 @@ function sitePages(directory = documentation, pages = []) {
 
 test("published documentation has predictable Markdown metadata", () => {
   const pages = sitePages();
-  assert.equal(pages.length, 2, "Template contains exactly two published documentation specimens");
-  assert.ok(pages.includes(path.join(documentation, "reference-example.mdx")));
-  assert.ok(pages.includes(path.join(documentation, "index.md")));
+  const settings = require("../../.vscode/config/rules.json").rules["documentation/parity"].settings;
+  const routeFor = file => '/' + path.relative(documentation,file).replace(/\\/g,'/').replace(/(?:^|\/)index\.mdx?$/,'/').replace(/\.(?:mdx?|api\.yaml)$/,'/').replace(/^\/+/, '');
+  assert.deepEqual(pages.map(routeFor).sort(),settings.candidates.map(x=>x.route).sort());
+  assert.equal(pages.length,settings.sources.length);
   for (const file of pages) {
     const source = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
+    if(file.endsWith(".api.yaml")){
+      const data=require("../../dependencies/managed/npm/node_modules/yaml").parse(source);
+      assert.ok(data.name&&data.summary&&data.type);continue;
+    }
     const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n(?:sidebar:\n  order: \d+\n)?---\n/);
     assert.ok(metadata, file + ": requires title/description YAML front matter");
     assert.ok(metadata[1].trim() && metadata[2].trim(), file + ": empty metadata");
@@ -42,7 +47,7 @@ test("published documentation has predictable Markdown metadata", () => {
       const resolved = new URL(link, 'https://docs.example' + route);
       const target = resolved.pathname.replace(/^\//, '').replace(/\/$/, '');
       const candidates = [path.join(documentation, target + '.md'), path.join(documentation, target, 'index.md'), path.join(documentation, target + '.mdx'), path.join(documentation, target, 'index.mdx')];
-      assert.ok(candidates.some(candidate => pages.includes(candidate)), file + ": broken guide route " + link);
+      assert.ok(candidates.some(candidate => pages.includes(candidate)), file + ": broken documentation route " + link);
     }
   }
 });

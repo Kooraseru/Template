@@ -67,7 +67,7 @@ test('Measured dark palette, independent presentation layers and forced colors',
   assert.deepEqual(tokens(forced), tokens(fallback));
   const provider = fs.readFileSync(path.join(renderer, 'src/components/ThemeProvider.astro'), 'utf8');
   assert.match(provider, /dataset.theme = 'dark'/);
-  const example = fs.readFileSync(path.join(root, 'content/docs/reference-example.mdx'), 'utf8');
+  const example = fs.readFileSync(path.join(root, 'content/docs/base-part.mdx'), 'utf8');
   assert.match(example, /<ApiSummary .*members=/);
   assert.match(example, /\x60\x60\x60luau/);
 });
@@ -80,7 +80,7 @@ test('Static image copier preserves nested paths', t => {
   fs.writeFileSync(path.join(from, 'nested/logo.svg'), 'image');
   copyAssets(from, to);
   assert.equal(fs.readFileSync(path.join(to, 'nested/logo.svg'), 'utf8'), 'image');
-  assert.ok(fs.existsSync(path.join(root, 'content/docs/index.md')));
+  assert.ok(fs.existsSync(path.join(root, 'content/docs/index.mdx')));
 });
 
 test('Content staging creates a flat docs root, excludes repository templates and copies the project theme', t => {
@@ -116,7 +116,7 @@ test('favicon is staged from authored assets and can be replaced per repository'
 });
 
  test('API reference components use project type metadata and registered member anchors', () => {
-  const example = fs.readFileSync(path.join(root,'content/docs/reference-example.mdx'),'utf8');
+  const example = fs.readFileSync(path.join(root,'content/docs/base-part.mdx'),'utf8');
   const ids = [...example.matchAll(/<ApiMember [^>]*id="([^"]+)"/g)].map(m=>m[1]);
   const summary = [...example.matchAll(/"href":"#([^"]+)"/g)].map(m=>m[1]);
   assert.equal(ids.length, 106);
@@ -144,7 +144,7 @@ test('API icon families share captured geometry and exact colors without inventi
 
 test('multiline callable signatures preserve nested parentheses and return tuples', async () => {
   const {formatSignature}=await import(require('node:url').pathToFileURL(path.join(renderer,'src/data/format-signature.mjs')).href);
-  assert.deepEqual(formatSignature('Get(key: string, fn: (x: number) -> boolean): (unknown, boolean)'),{before:'Get (',args:'key: string, fn: (x: number) -> boolean',after:'): (unknown, boolean)'});
+  assert.deepEqual(formatSignature('Get(key: string, fn: (x: number) -> boolean): (unknown, boolean)'),{before:'Get(',args:'key: string, fn: (x: number) -> boolean',after:'): (unknown, boolean)'});
   assert.equal(formatSignature('Value: string'),null);
   assert.equal(formatSignature('OnInvoke: (x: number) -> boolean'),null);
   assert.equal(formatSignature('new()'),null);

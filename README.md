@@ -55,4 +55,6 @@ Install [Workbench Bridge](https://github.com/Kooraseru/workbench-bridge) for de
 
 Check available Template releases using `node .github/components/quality/template-updates/version.cjs`. Updates are advisory; they do not overwrite project files.
 
-See [CI implementation](.github/components/README.md), [workspace dependencies](dependencies/README.md), and [documentation](content/docs/index.md).
+See [CI implementation](.github/components/README.md), [workspace dependencies](dependencies/README.md), and [documentation](content/docs/index.mdx).
+
+The comparison specimens adapt the [Roblox Creator Hub source](https://github.com/Roblox/creator-docs/tree/47ec857d6a0805124d089d3a2f68d970ccbf70d0) under its CC BY 4.0 and MIT licenses. [Attribution and licenses](content/images/reference-sources/ATTRIBUTION.txt).

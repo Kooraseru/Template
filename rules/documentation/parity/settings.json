@@ -179,6 +179,10 @@
           }
         }
       }
+    },
+    "pairedSources": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
