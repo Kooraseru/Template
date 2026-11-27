@@ -9,6 +9,10 @@ import ApiSignature from '../../components/ApiSignature.astro';
 import ApiSummary from '../../components/ApiSummary.astro';
 import ApiMember from '../../components/ApiMember.astro';
 import ApiInteractions from '../../components/ApiInteractions.astro';
+import ApiParameterTable from '../../components/ApiParameterTable.astro';
+import ApiParameter from '../../components/ApiParameter.astro';
+import ApiReturns from '../../components/ApiReturns.astro';
+import ApiReturn from '../../components/ApiReturn.astro';
 
 export const types = {"BasePart":{"category":"Class","href":"https://create.roblox.com/docs/reference/engine/classes/BasePart","description":""},"BrickColor":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/BrickColor","description":""},"CFrame":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/CFrame","description":""},"CollisionFidelity":{"category":"Enum","href":"https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity","description":""},"Color3":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/Color3","description":""},"Faces":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/Faces","description":""},"Function":{"category":"Luau","href":"https://create.roblox.com/docs/luau","description":""},"InputType":{"category":"Enum","href":"https://create.roblox.com/docs/reference/engine/enums/InputType","description":""},"Instance":{"category":"Class","href":"https://create.roblox.com/docs/reference/engine/classes/Instance","description":""},"Instances":{"category":"Luau","href":"https://create.roblox.com/docs/luau","description":""},"Material":{"category":"Enum","href":"https://create.roblox.com/docs/reference/engine/enums/Material","description":""},"NormalId":{"category":"Enum","href":"https://create.roblox.com/docs/reference/engine/enums/NormalId","description":""},"PhysicalProperties":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/PhysicalProperties","description":""},"Player":{"category":"Class","href":"https://create.roblox.com/docs/reference/engine/classes/Player","description":""},"RBXScriptConnection":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptConnection","description":""},"RBXScriptSignal":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptSignal","description":""},"RenderFidelity":{"category":"Enum","href":"https://create.roblox.com/docs/reference/engine/enums/RenderFidelity","description":""},"SurfaceType":{"category":"Enum","href":"https://create.roblox.com/docs/reference/engine/enums/SurfaceType","description":""},"Tuple":{"category":"Luau","href":"https://create.roblox.com/docs/luau","description":""},"Vector3":{"category":"Datatype","href":"https://create.roblox.com/docs/reference/engine/datatypes/Vector3","description":""},"float":{"category":"Luau","href":"https://create.roblox.com/docs/luau","description":""},"int":{"category":"Luau","href":"https://create.roblox.com/docs/luau","description":""}};
 
@@ -3266,42 +3270,9 @@ the changing orientation of the body. The optional `angVelocity` parameter
 accounts for these gyroscopic effects. If omitted, these gyroscopic
 effects are omitted from the calculation.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"angAcceleration: Vector3"} types={types} memberName={true} /></dt>
-<dd>
 
-The desired angular acceleration vector in world space.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"angVelocity: Vector3 = 0, 0, 0"} types={types} memberName={true} /></dt>
-<dd>
-
-The current angular velocity of the assembly in world space. Defaults
-to `(0, 0, 0)`. Supply the assembly's angular velocity to account for
-gyroscopic effects.
-
-</dd>
-</div>
-</dl>
-
-<h4>Returns</h4>
-
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
-<dd>
-
-A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the world-space torque required to
-produce the specified angular acceleration.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -3324,6 +3295,35 @@ print(torque)
 ```
 
 </div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"angAcceleration"} type={"Vector3"} types={types}>
+
+The desired angular acceleration vector in world space.
+
+</ApiParameter>
+
+<ApiParameter name={"angVelocity"} type={"Vector3"} defaultValue={"0, 0, 0"} types={types}>
+
+The current angular velocity of the assembly in world space. Defaults
+to `(0, 0, 0)`. Supply the assembly's angular velocity to account for
+gyroscopic effects.
+
+</ApiParameter>
+
+</ApiParameterTable>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Vector3"} types={types}>
+
+A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the world-space torque required to
+produce the specified angular acceleration.
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -3350,33 +3350,31 @@ function can be called from either a client script **or** a server script;
 calling it from a client script for a server-owned part will have no
 effect.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"impulse: Vector3"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"impulse"} type={"Vector3"} types={types}>
 
 An angular impulse vector to be applied to the assembly.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
 
 
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3406,33 +3404,31 @@ function can be called from either a client script **or** a server script;
 calling it from a client script for a server-owned part will have no
 effect.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"impulse: Vector3"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"impulse"} type={"Vector3"} types={types}>
 
 A linear impulse vector to be applied to the assembly.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
 
 
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3464,41 +3460,37 @@ function can be called from either a client script **or** a server script;
 calling it from a client script for a server-owned part will have no
 effect.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"impulse: Vector3"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"impulse"} type={"Vector3"} types={types}>
 
 An impulse vector to be applied to the assembly.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"position: Vector3"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"position"} type={"Vector3"} types={types}>
 
 The position, in world space, to apply the impulse.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
 
 
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3605,35 +3597,33 @@ to `Normal` describes sliding and glancing contact.
   [network ownership](https://create.roblox.com/docs/physics/network-ownership).
 - Destroying the part disconnects its subscriptions.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"callback: Function"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"callback"} type={"Function"} types={types}>
 
 Invoked with an array of summary tables, at most once per frame, if
 the part was involved in a collision.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"RBXScriptConnection"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"RBXScriptConnection"} types={types}>
 
 A [`RBXScriptConnection`](https://create.roblox.com/docs/reference/engine/datatypes/RBXScriptConnection) that ends the subscription when
 disconnected.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3654,20 +3644,19 @@ part's connections using [`BasePart:GetJoints()`](#getjoints) and call
 Breaks any surface connection with any adjacent part, including
 [`Weld`](https://create.roblox.com/docs/reference/engine/classes/Weld) and other [`JointInstance`](https://create.roblox.com/docs/reference/engine/classes/JointInstance).
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -3684,20 +3673,19 @@ which should be used instead.
 
 <div slot="body">
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -3711,33 +3699,31 @@ Returns whether the parts can collide with each other or not. This
 function takes into account the collision groups of the two parts. This
 function will error if the specified part is not a BasePart.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"part: BasePart"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"part"} type={"BasePart"} types={types}>
 
 The specified part being checked for collidability.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"boolean"} types={types}>
 
 Whether the parts can collide with each other.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3756,18 +3742,7 @@ The function's return value verifies whether or not you can call
 It returns true if you can modify/read the network ownership, or returns
 false and the reason you can't, as a string.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Tuple"} types={types} memberName={false} /></dt>
-<dd>
-
-Whether you can modify or read the network ownership and the reason.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -3793,6 +3768,16 @@ end
 
 </div>
 
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Tuple"} types={types}>
+
+Whether you can modify or read the network ownership and the reason.
+
+</ApiReturn>
+
+</ApiReturns>
+
 </ApiMember>
 
 ### getclosestpointonsurface
@@ -3810,33 +3795,31 @@ respects the part's [`CollisionFidelity`](https://create.roblox.com/docs/referen
 differ based on whether the mesh is being treated as a box, a hull, or a
 more complex shape.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"position: Vector3"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"position"} type={"Vector3"} types={types}>
 
 The world-space point to find the closest surface point to.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Vector3"} types={types}>
 
 The closest point on the part's surface in world space.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3865,35 +3848,33 @@ This only applies to the following joint types:
 - [`Motor6D`](https://create.roblox.com/docs/reference/engine/classes/Motor6D)
 - [`WeldConstraint`](https://create.roblox.com/docs/reference/engine/classes/WeldConstraint)
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"recursive: boolean = False"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"recursive"} type={"boolean"} defaultValue={"False"} types={types}>
 
 A table of parts connected to the object by any kind of
 [`joint`](https://create.roblox.com/docs/reference/engine/classes/JointInstance).
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"List<BasePart>"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"List<BasePart>"} types={types}>
 
 An array of [`BaseParts`](https://create.roblox.com/docs/reference/engine/classes/BasePart) connected to this part by rigid
 joints. If `recursive` is true, includes all parts in the assembly.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3915,22 +3896,21 @@ is outside that container — for example, parented to
 not activated. **GetJoints()** does not include that joint on either part,
 even though the joint instance still exists in the data model.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instances"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instances"} types={types}>
 
 An array of all [`Joints`](https://create.roblox.com/docs/reference/engine/classes/JointInstance) and
 [`Constraints`](https://create.roblox.com/docs/reference/engine/classes/Constraint) connected to the part that are active
 in the simulation.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -3946,18 +3926,7 @@ property.
 This function predates the Mass property. It remains supported for
 backward-compatibility; you should use the Mass property directly.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"float"} types={types} memberName={false} /></dt>
-<dd>
-
-The part's mass.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -3986,6 +3955,16 @@ print("My part's mass is " .. myMass)
 
 </div>
 
+<ApiReturns slot="returns">
+
+<ApiReturn type={"float"} types={types}>
+
+The part's mass.
+
+</ApiReturn>
+
+</ApiReturns>
+
 </ApiMember>
 
 ### getmass-2
@@ -4001,20 +3980,19 @@ variant, [`BasePart:GetMass()`](#getmass).
 
 <div slot="body">
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"float"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"float"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -4027,21 +4005,20 @@ variant, [`BasePart:GetMass()`](#getmass).
 Returns the current player who is the network owner of this part, or `nil`
 in case of the server.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instance"} types={types}>
 
 The current player who is the network owner of this part, or `nil` in
 case of the server.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4054,21 +4031,20 @@ case of the server.
 Returns true if the game engine automatically decides the network owner
 for this part.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"boolean"} types={types}>
 
 Whether the game engine automatically decides the network owner for
 this part.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4087,21 +4063,20 @@ rest of the world.
 The returned array is empty if no such constraint is currently registered
 for this part. The order of the returned constraints is not guaranteed.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instances"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instances"} types={types}>
 
 An array of the enabled [`NoCollisionConstraint`](https://create.roblox.com/docs/reference/engine/classes/NoCollisionConstraint) objects
 currently registered for this part in its physics world.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4122,21 +4097,20 @@ This function used to be relevant when Roblox's lag-compensating
 interpolation of parts online was internal. The interpolation is now
 applied to the [`CFrame`](https://create.roblox.com/docs/reference/engine/datatypes/CFrame) directly.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"CFrame"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"CFrame"} types={types}>
 
 The [`CFrame`](https://create.roblox.com/docs/reference/engine/datatypes/CFrame) representing where the part is being rendered,
 which is now equivalent to the part's [`CFrame`](#cframe).
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4156,21 +4130,20 @@ This function predates the
 supported for backwards compatibility, but you should use
 [`AssemblyRootPart`](#assemblyrootpart) directly.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instance"} types={types}>
 
 The base part of an assembly (a collection of parts connected
 together).
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4190,20 +4163,19 @@ not intersecting are not considered touching. This function predates the
 flexibility and avoids the special [`TouchInterest`](https://create.roblox.com/docs/reference/engine/classes/TouchTransmitter)
 rules described above. Use [`WorldRoot:GetPartsInPart()`](https://create.roblox.com/docs/reference/engine/classes/WorldRoot#GetPartsInPart) instead.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instances"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instances"} types={types}>
 
 A table of all parts that intersect and can collide with this part.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4219,35 +4191,33 @@ parts in an assembly other than the root part. If the assembly has no
 angular velocity, than the linear velocity will always be the same for
 every position.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"position: Vector3"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"position"} type={"Vector3"} types={types}>
 
 The world-space position at which to compute the assembly's linear
 velocity.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Vector3"} types={types}>
 
 A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the linear velocity of the assembly
 at the specified world-space position.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4310,51 +4280,45 @@ follows:
 - If an intersect operation would result in a part with more than 20,000
   triangles, it will be simplified to 20,000 triangles.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"parts: Instances"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"parts"} type={"Instances"} types={types}>
 
 The objects taking part in the intersection.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"collisionfidelity: CollisionFidelity = Default"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"collisionfidelity"} type={"CollisionFidelity"} defaultValue={"Default"} types={types}>
 
 The [`CollisionFidelity`](https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity) value for the resulting
 [`IntersectOperation`](https://create.roblox.com/docs/reference/engine/classes/IntersectOperation).
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"renderFidelity: RenderFidelity = Automatic"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"renderFidelity"} type={"RenderFidelity"} defaultValue={"Automatic"} types={types}>
 
 The [`RenderFidelity`](https://create.roblox.com/docs/reference/engine/enums/RenderFidelity) value of the resulting
 [`PartOperation`](https://create.roblox.com/docs/reference/engine/classes/PartOperation).
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instance"} types={types}>
 
 Resulting [`IntersectOperation`](https://create.roblox.com/docs/reference/engine/classes/IntersectOperation) with default name **Intersect**.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4369,20 +4333,19 @@ place (eg an [`Anchored`](#anchored) part), otherwise returns
 false. In an assembly that has an [`Anchored`](#anchored) part,
 every other part is grounded.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
-<dd>
+
+</div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"boolean"} types={types}>
 
 Whether the object is connected to a part that will hold it in place.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4429,20 +4392,19 @@ Joints are broken if enough force is applied to them due to an
 [`BasePart`](https://create.roblox.com/docs/reference/engine/classes/BasePart) or ancestor [`Model`](https://create.roblox.com/docs/reference/engine/classes/Model). For this reason, they are
 often used to make simple destructible buildings and other models.
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -4459,20 +4421,19 @@ which should be used instead.
 
 <div slot="body">
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -4484,41 +4445,37 @@ which should be used instead.
 
 Changes the size of an object just like using the Studio resize tool.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"normalId: NormalId"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"normalId"} type={"NormalId"} types={types}>
 
 The side to resize.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"deltaAmount: int"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"deltaAmount"} type={"int"} types={types}>
 
 How much to grow/shrink on the specified side.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"boolean"} types={types}>
 
 Whether the part is resized.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4535,41 +4492,37 @@ should be used instead.
 
 <div slot="body">
 
-<h4>Parameters</h4>
-
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"normalId: NormalId"} types={types} memberName={true} /></dt>
-<dd>
 
 
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"deltaAmount: int"} types={types} memberName={true} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
-
-<h4>Returns</h4>
-
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"boolean"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"normalId"} type={"NormalId"} types={types}>
+
+
+
+</ApiParameter>
+
+<ApiParameter name={"deltaAmount"} type={"int"} types={types}>
+
+
+
+</ApiParameter>
+
+</ApiParameterTable>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"boolean"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -4583,33 +4536,31 @@ Sets the given player as network owner for this and all connected parts.
 When playerInstance is `nil`, the server will be the owner instead of a
 player.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"playerInstance: Player = nil"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"playerInstance"} type={"Player"} defaultValue={"nil"} types={types}>
 
 The player being given network ownership of the part.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
 
 
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4622,20 +4573,19 @@ The player being given network ownership of the part.
 Lets the game engine dynamically decide who will handle the part's physics
 (one of the clients or the server).
 
-<h4>Returns</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"()"} types={types} memberName={false} /></dt>
-<dd>
-
-
-
-</dd>
-</div>
-</dl>
 
 </div>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"()"} types={types}>
+
+
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -4673,51 +4623,45 @@ follows:
   the `(0, 0, 0)` of a returned part is not necessarily at the center of
   its body.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"parts: Instances"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"parts"} type={"Instances"} types={types}>
 
 The objects taking part in the subtraction.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"collisionfidelity: CollisionFidelity = Default"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"collisionfidelity"} type={"CollisionFidelity"} defaultValue={"Default"} types={types}>
 
 The [`CollisionFidelity`](https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity) value for the resulting
 [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation).
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"renderFidelity: RenderFidelity = Automatic"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"renderFidelity"} type={"RenderFidelity"} defaultValue={"Automatic"} types={types}>
 
 The [`RenderFidelity`](https://create.roblox.com/docs/reference/engine/enums/RenderFidelity) value of the resulting
 [`PartOperation`](https://create.roblox.com/docs/reference/engine/classes/PartOperation).
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instance"} types={types}>
 
 Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation) with default name **Union**.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4753,42 +4697,9 @@ angular velocity. The `angVelocity` parameter accounts for these
 gyroscopic effects. If omitted (defaults to zero), the result neglects
 this contribution from the result.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"torque: Vector3"} types={types} memberName={true} /></dt>
-<dd>
 
-The torque vector applied to the assembly in world space.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"angVelocity: Vector3 = 0, 0, 0"} types={types} memberName={true} /></dt>
-<dd>
-
-The current angular velocity of the assembly in world space. Defaults
-to `(0, 0, 0)`. Supply the assembly's angular velocity to account for
-gyroscopic effects.
-
-</dd>
-</div>
-</dl>
-
-<h4>Returns</h4>
-
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Vector3"} types={types} memberName={false} /></dt>
-<dd>
-
-A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the resulting angular acceleration
-in world space.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -4811,6 +4722,35 @@ print(angAccel)
 ```
 
 </div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"torque"} type={"Vector3"} types={types}>
+
+The torque vector applied to the assembly in world space.
+
+</ApiParameter>
+
+<ApiParameter name={"angVelocity"} type={"Vector3"} defaultValue={"0, 0, 0"} types={types}>
+
+The current angular velocity of the assembly in world space. Defaults
+to `(0, 0, 0)`. Supply the assembly's angular velocity to account for
+gyroscopic effects.
+
+</ApiParameter>
+
+</ApiParameterTable>
+
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Vector3"} types={types}>
+
+A [`Vector3`](https://create.roblox.com/docs/reference/engine/datatypes/Vector3) representing the resulting angular acceleration
+in world space.
+
+</ApiReturn>
+
+</ApiReturns>
 
 </ApiMember>
 
@@ -4872,51 +4812,45 @@ follows:
 - If a union operation would result in a part with more than 20,000
   triangles, it will be simplified to 20,000 triangles.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"parts: Instances"} types={types} memberName={true} /></dt>
-<dd>
+
+
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"parts"} type={"Instances"} types={types}>
 
 The objects taking part in the union with the calling part.
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"collisionfidelity: CollisionFidelity = Default"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"collisionfidelity"} type={"CollisionFidelity"} defaultValue={"Default"} types={types}>
 
 The [`CollisionFidelity`](https://create.roblox.com/docs/reference/engine/enums/CollisionFidelity) value for the resulting
 [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation).
 
-</dd>
-</div>
-<div>
-<dt><ApiSignature signature={"renderFidelity: RenderFidelity = Automatic"} types={types} memberName={true} /></dt>
-<dd>
+</ApiParameter>
+
+<ApiParameter name={"renderFidelity"} type={"RenderFidelity"} defaultValue={"Automatic"} types={types}>
 
 The [`RenderFidelity`](https://create.roblox.com/docs/reference/engine/enums/RenderFidelity) value of the resulting
 [`PartOperation`](https://create.roblox.com/docs/reference/engine/classes/PartOperation).
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-<h4>Returns</h4>
+</ApiParameterTable>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"Instance"} types={types} memberName={false} /></dt>
-<dd>
+<ApiReturns slot="returns">
+
+<ApiReturn type={"Instance"} types={types}>
 
 Resulting [`UnionOperation`](https://create.roblox.com/docs/reference/engine/classes/UnionOperation) with default name **Union**.
 
-</dd>
-</div>
-</dl>
+</ApiReturn>
 
-</div>
+</ApiReturns>
 
 </ApiMember>
 
@@ -4938,18 +4872,7 @@ Fired when another part comes in contact with another object. This event
 only sends data to the client notifying it that two parts have collided,
 whereas [`BasePart.Touched`](#touched) sends data to the server.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"part: BasePart"} types={types} memberName={true} /></dt>
-<dd>
-
-The other part that came in contact with this part.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -4966,6 +4889,16 @@ end)
 ```
 
 </div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"part"} type={"BasePart"} types={types}>
+
+The other part that came in contact with this part.
+
+</ApiParameter>
+
+</ApiParameterTable>
 
 </ApiMember>
 
@@ -5007,20 +4940,19 @@ it only notifies the local client that the two parts have separated,
 whereas [`BasePart.TouchEnded`](#touchended) also sends data to the server. Use
 [`BasePart.TouchEnded`](#touchended) instead.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"otherPart: BasePart"} types={types} memberName={true} /></dt>
-<dd>
+
+</div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"otherPart"} type={"BasePart"} types={types}>
 
 The other part that stopped touching the given part.
 
-</dd>
-</div>
-</dl>
+</ApiParameter>
 
-</div>
+</ApiParameterTable>
 
 </ApiMember>
 
@@ -5046,18 +4978,7 @@ This event works in conjunction with
 [collision groups](https://create.roblox.com/docs/workspace/collisions#collision-filtering)
 are acknowledged for detection.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"otherPart: BasePart"} types={types} memberName={true} /></dt>
-<dd>
-
-The other part that came in contact with the given part.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -5126,6 +5047,16 @@ end
 
 </div>
 
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"otherPart"} type={"BasePart"} types={types}>
+
+The other part that came in contact with the given part.
+
+</ApiParameter>
+
+</ApiParameterTable>
+
 </ApiMember>
 
 ### touchended
@@ -5142,18 +5073,7 @@ This event works in conjunction with
 [collision groups](https://create.roblox.com/docs/workspace/collisions#collision-filtering)
 are acknowledged for detection.
 
-<h4>Parameters</h4>
 
-<dl className="api-parameter-list">
-<div>
-<dt><ApiSignature signature={"otherPart: BasePart"} types={types} memberName={true} /></dt>
-<dd>
-
-The other part that stopped touching this part.
-
-</dd>
-</div>
-</dl>
 
 </div>
 
@@ -5197,6 +5117,16 @@ part.TouchEnded:Connect(onTouchEnded)
 ```
 
 </div>
+
+<ApiParameterTable slot="parameters">
+
+<ApiParameter name={"otherPart"} type={"BasePart"} types={types}>
+
+The other part that stopped touching this part.
+
+</ApiParameter>
+
+</ApiParameterTable>
 
 </ApiMember>
 
