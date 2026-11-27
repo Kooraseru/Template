@@ -407,3 +407,17 @@ functions:
     deprecation_message: ''
 sourceUrl: "https://create.roblox.com/docs/reference/engine/libraries/vector"
 typeReferences: {"math":{"category":"Library","href":"https://create.roblox.com/docs/reference/engine/libraries/math","description":""},"vector":{"category":"Library","href":"https://create.roblox.com/docs/reference/engine/libraries/vector","description":""}}
+
+# Sample transcribed from the independently supplied Creator Hub vector.one screenshot.
+# Remaining upstream sample IDs are deliberately unresolved until their source is captured.
+sampleDefinitions:
+  vector-one:
+    title: Vector One
+    description: Demonstrates the vector.one constant as a multiplicative identity and uniform scale.
+    language: luau
+    playground: true
+    code: |
+      local size = vector.create(2, 3, 4)
+      print(vector.one) --> 1, 1, 1
+      print(size * vector.one == size) --> true
+      print(vector.one * 5) --> 5, 5, 5
