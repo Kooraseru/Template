@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "source": "User-provided Creator Hub Reference Capture.tar.gz / Events.html",
+  "sourceSha256": "518d775b9614557bcc281d3c846756c0a16094d3af19693cc75b8f3fcc18ae8e",
+  "normalizedSha256": "4ffa73f9ebbb4f9057e8d00b1f95f342cd02584fdf26b058fb57c6ec63e8f6c7",
+  "root": "main#main",
+  "elements": 609,
+  "normalization": "DOMParser text/html; exact tags and sorted stable classes; ignore script/style and generated web-blox MUI hash-only classes; remove TSS hash prefix; preserve all child order; no text or private attribute values stored.",
+  "capture": {
+    "status": "captured",
+    "url": "https://create.roblox.com/docs/scripting/events",
+    "title": "Events | Documentation - Roblox Creator Hub",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 1306,
+    "capturedAt": "2026-11-26T23:58:03.929Z"
+  },
+  "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+}

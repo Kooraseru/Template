@@ -1,0 +1,182 @@
+{
+  "base-part": {
+    "url": "https://create.roblox.com/docs/reference/engine/classes/BasePart",
+    "title": "BasePart | Documentation - Roblox Creator Hub",
+    "heading": "BasePart",
+    "viewport": {
+      "width": 1440,
+      "height": 899,
+      "dpr": 1
+    },
+    "elements": 13877,
+    "uniqueShapes": 1043,
+    "uniqueLabels": 134,
+    "sourceSha256": "9d4fb949ed0d24e73423016ff903e35f0d86a2270f7f7501e36413f04979afe2",
+    "normalizedSha256": "8b7bb259d4c4250264d0ba92f65d01a7f68a897a48a3f21fb5a869fb3ce71c27",
+    "root": "main#main",
+    "encodedBytes": 8912,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "tween-service": {
+    "url": "https://create.roblox.com/docs/reference/engine/classes/TweenService",
+    "title": "TweenService | Documentation - Roblox Creator Hub",
+    "heading": "TweenService",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 2033,
+    "uniqueShapes": 265,
+    "uniqueLabels": 115,
+    "sourceSha256": "6423b82a503d6ea6fee2397d3ff26acd8e3c05f4e84aad5ac0c45f42e11b8de3",
+    "normalizedSha256": "5285812b31c1d5d4854782dee2117b9ae9dccde823497793cf5077192d2ef73e",
+    "root": "main#main",
+    "encodedBytes": 3512,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "user-input-service": {
+    "url": "https://create.roblox.com/docs/reference/engine/classes/UserInputService",
+    "title": "UserInputService | Documentation - Roblox Creator Hub",
+    "heading": "UserInputService",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 11791,
+    "uniqueShapes": 999,
+    "uniqueLabels": 131,
+    "sourceSha256": "f8a6332c3688ded9cf698af25dfc3b79d07042052b5eee0a1478c13f282f6d83",
+    "normalizedSha256": "45eda58d6a7c641962bbf49153401f5af98dde42b56c15fe6335204380d65def",
+    "root": "main#main",
+    "encodedBytes": 8224,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "vector3": {
+    "url": "https://create.roblox.com/docs/reference/engine/datatypes/Vector3",
+    "title": "Vector3 | Documentation - Roblox Creator Hub",
+    "heading": "Vector3",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 2586,
+    "uniqueShapes": 318,
+    "uniqueLabels": 85,
+    "sourceSha256": "37c26defec4b2c6aecb4cb0b7924a4b792290758f3c19dab0c1de8649cd9cf04",
+    "normalizedSha256": "bd8fad976160f033545515f99593bbcfac7630e9010324704ec3d21bb387c2cc",
+    "root": "main#main",
+    "encodedBytes": 3276,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "material": {
+    "url": "https://create.roblox.com/docs/reference/engine/enums/Material",
+    "title": "Material | Documentation - Roblox Creator Hub",
+    "heading": "Material",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 513,
+    "uniqueShapes": 62,
+    "uniqueLabels": 47,
+    "sourceSha256": "fe4716547943a3e974d73f3991cab5ce117e2badd20339b488dfcc0db4de057d",
+    "normalizedSha256": "9b019f65933b76c11d999a97ace6578d82c1c62d9bd0336e07208a1405fa5af6",
+    "root": "main#main",
+    "encodedBytes": 1424,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "events": {
+    "url": "https://create.roblox.com/docs/scripting/events",
+    "title": "Events | Documentation - Roblox Creator Hub",
+    "heading": "Events",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 609,
+    "uniqueShapes": 121,
+    "uniqueLabels": 53,
+    "sourceSha256": "518d775b9614557bcc281d3c846756c0a16094d3af19693cc75b8f3fcc18ae8e",
+    "normalizedSha256": "4ffa73f9ebbb4f9057e8d00b1f95f342cd02584fdf26b058fb57c6ec63e8f6c7",
+    "root": "main#main",
+    "encodedBytes": 1888,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "materials": {
+    "url": "https://create.roblox.com/docs/parts/materials",
+    "title": "Materials | Documentation - Roblox Creator Hub",
+    "heading": "Materials",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 2632,
+    "uniqueShapes": 178,
+    "uniqueLabels": 69,
+    "sourceSha256": "2a9f51596b7d2f3ab7d96a859f0a3f078ebd908d817bbc6cb0566be71d1945f5",
+    "normalizedSha256": "92fab38b864ebbdf80560dbd7e8a36ef13c858624b685f4e3bd61abc4315c74c",
+    "root": "main#main",
+    "encodedBytes": 2568,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "engine-classes": {
+    "url": "https://create.roblox.com/docs/reference/engine/classes",
+    "title": "Roblox Engine classes | Documentation - Roblox Creator Hub",
+    "heading": "Roblox Engine classes",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 2758,
+    "uniqueShapes": 91,
+    "uniqueLabels": 40,
+    "sourceSha256": "706b45103a1c9604e0a9379b5fa195ce9870b8088a7bc4ec250b62945f81b924",
+    "normalizedSha256": "ae0dbe1c1fb8705743c9e16e964231061dc4aef8bf81892aa1dc623338fee565",
+    "root": "main#main",
+    "encodedBytes": 1692,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "vector-library": {
+    "url": "https://create.roblox.com/docs/reference/engine/libraries/vector",
+    "title": "vector | Documentation - Roblox Creator Hub",
+    "heading": "vector",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 2187,
+    "uniqueShapes": 240,
+    "uniqueLabels": 86,
+    "sourceSha256": "c3ef8e423af649fca04cfd96b198cd0f94fe25053b3c84243884ee7450a5d79f",
+    "normalizedSha256": "4ce500a22fb21c46cbef5ab8e033d8b6dbe27b3b217dda4081d57c1b001f4967",
+    "root": "main#main",
+    "encodedBytes": 2872,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  },
+  "engine-reference": {
+    "url": "https://create.roblox.com/docs/reference/engine",
+    "title": "Roblox Engine API reference | Documentation - Roblox Creator Hub",
+    "heading": "Roblox Engine API reference",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 2760,
+    "uniqueShapes": 93,
+    "uniqueLabels": 42,
+    "sourceSha256": "b4cb70e5fce61f9d65f9ec89237df65d6f05aa31f68a9ac0f4b81309796fcf03",
+    "normalizedSha256": "6cd7f61bbf108c56e3e3707055db8ac9fbe3a7f906efa67ff5f834baedf3bcfa",
+    "root": "main#main",
+    "encodedBytes": 1720,
+    "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+  }
+}

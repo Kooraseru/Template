@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "source": "User-provided Creator Hub Reference Capture.tar.gz / Materials.html",
+  "sourceSha256": "2a9f51596b7d2f3ab7d96a859f0a3f078ebd908d817bbc6cb0566be71d1945f5",
+  "normalizedSha256": "92fab38b864ebbdf80560dbd7e8a36ef13c858624b685f4e3bd61abc4315c74c",
+  "root": "main#main",
+  "elements": 2632,
+  "normalization": "DOMParser text/html; exact tags and sorted stable classes; ignore script/style and generated web-blox MUI hash-only classes; remove TSS hash prefix; preserve all child order; no text or private attribute values stored.",
+  "capture": {
+    "status": "captured",
+    "url": "https://create.roblox.com/docs/parts/materials",
+    "title": "Materials | Documentation - Roblox Creator Hub",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 3399,
+    "capturedAt": "2026-11-26T23:58:10.631Z"
+  },
+  "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+}

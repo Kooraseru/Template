@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "source": "User-provided Creator Hub Reference Capture.tar.gz / EngineReference.html",
+  "sourceSha256": "b4cb70e5fce61f9d65f9ec89237df65d6f05aa31f68a9ac0f4b81309796fcf03",
+  "normalizedSha256": "6cd7f61bbf108c56e3e3707055db8ac9fbe3a7f906efa67ff5f834baedf3bcfa",
+  "root": "main#main",
+  "elements": 2760,
+  "normalization": "DOMParser text/html; exact tags and sorted stable classes; ignore script/style and generated web-blox MUI hash-only classes; remove TSS hash prefix; preserve all child order; no text or private attribute values stored.",
+  "capture": {
+    "status": "captured",
+    "url": "https://create.roblox.com/docs/reference/engine",
+    "title": "Roblox Engine API reference | Documentation - Roblox Creator Hub",
+    "viewport": {
+      "width": 1920,
+      "height": 982,
+      "dpr": 1
+    },
+    "elements": 3214,
+    "capturedAt": "2026-11-26T23:58:33.428Z"
+  },
+  "assetRevision": "4abb18a21bce7bbd4d173b333e54a277c1a1cf38"
+}

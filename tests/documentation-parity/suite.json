@@ -10,6 +10,11 @@
       "runtime": "node",
       "entry": "structure.test.cjs",
       "timeoutSeconds": 60
+    },
+    "corpus": {
+      "runtime": "node",
+      "entry": "corpus.test.cjs",
+      "timeoutSeconds": 60
     }
   }
 }

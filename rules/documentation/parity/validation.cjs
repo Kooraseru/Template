@@ -5,6 +5,7 @@ const http = require("node:http");
 const assert = require("node:assert/strict");
 const { compare, discover, compareScreenshots, screenshotManifest } = require("./comparison.cjs");
 const {snapshot,loadReference,compareStructure}=require("./structure.cjs");
+const {loadCorpus,catalogue,coverage:corpusCoverage}=require("./corpus.cjs");
 const site = ".github/components/documentation/pages/build/starlight";
 const properties = ["color","backgroundColor","fontFamily","fontSize","fontWeight","lineHeight","paddingTop","paddingRight","paddingBottom","paddingLeft","marginTop","marginBottom","borderTopWidth","borderRadius","display","position","textDecorationLine","overflowY"];
 const mime = { ".html":"text/html", ".css":"text/css", ".js":"text/javascript", ".svg":"image/svg+xml", ".png":"image/png", ".woff2":"font/woff2", ".json":"application/json" };
@@ -87,6 +88,18 @@ function Create(settings) {
     return {async Check({root,product,output,mode,rule}) {
         const experiments=discover(path.join(root,rule.directory,"experiments"));
         const findings=[],coverage=[];
+        const corpusDirectory=path.join(root,rule.directory,"corpus");
+        if(fs.existsSync(corpusDirectory)){
+            const documents=loadCorpus(corpusDirectory), registered=corpusCoverage(documents,experiments), components=catalogue(documents);
+            fs.mkdirSync(output,{recursive:true});
+            fs.writeFileSync(path.join(output,"corpus-report.json"),JSON.stringify({documents:registered,components},null,2)+"\n");
+            console.log("Reference corpus: "+documents.length+" documents; "+documents.reduce((n,d)=>n+d.metadata.elements,0)+" article elements; "+components.length+" named component identities; "+registered.filter(d=>d.status==="configured").length+" configured experiments");
+            if(mode!=="capture"){
+                const pending=registered.filter(d=>d.status==="reference-only");
+                for(const item of pending)coverage.push({id:item.id+"/structure",status:"unverified"});
+                if(pending.length)findings.push({file:path.relative(root,path.join(corpusDirectory,"manifest.json")).split(path.sep).join("/"),line:1,column:1,message:"Reference corpus: "+pending.length+" captured documents lack independently authored candidate specimens: "+pending.map(x=>x.id).join(", "),infrastructure:false});
+            }
+        }
         const {chromium}=require(path.join(root,site,"node_modules/playwright"));
         const browser=await chromium.launch();
         let server;
