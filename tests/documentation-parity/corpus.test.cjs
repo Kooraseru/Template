@@ -1,8 +1,8 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),path=require("node:path"),fs=require("node:fs"),os=require("node:os");
-const {loadCorpus,catalogue,coverage,compareCatalogue}=require("../../rules/documentation/parity/corpus.cjs");
-const {loadReference,compareStructure}=require("../../rules/documentation/parity/structure.cjs");
-const {discover}=require("../../rules/documentation/parity/comparison.cjs");
+const {loadCorpus,catalogue,coverage,compareCatalogue}=require("../../dependencies/managed/packages/documentation/parity/corpus.cjs");
+const {loadReference,compareStructure}=require("../../dependencies/managed/packages/documentation/parity/structure.cjs");
+const {discover}=require("../../dependencies/managed/packages/documentation/parity/comparison.cjs");
 const rule=path.resolve(__dirname,"../../rules/documentation/parity");
 const root=path.resolve(__dirname,"../..");
 const sources=require("../../.vscode/config/rules.json").rules["documentation/parity"].settings.sources;

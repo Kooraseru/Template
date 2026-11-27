@@ -11,6 +11,9 @@
     },
     "github-workflow": {
       "builtin": "github-workflow"
+    },
+    "git-source": {
+      "builtin": "git-source"
     }
   },
   "dependencies": {
@@ -176,6 +179,16 @@
             "yaml": "2.8.1"
           }
         }
+      }
+    },
+    "tools.documentation": {
+      "provider": "git-source",
+      "options": {
+        "repository": "Kooraseru-Hub/CI-Packages",
+        "commit": "032fa67dc9f9471475fcb71adcb264671156e302",
+        "sourcePath": "packages/documentation",
+        "packagePath": "packages/documentation",
+        "entry": "build/renderer/build.cjs"
       }
     }
   }

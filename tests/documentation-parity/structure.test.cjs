@@ -1,6 +1,6 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),path=require("node:path");
-const {count,compareStructure,loadReference}=require("../../rules/documentation/parity/structure.cjs");
+const {count,compareStructure,loadReference}=require("../../dependencies/managed/packages/documentation/parity/structure.cjs");
 const tree=(children,labels=[["main",[]],["span",["title"]],["button",["copy"]],["div",["wrapper"]]])=>({labels,nodes:[[1],[2],[3,0],[0,...children]],root:3});
 test("full independently captured article can be decoded and compared",()=>{
     const reference=loadReference(path.resolve(__dirname,"../../rules/documentation/parity/references/base-part"));

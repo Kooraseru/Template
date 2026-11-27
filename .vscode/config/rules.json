@@ -106,7 +106,19 @@
             "url": "https://create.roblox.com/docs/reference/engine",
             "reference": "rules/documentation/parity/references/engine-reference"
           }
-        ]
+        ],
+        "classNormalization": {
+          "drop": [
+            "^web-blox-css-mui-",
+            "^web-blox-css-tss-[a-z0-9]+$"
+          ],
+          "replace": [
+            {
+              "pattern": "^web-blox-css-tss-[a-z0-9]+-",
+              "replacement": ""
+            }
+          ]
+        }
       }
     }
   }

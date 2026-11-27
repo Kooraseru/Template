@@ -1,41 +1,39 @@
 # Documentation parity
 
-The built documentation must match the independently captured reference in every declared scenario. Check text, geometry, computed presentation, screenshots and observable interaction states. A missing reference is an infrastructure failure by default. During explicitly configured commissioning, an entirely absent scenario baseline produces an UNVERIFIED result (advisory only at warning severity). The candidate must still render successfully. Partial or invalid baselines, browser failures and missing candidate elements remain fatal. Error severity also blocks unverified scenarios.
+The rule compares Template's rendered documentation against independently captured reference sources. The reusable renderer, browser acquisition and comparison code live in CI-Packages; this rule owns the source registry, policy and evidence.
 
-Experiments are direct directories of experiments/ containing experiment.json. Selectors map equivalent elements rather than requiring identical implementation markup. Each scenario supplies its own viewport, actions, and element mappings. Capture is explicit, writes only to the requested output directory, and must be reviewed before reference files are committed. Never capture from the candidate. Normal checking does not contact the reference website.
+## Configuration
 
-This initial implementation compares viewport and selected element screenshots exactly (PNG bytes, or SHA-256 digests of those same bytes), text, selected computed CSS values and element dimensions/positions within a configurable CSS-pixel tolerance. Exact PNG comparison is deliberately conservative; browser/font/platform differences may cause failures. It does not yet cover every Creator Hub interaction or full document content. The initial BasePart experiment is not a complete parity certification.
+`.vscode/config/rules.json` contains the authoritative list in `documentation/parity.settings.sources`. Each entry supplies an ID, HTTPS URL and workspace-relative evidence directory. The per-rule schema is `settings.json`. Hash-only class normalization is also configured there. Adding a reference does not require comparison code changes or another published page.
 
-Run the dependency loader, build the documentation, install the pinned Playwright browser using the Starlight package, then:
+`references/` stores normalized, lossless tag/class/child-order trees with capture provenance and SHA-256 digests. The ten Creator Hub references were captured independently of the candidate. Raw browser exports are not committed or served. The snapshots cover the article root, not the surrounding navigation or all attribute values and interaction states.
+
+`experiments/` declares explicit full-document comparisons. BasePart has four independently measured scenarios. Its structural snapshot is shared with the configured source registry rather than duplicated. Measured scenario metrics and screenshot digests remain in the experiment reference directory.
+
+## Reports and acceptance
+
+Normal validation performs no live reference acquisition. It compares the candidate against the directly paired experiment and uses the whole configured corpus to catalogue observed named component variants. Reports under `build/rules/documentation/parity/`:
+
+- `report.json`: rule status and findings.
+- `component-report.json`: matching, different, untested and unexpected named component identities, with source provenance and candidate subtree hashes.
+- `corpus-report.json`: registered reference catalogue and observed variants.
+- Per-scenario metrics, screenshots and full root-relative structural differences.
+
+An untested source variant is not a missing public page or a parity pass. Unrelated document instance counts are not candidate requirements. Structural names alone do not pass: matching subtree hashes include ordered descendants. Direct document checks still detect differences in nesting, order, geometry, text, selected computed CSS and interaction states. Screenshot comparison uses exact PNG digests; the original reference PNGs are in the original capture artifact recorded by `experiments/base-part/reference/provenance.json`, and are not currently committed.
+
+The rule remains advisory at warning severity while the renderer is corrected. Missing/malformed configured evidence and infrastructure errors fail closed. Commissioning permits an entirely missing measured scenario only when explicitly enabled. Missing partial reference evidence and browser failures remain errors.
+
+## Run
 
 ```sh
+node dependencies/packages/core/dependencyLoader/index.ts
+node dependencies/managed/packages/documentation/build/renderer/build.cjs
+cd dependencies/managed/packages/documentation/build/renderer
+npx --no-install playwright install chromium
+cd - 
 node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/documentation
 ```
 
-For explicit reference acquisition append --capture. Review the resulting reference files and copy them into the corresponding experiment's reference/ directory. Capture requires network access and the official reference to render successfully. Reports and screenshots are written under build/. Product checks are not run on editor keystrokes.
+Explicit acquisition uses the CI workflow input `capture_documentation_reference` or the product checker with `--capture`. Review the separately emitted capture before replacing independent evidence. Routine CI never overwrites baselines.
 
-Normal CI uses only committed references and never acquires or copies a live baseline. Use the CI workflow's explicit `capture_documentation_reference` dispatch input or the local capture command to acquire evidence. Failed capture attempts retain a diagnostic screenshot, page title and headings; they are never treated as successful reference data. Browser integration tests run in the documentation job before parity checks.
-
-The BasePart baseline was acquired by explicit workflow dispatch on 2026-11-26. All four scenarios have committed metrics and exact screenshot digests. The original reference PNGs are retained in the capture archive identified by `experiments/base-part/reference/provenance.json`; to retain them in Git as well, copy the original PNGs from each scenario into the corresponding reference directory, without altering the manifest. The checker verifies their integrity if present. Exact digest equality is not a pixel-tolerance comparison; automated visual difference images require the original PNGs. Commissioning is disabled now that all declared scenarios have a reference. Parity mismatches remain warnings while the renderer is corrected.
-
-## Structural parity
-
-An experiment may declare a structural root and scenario in its manifest. The complete normalized DOM subtree is compared recursively by exact element tag, class names, sibling identity/occurrence and order. The reference stores a lossless, deduplicated tree of those structural labels and child lists (gzip/base64, with independent SHA-256 and count). The candidate snapshot and a complete per-path difference report are emitted as build artifacts; CI also reports the largest component inventory differences. A mismatched parent can cause its descendants to be reported missing and unexpected; these are structural paths, not a claim of distinct root causes.
-
-The BasePart article reference was extracted offline from the supplied rendered HTML, not from the candidate or the screenshots. The scope is the full article `main#main` (13,877 elements), including nested SVG elements, excluding script/style. Only build-generated reference class hashes are normalized; semantic names are retained. Attribute values, text, computed styles for arbitrary descendants, interactive state changes, and navigation outside the article are not yet part of the structural baseline. Existing measured visual checks continue unchanged. The reference HTML is not executed or served.
-
-Explicit live capture emits a fresh structural snapshot for inspection but does not overwrite the committed offline reference. To inspect the reference locally, use `node -e 'console.log(JSON.stringify(require("./rules/documentation/parity/structure.cjs").loadReference("rules/documentation/parity/experiments/base-part/reference"),null,2))'`.
-
-The first renderer migration uses the captured `titleRow` / `titleContainer` / `Typography-h1-Typography-root-title` hierarchy and the captured signature container / `multilineSignature` / `parametersContainer` names. The title preserves heading accessibility and the existing `_top` anchor. Signature token markup, member wrapper structure, the surrounding Starlight layout, and most other components still need conversion; the structural rule deliberately reports those differences.
-
-The structural report also compares exact named component subtrees independently of their ancestors, so a corrected component receives diagnostic credit even while the surrounding article layout remains incompatible. Strict path discrepancies still remain findings. Each named tag/class identity has expected/actual counts, matching subtree counts, and missing/unexpected subtree hashes. Hashes include the complete ordered descendant tree; equal labels alone do not constitute a matching component.
-
-## Multi-document reference corpus
-
-`corpus/` contains independently extracted structural snapshots of ten official documentation pages from the same asset revision. Each snapshot has the original source hash, normalized tree hash, captured viewport, URL, and article element count. Raw browser HTML is not committed. The separate corpus is validated offline and does not expand the published documentation site.
-
-Each normal validation emits `corpus-report.json`, with exact tag/class identities, ordered descendant shape hashes, and occurrence counts per reference page. These counts are never compared to an unrelated candidate document. The original BasePart experiment is the only currently configured full candidate. A captured reference without a candidate is explicitly UNVERIFIED, not a parity pass; it remains advisory during renderer development. Add independently authored test-only candidate specimens and experiments to activate the remaining nine references. The existing BasePart measured reference and thresholds are unchanged.
-
-## Configured sources
-
-`.vscode/config/rules.json` is the authoritative source registry. `settings.sources` contains each ID, HTTPS URL and repository-relative reference directory. The stored normalized reference and provenance are evidence, not settings. A source may contribute component variants without having a corresponding authored page. Only explicitly paired experiments assert full document equality. The generated `component-report.json` compares candidate named subtrees to the union of reference variants, distinguishing matching, different, unexpected and untested identities. Counts from unrelated pages are not candidate requirements. Untested does not imply that the renderer lacks the capability. No new public pages are required.
+The package revision is pinned in `dependencies/dependencies.json` and the dependency lock. Template's authored documentation remains exactly two published pages.

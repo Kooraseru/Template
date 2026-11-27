@@ -4,11 +4,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { copyAssets, prepareSite, stageFavicon, root } = require('./build.cjs');
+const root=path.resolve(__dirname,'../..');
+const renderer=path.join(root,'dependencies/managed/packages/documentation/build/renderer');
+const { copyAssets, prepareSite, stageFavicon } = require(path.join(renderer,'build.cjs'));
 
 test('Starlight site is configured as a component, not another workflow', () => {
-  const site = __dirname;
-  const manifest = require('./package.json');
+  const site = renderer;
+  const manifest = require(path.join(renderer,'package.json'));
   assert.equal(manifest.private, true);
   assert.ok(manifest.dependencies['@astrojs/starlight']);
   assert.ok(manifest.dependencies.astro);
@@ -42,7 +44,7 @@ test('Starlight site is configured as a component, not another workflow', () => 
 });
 
 test('Measured dark palette, independent presentation layers and forced colors', () => {
-  const astro = fs.readFileSync(path.join(__dirname, 'astro.config.mjs'), 'utf8');
+  const astro = fs.readFileSync(path.join(renderer, 'astro.config.mjs'), 'utf8');
   const entries = [...astro.matchAll(/['"](\.\/src\/styles\/[^'"]+\.css)['"]/g)].map(match => match[1]);
   assert.deepEqual(entries, [
     './src/styles/theme/fallback.css',
@@ -53,8 +55,8 @@ test('Measured dark palette, independent presentation layers and forced colors',
     './src/styles/project.css',
     './src/styles/theme/forced-colors.css',
   ]);
-  const fallback = fs.readFileSync(path.join(__dirname, 'src/styles/theme/fallback.css'), 'utf8');
-  const forced = fs.readFileSync(path.join(__dirname, 'src/styles/theme/forced-colors.css'), 'utf8');
+  const fallback = fs.readFileSync(path.join(renderer, 'src/styles/theme/fallback.css'), 'utf8');
+  const forced = fs.readFileSync(path.join(renderer, 'src/styles/theme/forced-colors.css'), 'utf8');
   assert.match(fallback, /--docs-surface: #121215;/);
   assert.match(fallback, /--docs-link: #528bff;/);
   assert.match(fallback, /color-scheme: dark;/);
@@ -63,7 +65,7 @@ test('Measured dark palette, independent presentation layers and forced colors',
   assert.match(forced, /--docs-selected: Highlight;/);
   const tokens = css => [...new Set([...css.matchAll(/(--(?:docs|sl-color)-[a-z0-9-]+):/g)].map(match => match[1]))].sort();
   assert.deepEqual(tokens(forced), tokens(fallback));
-  const provider = fs.readFileSync(path.join(__dirname, 'src/components/ThemeProvider.astro'), 'utf8');
+  const provider = fs.readFileSync(path.join(renderer, 'src/components/ThemeProvider.astro'), 'utf8');
   assert.match(provider, /dataset.theme = 'dark'/);
   const example = fs.readFileSync(path.join(root, 'content/docs/reference-example.mdx'), 'utf8');
   assert.match(example, /<ApiSummary .*members=/);
@@ -122,7 +124,7 @@ test('favicon is staged from authored assets and can be replaced per repository'
   assert.match(example, /^title: BasePart$/m);
   assert.deepEqual(summary.sort(),ids.sort());
   for(const id of ids) assert.ok(example.includes('### '+id+'\n'));
-  const signature=fs.readFileSync(path.join(__dirname,'src/components/ApiSignature.astro'),'utf8');
+  const signature=fs.readFileSync(path.join(renderer,'src/components/ApiSignature.astro'),'utf8');
   assert.match(signature,/import builtins/);
   assert.doesNotMatch(signature,/Lorem ipsum/);
   assert.match(signature,/<a class="api-type"/);
@@ -130,18 +132,18 @@ test('favicon is staged from authored assets and can be replaced per repository'
 });
 
 test('API icon families share captured geometry and exact colors without inventing constructors', () => {
-  const icons = require('./src/data/api-icons.json');
+  const icons = require(path.join(renderer,'src/data/api-icons.json'));
   assert.deepEqual(Object.keys(icons).sort(), ['event','method','property']);
   assert.deepEqual([icons.property.color,icons.method.color,icons.event.color], ['#1AC8FF','#E26CF4','#F2BA2A']);
   assert.deepEqual([icons.property.paths.length,icons.method.paths.length,icons.event.paths.length],[1,6,1]);
-  const component = fs.readFileSync(path.join(__dirname,'src/components/ApiIcon.astro'),'utf8');
+  const component = fs.readFileSync(path.join(renderer,'src/components/ApiIcon.astro'),'utf8');
   assert.match(component,/callback: 'method'/);
   assert.match(component,/signal: 'event'/);
   assert.match(component,/icon && <svg/);
 });
 
 test('multiline callable signatures preserve nested parentheses and return tuples', async () => {
-  const {formatSignature}=await import('./src/data/format-signature.mjs');
+  const {formatSignature}=await import(require('node:url').pathToFileURL(path.join(renderer,'src/data/format-signature.mjs')).href);
   assert.deepEqual(formatSignature('Get(key: string, fn: (x: number) -> boolean): (unknown, boolean)'),{before:'Get (',args:'key: string, fn: (x: number) -> boolean',after:'): (unknown, boolean)'});
   assert.equal(formatSignature('Value: string'),null);
   assert.equal(formatSignature('OnInvoke: (x: number) -> boolean'),null);
@@ -149,23 +151,23 @@ test('multiline callable signatures preserve nested parentheses and return tuple
 });
 
 test('shared TOC is a renderer override, not two competing scrollspies', () => {
-  const config=fs.readFileSync(path.join(__dirname,'astro.config.mjs'),'utf8');
+  const config=fs.readFileSync(path.join(renderer,'astro.config.mjs'),'utf8');
   assert.match(config,/TableOfContents: '.\/src\/components\/TableOfContents\.astro'/);
   assert.match(config,/MobileTableOfContents: '.\/src\/components\/MobileTableOfContents\.astro'/);
-  const controller=fs.readFileSync(path.join(__dirname,'src/components/TocController.astro'),'utf8');
+  const controller=fs.readFileSync(path.join(renderer,'src/components/TocController.astro'),'utf8');
   assert.match(controller,/getBoundingClientRect\(\)\.top<=threshold/);
   assert.match(controller,/link\.removeAttribute\('aria-current'\)/);
 });
 
 test('scroll padding is the only anchor offset', () => {
-  const css=fs.readFileSync(path.join(__dirname,'src/styles/typography.css'),'utf8');
+  const css=fs.readFileSync(path.join(renderer,'src/styles/typography.css'),'utf8');
   assert.match(css,/scroll-padding-top:var\(--docs-anchor-offset\)/);
   assert.doesNotMatch(css,/scroll-margin-top:\s*var\(--docs-anchor-offset/);
 });
 
 test('reference title and member panels use the captured component structure',()=>{
-  const title=fs.readFileSync(path.join(__dirname,'src/components/PageTitle.astro'),'utf8');
-  const member=fs.readFileSync(path.join(__dirname,'src/components/ApiMember.astro'),'utf8');
+  const title=fs.readFileSync(path.join(renderer,'src/components/PageTitle.astro'),'utf8');
+  const member=fs.readFileSync(path.join(renderer,'src/components/ApiMember.astro'),'utf8');
   assert.match(title,/<div class="titleRow">\s*<div class="titleContainer">\s*<span class="MuiTypography-root Typography-h1-Typography-root-title MuiTypography-inherit"/);
   assert.match(title,/role="heading" aria-level="1"/);
   assert.match(member,/class="MuiTypography-root Typography-body1-Typography-root-signatureContainer MuiTypography-inherit"/);

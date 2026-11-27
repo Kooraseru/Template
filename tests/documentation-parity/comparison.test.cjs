@@ -1,6 +1,6 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
-const {compare,discover,compareScreenshots,screenshotManifest}=require("../../rules/documentation/parity/comparison.cjs");
+const {compare,discover,compareScreenshots,screenshotManifest}=require("../../dependencies/managed/packages/documentation/parity/comparison.cjs");
 const directory=path.resolve(__dirname,"../../rules/documentation/parity/tests");
 for(const category of ["valid","invalid","review"]) for(const file of fs.readdirSync(path.join(directory,category))) {
     test(category+"/"+file,()=>{

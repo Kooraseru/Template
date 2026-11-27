@@ -150,15 +150,15 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
-      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs
-      - run: node .github/components/documentation/pages/build/starlight/build.cjs
       - name: Prepare product rule dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
+      - run: node --test tests/documentation-parity/renderer.test.cjs
+      - run: node dependencies/managed/packages/documentation/build/renderer/build.cjs
       - name: Install parity browser
-        working-directory: .github/components/documentation/pages/build/starlight
+        working-directory: dependencies/managed/packages/documentation/build/renderer
         run: npx --no-install playwright install --with-deps chromium
       - name: Browser checker integration tests
-        run: node --test rules/documentation/parity/tests/browser.test.cjs
+        run: node --test dependencies/managed/packages/documentation/parity.browser.test.cjs
       - name: Documentation parity
         run: node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/documentation
       - name: Acquire independent reference evidence
@@ -193,7 +193,7 @@ jobs:
           DOCS_BASE: ${{ steps.preview.outputs.base }}
           DOCS_SITE: ${{ steps.preview.outputs.site }}
         run: |
-          node .github/components/documentation/pages/build/starlight/build.cjs
+          node dependencies/managed/packages/documentation/build/renderer/build.cjs
           mv build/github/pages build/github/preview
       - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
         if: steps.preview.outputs.enabled == 'true'

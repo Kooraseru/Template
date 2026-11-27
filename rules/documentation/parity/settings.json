@@ -39,6 +39,37 @@
           }
         }
       }
+    },
+    "classNormalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "drop": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "replace": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pattern",
+              "replacement"
+            ],
+            "properties": {
+              "pattern": {
+                "type": "string"
+              },
+              "replacement": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [

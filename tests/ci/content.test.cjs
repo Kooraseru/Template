@@ -58,8 +58,10 @@ test("source content is top-level and legacy docs directories are gone", () => {
 test("builders stage the authored docs into branch and Pages outputs", () => {
   const site = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/starlight/build.cjs"), "utf8");
   const branches = fs.readFileSync(path.join(root, ".github/components/governance/branches/build/branchBuilder.luau"), "utf8");
-  assert.match(site, /Starlight/);
-  assert.match(site, /build\/github\/pages/);
+  assert.match(site, /tools\.documentation/);
+  const dependency = JSON.parse(fs.readFileSync(path.join(root,"dependencies/dependencies.json"),"utf8")).dependencies["tools.documentation"];
+  assert.match(dependency.options.commit,/^[a-f0-9]{40}$/);
+  assert.equal(dependency.options.sourcePath,"packages/documentation");
   assert.ok(fs.existsSync(path.join(root, "content/theme.css")));
   assert.match(branches, /CONTENT_ROOT = "content\/docs\/repository"/);
   assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);

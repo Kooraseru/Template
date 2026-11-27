@@ -15,6 +15,11 @@
       "runtime": "node",
       "entry": "corpus.test.cjs",
       "timeoutSeconds": 60
+    },
+    "renderer": {
+      "runtime": "node",
+      "entry": "renderer.test.cjs",
+      "timeoutSeconds": 60
     }
   }
 }
