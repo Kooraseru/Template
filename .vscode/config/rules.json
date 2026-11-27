@@ -118,6 +118,83 @@
               "replacement": ""
             }
           ]
+        },
+        "candidates": [
+          {
+            "id": "markdown-guide",
+            "route": "/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          },
+          {
+            "id": "base-part",
+            "route": "/reference-example/",
+            "root": "main",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            }
+          }
+        ],
+        "componentPolicy": {
+          "required": [
+            {
+              "tag": "div",
+              "classes": [
+                "titleRow"
+              ]
+            },
+            {
+              "tag": "div",
+              "classes": [
+                "titleContainer"
+              ]
+            },
+            {
+              "tag": "span",
+              "classes": [
+                "MuiTypography-root",
+                "Typography-h1-Typography-root-title",
+                "MuiTypography-inherit"
+              ]
+            },
+            {
+              "tag": "div",
+              "classes": [
+                "MuiTypography-root",
+                "Typography-body1-Typography-root-signatureContainer",
+                "MuiTypography-inherit"
+              ]
+            },
+            {
+              "tag": "div",
+              "classes": [
+                "multilineSignature"
+              ]
+            },
+            {
+              "tag": "div",
+              "classes": [
+                "parametersContainer"
+              ]
+            },
+            {
+              "tag": "div",
+              "classes": [
+                "row"
+              ]
+            },
+            {
+              "tag": "span",
+              "classes": [
+                "Typography-code"
+              ]
+            }
+          ],
+          "excluded": []
         }
       }
     }

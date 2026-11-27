@@ -37,3 +37,5 @@ node dependencies/packages/checks/ruleLinter/product.cjs documentation build/git
 Explicit acquisition uses the CI workflow input `capture_documentation_reference` or the product checker with `--capture`. Review the separately emitted capture before replacing independent evidence. Routine CI never overwrites baselines.
 
 The package revision is pinned in `dependencies/dependencies.json` and the dependency lock. Template's authored documentation remains exactly two published pages.
+
+`settings.candidates` explicitly selects the two published routes for the component audit, independent of the BasePart full-document experiment. `settings.componentPolicy.required` identifies eight core component identities that must be exercised; their absence is a missing-component finding. Optional components and unseen reference variants remain untested, not passed. Exclusions require an explicit reason; no exclusions are configured. The report distinguishes these states instead of declaring the nine additional references unverified pages.

@@ -56,3 +56,11 @@ test("component catalogue distinguishes an untested reference from a mismatched 
     assert(results.some(x=>x.status==="untested"));
     assert(!results.some(x=>x.status==="different"||x.status==="unexpected"));
 });
+
+test("configured component coverage uses exactly the two published routes and known required identities",()=>{
+    const settings=require("../../.vscode/config/rules.json").rules["documentation/parity"].settings;
+    assert.deepEqual(settings.candidates.map(x=>x.route).sort(),["/","/reference-example/"].sort());
+    const docs=loadCorpus(root,sources),report=compareCatalogue(docs,[],settings.componentPolicy);
+    assert.equal(report.filter(x=>x.status==="missing").length,settings.componentPolicy.required.length);
+    assert(report.some(x=>x.status==="untested"));
+});
