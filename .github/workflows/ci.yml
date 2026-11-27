@@ -4,11 +4,6 @@ on:
   push:
     branches: ['**', '!ci/**', '!run/**']
   workflow_dispatch:
-    inputs:
-      capture_documentation_reference:
-        description: Acquire independent documentation reference evidence
-        type: boolean
-        default: false
   workflow_call:
 permissions:
   contents: read
@@ -140,8 +135,6 @@ jobs:
           if (($actual -join "`n") -cne ($expected -join "`n")) { throw "Unexpected output: $actual" }
   documentation:
     runs-on: ubuntu-latest
-    env:
-      DOCS_ASSET_MANIFEST: content/reference-sources/assets.json
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -154,29 +147,8 @@ jobs:
           node-version: '24'
       - name: Prepare product rule dependencies
         run: node dependencies/packages/core/dependencyLoader/index.ts
-      - run: node --test tests/documentation-parity/renderer.test.cjs
       - run: node dependencies/managed/packages/documentation/build/renderer/build.cjs
-      - name: Install parity browser
-        working-directory: dependencies/managed/packages/documentation/build/renderer
-        run: npx --no-install playwright install --with-deps chromium
-      - name: Browser checker integration tests
-        run: node --test dependencies/managed/packages/documentation/parity.browser.test.cjs
-      - name: Documentation parity
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.capture_documentation_reference) }}
-        run: node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/documentation
-      - name: Acquire independent reference evidence
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_documentation_reference }}
-        run: node dependencies/packages/checks/ruleLinter/product.cjs documentation build/github/pages build/rules/reference-capture --capture
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.capture_documentation_reference }}
-        with:
-          name: documentation-reference-capture
-          path: build/rules/reference-capture
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: ${{ !cancelled() }}
-        with:
-          name: documentation-parity
-          path: build/rules/documentation
+      - run: test -s build/github/pages/index.html
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: documentation

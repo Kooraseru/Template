@@ -1,0 +1,13 @@
+name: Example
+type: class
+summary: An example API reference for your project.
+methods:
+  - name: Example.new
+    summary: Creates an example value.
+    parameters:
+      - name: value
+        type: number
+        summary: The initial value.
+    returns:
+      - type: Example
+        summary: The created value.

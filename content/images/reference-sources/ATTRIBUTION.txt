@@ -1,6 +1,0 @@
-Roblox Creator Hub documentation, © Roblox Corporation and contributors.
-Source: https://github.com/Roblox/creator-docs/tree/47ec857d6a0805124d089d3a2f68d970ccbf70d0
-Prose and documentation: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
-Code samples: MIT (see LICENSE-CODE).
-Adapted to exercise the documentation renderer; these are comparison specimens, not an official Roblox documentation site.
-Original independent DOM evidence: rules/documentation/parity/references/.

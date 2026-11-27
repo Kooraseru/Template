@@ -137,7 +137,7 @@ function checkRepositoryRules(sources: string[], scoped?: { file: string; source
 	try { policy = loadPolicy(root); }
 	catch (error) { reportRuleError(error); return; }
 	const paths = sources.map(file => file.split(path.sep).join("/"));
-	const entries = [...policy.rules.values()].filter(rule => rule.runtime === "lute" && (!scoped?.fixture || scoped.file.startsWith(rule.directory + "/tests/"))).map(rule => {
+	const entries = [...policy.rules.values()].filter(rule => !scoped?.fixture || scoped.file.startsWith(rule.directory + "/tests/")).map(rule => {
 		const configured = policy.result.get(rule.id);
 		const variants = [];
 		const settingsFor: Record<string, number> = Object.create(null);

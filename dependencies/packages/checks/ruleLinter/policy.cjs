@@ -57,27 +57,26 @@ function readDocument(root, file) {
 
 function catalog(root) {
 	const rules = new Map();
-	const families = { luau: { runtime: "lute", extension: "luau" }, documentation: { runtime: "node-product", extension: "cjs" } };
-	for (const [language, family] of Object.entries(families)) {
+	const language = "luau";
 	const start = "rules/" + language;
 	const active = path.join(root, start);
-	if (!fs.existsSync(active)) continue;
+	if (!fs.existsSync(active)) return rules;
 	if (fs.lstatSync(path.join(root, "rules")).isSymbolicLink() || fs.lstatSync(active).isSymbolicLink()) {
 		throw new PolicyError(start + "/README.md", "The active rules root must be a real directory");
 	}
 	function walk(directory) {
 		const entries = fs.readdirSync(path.join(root, directory), { withFileTypes: true })
 			.sort((left, right) => left.name.localeCompare(right.name, "en"));
-		if (entries.some(entry => entry.isSymbolicLink() && ["validation.luau", "validation.cjs", "validation", "settings.json", "README.md"].includes(entry.name))) {
+		if (entries.some(entry => entry.isSymbolicLink() && ["validation.luau", "validation", "settings.json", "README.md"].includes(entry.name))) {
 			throw new PolicyError(policyFile, "Rule declarations cannot be symlinks: " + directory);
 		}
 		const file = name => entries.some(entry => entry.name === name && entry.isFile());
 		const folder = name => entries.some(entry => entry.name === name && entry.isDirectory());
-		const nestedEntry = directory + "/validation/init." + family.extension;
+		const nestedEntry = directory + "/validation/init.luau";
 		if (folder("validation") && fs.existsSync(path.join(root, nestedEntry)) && fs.lstatSync(path.join(root, nestedEntry)).isSymbolicLink()) {
 			throw new PolicyError(policyFile, "Rule entry cannot be a symlink: " + nestedEntry);
 		}
-		const single = file("validation." + family.extension);
+		const single = file("validation.luau");
 		const nested = folder("validation") && fs.existsSync(path.join(root, nestedEntry))
 			&& fs.lstatSync(path.join(root, nestedEntry)).isFile();
 		if (single || folder("validation") || folder("tests") || file("settings.json")) {
@@ -91,7 +90,7 @@ function catalog(root) {
 			if (rules.has(id)) throw new PolicyError(readme, "Duplicate rule ID " + id + " also declared by " + rules.get(id).directory);
 			const title = fs.readFileSync(path.join(root, readme), "utf8").match(/^#\s+(.+)$/m)?.[1]?.trim() || name;
 			rules.set(id, {
-				id, title, directory, readme, runtime: family.runtime, entry: single ? directory + "/validation." + family.extension : nestedEntry,
+				id, title, directory, readme, entry: single ? directory + "/validation.luau" : nestedEntry,
 				schema: file("settings.json") ? directory + "/settings.json" : undefined,
 			});
 		}
@@ -100,7 +99,6 @@ function catalog(root) {
 		}
 	}
 	walk(start);
-	}
 	return rules;
 }
 

@@ -184,9 +184,9 @@
     "tools.documentation": {
       "provider": "git-source",
       "options": {
-        "repository": "Kooraseru-Hub/CI-Packages",
-        "commit": "176038a44009884f5f5092fb95f0562238c2c9d3",
-        "sourcePath": "packages/documentation",
+        "repository": "Kooraseru-Hub/Documentation",
+        "commit": "10098c0d80396a92945d3ad88b52391c683500d8",
+        "sourcePath": "package",
         "packagePath": "packages/documentation",
         "entry": "build/renderer/build.cjs"
       }

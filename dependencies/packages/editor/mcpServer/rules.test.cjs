@@ -25,7 +25,6 @@ test("Nested fixture directories count Luau cases, not directories", () => {
 	try {
 		const rule = path.join(directory, "rules/luau/design/example");
 		fs.mkdirSync(path.join(rule, "tests/valid/nested"), { recursive: true });
-		fs.writeFileSync(path.join(rule, "README.md"), "# Example");
 		fs.writeFileSync(path.join(rule, "validation.luau"), "return {}");
 		fs.writeFileSync(path.join(rule, "tests/valid/nested/example.luau"), "return true");
 		fs.writeFileSync(path.join(rule, "tests/valid/README.md"), "not a case");
@@ -33,7 +32,7 @@ test("Nested fixture directories count Luau cases, not directories", () => {
 		assert.equal(inventory.rules[0].fixtures.valid, 1);
 		fs.mkdirSync(path.join(rule, "validation"));
 		fs.writeFileSync(path.join(rule, "validation/init.luau"), "return {}");
-		assert.throws(() => listRules({ root: directory }), /exactly one validator entry/);
+		assert.throws(() => listRules({ root: directory }), /Ambiguous Luau validators/);
 	} finally {
 		fs.rmSync(directory, { recursive: true, force: true });
 	}

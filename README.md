@@ -30,7 +30,7 @@ The example Windows builds use Docker. For local host builds, run `node dependen
 - **Maintenance:** validate or reconcile labels and planned milestones.
 - **PR Results:** trusted review comments and Cloudflare preview publication from completed CI artifacts. Closing a PR retires its preview.
 
-The shared documentation renderer and parity tooling are installed by the dependency loader. Reusable release, branch and documentation preview actions are pinned directly to reviewed commits of [CI-Packages](https://github.com/Kooraseru-Hub/CI-Packages). They are independent packages, not a scheduler.
+The shared renderer is pinned independently from [Documentation](https://github.com/Kooraseru-Hub/Documentation); visual parity development and its fixtures live there, not in consumer repositories. Reusable release, branch and documentation preview actions are pinned directly to reviewed commits of [CI-Packages](https://github.com/Kooraseru-Hub/CI-Packages). They are independent packages, not a scheduler.
 
 For real publication, configure a protected `ci-publication` environment restricted to the authored default branch. Pages uses the `github-pages` environment and **Settings → Pages → Source: GitHub Actions**. Cloudflare previews use the separate `ci-preview-cloudflare` environment. Ordinary CI requires no publishing secrets.
 
@@ -55,6 +55,6 @@ Install [Workbench Bridge](https://github.com/Kooraseru/workbench-bridge) for de
 
 Check available Template releases using `node .github/components/quality/template-updates/version.cjs`. Updates are advisory; they do not overwrite project files.
 
-See [CI implementation](.github/components/README.md), [workspace dependencies](dependencies/README.md), and [documentation](content/docs/index.mdx).
+See [CI implementation](.github/components/README.md), [workspace dependencies](dependencies/README.md), and [documentation](content/docs/index.md).
 
 The comparison specimens adapt the [Roblox Creator Hub source](https://github.com/Roblox/creator-docs/tree/47ec857d6a0805124d089d3a2f68d970ccbf70d0) under its CC BY 4.0 and MIT licenses. [Attribution and licenses](content/images/reference-sources/ATTRIBUTION.txt).
