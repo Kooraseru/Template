@@ -9,6 +9,7 @@ import ApiSignature from '../../components/ApiSignature.astro';
 import ApiSummary from '../../components/ApiSummary.astro';
 import ApiMember from '../../components/ApiMember.astro';
 import ApiInteractions from '../../components/ApiInteractions.astro';
+import ApiTags from '../../components/ApiTags.astro';
 import ApiParameterTable from '../../components/ApiParameterTable.astro';
 import ApiParameter from '../../components/ApiParameter.astro';
 import ApiReturns from '../../components/ApiReturns.astro';
@@ -18,10 +19,7 @@ export const types = {"BasePart":{"category":"Class","href":"https://create.robl
 
 The abstract base class for in-world objects that physically interact.
 
-<ul className="api-class-status" aria-label="Class tags">
-  <li>NotCreatable</li>
-  <li>NotBrowsable</li>
-</ul>
+<div className="api-class-status" aria-label="Class tags"><ApiTags labels={["Not Creatable","Not Browsable"]} /></div>
 
 ## Summary
 
