@@ -145,8 +145,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
-      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs
-      - run: node .github/components/documentation/pages/build/starlight/build.cjs
+      - name: Prepare product rule dependencies
+        run: node dependencies/packages/core/dependencyLoader/index.ts
+      - run: node dependencies/managed/packages/documentation/build/renderer/build.cjs
+      - run: test -s build/github/pages/index.html
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: documentation
@@ -166,7 +168,7 @@ jobs:
           DOCS_BASE: ${{ steps.preview.outputs.base }}
           DOCS_SITE: ${{ steps.preview.outputs.site }}
         run: |
-          node .github/components/documentation/pages/build/starlight/build.cjs
+          node dependencies/managed/packages/documentation/build/renderer/build.cjs
           mv build/github/pages build/github/preview
       - uses: Kooraseru-Hub/CI-Packages/packages/documentation/preview@1339cccda7451615ea5309a55995611068b9364f
         if: steps.preview.outputs.enabled == 'true'

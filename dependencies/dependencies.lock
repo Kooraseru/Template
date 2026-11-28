@@ -307,6 +307,15 @@
           }
         }
       }
+    },
+    "tools.documentation": {
+      "provider": "git-source",
+      "fingerprint": "658b2f0318e03d2d9b0035d2809b7de7b1e451dc65a4754678e6c320df00a3ac",
+      "resolution": {
+        "repository": "Kooraseru-Hub/Documentation",
+        "commit": "10098c0d80396a92945d3ad88b52391c683500d8",
+        "sourcePath": "package"
+      }
     }
   }
 }

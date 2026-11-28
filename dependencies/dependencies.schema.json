@@ -21,7 +21,8 @@
             "enum": [
               "local",
               "github-release",
-              "npm"
+              "npm",
+              "git-source"
             ]
           },
           "command": {
